@@ -15,6 +15,7 @@ struct TestStruct
 	int sector;
 	unsigned long userID;
 
+	// TODO: Get templated Serialize/Deserialize working
 	static nlohmann::json Serialize(const TestStruct& st)
 	{
 		nlohmann::json obj_j;
@@ -26,6 +27,7 @@ struct TestStruct
 		return obj_j;
 	}
 
+	// TODO: move array stuff to the library side so that return type is just TestStruct
 	static std::vector<TestStruct> DeSerialize(const nlohmann::json& obj_j)
 	{
 		std::vector<TestStruct> vec;
@@ -61,15 +63,15 @@ int PrintMyArgs(TestStruct* pts, int n, std::string msg)
 class Dispatcher
 {
 public:
-    auto get(const std::string& sv) const
-    {
-        if (sv == "PrintMyArgs")
+	auto get(const std::string& sv) const
+	{
+		if (sv == "PrintMyArgs")
 		{
 			return m_printArgs;
 		}
 
 		throw std::runtime_error("Could not find function!");
-    }
+	}
 
 private:
 	std::function<int(TestStruct*, int n, std::string)> m_printArgs = PrintMyArgs;
@@ -94,10 +96,6 @@ int main()
 	argList.push_back(TestStruct::Serialize(ts));
 	argList.push_back(45);
 	argList.push_back("Hello world!");
-
-	const auto dbg = send_j.dump();
-
-	std::cout << dbg << '\n';
 
 	const auto retMsg = rpc::RunFromJSON(send_j, myDispatch);
 
