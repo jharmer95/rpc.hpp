@@ -25,3 +25,4 @@ A simple header-only library for supporting remote procedure calls using a varie
     - Would like to be able to add support for other popular serialization techniques (XML, ProtoBuf) and set this via template. So instead of `Serialize()` and `RunFromJSON()`, we would have: `Serialize<SerialType::JSON>()` or `RunRPC<SerialType::XML>()`
 - Would also like to provide an interface for users to provide their own serialization API so that you could use something like [cereal](https://github.com/USCiLab/cereal), some corporate library, or whatever you preferred.
 - Utilizing C++20's concepts/`requires` statement will make the library a lot simpler, cleaner, and easy to read.
+- Better error/exception handling
