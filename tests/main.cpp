@@ -1,3 +1,12 @@
+///@file main.cpp
+///@author Jackson Harmer (jharmer95@gmail.com)
+///@brief Source file for testing rpc.hpp
+///@version 0.1.0.0
+///@date 11-15-2019
+///
+///@copyright Copyright Jackson Harmer (c) 2019
+///
+
 #include "rpc.hpp"
 
 #include <nlohmann/json/json.hpp>

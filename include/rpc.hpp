@@ -1,3 +1,12 @@
+///@file rpc.hpp
+///@author Jackson Harmer (jharmer95@gmail.com)
+///@brief Header file for simplifying serialized RPC calls
+///@version 0.1.0.0
+///@date 11-15-2019
+///
+///@copyright Copyright Jackson Harmer (c) 2019
+///
+
 #pragma once
 
 #include <nlohmann/json/json.hpp>
