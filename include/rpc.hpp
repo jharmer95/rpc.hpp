@@ -20,7 +20,7 @@ namespace njson = nlohmann;
 namespace rpc
 {
 template<typename T>
-T DecodeArg(const njson::json& obj_j, uint8_t* buf, size_t* count)
+T DecodeArgArray(const njson::json& obj_j, uint8_t* buf, size_t* count)
 {
 	*count = 1UL;
 
@@ -29,20 +29,16 @@ T DecodeArg(const njson::json& obj_j, uint8_t* buf, size_t* count)
 		// Multi-value pointer (array)
 
 		// TODO: Also support containers
-		if constexpr (!std::is_pointer_v<T>)
-		{
-			throw std::logic_error("JSON object is array, but type of T was not a pointer type!");
-		}
 
 		using P = std::remove_pointer_t<T>;
 		static_assert(!std::is_void_v<P>,
 			"Void pointers are not supported, either cast to a different type or do the conversion "
 			"manually!");
-		const T bufPtr = reinterpret_cast<T>(buf);
+		T bufPtr = reinterpret_cast<T>(buf);
 
-		if constexpr (rpc::is_serializable_v<P, njson::json>)
+		if constexpr (rpc::is_serializable<P, njson::json(const P&)>::value)
 		{
-			const auto values = P::DeSerialize<njson::json>(obj_j);
+			const auto values = P::DeSerialize(obj_j);
 
 			if (values.size() != obj_j.size())
 			{
@@ -64,40 +60,59 @@ T DecodeArg(const njson::json& obj_j, uint8_t* buf, size_t* count)
 		return bufPtr;
 	}
 
-	if constexpr (rpc::is_serializable_v<T, njson::json>)
+	// Single value pointer
+	using P = std::remove_pointer_t<T>;
+	static_assert(!std::is_void_v<P>,
+		"Void pointers are not supported, either cast to a different type or do the conversion "
+		"manually!");
+
+	const T bufPtr = reinterpret_cast<T>(buf);
+
+	if constexpr (rpc::is_serializable<P, njson::json(const P&)>::value)
 	{
-		return T::DeSerialize<njson::json>(obj_j)[0];
+		const auto value = P::DeSerialize(obj_j)[0];
+		*bufPtr = value;
+	}
+	else if constexpr (std::is_same_v<P, char>)
+	{
+		const auto str = obj_j.get<std::string>();
+		std::copy(str.begin(), str.end(), bufPtr);
+	}
+	else if constexpr (std::is_arithmetic_v<P> || std::is_same_v<P, std::string>)
+	{
+		const auto value = obj_j.get<P>();
+		*bufPtr = value;
+	}
+
+	return bufPtr;
+}
+
+template<typename T>
+T DecodeArg(const njson::json& obj_j, uint8_t* buf, size_t* count, unsigned* paramNum)
+{
+	*paramNum += 1;
+	*count = 1UL;
+
+	const std::string dbg = obj_j.dump();
+
+	constexpr bool isSerial = rpc::is_serializable<T, njson::json(const T&)>::value;
+
+	if constexpr (std::is_pointer_v<T>)
+	{
+		return DecodeArgArray<T>(obj_j, buf, count);
+	}
+	else if constexpr (rpc::is_serializable<T, njson::json(const T&)>::value)
+	{
+		return T::DeSerialize(obj_j)[0];
 	}
 	else if constexpr (std::is_arithmetic_v<T> || std::is_same_v<T, std::string>)
 	{
-		return obj_j.get<T>();
+		T retVal = obj_j.get<T>();
+		return retVal;
 	}
-	else if constexpr (std::is_pointer_v<T>)
+	else
 	{
-		// Single value pointer
-		using P = std::remove_pointer_t<T>;
-		static_assert(!std::is_void_v<P>,
-			"Void pointers are not supported, either cast to a different type or do the conversion "
-			"manually!");
-		const T bufPtr = reinterpret_cast<T>(buf);
-
-		if constexpr (rpc::is_serializable_v<P, njson::json>)
-		{
-			const auto value = P::DeSerialize<njson::json>(obj_j)[0];
-			*bufPtr = value;
-		}
-		else if constexpr (std::is_same_v<P, char>)
-		{
-			const auto str = obj_j.get<std::string>();
-			std::copy(str.begin(), str.end(), bufPtr);
-		}
-		else if constexpr (std::is_arithmetic_v<P> || std::is_same_v<P, std::string>)
-		{
-			const auto value = obj_j.get<P>();
-			*bufPtr = value;
-		}
-
-		return bufPtr;
+		throw std::runtime_error("Invalid type!");
 	}
 }
 
@@ -110,9 +125,9 @@ void EncodeArgs(njson::json& args_j, const size_t count, const T& val)
 
 		for (size_t i = 0; i < count; ++i)
 		{
-			if constexpr (rpc::is_serializable_v<P, njson::json>)
+			if constexpr (rpc::is_serializable<P, njson::json(const P&)>::value)
 			{
-				args_j.push_back(P::Serialize<njson::json>(val[i]));
+				args_j.push_back(P::Serialize(val[i]));
 			}
 			else if constexpr (std::is_same_v<P, char>)
 			{
@@ -126,9 +141,9 @@ void EncodeArgs(njson::json& args_j, const size_t count, const T& val)
 	}
 	else
 	{
-		if constexpr (rpc::is_serializable_v<T, njson::json>)
+		if constexpr (rpc::is_serializable<T, njson::json(const T&)>::value)
 		{
-			args_j.push_back(T::Serialize<njson::json>(val));
+			args_j.push_back(T::Serialize(val));
 		}
 		else if constexpr (std::is_arithmetic_v<T> || std::is_same_v<T, std::string>)
 		{
@@ -138,22 +153,24 @@ void EncodeArgs(njson::json& args_j, const size_t count, const T& val)
 }
 
 template<typename R, typename... Args>
-std::string RunCallBack(const json& obj_j, std::function<R(Args...)> func)
+std::string RunCallBack(const njson::json& obj_j, std::function<R(Args...)> func)
 {
 	unsigned count = 0;
 
-	std::array<std::pair<unsigned long, std::unique_ptr<unsigned char[]>>,
+	std::array<std::pair<size_t, std::unique_ptr<unsigned char[]>>,
 		function_param_count_v<R, Args...>>
 		buffers;
 
 	for (auto& buf : buffers)
 	{
 		buf.first = 0UL;
-		buf.second = std::make_unique<unsigned char[]>(J2534_MAX_STR_SZ);
+		buf.second = std::make_unique<unsigned char[]>(4096);
 	}
 
-	std::tuple<Args...> args = std::make_tuple(
-		DecodeArg<Args>(obj_j[count], buffers[count].second.get(), &buffers[count++].first)...);
+	const std::string dbg = obj_j[count + 1].dump();
+
+	std::tuple<Args...> args {
+		DecodeArg<Args>(obj_j[count], buffers[count].second.get(), &(buffers[count].first), &count)...};
 
 	const auto result = std::apply(func, args);
 
@@ -320,22 +337,19 @@ std::string RunCallBack(const json& obj_j, std::function<R(Args...)> func)
 }
 
 // TODO: Need to get dispatch working
-inline std::string RunFromJSON(const njson::json& obj_j)
+template<typename TDispatcher>
+inline std::string RunFromJSON(const njson::json& obj_j, const TDispatcher& dispatch)
 {
 	const auto funcName = obj_j["function"].get<std::string>();
 	const auto& argList = obj_j["args"];
 
 	try
 	{
-		return RunCallBack(argList, );
-	}
-	catch (std::out_of_range& ex)
-	{
-		throw std::runtime_error("Value \"" + funcName + "\"not found in callback lookup table!");
+		return RunCallBack(argList, dispatch.get(funcName));
 	}
 	catch (std::exception& ex)
 	{
-		throw;
+		std::cerr << ex.what() << '\n';
 	}
 }
 } // namespace rpc
