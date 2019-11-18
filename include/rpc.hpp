@@ -1,10 +1,39 @@
 ///@file rpc.hpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
-///@brief Header file for simplifying serialized RPC calls
+///@brief Header-only library for serialized RPC usage
 ///@version 0.1.0.0
 ///@date 11-18-2019
 ///
-///@copyright Copyright Jackson Harmer (c) 2019
+///@copyright
+///BSD 3-Clause License
+///
+///Copyright (c) 2019, Jackson Harmer
+///All rights reserved.
+///
+///Redistribution and use in source and binary forms, with or without
+///modification, are permitted provided that the following conditions are met:
+///
+///1. Redistributions of source code must retain the above copyright notice, this
+///   list of conditions and the following disclaimer.
+///
+///2. Redistributions in binary form must reproduce the above copyright notice,
+///   this list of conditions and the following disclaimer in the documentation
+///   and/or other materials provided with the distribution.
+///
+///3. Neither the name of the copyright holder nor the names of its
+///   contributors may be used to endorse or promote products derived from
+///   this software without specific prior written permission.
+///
+///THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+///AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+///IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+///DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+///FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+///DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+///SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+///CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+///OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+///OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ///
 
 #pragma once
@@ -52,7 +81,7 @@ using function_args_t = typename function_traits<std::function<R(Args...)>>::tem
 
 namespace rpc
 {
-std::shared_ptr<Dispatcher> DISPATCHER = std::make_shared<Dispatcher>();;
+std::shared_ptr<Dispatcher> DISPATCHER = std::make_shared<Dispatcher>();
 
 template<typename, typename T>
 struct is_serializable
@@ -80,9 +109,7 @@ public:
 };
 
 template<typename T>
-[[nodiscard]]
-T DecodeArgArray(const njson::json& obj_j, uint8_t* buf, size_t* count)
-{
+[[nodiscard]] T DecodeArgArray(const njson::json& obj_j, uint8_t* buf, size_t* count) {
     *count = 1UL;
 
     if (obj_j.is_array())
@@ -166,30 +193,29 @@ T DecodeArgArray(const njson::json& obj_j, uint8_t* buf, size_t* count)
 }
 
 template<typename T>
-[[nodiscard]]
-T DecodeArg(const njson::json& obj_j, uint8_t* buf, size_t* count, unsigned* paramNum)
-{
-    *paramNum += 1;
-    *count = 1UL;
+[[nodiscard]] T
+    DecodeArg(const njson::json& obj_j, uint8_t* buf, size_t* count, unsigned* paramNum) {
+        *paramNum += 1;
+        *count = 1UL;
 
-    if constexpr (std::is_pointer_v<T>)
-    {
-        return DecodeArgArray<T>(obj_j, buf, count);
+        if constexpr (std::is_pointer_v<T>)
+        {
+            return DecodeArgArray<T>(obj_j, buf, count);
+        }
+        else if constexpr (is_serializable<T, njson::json(const T&)>::value)
+        {
+            return T::DeSerialize(obj_j)[0];
+        }
+        else if constexpr (std::is_arithmetic_v<T> || std::is_same_v<T, std::string>)
+        {
+            T retVal = obj_j.get<T>();
+            return retVal;
+        }
+        else
+        {
+            return DISPATCHER->DeSerialize<T>(obj_j)[0];
+        }
     }
-    else if constexpr (is_serializable<T, njson::json(const T&)>::value)
-    {
-        return T::DeSerialize(obj_j)[0];
-    }
-    else if constexpr (std::is_arithmetic_v<T> || std::is_same_v<T, std::string>)
-    {
-        T retVal = obj_j.get<T>();
-        return retVal;
-    }
-    else
-    {
-        return DISPATCHER->DeSerialize<T>(obj_j)[0];
-    }
-}
 
 template<typename T>
 void EncodeArgs(njson::json& args_j, const size_t count, const T& val)
@@ -249,9 +275,7 @@ void for_each_tuple(const std::tuple<Ts...>& tuple, F func)
 }
 
 template<typename R, typename... Args>
-[[nodiscard]]
-std::string RunCallBack(const njson::json& obj_j, std::function<R(Args...)> func)
-{
+[[nodiscard]] std::string RunCallBack(const njson::json& obj_j, std::function<R(Args...)> func) {
     unsigned count = 0;
 
     std::array<std::pair<size_t, std::unique_ptr<unsigned char[]>>,
@@ -284,8 +308,7 @@ std::string RunCallBack(const njson::json& obj_j, std::function<R(Args...)> func
     return retObj_j.dump();
 }
 
-[[nodiscard]]
-std::string RunFromJSON(const njson::json& obj_j)
+    [[nodiscard]] std::string RunFromJSON(const njson::json& obj_j)
 {
     const auto funcName = obj_j["function"].get<std::string>();
     const auto& argList = obj_j["args"];
