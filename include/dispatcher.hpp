@@ -15,16 +15,15 @@ struct TestStruct
     char name[255]{};
 
     // TODO: Get templated Serialize/Deserialize working
-    // static nlohmann::json Serialize(const TestStruct& ts)
-    // {
-    //     nlohmann::json obj_j;
-    //     obj_j["age"] = ts.age;
-    //     obj_j["name"] = std::string(ts.name);
-    //     obj_j["sector"] = ts.sector;
-    //     obj_j["userID"] = ts.userID;
-
-    //     return obj_j;
-    // }
+    static nlohmann::json Serialize(const TestStruct& ts)
+    {
+        nlohmann::json obj_j;
+        obj_j["age"] = ts.age;
+        obj_j["name"] = std::string(ts.name);
+        obj_j["sector"] = ts.sector;
+        obj_j["userID"] = ts.userID;
+        return obj_j;
+    }
 
     // TODO: move array stuff to the library side so that return type is just TestStruct
     static std::vector<TestStruct> DeSerialize(const nlohmann::json& obj_j)
@@ -47,7 +46,7 @@ struct TestStruct
     }
 };
 
-int PrintMyArgs(TestStruct* pts, const int n, const std::string& msg)
+inline int PrintMyArgs(TestStruct* pts, const int n, const std::string& msg)
 {
     std::cout << "age: " << pts->age << '\n';
     std::cout << "name: " << pts->name << '\n';
@@ -59,21 +58,15 @@ int PrintMyArgs(TestStruct* pts, const int n, const std::string& msg)
     return 2;
 }
 
-bool TestMyArgs(TestStruct* pts, const double f)
+inline bool TestMyArgs(TestStruct* pts, const double f)
 {
     return pts->age > 4 && f < 5.5;
 }
 
-class Dispatcher// : public rpc::IDispatcher
+class Dispatcher
 {
 public:
-    auto GetFunction(const std::string& sv) const
-    {
-        if (sv == "PrintMyArgs")
-        {
-            return m_printArgs;
-        }
-    }
+    std::string Run(const std::string& funcName, const nlohmann::json& obj_j);
 
     template<typename T>
     static nlohmann::json Serialize(const T& obj)
@@ -95,7 +88,6 @@ public:
         obj_j["name"] = std::string(ts.name);
         obj_j["sector"] = ts.sector;
         obj_j["userID"] = ts.userID;
-
         return obj_j;
     }
 

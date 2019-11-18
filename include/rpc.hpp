@@ -52,28 +52,7 @@ using function_args_t = typename function_traits<std::function<R(Args...)>>::tem
 
 namespace rpc
 {
-// class IDispatcher
-// {
-// public:
-//     template <typename T>
-//     static nlohmann::json Serialize(const T& obj)
-//     {
-//         throw std::logic_error("Type has not been provided with a Serialize method!");
-//     }
-
-//     template <typename T>
-//     static std::vector<T> DeSerialize(const nlohmann::json& obj_j)
-//     {
-//         throw std::logic_error("Type has not been provided with a DeSerialize method!");
-//     }
-
-//     auto GetFunction(const std::string& sv)
-//     {
-//         throw std::logic_error("Type has not been provided with a GetFunction method!");
-//     }
-// };
-
-std::shared_ptr<Dispatcher> DISPATCHER;
+std::shared_ptr<Dispatcher> DISPATCHER = std::make_shared<Dispatcher>();;
 
 template<typename, typename T>
 struct is_serializable
@@ -306,15 +285,14 @@ std::string RunCallBack(const njson::json& obj_j, std::function<R(Args...)> func
 }
 
 [[nodiscard]]
-std::string RunFromJSON(const njson::json& obj_j, const Dispatcher& dispatch)
+std::string RunFromJSON(const njson::json& obj_j)
 {
-    DISPATCHER = std::make_shared<Dispatcher>(dispatch);
     const auto funcName = obj_j["function"].get<std::string>();
     const auto& argList = obj_j["args"];
 
     try
     {
-        return RunCallBack(argList, DISPATCHER->GetFunction(funcName));
+        return DISPATCHER->Run(funcName, argList);
     }
     catch (std::exception& ex)
     {

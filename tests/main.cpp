@@ -11,7 +11,17 @@
 
 #include <algorithm>
 
-Dispatcher myDispatch{};
+std::string Dispatcher::Run(const std::string& funcName, const nlohmann::json& obj_j)
+{
+    if (funcName == "PrintMyArgs")
+    {
+        return rpc::RunCallBack(obj_j, m_printArgs);
+    }
+    else if (funcName == "TestMyArgs")
+    {
+        return rpc::RunCallBack(obj_j, m_testArgs);
+    }
+}
 
 int main()
 {
@@ -29,11 +39,11 @@ int main()
     ts.sector = 5545;
     ts.userID = 12345678UL;
 
-    argList.push_back(myDispatch.Serialize<TestStruct>(ts));
+    argList.push_back(TestStruct::Serialize(ts));
     argList.push_back(45);
     argList.push_back("Hello world!");
 
-    const auto retMsg = rpc::RunFromJSON(send_j, myDispatch);
+    const auto retMsg = rpc::RunFromJSON(send_j);
 
     std::cout << "\nReturn message:\n" << retMsg << '\n';
 
