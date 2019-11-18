@@ -2,12 +2,14 @@
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Header file for simplifying serialized RPC calls
 ///@version 0.1.0.0
-///@date 11-15-2019
+///@date 11-18-2019
 ///
 ///@copyright Copyright Jackson Harmer (c) 2019
 ///
 
 #pragma once
+
+#include "dispatcher.hpp"
 
 #include <nlohmann/json/json.hpp>
 
@@ -50,6 +52,29 @@ using function_args_t = typename function_traits<std::function<R(Args...)>>::tem
 
 namespace rpc
 {
+// class IDispatcher
+// {
+// public:
+//     template <typename T>
+//     static nlohmann::json Serialize(const T& obj)
+//     {
+//         throw std::logic_error("Type has not been provided with a Serialize method!");
+//     }
+
+//     template <typename T>
+//     static std::vector<T> DeSerialize(const nlohmann::json& obj_j)
+//     {
+//         throw std::logic_error("Type has not been provided with a DeSerialize method!");
+//     }
+
+//     auto GetFunction(const std::string& sv)
+//     {
+//         throw std::logic_error("Type has not been provided with a GetFunction method!");
+//     }
+// };
+
+std::shared_ptr<Dispatcher> DISPATCHER;
+
 template<typename, typename T>
 struct is_serializable
 {
@@ -112,6 +137,18 @@ T DecodeArgArray(const njson::json& obj_j, uint8_t* buf, size_t* count)
                 bufPtr[i] = obj_j[i].get<P>();
             }
         }
+        else
+        {
+            const auto values = DISPATCHER->DeSerialize<P>(obj_j);
+
+            if (values.size() != obj_j.size())
+            {
+                throw std::runtime_error(
+                    "JSON object was not deserialized correctly: number of arguments changed");
+            }
+
+            std::copy(values.begin(), values.end(), bufPtr);
+        }
 
         *count = obj_j.size();
         return bufPtr;
@@ -140,6 +177,11 @@ T DecodeArgArray(const njson::json& obj_j, uint8_t* buf, size_t* count)
         const auto value = obj_j.get<P>();
         *bufPtr = value;
     }
+    else
+    {
+        const auto value = DISPATCHER->DeSerialize<P>(obj_j)[0];
+        *bufPtr = value;
+    }
 
     return bufPtr;
 }
@@ -166,7 +208,7 @@ T DecodeArg(const njson::json& obj_j, uint8_t* buf, size_t* count, unsigned* par
     }
     else
     {
-        throw std::runtime_error("Invalid type!");
+        return DISPATCHER->DeSerialize<T>(obj_j)[0];
     }
 }
 
@@ -191,6 +233,10 @@ void EncodeArgs(njson::json& args_j, const size_t count, const T& val)
             {
                 args_j.push_back(val[i]);
             }
+            else
+            {
+                args_j.push_back(DISPATCHER->Serialize<P>(val[i]));
+            }
         }
     }
     else
@@ -202,6 +248,10 @@ void EncodeArgs(njson::json& args_j, const size_t count, const T& val)
         else if constexpr (std::is_arithmetic_v<T> || std::is_same_v<T, std::string>)
         {
             args_j.push_back(val);
+        }
+        else
+        {
+            args_j.push_back(DISPATCHER->Serialize<T>(val));
         }
     }
 }
@@ -255,16 +305,16 @@ std::string RunCallBack(const njson::json& obj_j, std::function<R(Args...)> func
     return retObj_j.dump();
 }
 
-template<typename TDispatcher>
 [[nodiscard]]
-std::string RunFromJSON(const njson::json& obj_j, const TDispatcher& dispatch)
+std::string RunFromJSON(const njson::json& obj_j, const Dispatcher& dispatch)
 {
+    DISPATCHER = std::make_shared<Dispatcher>(dispatch);
     const auto funcName = obj_j["function"].get<std::string>();
     const auto& argList = obj_j["args"];
 
     try
     {
-        return RunCallBack(argList, dispatch.get(funcName));
+        return RunCallBack(argList, DISPATCHER->GetFunction(funcName));
     }
     catch (std::exception& ex)
     {
