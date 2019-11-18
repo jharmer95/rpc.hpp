@@ -63,24 +63,15 @@ struct TestStruct
         return obj_j;
     }
 
-    // TODO: move array stuff to the library side so that return type is just TestStruct
-    static std::vector<TestStruct> DeSerialize(const nlohmann::json& obj_j)
+    static TestStruct DeSerialize(const nlohmann::json& obj_j)
     {
-        std::vector<TestStruct> vec;
-        const size_t sz = obj_j.is_array() ? obj_j.size() : 1;
-
-        for (size_t i = 0; i < sz; ++i)
-        {
-            TestStruct ts;
-            ts.age = obj_j["age"].get<int>();
-            const auto nmStr = obj_j["name"].get<std::string>();
-            std::copy(nmStr.begin(), nmStr.end(), ts.name);
-            ts.sector = obj_j["sector"].get<int>();
-            ts.userID = obj_j["userID"].get<unsigned long>();
-            vec.push_back(ts);
-        }
-
-        return vec;
+        TestStruct ts;
+        ts.age = obj_j["age"].get<int>();
+        const auto nmStr = obj_j["name"].get<std::string>();
+        std::copy(nmStr.begin(), nmStr.end(), ts.name);
+        ts.sector = obj_j["sector"].get<int>();
+        ts.userID = obj_j["userID"].get<unsigned long>();
+        return ts;
     }
 };
 
@@ -92,6 +83,8 @@ inline int PrintMyArgs(TestStruct* pts, const int n, const std::string& msg)
     std::cout << "userID: " << pts->userID << "\n\n";
     std::cout << "n: " << n << '\n';
     std::cout << "msg: " << msg << '\n';
+
+    pts->userID += 1;
 
     return 2;
 }

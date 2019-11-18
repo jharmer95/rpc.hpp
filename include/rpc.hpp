@@ -126,15 +126,11 @@ template<typename T>
 
         if constexpr (is_serializable<P, njson::json(const P&)>::value)
         {
-            const auto values = P::DeSerialize(obj_j);
-
-            if (values.size() != obj_j.size())
+            for (size_t i = 0; i < obj_j.size(); ++i)
             {
-                throw std::runtime_error(
-                    "JSON object was not deserialized correctly: number of arguments changed");
+                const auto value = P::DeSerialize(obj_j[i]);
+                bufPtr[i] = value;
             }
-
-            std::copy(values.begin(), values.end(), bufPtr);
         }
         else if constexpr (std::is_arithmetic_v<P> || std::is_same_v<P, std::string>)
         {
@@ -145,15 +141,11 @@ template<typename T>
         }
         else
         {
-            const auto values = DISPATCHER->DeSerialize<P>(obj_j);
-
-            if (values.size() != obj_j.size())
+            for (size_t i = 0; i < obj_j.size(); ++i)
             {
-                throw std::runtime_error(
-                    "JSON object was not deserialized correctly: number of arguments changed");
+                const auto value = DISPATCHER->DeSerialize<P>(obj_j[i]);
+                bufPtr[i] = value;
             }
-
-            std::copy(values.begin(), values.end(), bufPtr);
         }
 
         *count = obj_j.size();
@@ -170,7 +162,7 @@ template<typename T>
 
     if constexpr (is_serializable<P, njson::json(const P&)>::value)
     {
-        const auto value = P::DeSerialize(obj_j)[0];
+        const auto value = P::DeSerialize(obj_j);
         *bufPtr = value;
     }
     else if constexpr (std::is_same_v<P, char>)
@@ -185,7 +177,7 @@ template<typename T>
     }
     else
     {
-        const auto value = DISPATCHER->DeSerialize<P>(obj_j)[0];
+        const auto value = DISPATCHER->DeSerialize<P>(obj_j);
         *bufPtr = value;
     }
 
@@ -204,7 +196,7 @@ template<typename T>
         }
         else if constexpr (is_serializable<T, njson::json(const T&)>::value)
         {
-            return T::DeSerialize(obj_j)[0];
+            return T::DeSerialize(obj_j);
         }
         else if constexpr (std::is_arithmetic_v<T> || std::is_same_v<T, std::string>)
         {
@@ -213,7 +205,7 @@ template<typename T>
         }
         else
         {
-            return DISPATCHER->DeSerialize<T>(obj_j)[0];
+            return DISPATCHER->DeSerialize<T>(obj_j);
         }
     }
 
