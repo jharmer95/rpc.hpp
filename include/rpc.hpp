@@ -108,15 +108,145 @@ public:
     static constexpr bool value = type::value;
 };
 
+template<typename C>
+struct has_begin
+{
+private:
+    template<typename T>
+    static constexpr auto check(T*) ->
+        typename std::is_same<decltype(std::declval<T>().begin()), typename T::iterator>::type;
+
+    template<typename>
+    static constexpr std::false_type check(...);
+
+    using type = decltype(check<C>(nullptr));
+
+public:
+    static constexpr bool value = type::value;
+};
+
+template<typename C>
+struct has_end
+{
+private:
+    template<typename T>
+    static constexpr auto check(T*) ->
+        typename std::is_same<decltype(std::declval<T>().end()), typename T::iterator>::type;
+
+    template<typename>
+    static constexpr std::false_type check(...);
+
+    using type = decltype(check<C>(nullptr));
+
+public:
+    static constexpr bool value = type::value;
+};
+
+template<typename C>
+struct has_size
+{
+private:
+    template<typename T>
+    static constexpr auto check(T*) ->
+        typename std::is_same<decltype(std::declval<T>().size()), size_t>::type;
+
+    template<typename>
+    static constexpr std::false_type check(...);
+
+    using type = decltype(check<C>(nullptr));
+
+public:
+    static constexpr bool value = type::value;
+};
+
+template<typename C>
+struct is_container
+    : std::integral_constant<bool, has_size<C>::value && has_begin<C>::value && has_end<C>::value>
+{
+};
+
 template<typename T>
-[[nodiscard]] T DecodeArgArray(const njson::json& obj_j, uint8_t* buf, size_t* count) {
+T DecodeArgContainer(const njson::json& obj_j, uint8_t* buf, size_t* count)
+{
+    *count = 1UL;
+    T container;
+
+    if (obj_j.is_array())
+    {
+        // Multi-value container (array)
+        using P = typename T::value_type;
+        static_assert(!std::is_void_v<P>,
+            "Void containers are not supported, either cast to a different type or do the "
+            "conversion "
+            "manually!");
+
+        const auto bufPtr = reinterpret_cast<T*>(buf);
+
+        if constexpr (is_serializable<P, njson::json(const P&)>::value)
+        {
+            for (size_t i = 0; i < obj_j.size(); ++i)
+            {
+                container.push_back(P::DeSerialize(obj_j[i]));
+            }
+        }
+        else if constexpr (std::is_arithmetic_v<P> || std::is_same_v<P, std::string>)
+        {
+            for (size_t i = 0; i < obj_j.size(); ++i)
+            {
+                container.push_back(obj_j[i].get<P>());
+            }
+        }
+        else
+        {
+            for (size_t i = 0; i < obj_j.size(); ++i)
+            {
+                container.push_back(DISPATCHER->DeSerialize<P>(obj_j[i]));
+            }
+        }
+
+        *count = container.size();
+        *bufPtr = container;
+        return bufPtr;
+    }
+
+    // Single value container
+    using P = typename T::value_type;
+    static_assert(!std::is_void_v<P>,
+        "Void containers are not supported, either cast to a different type or do the conversion "
+        "manually!");
+
+    const auto bufPtr = reinterpret_cast<T*>(buf);
+
+    if constexpr (is_serializable<P, njson::json(const P&)>::value)
+    {
+        container.push_back(P::DeSerialize(obj_j));
+    }
+    else if constexpr (std::is_same_v<P, char>)
+    {
+        const auto str = obj_j.get<std::string>();
+        std::copy(str.begin(), str.end(), std::back_inserter(container));
+    }
+    else if constexpr (std::is_arithmetic_v<P> || std::is_same_v<P, std::string>)
+    {
+        container.push_back(obj_j.get<P>());
+    }
+    else
+    {
+        container.push_back(DISPATCHER->DeSerialize<P>(obj_j));
+    }
+
+    *bufPtr = container;
+    return bufPtr;
+}
+
+template<typename T>
+T DecodeArgPtr(const njson::json& obj_j, uint8_t* buf, size_t* count)
+{
     *count = 1UL;
 
     if (obj_j.is_array())
     {
         // Multi-value pointer (array)
-
-        // TODO: Also support containers
         using P = std::remove_pointer_t<T>;
         static_assert(!std::is_void_v<P>,
             "Void pointers are not supported, either cast to a different type or do the conversion "
@@ -184,30 +314,35 @@ template<typename T>
     return bufPtr;
 }
 
+// TODO: Also support containers
 template<typename T>
-[[nodiscard]] T
-    DecodeArg(const njson::json& obj_j, uint8_t* buf, size_t* count, unsigned* paramNum) {
-        *paramNum += 1;
-        *count = 1UL;
+T DecodeArg(const njson::json& obj_j, uint8_t* buf, size_t* count, unsigned* paramNum)
+{
+    *paramNum += 1;
+    *count = 1UL;
 
-        if constexpr (std::is_pointer_v<T>)
-        {
-            return DecodeArgArray<T>(obj_j, buf, count);
-        }
-        else if constexpr (is_serializable<T, njson::json(const T&)>::value)
-        {
-            return T::DeSerialize(obj_j);
-        }
-        else if constexpr (std::is_arithmetic_v<T> || std::is_same_v<T, std::string>)
-        {
-            T retVal = obj_j.get<T>();
-            return retVal;
-        }
-        else
-        {
-            return DISPATCHER->DeSerialize<T>(obj_j);
-        }
+    if constexpr (std::is_pointer_v<T>)
+    {
+        return DecodeArgPtr<T>(obj_j, buf, count);
     }
+    else if constexpr (is_serializable<T, njson::json(const T&)>::value)
+    {
+        return T::DeSerialize(obj_j);
+    }
+    else if constexpr (std::is_arithmetic_v<T> || std::is_same_v<T, std::string>)
+    {
+        T retVal = obj_j.get<T>();
+        return retVal;
+    }
+    else if constexpr (is_container<T>::value)
+    {
+        return DecodeArgContainer<T>(obj_j, buf, count);
+    }
+    else
+    {
+        return DISPATCHER->DeSerialize<T>(obj_j);
+    }
+}
 
 template<typename T>
 void EncodeArgs(njson::json& args_j, const size_t count, const T& val)
@@ -267,7 +402,8 @@ void for_each_tuple(const std::tuple<Ts...>& tuple, F func)
 }
 
 template<typename R, typename... Args>
-[[nodiscard]] std::string RunCallBack(const njson::json& obj_j, std::function<R(Args...)> func) {
+std::string RunCallBack(const njson::json& obj_j, std::function<R(Args...)> func)
+{
     unsigned count = 0;
 
     std::array<std::pair<size_t, std::unique_ptr<unsigned char[]>>,
@@ -300,7 +436,7 @@ template<typename R, typename... Args>
     return retObj_j.dump();
 }
 
-    [[nodiscard]] std::string RunFromJSON(const njson::json& obj_j)
+std::string RunFromJSON(const njson::json& obj_j)
 {
     const auto funcName = obj_j["function"].get<std::string>();
     const auto& argList = obj_j["args"];

@@ -70,7 +70,16 @@ int main()
 
     argList.push_back(TestStruct::Serialize(ts));
     argList.push_back(45);
-    argList.push_back("Hello world!");
+
+    std::vector<std::string> vec = { "Hello world!", "Goodbye everybody!" };
+    auto subArgList = nlohmann::json::array();
+
+    for (const auto& str : vec)
+    {
+        subArgList.push_back(str);
+    }
+
+    argList.push_back(subArgList);
 
     const auto retMsg = rpc::RunFromJSON(send_j);
 
