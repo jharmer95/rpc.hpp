@@ -210,7 +210,7 @@ T DecodeArgContainer(const njson::json& obj_j, uint8_t* buf, size_t* count)
 
         *count = container.size();
         *bufPtr = container;
-        return bufPtr;
+        return container;
     }
 
     // Single value container
@@ -240,7 +240,7 @@ T DecodeArgContainer(const njson::json& obj_j, uint8_t* buf, size_t* count)
     }
 
     *bufPtr = container;
-    return bufPtr;
+    return container;
 }
 
 template<typename T>
@@ -374,6 +374,30 @@ void EncodeArgs(njson::json& args_j, const size_t count, const T& val)
             }
         }
     }
+    else if constexpr (is_container<T>::value)
+    {
+        using P = typename T::value_type;
+
+        for (const auto& v : val)
+        {
+            if constexpr (is_serializable<P, njson::json(const P&)>::value)
+            {
+                args_j.push_back(P::Serialize(v));
+            }
+            else if constexpr (std::is_same_v<P, char>)
+            {
+                args_j.push_back(std::string(val, count));
+            }
+            else if constexpr (std::is_arithmetic_v<P> || std::is_same_v<P, std::string>)
+            {
+                args_j.push_back(v);
+            }
+            else
+            {
+                args_j.push_back(DISPATCHER->Serialize<P>(v));
+            }
+        }
+    }
     else
     {
         if constexpr (is_serializable<T, njson::json(const T&)>::value)
@@ -386,6 +410,7 @@ void EncodeArgs(njson::json& args_j, const size_t count, const T& val)
         }
         else
         {
+            std::string dbg = typeid(T).name();
             args_j.push_back(DISPATCHER->Serialize<T>(val));
         }
     }
