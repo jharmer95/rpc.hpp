@@ -75,7 +75,7 @@ struct TestStruct
     }
 };
 
-inline int PrintMyArgs(TestStruct* pts, const int n, const std::vector<std::string>& msg)
+inline int PrintMyArgs(TestStruct* pts, const int n, const std::vector<std::vector<std::string>>& msg)
 {
     std::cout << "age: " << pts->age << '\n';
     std::cout << "name: " << pts->name << '\n';
@@ -83,10 +83,11 @@ inline int PrintMyArgs(TestStruct* pts, const int n, const std::vector<std::stri
     std::cout << "userID: " << pts->userID << "\n\n";
     std::cout << "n: " << n << '\n';
 
-    for (const auto& str : msg)
-    {
-        std::cout << "msg: " << str << '\n';
-    }
+    for (const auto& smsg : msg)
+        for (const auto& str : smsg)
+        {
+            std::cout << "msg: " << str << '\n';
+        }
 
     pts->userID += 1;
 
@@ -147,6 +148,6 @@ public:
     }
 
 private:
-    std::function<int(TestStruct*, int, const std::vector<std::string>&)> m_printArgs = PrintMyArgs;
+    std::function<int(TestStruct*, const int, const std::vector<std::vector<std::string>>&)> m_printArgs = PrintMyArgs;
     std::function<bool(TestStruct*, double)> m_testArgs = TestMyArgs;
 };

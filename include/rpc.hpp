@@ -168,8 +168,8 @@ struct is_container
 template<typename T>
 T DecodeArgContainer(const njson::json& obj_j, uint8_t* buf, size_t* count)
 {
-    *count = 1UL;
     T container;
+    *count = 0UL;
 
     if (obj_j.is_array())
     {
@@ -180,24 +180,27 @@ T DecodeArgContainer(const njson::json& obj_j, uint8_t* buf, size_t* count)
             "conversion "
             "manually!");
 
-        const auto bufPtr = reinterpret_cast<T*>(buf);
-
-        if constexpr (is_serializable<P, njson::json(const P&)>::value)
-        {
-            for (size_t i = 0; i < obj_j.size(); ++i)
-            {
-                container.push_back(P::DeSerialize(obj_j[i]));
-            }
-        }
-        else if constexpr (std::is_same_v<T, std::string>)
-        {
-            container.push_back(obj_j.get<std::string>());
-        }
-        else if constexpr (std::is_arithmetic_v<P> || std::is_same_v<P, std::string>)
+        if constexpr (std::is_arithmetic_v<P> || std::is_same_v<P, std::string>)
         {
             for (size_t i = 0; i < obj_j.size(); ++i)
             {
                 container.push_back(obj_j[i].get<P>());
+            }
+        }
+        else if constexpr (is_container<P>::value)
+        {
+            for (size_t i = 0; i < obj_j.size(); ++i)
+            {
+                size_t ncount = 0UL;
+                container.push_back(DecodeArgContainer<P>(obj_j[i], buf, &ncount));
+                *count += ncount;
+            }
+        }
+        else if constexpr (is_serializable<P, njson::json(const P&)>::value)
+        {
+            for (size_t i = 0; i < obj_j.size(); ++i)
+            {
+                container.push_back(P::DeSerialize(obj_j[i]));
             }
         }
         else
@@ -208,8 +211,11 @@ T DecodeArgContainer(const njson::json& obj_j, uint8_t* buf, size_t* count)
             }
         }
 
-        *count = container.size();
-        *bufPtr = container;
+        if (*count == 0UL)
+        {
+            *count = container.size();
+        }
+
         return container;
     }
 
@@ -219,9 +225,13 @@ T DecodeArgContainer(const njson::json& obj_j, uint8_t* buf, size_t* count)
         "Void containers are not supported, either cast to a different type or do the conversion "
         "manually!");
 
-    const auto bufPtr = reinterpret_cast<T*>(buf);
-
-    if constexpr (is_serializable<P, njson::json(const P&)>::value)
+    if constexpr (is_container<P>::value)
+    {
+        size_t ncount = 0UL;
+        container.push_back(DecodeArgContainer<P>(obj_j, buf, &ncount));
+        *count += ncount;
+    }
+    else if constexpr (is_serializable<P, njson::json(const P&)>::value)
     {
         container.push_back(P::DeSerialize(obj_j));
     }
@@ -239,7 +249,7 @@ T DecodeArgContainer(const njson::json& obj_j, uint8_t* buf, size_t* count)
         container.push_back(DISPATCHER->DeSerialize<P>(obj_j));
     }
 
-    *bufPtr = container;
+    *count = 1UL;
     return container;
 }
 
@@ -378,23 +388,42 @@ void EncodeArgs(njson::json& args_j, const size_t count, const T& val)
     {
         using P = typename T::value_type;
 
-        for (const auto& v : val)
+        if constexpr(std::is_same_v<P, std::string>)
         {
-            if constexpr (is_serializable<P, njson::json(const P&)>::value)
-            {
-                args_j.push_back(P::Serialize(v));
-            }
-            else if constexpr (std::is_same_v<P, char>)
-            {
-                args_j.push_back(std::string(val, count));
-            }
-            else if constexpr (std::is_arithmetic_v<P> || std::is_same_v<P, std::string>)
+            for (const auto& v : val)
             {
                 args_j.push_back(v);
             }
-            else
+        }
+        else if constexpr(is_container<P>::value)
+        {
+            for (const auto& c : val)
             {
-                args_j.push_back(DISPATCHER->Serialize<P>(v));
+                auto sargs_j = njson::json::array();
+                EncodeArgs<P>(sargs_j, c.size(), c);
+                args_j.push_back(sargs_j);
+            }
+        }
+        else
+        {
+            for (const auto& v : val)
+            {
+                if constexpr (is_serializable<P, njson::json(const P&)>::value)
+                {
+                    args_j.push_back(P::Serialize(v));
+                }
+                else if constexpr (std::is_same_v<P, char>)
+                {
+                    args_j.push_back(std::string(val, count));
+                }
+                else if constexpr (std::is_arithmetic_v<P> || std::is_same_v<P, std::string>)
+                {
+                    args_j.push_back(v);
+                }
+                else
+                {
+                    args_j.push_back(DISPATCHER->Serialize<P>(v));
+                }
             }
         }
     }
@@ -410,7 +439,6 @@ void EncodeArgs(njson::json& args_j, const size_t count, const T& val)
         }
         else
         {
-            std::string dbg = typeid(T).name();
             args_j.push_back(DISPATCHER->Serialize<T>(val));
         }
     }
@@ -444,7 +472,7 @@ std::string RunCallBack(const njson::json& obj_j, std::function<R(Args...)> func
         buf.second = std::make_unique<unsigned char[]>(4096);
     }
 
-    std::tuple<Args...> args{ DecodeArg<std::remove_cv_t<std::remove_reference_t<Args>>>(
+    std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...> args{ DecodeArg<std::remove_cv_t<std::remove_reference_t<Args>>>(
         obj_j[count], buffers[count].second.get(), &(buffers[count].first), &count)... };
 
     const auto result = std::apply(func, args);

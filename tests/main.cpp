@@ -71,12 +71,19 @@ int main()
     argList.push_back(TestStruct::Serialize(ts));
     argList.push_back(45);
 
-    std::vector<std::string> vec = { "Hello world!", "Goodbye everybody!" };
+    std::vector<std::vector<std::string>> vec = { { "Hello world!", "Goodbye everybody!" }, { "Testing1", "Testing2" } };
     auto subArgList = nlohmann::json::array();
 
-    for (const auto& str : vec)
+    for (const auto& svec : vec)
     {
-        subArgList.push_back(str);
+        auto subSubArgList = nlohmann::json::array();
+
+        for (const auto& str : svec)
+        {
+            subSubArgList.push_back(str);
+        }
+
+        subArgList.push_back(subSubArgList);
     }
 
     argList.push_back(subArgList);
