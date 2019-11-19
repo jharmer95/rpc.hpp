@@ -249,7 +249,11 @@ T DecodeArgContainer(const njson::json& obj_j, uint8_t* buf, size_t* count)
         container.push_back(DISPATCHER->DeSerialize<P>(obj_j));
     }
 
-    *count = 1UL;
+    if (*count == 0UL)
+    {
+        *count = 1UL;
+    }
+
     return container;
 }
 
