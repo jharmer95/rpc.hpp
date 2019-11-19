@@ -461,6 +461,87 @@ void for_each_tuple(const std::tuple<Ts...>& tuple, F func)
     for_each_tuple(tuple, func, std::make_index_sequence<sizeof...(Ts)>());
 }
 
+// Support for other Windows (x86) calling conventions
+#if defined(_WIN32) && !defined(_WIN64)
+template<typename R, typename... Args>
+std::string RunCallBack(const njson::json& obj_j, std::function<R __stdcall(Args...)> func)
+{
+    unsigned count = 0;
+    std::array<std::pair<size_t, std::unique_ptr<unsigned char[]>>,
+        function_param_count_v<R, Args...>>
+        buffers;
+    for (auto& buf : buffers)
+    {
+        buf.first = 0UL;
+        buf.second = std::make_unique<unsigned char[]>(4096);
+    }
+    std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...> args{ DecodeArg<std::remove_cv_t<std::remove_reference_t<Args>>>(
+        obj_j[count], buffers[count].second.get(), &(buffers[count].first), &count)... };
+    const auto result = std::apply(func, args);
+    njson::json retObj_j;
+    retObj_j["result"] = result;
+    retObj_j["args"] = njson::json::array();
+    auto& argList = retObj_j["args"];
+    unsigned count2 = 0;
+    for_each_tuple(args, [&argList, &buffers, &count2](const auto& x) {
+        EncodeArgs(argList, buffers[count2++].first, x);
+        });
+    return retObj_j.dump();
+}
+
+template<typename R, typename... Args>
+std::string RunCallBack(const njson::json& obj_j, std::function<R __fastcall(Args...)> func)
+{
+    unsigned count = 0;
+    std::array<std::pair<size_t, std::unique_ptr<unsigned char[]>>,
+        function_param_count_v<R, Args...>>
+        buffers;
+    for (auto& buf : buffers)
+    {
+        buf.first = 0UL;
+        buf.second = std::make_unique<unsigned char[]>(4096);
+    }
+    std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...> args{ DecodeArg<std::remove_cv_t<std::remove_reference_t<Args>>>(
+        obj_j[count], buffers[count].second.get(), &(buffers[count].first), &count)... };
+    const auto result = std::apply(func, args);
+    njson::json retObj_j;
+    retObj_j["result"] = result;
+    retObj_j["args"] = njson::json::array();
+    auto& argList = retObj_j["args"];
+    unsigned count2 = 0;
+    for_each_tuple(args, [&argList, &buffers, &count2](const auto& x) {
+        EncodeArgs(argList, buffers[count2++].first, x);
+        });
+    return retObj_j.dump();
+}
+
+template<typename R, typename... Args>
+std::string RunCallBack(const njson::json& obj_j, std::function<R __vectorcall(Args...)> func)
+{
+    unsigned count = 0;
+    std::array<std::pair<size_t, std::unique_ptr<unsigned char[]>>,
+        function_param_count_v<R, Args...>>
+        buffers;
+    for (auto& buf : buffers)
+    {
+        buf.first = 0UL;
+        buf.second = std::make_unique<unsigned char[]>(4096);
+    }
+    std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...> args{ DecodeArg<std::remove_cv_t<std::remove_reference_t<Args>>>(
+        obj_j[count], buffers[count].second.get(), &(buffers[count].first), &count)... };
+    const auto result = std::apply(func, args);
+    njson::json retObj_j;
+    retObj_j["result"] = result;
+    retObj_j["args"] = njson::json::array();
+    auto& argList = retObj_j["args"];
+    unsigned count2 = 0;
+    for_each_tuple(args, [&argList, &buffers, &count2](const auto& x) {
+        EncodeArgs(argList, buffers[count2++].first, x);
+        });
+    return retObj_j.dump();
+}
+#endif
+
 template<typename R, typename... Args>
 std::string RunCallBack(const njson::json& obj_j, std::function<R(Args...)> func)
 {

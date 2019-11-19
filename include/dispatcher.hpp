@@ -111,7 +111,7 @@ public:
     }
 
     template<typename T>
-    static std::vector<T> DeSerialize(const nlohmann::json& obj_j)
+    static T DeSerialize(const nlohmann::json& obj_j)
     {
         throw std::logic_error("Type has not been provided with a DeSerialize method!");
     }
@@ -128,23 +128,15 @@ public:
     }
 
     template<>
-    static std::vector<TestStruct> DeSerialize<TestStruct>(const nlohmann::json& obj_j)
+    static TestStruct DeSerialize<TestStruct>(const nlohmann::json& obj_j)
     {
-        std::vector<TestStruct> vec;
-        const size_t sz = obj_j.is_array() ? obj_j.size() : 1;
-
-        for (size_t i = 0; i < sz; ++i)
-        {
-            TestStruct ts;
-            ts.age = obj_j["age"].get<int>();
-            const auto nmStr = obj_j["name"].get<std::string>();
-            std::copy(nmStr.begin(), nmStr.end(), ts.name);
-            ts.sector = obj_j["sector"].get<int>();
-            ts.userID = obj_j["userID"].get<unsigned long>();
-            vec.push_back(ts);
-        }
-
-        return vec;
+        TestStruct ts;
+        ts.age = obj_j["age"].get<int>();
+        const auto nmStr = obj_j["name"].get<std::string>();
+        std::copy(nmStr.begin(), nmStr.end(), ts.name);
+        ts.sector = obj_j["sector"].get<int>();
+        ts.userID = obj_j["userID"].get<unsigned long>();
+        return ts;
     }
 
 private:
