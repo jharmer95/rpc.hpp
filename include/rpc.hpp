@@ -189,6 +189,10 @@ T DecodeArgContainer(const njson::json& obj_j, uint8_t* buf, size_t* count)
                 container.push_back(P::DeSerialize(obj_j[i]));
             }
         }
+        else if constexpr (std::is_same_v<T, std::string>)
+        {
+            container.push_back(obj_j.get<std::string>());
+        }
         else if constexpr (std::is_arithmetic_v<P> || std::is_same_v<P, std::string>)
         {
             for (size_t i = 0; i < obj_j.size(); ++i)
@@ -314,7 +318,6 @@ T DecodeArgPtr(const njson::json& obj_j, uint8_t* buf, size_t* count)
     return bufPtr;
 }
 
-// TODO: Also support containers
 template<typename T>
 T DecodeArg(const njson::json& obj_j, uint8_t* buf, size_t* count, unsigned* paramNum)
 {
@@ -416,7 +419,7 @@ std::string RunCallBack(const njson::json& obj_j, std::function<R(Args...)> func
         buf.second = std::make_unique<unsigned char[]>(4096);
     }
 
-    std::tuple<Args...> args{ DecodeArg<Args>(
+    std::tuple<Args...> args{ DecodeArg<std::remove_cv_t<std::remove_reference_t<Args>>>(
         obj_j[count], buffers[count].second.get(), &(buffers[count].first), &count)... };
 
     const auto result = std::apply(func, args);
