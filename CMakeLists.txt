@@ -27,6 +27,6 @@ elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         -Wno-c++98-c++11-compat-binary-literal -Wno-c++98-c++11-c++14-compat -Wno-padded -Wno-missing-prototypes)
 endif()
 
-add_executable(rpc_test "${PROJECT_SOURCE_DIR}/tests/main.cpp")
+add_executable(rpc_test "${PROJECT_SOURCE_DIR}/tests/rpc.test.cpp")
 target_include_directories(rpc_test PRIVATE "${PROJECT_SOURCE_DIR}/include")
 target_compile_options(rpc_test PRIVATE ${FULL_WARNING})

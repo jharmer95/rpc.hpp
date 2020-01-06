@@ -2,12 +2,12 @@
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Header-only library for serialized RPC usage
 ///@version 0.1.0.0
-///@date 11-18-2019
+///@date 01-06-2020
 ///
 ///@copyright
 ///BSD 3-Clause License
 ///
-///Copyright (c) 2019, Jackson Harmer
+///Copyright (c) 2020, Jackson Harmer
 ///All rights reserved.
 ///
 ///Redistribution and use in source and binary forms, with or without
