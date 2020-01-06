@@ -116,7 +116,7 @@ TEST_CASE("ReadWriteMessages", "[]")
     }
 
     REQUIRE((rdMsg[0] == mesg1));
-    REQUIRE((rdMsg[2] == mesg2));
+    REQUIRE((rdMsg[1] == mesg2));
 
     delete[] rdMsg;
 }
