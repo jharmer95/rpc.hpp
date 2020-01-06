@@ -262,6 +262,11 @@ T DecodeArgPtr(const njson::json& obj_j, uint8_t* buf, size_t* count)
 {
     *count = 1UL;
 
+    if (obj_j.is_null())
+    {
+        return nullptr;
+    }
+
     if (obj_j.is_array())
     {
         // Multi-value pointer (array)
@@ -270,21 +275,20 @@ T DecodeArgPtr(const njson::json& obj_j, uint8_t* buf, size_t* count)
             "Void pointers are not supported, either cast to a different type or do the conversion "
             "manually!");
 
-        const auto bufPtr = reinterpret_cast<T>(buf);
-
         if constexpr (is_serializable<P, njson::json(const P&)>::value)
         {
             for (size_t i = 0; i < obj_j.size(); ++i)
             {
                 const auto value = P::DeSerialize(obj_j[i]);
-                bufPtr[i] = value;
+                memcpy(&buf[i * sizeof(value)], &value, sizeof(value));
             }
         }
         else if constexpr (std::is_arithmetic_v<P> || std::is_same_v<P, std::string>)
         {
             for (size_t i = 0; i < obj_j.size(); ++i)
             {
-                bufPtr[i] = obj_j[i].get<P>();
+                const auto value = obj_j[i].get<P>();
+                memcpy(&buf[i * sizeof(value)], &value, sizeof(value));
             }
         }
         else
@@ -292,12 +296,12 @@ T DecodeArgPtr(const njson::json& obj_j, uint8_t* buf, size_t* count)
             for (size_t i = 0; i < obj_j.size(); ++i)
             {
                 const auto value = DISPATCHER->DeSerialize<P>(obj_j[i]);
-                bufPtr[i] = value;
+                memcpy(&buf[i * sizeof(value)], &value, sizeof(value));
             }
         }
 
         *count = obj_j.size();
-        return bufPtr;
+        return reinterpret_cast<T>(buf);
     }
 
     // Single value pointer
@@ -306,30 +310,28 @@ T DecodeArgPtr(const njson::json& obj_j, uint8_t* buf, size_t* count)
         "Void pointers are not supported, either cast to a different type or do the conversion "
         "manually!");
 
-    const auto bufPtr = reinterpret_cast<T>(buf);
-
     if constexpr (is_serializable<P, njson::json(const P&)>::value)
     {
         const auto value = P::DeSerialize(obj_j);
-        *bufPtr = value;
+        memcpy(buf, &value, sizeof(value));
     }
     else if constexpr (std::is_same_v<P, char>)
     {
         const auto str = obj_j.get<std::string>();
-        std::copy(str.begin(), str.end(), bufPtr);
+        std::copy(str.begin(), str.end(), reinterpret_cast<T>(buf));
     }
     else if constexpr (std::is_arithmetic_v<P> || std::is_same_v<P, std::string>)
     {
         const auto value = obj_j.get<P>();
-        *bufPtr = value;
+        memcpy(buf, &value, sizeof(value));
     }
     else
     {
         const auto value = DISPATCHER->DeSerialize<P>(obj_j);
-        *bufPtr = value;
+        memcpy(buf, &value, sizeof(value));
     }
 
-    return bufPtr;
+    return reinterpret_cast<T>(buf);
 }
 
 template<typename T>
@@ -366,25 +368,39 @@ void EncodeArgs(njson::json& args_j, const size_t count, const T& val)
 {
     if constexpr (std::is_pointer_v<T>)
     {
-        using P = std::remove_pointer_t<T>;
-
-        for (size_t i = 0; i < count; ++i)
+        if (val == nullptr)
         {
-            if constexpr (is_serializable<P, njson::json(const P&)>::value)
+            args_j.push_back(njson::json{});
+        }
+        else
+        {
+            using P = std::remove_pointer_t<T>;
+
+            for (size_t i = 0; i < count; ++i)
             {
-                args_j.push_back(P::Serialize(val[i]));
-            }
-            else if constexpr (std::is_same_v<P, char>)
-            {
-                args_j.push_back(std::string(val, count));
-            }
-            else if constexpr (std::is_arithmetic_v<P> || std::is_same_v<P, std::string>)
-            {
-                args_j.push_back(val[i]);
-            }
-            else
-            {
-                args_j.push_back(DISPATCHER->Serialize<P>(val[i]));
+                if constexpr (is_serializable<P, njson::json(const P&)>::value)
+                {
+                    args_j.push_back(P::Serialize(val[i]));
+                }
+                else if constexpr (std::is_same_v<P, char>)
+                {
+                    if (val[0] == '\0')
+                    {
+                        args_j.push_back("");
+                    }
+                    else
+                    {
+                        args_j.push_back(std::string(val, count));
+                    }
+                }
+                else if constexpr (std::is_arithmetic_v<P> || std::is_same_v<P, std::string>)
+                {
+                    args_j.push_back(val[i]);
+                }
+                else
+                {
+                    args_j.push_back(DISPATCHER->Serialize<P>(val[i]));
+                }
             }
         }
     }
@@ -392,14 +408,14 @@ void EncodeArgs(njson::json& args_j, const size_t count, const T& val)
     {
         using P = typename T::value_type;
 
-        if constexpr(std::is_same_v<P, std::string>)
+        if constexpr (std::is_same_v<P, std::string>)
         {
             for (const auto& v : val)
             {
                 args_j.push_back(v);
             }
         }
-        else if constexpr(is_container<P>::value)
+        else if constexpr (is_container<P>::value)
         {
             for (const auto& c : val)
             {
@@ -470,22 +486,29 @@ std::string RunCallBack(const njson::json& obj_j, std::function<R __stdcall(Args
     std::array<std::pair<size_t, std::unique_ptr<unsigned char[]>>,
         function_param_count_v<R, Args...>>
         buffers;
+
     for (auto& buf : buffers)
     {
         buf.first = 0UL;
-        buf.second = std::make_unique<unsigned char[]>(4096);
+        buf.second = std::make_unique<unsigned char[]>(64U * 1024U);
     }
-    std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...> args{ DecodeArg<std::remove_cv_t<std::remove_reference_t<Args>>>(
-        obj_j[count], buffers[count].second.get(), &(buffers[count].first), &count)... };
+
+    std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...> args{
+        DecodeArg<std::remove_cv_t<std::remove_reference_t<Args>>>(
+            obj_j[count], buffers[count].second.get(), &(buffers[count].first), &count)...
+    };
+
     const auto result = std::apply(func, args);
     njson::json retObj_j;
     retObj_j["result"] = result;
     retObj_j["args"] = njson::json::array();
     auto& argList = retObj_j["args"];
     unsigned count2 = 0;
+
     for_each_tuple(args, [&argList, &buffers, &count2](const auto& x) {
         EncodeArgs(argList, buffers[count2++].first, x);
-        });
+    });
+
     return retObj_j.dump();
 }
 
@@ -496,22 +519,29 @@ std::string RunCallBack(const njson::json& obj_j, std::function<R __fastcall(Arg
     std::array<std::pair<size_t, std::unique_ptr<unsigned char[]>>,
         function_param_count_v<R, Args...>>
         buffers;
+
     for (auto& buf : buffers)
     {
         buf.first = 0UL;
-        buf.second = std::make_unique<unsigned char[]>(4096);
+        buf.second = std::make_unique<unsigned char[]>(64U * 1024U);
     }
-    std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...> args{ DecodeArg<std::remove_cv_t<std::remove_reference_t<Args>>>(
-        obj_j[count], buffers[count].second.get(), &(buffers[count].first), &count)... };
+
+    std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...> args{
+        DecodeArg<std::remove_cv_t<std::remove_reference_t<Args>>>(
+            obj_j[count], buffers[count].second.get(), &(buffers[count].first), &count)...
+    };
+
     const auto result = std::apply(func, args);
     njson::json retObj_j;
     retObj_j["result"] = result;
     retObj_j["args"] = njson::json::array();
     auto& argList = retObj_j["args"];
     unsigned count2 = 0;
+
     for_each_tuple(args, [&argList, &buffers, &count2](const auto& x) {
         EncodeArgs(argList, buffers[count2++].first, x);
-        });
+    });
+
     return retObj_j.dump();
 }
 
@@ -522,22 +552,29 @@ std::string RunCallBack(const njson::json& obj_j, std::function<R __vectorcall(A
     std::array<std::pair<size_t, std::unique_ptr<unsigned char[]>>,
         function_param_count_v<R, Args...>>
         buffers;
+
     for (auto& buf : buffers)
     {
         buf.first = 0UL;
-        buf.second = std::make_unique<unsigned char[]>(4096);
+        buf.second = std::make_unique<unsigned char[]>(64U * 1024U);
     }
-    std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...> args{ DecodeArg<std::remove_cv_t<std::remove_reference_t<Args>>>(
-        obj_j[count], buffers[count].second.get(), &(buffers[count].first), &count)... };
+
+    std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...> args{
+        DecodeArg<std::remove_cv_t<std::remove_reference_t<Args>>>(
+            obj_j[count], buffers[count].second.get(), &(buffers[count].first), &count)...
+    };
+
     const auto result = std::apply(func, args);
     njson::json retObj_j;
     retObj_j["result"] = result;
     retObj_j["args"] = njson::json::array();
     auto& argList = retObj_j["args"];
     unsigned count2 = 0;
+
     for_each_tuple(args, [&argList, &buffers, &count2](const auto& x) {
         EncodeArgs(argList, buffers[count2++].first, x);
-        });
+    });
+
     return retObj_j.dump();
 }
 #endif
@@ -554,11 +591,13 @@ std::string RunCallBack(const njson::json& obj_j, std::function<R(Args...)> func
     for (auto& buf : buffers)
     {
         buf.first = 0UL;
-        buf.second = std::make_unique<unsigned char[]>(4096);
+        buf.second = std::make_unique<unsigned char[]>(64U * 1024U);
     }
 
-    std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...> args{ DecodeArg<std::remove_cv_t<std::remove_reference_t<Args>>>(
-        obj_j[count], buffers[count].second.get(), &(buffers[count].first), &count)... };
+    std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...> args{
+        DecodeArg<std::remove_cv_t<std::remove_reference_t<Args>>>(
+            obj_j[count], buffers[count].second.get(), &(buffers[count].first), &count)...
+    };
 
     const auto result = std::apply(func, args);
 
