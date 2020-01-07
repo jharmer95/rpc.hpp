@@ -1,24 +1,17 @@
 ---
 name: ghaction-cmake
 on: push
-jobs:
-  pre-build:
-    runs-on: ubuntu-latest
-    steps:
-      - run: mkdir /usr/include/catch2
-      - run: mkdir /usr/include/nlohmann
-      - uses: wei/curl@v1.1.1
-        with:
-          args: https://github.com/catchorg/Catch2/releases/download/v2.11.1/catch.hpp /usr/include/catch2/catch.hpp
-      - uses: wei/curl@v1.1.1
-        with:
-          args: https://github.com/nlohmann/json/releases/download/v3.7.3/json.hpp /usr/include/nlohmann/json.hpp        
+jobs:      
   build:
     strategy:
       matrix:
         cc: [ gcc, clang ]
     runs-on: ubuntu-latest
     steps:
+      - run: sudo mkdir /usr/include/catch2
+      - run: sudo mkdir /usr/include/nlohmann
+      - run: sudo wget https://github.com/catchorg/Catch2/releases/download/v2.11.1/catch.hpp -O /usr/include/catch2/catch.hpp
+      - run: sudo wget https://github.com/nlohmann/json/releases/download/v3.7.3/json.hpp -O /usr/include/nlohmann/json.hpp
       - uses: actions/checkout@master
       - uses: docker://lpenz/ghaction-cmake:latest
         with:
