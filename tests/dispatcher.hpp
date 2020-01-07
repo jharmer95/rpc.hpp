@@ -38,7 +38,7 @@
 
 #pragma once
 
-#include <nlohmann/json/json.hpp>
+#include <nlohmann/json.hpp>
 
 #include <fstream>
 #include <functional>
@@ -74,19 +74,19 @@ public:
     std::string Run(const std::string& funcName, const nlohmann::json& obj_j);
 
     template<typename T>
-    static nlohmann::json Serialize(const T& obj)
+    static nlohmann::json Serialize(const T&)
     {
         throw std::logic_error("Type has not been provided with a Serialize method!");
     }
 
     template<typename T>
-    static T DeSerialize(const nlohmann::json& obj_j)
+    static T DeSerialize(const nlohmann::json&)
     {
         throw std::logic_error("Type has not been provided with a DeSerialize method!");
     }
 
     template<>
-    static nlohmann::json Serialize<TestMessage>(const TestMessage& mesg)
+    nlohmann::json Serialize<TestMessage>(const TestMessage& mesg)
     {
         nlohmann::json obj_j;
         obj_j["ID"] = mesg.ID;
@@ -108,7 +108,7 @@ public:
     }
 
     template<>
-    static TestMessage DeSerialize<TestMessage>(const nlohmann::json& obj_j)
+    TestMessage DeSerialize<TestMessage>(const nlohmann::json& obj_j)
     {
         TestMessage mesg;
         mesg.ID = obj_j["ID"].get<int>();
@@ -127,31 +127,38 @@ private:
 
 int ReadMessages(TestMessage* mesgBuf, int* numMesgs)
 {
-    // TODO: Remove read lines (capture non-used lines and write them to bus.txt)
     std::ifstream file_in("bus.txt");
+    std::stringstream ss;
 
     std::string s;
 
-    for (int i = 0; i < *numMesgs; ++i)
+    int i = 0;
+
+    try
     {
-        try
+        while (file_in >> s)
         {
-            if (file_in >> s)
+            if (i < *numMesgs)
             {
-                mesgBuf[i] = Dispatcher::DeSerialize<TestMessage>(nlohmann::json::parse(s));
+                mesgBuf[i++] = Dispatcher::DeSerialize<TestMessage>(nlohmann::json::parse(s));
             }
             else
             {
-                throw 1;
+                ss << s << '\n';
             }
         }
-        catch (...)
-        {
-            *numMesgs = i;
-            return 1;
-        }
+    }
+    catch (...)
+    {
+        *numMesgs = i;
+        return 1;
     }
 
+    file_in.close();
+
+    std::ofstream file_out("bus.txt");
+
+    file_out << ss.str();
     return 0;
 }
 

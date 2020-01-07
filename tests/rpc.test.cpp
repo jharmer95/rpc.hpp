@@ -51,6 +51,8 @@ std::string Dispatcher::Run(const std::string& funcName, const nlohmann::json& o
     {
         return rpc::RunCallBack(obj_j, m_readMessages);
     }
+
+    throw std::runtime_error("RPC error: Called function: \"" + funcName + "\" not found!");
 }
 
 TEST_CASE("ReadWriteMessages", "[]")
@@ -61,7 +63,7 @@ TEST_CASE("ReadWriteMessages", "[]")
     mesg1.Flag2 = false;
     const std::vector<int> md1 = { 10, 20, 30, 40, 50 };
     std::copy(md1.begin(), md1.end(), mesg1.Data);
-    mesg1.DataSize = md1.size();
+    mesg1.DataSize = static_cast<uint8_t>(md1.size());
 
     TestMessage mesg2;
     mesg2.ID = 61;
@@ -69,7 +71,7 @@ TEST_CASE("ReadWriteMessages", "[]")
     mesg2.Flag2 = true;
     const std::vector<int> md2 = { 33, 44, 55 };
     std::copy(md2.begin(), md2.end(), mesg2.Data);
-    mesg2.DataSize = md2.size();
+    mesg2.DataSize = static_cast<uint8_t>(md2.size());
 
     nlohmann::json send_j;
     send_j["args"] = nlohmann::json::array();
@@ -85,7 +87,8 @@ TEST_CASE("ReadWriteMessages", "[]")
 
     const auto retMsg = rpc::RunFromJSON(send_j);
 
-    const auto rdMsg = new TestMessage[3];
+    const size_t numMesg = 2;
+    const auto rdMsg = std::make_unique<TestMessage[]>(numMesg);
 
     nlohmann::json recv_j;
     recv_j["function"] = "ReadMessages";
@@ -94,29 +97,27 @@ TEST_CASE("ReadWriteMessages", "[]")
 
     nlohmann::json subArgList = nlohmann::json::array();
 
-    for (int i = 0; i < 3; ++i)
+    for (size_t i = 0; i < numMesg; ++i)
     {
         subArgList.push_back(Dispatcher::Serialize<TestMessage>(rdMsg[i]));
     }
 
     argList2.push_back(subArgList);
-    argList2.push_back(3);
+    argList2.push_back(numMesg);
 
     const auto retMsg2 = rpc::RunFromJSON(recv_j);
     const auto retData = nlohmann::json::parse(retMsg2)["args"];
 
-    for (int i = 0; i < retData.back().get<int>(); ++i)
+    for (size_t i = 0; i < retData.back().get<size_t>(); ++i)
     {
         rdMsg[i] = Dispatcher::DeSerialize<TestMessage>(retData.at(i));
     }
 
-    for (int i = 0; i < 3; ++i)
+    for (size_t i = 0; i < numMesg; ++i)
     {
         std::cout << rdMsg[i].ID << '\n';
     }
 
     REQUIRE((rdMsg[0] == mesg1));
     REQUIRE((rdMsg[1] == mesg2));
-
-    delete[] rdMsg;
 }

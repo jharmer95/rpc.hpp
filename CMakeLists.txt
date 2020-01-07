@@ -24,9 +24,9 @@ elseif (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
         -Wduplicated-branches -Wduplicated-cond -Wmisleading-indentation -Wno-missing-prototypes)
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     set(FULL_WARNING -Weverything -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-c++98-c++11-compat
-        -Wno-c++98-c++11-compat-binary-literal -Wno-c++98-c++11-c++14-compat -Wno-padded -Wno-missing-prototypes)
+        -Wno-c++98-c++11-compat-binary-literal -Wno-c++98-c++11-c++14-compat -Wno-padded -Wno-missing-prototypes -Wno-exit-time-destructors)
 endif()
 
 add_executable(rpc_test "${PROJECT_SOURCE_DIR}/tests/rpc.test.cpp")
-target_include_directories(rpc_test PRIVATE "${PROJECT_SOURCE_DIR}/include")
+target_include_directories(rpc_test PRIVATE "${PROJECT_SOURCE_DIR}/include" "${PROJECT_SOURCE_DIR}/tests")
 target_compile_options(rpc_test PRIVATE ${FULL_WARNING})

@@ -40,7 +40,7 @@
 
 #include "dispatcher.hpp"
 
-#include <nlohmann/json/json.hpp>
+#include <nlohmann/json.hpp>
 
 #include <array>
 #include <cstdint>
@@ -81,7 +81,11 @@ using function_args_t = typename function_traits<std::function<R(Args...)>>::tem
 
 namespace rpc
 {
-std::shared_ptr<Dispatcher> DISPATCHER = std::make_shared<Dispatcher>();
+Dispatcher& DISPATCHER()
+{
+    static Dispatcher d;
+    return d;
+}
 
 template<typename, typename T>
 struct is_serializable
@@ -207,7 +211,7 @@ T DecodeArgContainer(const njson::json& obj_j, uint8_t* buf, size_t* count)
         {
             for (size_t i = 0; i < obj_j.size(); ++i)
             {
-                container.push_back(DISPATCHER->DeSerialize<P>(obj_j[i]));
+                container.push_back(DISPATCHER().DeSerialize<P>(obj_j[i]));
             }
         }
 
@@ -246,7 +250,7 @@ T DecodeArgContainer(const njson::json& obj_j, uint8_t* buf, size_t* count)
     }
     else
     {
-        container.push_back(DISPATCHER->DeSerialize<P>(obj_j));
+        container.push_back(DISPATCHER().DeSerialize<P>(obj_j));
     }
 
     if (*count == 0UL)
@@ -295,7 +299,7 @@ T DecodeArgPtr(const njson::json& obj_j, uint8_t* buf, size_t* count)
         {
             for (size_t i = 0; i < obj_j.size(); ++i)
             {
-                const auto value = DISPATCHER->DeSerialize<P>(obj_j[i]);
+                const auto value = DISPATCHER().DeSerialize<P>(obj_j[i]);
                 memcpy(&buf[i * sizeof(value)], &value, sizeof(value));
             }
         }
@@ -327,7 +331,7 @@ T DecodeArgPtr(const njson::json& obj_j, uint8_t* buf, size_t* count)
     }
     else
     {
-        const auto value = DISPATCHER->DeSerialize<P>(obj_j);
+        const auto value = DISPATCHER().DeSerialize<P>(obj_j);
         memcpy(buf, &value, sizeof(value));
     }
 
@@ -359,7 +363,7 @@ T DecodeArg(const njson::json& obj_j, uint8_t* buf, size_t* count, unsigned* par
     }
     else
     {
-        return DISPATCHER->DeSerialize<T>(obj_j);
+        return DISPATCHER().DeSerialize<T>(obj_j);
     }
 }
 
@@ -399,7 +403,7 @@ void EncodeArgs(njson::json& args_j, const size_t count, const T& val)
                 }
                 else
                 {
-                    args_j.push_back(DISPATCHER->Serialize<P>(val[i]));
+                    args_j.push_back(DISPATCHER().Serialize<P>(val[i]));
                 }
             }
         }
@@ -410,10 +414,7 @@ void EncodeArgs(njson::json& args_j, const size_t count, const T& val)
 
         if constexpr (std::is_same_v<P, std::string>)
         {
-            for (const auto& v : val)
-            {
-                args_j.push_back(v);
-            }
+            std::copy(val.begin(), val.end(), args_j.begin());
         }
         else if constexpr (is_container<P>::value)
         {
@@ -442,7 +443,7 @@ void EncodeArgs(njson::json& args_j, const size_t count, const T& val)
                 }
                 else
                 {
-                    args_j.push_back(DISPATCHER->Serialize<P>(v));
+                    args_j.push_back(DISPATCHER().Serialize<P>(v));
                 }
             }
         }
@@ -459,7 +460,7 @@ void EncodeArgs(njson::json& args_j, const size_t count, const T& val)
         }
         else
         {
-            args_j.push_back(DISPATCHER->Serialize<T>(val));
+            args_j.push_back(DISPATCHER().Serialize<T>(val));
         }
     }
 }
@@ -623,7 +624,7 @@ std::string RunFromJSON(const njson::json& obj_j)
 
     try
     {
-        return DISPATCHER->Run(funcName, argList);
+        return DISPATCHER().Run(funcName, argList);
     }
     catch (std::exception& ex)
     {
