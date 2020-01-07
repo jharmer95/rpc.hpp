@@ -14,6 +14,8 @@ jobs:
           cc: ${{ matrix.cc }}
   coverage:
     runs-on: ubuntu-latest
+    env:
+      CODECOV_TOKEN: "92697d30-ba32-420f-a516-a40d6065cbba"
     steps:
       - uses: actions/checkout@master
       - uses: docker://lpenz/ghaction-cmake:latest
