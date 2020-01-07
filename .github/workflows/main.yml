@@ -6,6 +6,8 @@ jobs:
     strategy:
       matrix:
         cc: [ gcc, clang ]
+        cflags:
+          - -isystem /usr/include
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master
@@ -16,6 +18,7 @@ jobs:
       - uses: docker://lpenz/ghaction-cmake:latest
         with:
           cc: ${{ matrix.cc }}
+          cflags: ${{ matrix.cflags }}
   # coverage:
   #   runs-on: ubuntu-latest
   #   steps:
