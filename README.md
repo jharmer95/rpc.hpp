@@ -14,9 +14,9 @@ A simple header-only library for supporting remote procedure calls using a varie
 - Easy to use
     - Can be used on your server in 4 simple steps (see [EXAMPLES](EXAMPLES.md) for details):
         1. `#include rpc.hpp`
-        2. Add public `Serialize()` and `DeSerialize()` functions to custom types that will be parameters
-        3. Create a `Dispatcher` class
-        4. Call `RunFromJSON` from your code
+        2. Implement the `rpc::dispatch` function
+        3. Add `Serialize()` and `DeSerialize()` functions to your classes or provide template specializations for the `rpc::Serialize<T>()` and `rpc::DeSerialize<T>()` functions
+        4. Call `rpc::RunFromJSON()` from your code
     - Does all of the parameter parsing for you
 
 ### Upcoming Features
