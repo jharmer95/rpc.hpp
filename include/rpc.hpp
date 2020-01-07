@@ -38,8 +38,6 @@
 
 #pragma once
 
-#include "dispatcher.hpp"
-
 #include <nlohmann/json.hpp>
 
 #include <array>
@@ -79,13 +77,24 @@ using function_result_t = typename function_traits<std::function<R(Args...)>>::t
 template<size_t i, typename R, typename... Args>
 using function_args_t = typename function_traits<std::function<R(Args...)>>::template arg<i>::type;
 
+template <typename T>
+class Serializer
+{
+public:
+    static njson::json Serialize(const T& obj_j)
+    {
+        throw std::logic_error("Type has not been provided with a Serialize method!");
+    }
+
+    static T DeSerialize(const njson::json& obj_j)
+    {
+        throw std::logic_error("Type has not been provided with a DeSerialize method!");
+    }
+};
+
 namespace rpc
 {
-Dispatcher& DISPATCHER()
-{
-    static Dispatcher d;
-    return d;
-}
+extern std::string dispatch(const std::string& funcName, const njson::json& obj_j);
 
 template<typename, typename T>
 struct is_serializable
@@ -211,7 +220,7 @@ T DecodeArgContainer(const njson::json& obj_j, uint8_t* buf, size_t* count)
         {
             for (size_t i = 0; i < obj_j.size(); ++i)
             {
-                container.push_back(DISPATCHER().DeSerialize<P>(obj_j[i]));
+                container.push_back(Serializer<P>::DeSerialize(obj_j[i]));
             }
         }
 
@@ -250,7 +259,7 @@ T DecodeArgContainer(const njson::json& obj_j, uint8_t* buf, size_t* count)
     }
     else
     {
-        container.push_back(DISPATCHER().DeSerialize<P>(obj_j));
+        container.push_back(Serializer<P>::DeSerialize(obj_j));
     }
 
     if (*count == 0UL)
@@ -299,7 +308,7 @@ T DecodeArgPtr(const njson::json& obj_j, uint8_t* buf, size_t* count)
         {
             for (size_t i = 0; i < obj_j.size(); ++i)
             {
-                const auto value = DISPATCHER().DeSerialize<P>(obj_j[i]);
+                const auto value = Serializer<P>::DeSerialize(obj_j[i]);
                 memcpy(&buf[i * sizeof(value)], &value, sizeof(value));
             }
         }
@@ -331,7 +340,7 @@ T DecodeArgPtr(const njson::json& obj_j, uint8_t* buf, size_t* count)
     }
     else
     {
-        const auto value = DISPATCHER().DeSerialize<P>(obj_j);
+        const auto value = Serializer<P>::DeSerialize(obj_j);
         memcpy(buf, &value, sizeof(value));
     }
 
@@ -363,7 +372,7 @@ T DecodeArg(const njson::json& obj_j, uint8_t* buf, size_t* count, unsigned* par
     }
     else
     {
-        return DISPATCHER().DeSerialize<T>(obj_j);
+        return Serializer<T>::DeSerialize(obj_j);
     }
 }
 
@@ -403,7 +412,7 @@ void EncodeArgs(njson::json& args_j, const size_t count, const T& val)
                 }
                 else
                 {
-                    args_j.push_back(DISPATCHER().Serialize<P>(val[i]));
+                    args_j.push_back(Serializer<P>::Serialize(val[i]));
                 }
             }
         }
@@ -443,7 +452,7 @@ void EncodeArgs(njson::json& args_j, const size_t count, const T& val)
                 }
                 else
                 {
-                    args_j.push_back(DISPATCHER().Serialize<P>(v));
+                    args_j.push_back(Serializer<P>::Serialize(v));
                 }
             }
         }
@@ -460,7 +469,7 @@ void EncodeArgs(njson::json& args_j, const size_t count, const T& val)
         }
         else
         {
-            args_j.push_back(DISPATCHER().Serialize<T>(val));
+            args_j.push_back(Serializer<T>::Serialize(val));
         }
     }
 }
@@ -482,6 +491,39 @@ void for_each_tuple(const std::tuple<Ts...>& tuple, F func)
 #if defined(_WIN32) && !defined(_WIN64)
 template<typename R, typename... Args>
 std::string RunCallBack(const njson::json& obj_j, std::function<R __stdcall(Args...)> func)
+{
+    unsigned count = 0;
+    std::array<std::pair<size_t, std::unique_ptr<unsigned char[]>>,
+        function_param_count_v<R, Args...>>
+        buffers;
+
+    for (auto& buf : buffers)
+    {
+        buf.first = 0UL;
+        buf.second = std::make_unique<unsigned char[]>(64U * 1024U);
+    }
+
+    std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...> args{
+        DecodeArg<std::remove_cv_t<std::remove_reference_t<Args>>>(
+            obj_j[count], buffers[count].second.get(), &(buffers[count].first), &count)...
+    };
+
+    const auto result = std::apply(func, args);
+    njson::json retObj_j;
+    retObj_j["result"] = result;
+    retObj_j["args"] = njson::json::array();
+    auto& argList = retObj_j["args"];
+    unsigned count2 = 0;
+
+    for_each_tuple(args, [&argList, &buffers, &count2](const auto& x) {
+        EncodeArgs(argList, buffers[count2++].first, x);
+    });
+
+    return retObj_j.dump();
+}
+
+template<typename R, typename... Args>
+std::string RunCallBack(const njson::json& obj_j, R (__stdcall *func)(Args...))
 {
     unsigned count = 0;
     std::array<std::pair<size_t, std::unique_ptr<unsigned char[]>>,
@@ -547,7 +589,73 @@ std::string RunCallBack(const njson::json& obj_j, std::function<R __fastcall(Arg
 }
 
 template<typename R, typename... Args>
+std::string RunCallBack(const njson::json& obj_j, R (__fastcall *func)(Args...))
+{
+    unsigned count = 0;
+    std::array<std::pair<size_t, std::unique_ptr<unsigned char[]>>,
+        function_param_count_v<R, Args...>>
+        buffers;
+
+    for (auto& buf : buffers)
+    {
+        buf.first = 0UL;
+        buf.second = std::make_unique<unsigned char[]>(64U * 1024U);
+    }
+
+    std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...> args{
+        DecodeArg<std::remove_cv_t<std::remove_reference_t<Args>>>(
+            obj_j[count], buffers[count].second.get(), &(buffers[count].first), &count)...
+    };
+
+    const auto result = std::apply(func, args);
+    njson::json retObj_j;
+    retObj_j["result"] = result;
+    retObj_j["args"] = njson::json::array();
+    auto& argList = retObj_j["args"];
+    unsigned count2 = 0;
+
+    for_each_tuple(args, [&argList, &buffers, &count2](const auto& x) {
+        EncodeArgs(argList, buffers[count2++].first, x);
+    });
+
+    return retObj_j.dump();
+}
+
+template<typename R, typename... Args>
 std::string RunCallBack(const njson::json& obj_j, std::function<R __vectorcall(Args...)> func)
+{
+    unsigned count = 0;
+    std::array<std::pair<size_t, std::unique_ptr<unsigned char[]>>,
+        function_param_count_v<R, Args...>>
+        buffers;
+
+    for (auto& buf : buffers)
+    {
+        buf.first = 0UL;
+        buf.second = std::make_unique<unsigned char[]>(64U * 1024U);
+    }
+
+    std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...> args{
+        DecodeArg<std::remove_cv_t<std::remove_reference_t<Args>>>(
+            obj_j[count], buffers[count].second.get(), &(buffers[count].first), &count)...
+    };
+
+    const auto result = std::apply(func, args);
+    njson::json retObj_j;
+    retObj_j["result"] = result;
+    retObj_j["args"] = njson::json::array();
+    auto& argList = retObj_j["args"];
+    unsigned count2 = 0;
+
+    for_each_tuple(args, [&argList, &buffers, &count2](const auto& x) {
+        EncodeArgs(argList, buffers[count2++].first, x);
+    });
+
+    return retObj_j.dump();
+}
+
+template<typename R, typename... Args>
+std::string RunCallBack(const njson::json& obj_j, R (__vectorcall *func)(Args...))
 {
     unsigned count = 0;
     std::array<std::pair<size_t, std::unique_ptr<unsigned char[]>>,
@@ -617,6 +725,43 @@ std::string RunCallBack(const njson::json& obj_j, std::function<R(Args...)> func
     return retObj_j.dump();
 }
 
+template<typename R, typename... Args>
+std::string RunCallBack(const njson::json& obj_j, R (*func)(Args...))
+{
+    unsigned count = 0;
+
+    std::array<std::pair<size_t, std::unique_ptr<unsigned char[]>>,
+        function_param_count_v<R, Args...>>
+        buffers;
+
+    for (auto& buf : buffers)
+    {
+        buf.first = 0UL;
+        buf.second = std::make_unique<unsigned char[]>(64U * 1024U);
+    }
+
+    std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...> args{
+        DecodeArg<std::remove_cv_t<std::remove_reference_t<Args>>>(
+            obj_j[count], buffers[count].second.get(), &(buffers[count].first), &count)...
+    };
+
+    const auto result = std::apply(func, args);
+
+    njson::json retObj_j;
+
+    retObj_j["result"] = result;
+    retObj_j["args"] = njson::json::array();
+    auto& argList = retObj_j["args"];
+
+    unsigned count2 = 0;
+
+    for_each_tuple(args, [&argList, &buffers, &count2](const auto& x) {
+        EncodeArgs(argList, buffers[count2++].first, x);
+    });
+
+    return retObj_j.dump();
+}
+
 std::string RunFromJSON(const njson::json& obj_j)
 {
     const auto funcName = obj_j["function"].get<std::string>();
@@ -624,7 +769,7 @@ std::string RunFromJSON(const njson::json& obj_j)
 
     try
     {
-        return DISPATCHER().Run(funcName, argList);
+        return dispatch(funcName, argList);
     }
     catch (std::exception& ex)
     {

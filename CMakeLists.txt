@@ -21,10 +21,10 @@ elseif (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
     set(FULL_WARNING -Wall -Wextra -Wpedantic -Wshadow -Wnon-virtual-dtor -Wold-style-cast
         -Wcast-align -Wunused -Woverloaded-virtual -Wconversion -Wsign-conversion
         -Wnull-dereference -Wdouble-promotion -Wformat=2 -Weffc++ -Wuseless-cast -Wlogical-op
-        -Wduplicated-branches -Wduplicated-cond -Wmisleading-indentation -Wno-missing-prototypes)
+        -Wduplicated-branches -Wduplicated-cond -Wmisleading-indentation)
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     set(FULL_WARNING -Weverything -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-c++98-c++11-compat
-        -Wno-c++98-c++11-compat-binary-literal -Wno-c++98-c++11-c++14-compat -Wno-padded -Wno-missing-prototypes -Wno-exit-time-destructors)
+        -Wno-c++98-c++11-compat-binary-literal -Wno-c++98-c++11-c++14-compat -Wno-padded -Wno-exit-time-destructors)
 endif()
 
 add_executable(rpc_test "${PROJECT_SOURCE_DIR}/tests/rpc.test.cpp")

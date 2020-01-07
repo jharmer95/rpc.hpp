@@ -1,8 +1,8 @@
-///@file dispatcher.hpp
+///@file rpc.test.hpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Example dispatcher.hpp file for use with the example main.cpp file
 ///@version 0.1.0.0
-///@date 01-06-2020
+///@date 01-07-2020
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -38,6 +38,8 @@
 
 #pragma once
 
+#include "rpc.hpp"
+
 #include <nlohmann/json.hpp>
 
 #include <fstream>
@@ -68,62 +70,40 @@ struct TestMessage
 int ReadMessages(TestMessage* mesgBuf, int* numMesgs);
 int WriteMessages(TestMessage* mesgBuf, int* numMesgs);
 
-class Dispatcher
+template <>
+nlohmann::json Serializer<TestMessage>::Serialize(const TestMessage& mesg)
 {
-public:
-    std::string Run(const std::string& funcName, const nlohmann::json& obj_j);
+    nlohmann::json obj_j;
+    obj_j["ID"] = mesg.ID;
+    obj_j["Flag1"] = mesg.Flag1;
+    obj_j["Flag2"] = mesg.Flag2;
+    obj_j["DataSize"] = mesg.DataSize;
 
-    template<typename T>
-    static nlohmann::json Serialize(const T&)
+    if (mesg.DataSize > 0)
     {
-        throw std::logic_error("Type has not been provided with a Serialize method!");
+        std::vector<int> tmpVec(mesg.Data, mesg.Data + mesg.DataSize);
+        obj_j["Data"] = tmpVec;
+    }
+    else
+    {
+        obj_j["Data"] = nlohmann::json::array();
     }
 
-    template<typename T>
-    static T DeSerialize(const nlohmann::json&)
-    {
-        throw std::logic_error("Type has not been provided with a DeSerialize method!");
-    }
+    return obj_j;
+}
 
-    template<>
-    nlohmann::json Serialize<TestMessage>(const TestMessage& mesg)
-    {
-        nlohmann::json obj_j;
-        obj_j["ID"] = mesg.ID;
-        obj_j["Flag1"] = mesg.Flag1;
-        obj_j["Flag2"] = mesg.Flag2;
-        obj_j["DataSize"] = mesg.DataSize;
-
-        if (mesg.DataSize > 0)
-		{
-			std::vector<int> tmpVec(mesg.Data, mesg.Data + mesg.DataSize);
-			obj_j["Data"] = tmpVec;
-		}
-		else
-		{
-			obj_j["Data"] = nlohmann::json::array();
-		}
-
-        return obj_j;
-    }
-
-    template<>
-    TestMessage DeSerialize<TestMessage>(const nlohmann::json& obj_j)
-    {
-        TestMessage mesg;
-        mesg.ID = obj_j["ID"].get<int>();
-        mesg.Flag1 = obj_j["Flag1"].get<bool>();
-        mesg.Flag2 = obj_j["Flag2"].get<bool>();
-        mesg.DataSize = obj_j["DataSize"].get<uint8_t>();
-        const auto sData = obj_j["Data"].get<std::vector<int>>();
-		std::copy(sData.begin(), sData.begin() + mesg.DataSize, mesg.Data);
-        return mesg;
-    }
-
-private:
-    const std::function<int(TestMessage*, int*)> m_readMessages = ReadMessages;
-    const std::function<int(TestMessage*, int*)> m_writeMessages = WriteMessages;
-};
+template <>
+TestMessage Serializer<TestMessage>::DeSerialize(const nlohmann::json& obj_j)
+{
+    TestMessage mesg;
+    mesg.ID = obj_j["ID"].get<int>();
+    mesg.Flag1 = obj_j["Flag1"].get<bool>();
+    mesg.Flag2 = obj_j["Flag2"].get<bool>();
+    mesg.DataSize = obj_j["DataSize"].get<uint8_t>();
+    const auto sData = obj_j["Data"].get<std::vector<int>>();
+    std::copy(sData.begin(), sData.begin() + mesg.DataSize, mesg.Data);
+    return mesg;
+}
 
 int ReadMessages(TestMessage* mesgBuf, int* numMesgs)
 {
@@ -131,7 +111,6 @@ int ReadMessages(TestMessage* mesgBuf, int* numMesgs)
     std::stringstream ss;
 
     std::string s;
-
     int i = 0;
 
     try
@@ -140,7 +119,7 @@ int ReadMessages(TestMessage* mesgBuf, int* numMesgs)
         {
             if (i < *numMesgs)
             {
-                mesgBuf[i++] = Dispatcher::DeSerialize<TestMessage>(nlohmann::json::parse(s));
+                mesgBuf[i++] = Serializer<TestMessage>::DeSerialize(nlohmann::json::parse(s));
             }
             else
             {
@@ -170,7 +149,7 @@ int WriteMessages(TestMessage* mesgBuf, int* numMesgs)
     {
         try
         {
-            file_out << Dispatcher::Serialize<TestMessage>(mesgBuf[i]).dump() << '\n';
+            file_out << Serializer<TestMessage>::Serialize(mesgBuf[i]).dump() << '\n';
         }
         catch (...)
         {

@@ -39,17 +39,17 @@
 #define CATCH_CONFIG_MAIN
 #include <catch2/catch.hpp>
 
-#include "rpc.hpp"
+#include "rpc.test.hpp"
 
-std::string Dispatcher::Run(const std::string& funcName, const nlohmann::json& obj_j)
+std::string rpc::dispatch(const std::string& funcName, const nlohmann::json& obj_j)
 {
     if (funcName == "WriteMessages")
     {
-        return rpc::RunCallBack(obj_j, m_writeMessages);
+        return rpc::RunCallBack(obj_j, WriteMessages);
     }
     else if (funcName == "ReadMessages")
     {
-        return rpc::RunCallBack(obj_j, m_readMessages);
+        return rpc::RunCallBack(obj_j, ReadMessages);
     }
 
     throw std::runtime_error("RPC error: Called function: \"" + funcName + "\" not found!");
@@ -80,8 +80,8 @@ TEST_CASE("ReadWriteMessages", "[]")
     auto& argList = send_j["args"];
 
     nlohmann::json mesgList = nlohmann::json::array();
-    mesgList.push_back(Dispatcher::Serialize<TestMessage>(mesg1));
-    mesgList.push_back(Dispatcher::Serialize<TestMessage>(mesg2));
+    mesgList.push_back(Serializer<TestMessage>::Serialize(mesg1));
+    mesgList.push_back(Serializer<TestMessage>::Serialize(mesg2));
     argList.push_back(mesgList);
     argList.push_back(2);
 
@@ -99,7 +99,7 @@ TEST_CASE("ReadWriteMessages", "[]")
 
     for (size_t i = 0; i < numMesg; ++i)
     {
-        subArgList.push_back(Dispatcher::Serialize<TestMessage>(rdMsg[i]));
+        subArgList.push_back(Serializer<TestMessage>::Serialize(rdMsg[i]));
     }
 
     argList2.push_back(subArgList);
@@ -110,7 +110,7 @@ TEST_CASE("ReadWriteMessages", "[]")
 
     for (size_t i = 0; i < retData.back().get<size_t>(); ++i)
     {
-        rdMsg[i] = Dispatcher::DeSerialize<TestMessage>(retData.at(i));
+        rdMsg[i] = Serializer<TestMessage>::DeSerialize(retData.at(i));
     }
 
     for (size_t i = 0; i < numMesg; ++i)
