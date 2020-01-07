@@ -77,24 +77,36 @@ using function_result_t = typename function_traits<std::function<R(Args...)>>::t
 template<size_t i, typename R, typename... Args>
 using function_args_t = typename function_traits<std::function<R(Args...)>>::template arg<i>::type;
 
-template <typename T>
-class Serializer
-{
-public:
-    static njson::json Serialize(const T&)
-    {
-        throw std::logic_error("Type has not been provided with a Serialize method!");
-    }
+// template <typename T>
+// class Serializer
+// {
+// public:
+//     static njson::json Serialize(const T&)
+//     {
+//         throw std::logic_error("Type has not been provided with a Serialize method!");
+//     }
 
-    static T DeSerialize(const njson::json&)
-    {
-        throw std::logic_error("Type has not been provided with a DeSerialize method!");
-    }
-};
+//     static T DeSerialize(const njson::json&)
+//     {
+//         throw std::logic_error("Type has not been provided with a DeSerialize method!");
+//     }
+// };
 
 namespace rpc
 {
 extern std::string dispatch(const std::string& funcName, const njson::json& obj_j);
+
+template <typename T>
+njson::json Serialize(const T&)
+{
+    throw std::logic_error("Type has not been provided with a Serialize method!");
+}
+
+template <typename T>
+T DeSerialize(const njson::json&)
+{
+    throw std::logic_error("Type has not been provided with a DeSerialize method!");
+}
 
 template<typename, typename T>
 struct is_serializable
@@ -220,7 +232,7 @@ T DecodeArgContainer(const njson::json& obj_j, uint8_t* buf, size_t* count)
         {
             for (size_t i = 0; i < obj_j.size(); ++i)
             {
-                container.push_back(Serializer<P>::DeSerialize(obj_j[i]));
+                container.push_back(DeSerialize<P>(obj_j[i]));
             }
         }
 
@@ -259,7 +271,7 @@ T DecodeArgContainer(const njson::json& obj_j, uint8_t* buf, size_t* count)
     }
     else
     {
-        container.push_back(Serializer<P>::DeSerialize(obj_j));
+        container.push_back(DeSerialize<P>(obj_j));
     }
 
     if (*count == 0UL)
@@ -308,7 +320,7 @@ T DecodeArgPtr(const njson::json& obj_j, uint8_t* buf, size_t* count)
         {
             for (size_t i = 0; i < obj_j.size(); ++i)
             {
-                const auto value = Serializer<P>::DeSerialize(obj_j[i]);
+                const auto value = DeSerialize<P>(obj_j[i]);
                 memcpy(&buf[i * sizeof(value)], &value, sizeof(value));
             }
         }
@@ -340,7 +352,7 @@ T DecodeArgPtr(const njson::json& obj_j, uint8_t* buf, size_t* count)
     }
     else
     {
-        const auto value = Serializer<P>::DeSerialize(obj_j);
+        const auto value = DeSerialize<P>(obj_j);
         memcpy(buf, &value, sizeof(value));
     }
 
@@ -372,7 +384,7 @@ T DecodeArg(const njson::json& obj_j, uint8_t* buf, size_t* count, unsigned* par
     }
     else
     {
-        return Serializer<T>::DeSerialize(obj_j);
+        return DeSerialize<T>(obj_j);
     }
 }
 
@@ -412,7 +424,7 @@ void EncodeArgs(njson::json& args_j, const size_t count, const T& val)
                 }
                 else
                 {
-                    args_j.push_back(Serializer<P>::Serialize(val[i]));
+                    args_j.push_back(Serialize<P>(val[i]));
                 }
             }
         }
@@ -452,7 +464,7 @@ void EncodeArgs(njson::json& args_j, const size_t count, const T& val)
                 }
                 else
                 {
-                    args_j.push_back(Serializer<P>::Serialize(v));
+                    args_j.push_back(Serialize<P>(v));
                 }
             }
         }
@@ -469,7 +481,7 @@ void EncodeArgs(njson::json& args_j, const size_t count, const T& val)
         }
         else
         {
-            args_j.push_back(Serializer<T>::Serialize(val));
+            args_j.push_back(Serialize<T>(val));
         }
     }
 }
@@ -762,7 +774,7 @@ std::string RunCallBack(const njson::json& obj_j, R (*func)(Args...))
     return retObj_j.dump();
 }
 
-std::string RunFromJSON(const njson::json& obj_j)
+inline std::string RunFromJSON(const njson::json& obj_j)
 {
     const auto funcName = obj_j["function"].get<std::string>();
     const auto& argList = obj_j["args"];

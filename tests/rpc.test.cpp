@@ -39,7 +39,123 @@
 #define CATCH_CONFIG_MAIN
 #include <catch2/catch.hpp>
 
-#include "rpc.test.hpp"
+#include "rpc.hpp"
+
+#include <fstream>
+#include <functional>
+#include <iostream>
+#include <string>
+#include <vector>
+
+struct TestMessage
+{
+    bool Flag1{};
+    bool Flag2{};
+    int ID{};
+    int Data[256]{};
+    uint8_t DataSize{};
+
+    bool operator==(const TestMessage& other)
+    {
+        if (Flag1 != other.Flag1 || Flag2 != other.Flag2 || ID != other.ID || DataSize != other.DataSize)
+        {
+            return false;
+        }
+
+        return memcmp(Data, other.Data, DataSize) == 0;
+    }
+};
+
+template <>
+nlohmann::json rpc::Serialize<TestMessage>(const TestMessage& mesg)
+{
+    nlohmann::json obj_j;
+    obj_j["ID"] = mesg.ID;
+    obj_j["Flag1"] = mesg.Flag1;
+    obj_j["Flag2"] = mesg.Flag2;
+    obj_j["DataSize"] = mesg.DataSize;
+
+    if (mesg.DataSize > 0)
+    {
+        std::vector<int> tmpVec(mesg.Data, mesg.Data + mesg.DataSize);
+        obj_j["Data"] = tmpVec;
+    }
+    else
+    {
+        obj_j["Data"] = nlohmann::json::array();
+    }
+
+    return obj_j;
+}
+
+template <>
+TestMessage rpc::DeSerialize<TestMessage>(const nlohmann::json& obj_j)
+{
+    TestMessage mesg;
+    mesg.ID = obj_j["ID"].get<int>();
+    mesg.Flag1 = obj_j["Flag1"].get<bool>();
+    mesg.Flag2 = obj_j["Flag2"].get<bool>();
+    mesg.DataSize = obj_j["DataSize"].get<uint8_t>();
+    const auto sData = obj_j["Data"].get<std::vector<int>>();
+    std::copy(sData.begin(), sData.begin() + mesg.DataSize, mesg.Data);
+    return mesg;
+}
+
+int ReadMessages(TestMessage* mesgBuf, int* numMesgs)
+{
+    std::ifstream file_in("bus.txt");
+    std::stringstream ss;
+
+    std::string s;
+    int i = 0;
+
+    try
+    {
+        while (file_in >> s)
+        {
+            if (i < *numMesgs)
+            {
+                mesgBuf[i++] = rpc::DeSerialize<TestMessage>(nlohmann::json::parse(s));
+            }
+            else
+            {
+                ss << s << '\n';
+            }
+        }
+    }
+    catch (...)
+    {
+        *numMesgs = i;
+        return 1;
+    }
+
+    file_in.close();
+
+    std::ofstream file_out("bus.txt");
+
+    file_out << ss.str();
+    return 0;
+}
+
+int WriteMessages(TestMessage* mesgBuf, int* numMesgs)
+{
+    std::ofstream file_out("bus.txt", std::fstream::out | std::fstream::app);
+
+    for (int i = 0; i < *numMesgs; ++i)
+    {
+        try
+        {
+            file_out << rpc::Serialize<TestMessage>(mesgBuf[i]).dump() << '\n';
+        }
+        catch (...)
+        {
+            *numMesgs = i;
+            return 1;
+        }
+    }
+
+    return 0;
+}
 
 std::string rpc::dispatch(const std::string& funcName, const nlohmann::json& obj_j)
 {
@@ -80,8 +196,8 @@ TEST_CASE("ReadWriteMessages", "[]")
     auto& argList = send_j["args"];
 
     nlohmann::json mesgList = nlohmann::json::array();
-    mesgList.push_back(Serializer<TestMessage>::Serialize(mesg1));
-    mesgList.push_back(Serializer<TestMessage>::Serialize(mesg2));
+    mesgList.push_back(rpc::Serialize<TestMessage>(mesg1));
+    mesgList.push_back(rpc::Serialize<TestMessage>(mesg2));
     argList.push_back(mesgList);
     argList.push_back(2);
 
@@ -99,7 +215,7 @@ TEST_CASE("ReadWriteMessages", "[]")
 
     for (size_t i = 0; i < numMesg; ++i)
     {
-        subArgList.push_back(Serializer<TestMessage>::Serialize(rdMsg[i]));
+        subArgList.push_back(rpc::Serialize<TestMessage>(rdMsg[i]));
     }
 
     argList2.push_back(subArgList);
@@ -110,7 +226,7 @@ TEST_CASE("ReadWriteMessages", "[]")
 
     for (size_t i = 0; i < retData.back().get<size_t>(); ++i)
     {
-        rdMsg[i] = Serializer<TestMessage>::DeSerialize(retData.at(i));
+        rdMsg[i] = rpc::DeSerialize<TestMessage>(retData.at(i));
     }
 
     for (size_t i = 0; i < numMesg; ++i)
