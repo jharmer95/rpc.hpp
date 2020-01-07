@@ -21,6 +21,11 @@ elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         -Wno-c++98-c++11-compat-binary-literal -Wno-c++98-c++11-c++14-compat -Wno-padded -Wno-exit-time-destructors -Wno-missing-prototypes)
 endif()
 
+add_library(rpc_hpp INTERFACE)
+target_include_directories(rpc_hpp INTERFACE "${PROJECT_SOURCE_DIR}/include")
+
 add_executable(rpc_test "${PROJECT_SOURCE_DIR}/tests/rpc.test.cpp")
-target_include_directories(rpc_test PRIVATE "${PROJECT_SOURCE_DIR}/include" "${PROJECT_SOURCE_DIR}/tests")
+target_link_libraries(rpc_test rpc_hpp)
 target_compile_options(rpc_test PRIVATE ${FULL_WARNING})
+
+install(FILES "${PROJECT_SOURCE_DIR}/include/rpc.hpp" DESTINATION "/usr/local/include")
