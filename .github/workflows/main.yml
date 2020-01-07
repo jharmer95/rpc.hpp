@@ -12,7 +12,6 @@ jobs:
       - uses: docker://lpenz/ghaction-cmake:latest
         with:
           cc: ${{ matrix.cc }}
-          cxxflags: -isystem /usr/include
   coverage:
     runs-on: ubuntu-latest
     steps:
