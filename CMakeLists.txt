@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.1...3.15)
 
 project("rpc.hpp" VERSION 0.1.0.0 DESCRIPTION "Simple RPC Header-Only Library" LANGUAGES CXX)
 
+list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -21,11 +23,16 @@ elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         -Wno-c++98-c++11-compat-binary-literal -Wno-c++98-c++11-c++14-compat -Wno-padded -Wno-exit-time-destructors -Wno-missing-prototypes)
 endif()
 
+include(CTest)
+include(Catch)
+
 add_library(rpc_hpp INTERFACE)
 target_include_directories(rpc_hpp INTERFACE "${PROJECT_SOURCE_DIR}/include")
 
 add_executable(rpc_test "${PROJECT_SOURCE_DIR}/tests/rpc.test.cpp")
 target_link_libraries(rpc_test rpc_hpp)
 target_compile_options(rpc_test PRIVATE ${FULL_WARNING})
+
+catch_discover_tests(rpc_test)
 
 install(FILES "${PROJECT_SOURCE_DIR}/include/rpc.hpp" DESTINATION "/usr/local/include")
