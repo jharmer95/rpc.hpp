@@ -96,13 +96,13 @@ namespace rpc
 {
 extern std::string dispatch(const std::string& funcName, const njson::json& obj_j);
 
-template <typename T>
+template<typename T>
 njson::json Serialize(const T&)
 {
     throw std::logic_error("Type has not been provided with a Serialize method!");
 }
 
-template <typename T>
+template<typename T>
 T DeSerialize(const njson::json&)
 {
     throw std::logic_error("Type has not been provided with a DeSerialize method!");
@@ -535,7 +535,7 @@ std::string RunCallBack(const njson::json& obj_j, std::function<R __stdcall(Args
 }
 
 template<typename R, typename... Args>
-std::string RunCallBack(const njson::json& obj_j, R (__stdcall *func)(Args...))
+std::string RunCallBack(const njson::json& obj_j, R(__stdcall* func)(Args...))
 {
     unsigned count = 0;
     std::array<std::pair<size_t, std::unique_ptr<unsigned char[]>>,
@@ -601,7 +601,7 @@ std::string RunCallBack(const njson::json& obj_j, std::function<R __fastcall(Arg
 }
 
 template<typename R, typename... Args>
-std::string RunCallBack(const njson::json& obj_j, R (__fastcall *func)(Args...))
+std::string RunCallBack(const njson::json& obj_j, R(__fastcall* func)(Args...))
 {
     unsigned count = 0;
     std::array<std::pair<size_t, std::unique_ptr<unsigned char[]>>,
@@ -667,7 +667,7 @@ std::string RunCallBack(const njson::json& obj_j, std::function<R __vectorcall(A
 }
 
 template<typename R, typename... Args>
-std::string RunCallBack(const njson::json& obj_j, R (__vectorcall *func)(Args...))
+std::string RunCallBack(const njson::json& obj_j, R(__vectorcall* func)(Args...))
 {
     unsigned count = 0;
     std::array<std::pair<size_t, std::unique_ptr<unsigned char[]>>,

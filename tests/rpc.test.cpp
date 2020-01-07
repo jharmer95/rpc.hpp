@@ -57,7 +57,8 @@ struct TestMessage
 
     bool operator==(const TestMessage& other)
     {
-        if (Flag1 != other.Flag1 || Flag2 != other.Flag2 || ID != other.ID || DataSize != other.DataSize)
+        if (Flag1 != other.Flag1 || Flag2 != other.Flag2 || ID != other.ID
+            || DataSize != other.DataSize)
         {
             return false;
         }
@@ -66,7 +67,7 @@ struct TestMessage
     }
 };
 
-template <>
+template<>
 nlohmann::json rpc::Serialize<TestMessage>(const TestMessage& mesg)
 {
     nlohmann::json obj_j;
@@ -88,7 +89,7 @@ nlohmann::json rpc::Serialize<TestMessage>(const TestMessage& mesg)
     return obj_j;
 }
 
-template <>
+template<>
 TestMessage rpc::DeSerialize<TestMessage>(const nlohmann::json& obj_j)
 {
     TestMessage mesg;
