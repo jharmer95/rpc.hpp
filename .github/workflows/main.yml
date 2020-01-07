@@ -9,10 +9,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master
-      - run: sudo mkdir /github/workspace/include/catch2
-      - run: sudo mkdir /github/workspace/include/nlohmann
-      - run: sudo wget https://github.com/catchorg/Catch2/releases/download/v2.11.1/catch.hpp -O /github/workspace/include/catch2/catch.hpp
-      - run: sudo wget https://github.com/nlohmann/json/releases/download/v3.7.3/json.hpp -O /github/workspace/include/nlohmann/json.hpp
+      - run: sudo mkdir /usr/include/catch2
+      - run: sudo mkdir /usr/include/nlohmann
+      - run: sudo wget https://github.com/catchorg/Catch2/releases/download/v2.11.1/catch.hpp -O /usr/include/catch2/catch.hpp
+      - run: sudo wget https://github.com/nlohmann/json/releases/download/v3.7.3/json.hpp -O /usr/include/nlohmann/json.hpp
       - uses: docker://lpenz/ghaction-cmake:latest
         with:
           cc: ${{ matrix.cc }}
