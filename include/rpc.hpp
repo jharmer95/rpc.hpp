@@ -2,7 +2,7 @@
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Header-only library for serialized RPC usage
 ///@version 0.1.0.0
-///@date 01-06-2020
+///@date 01-07-2020
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -81,12 +81,12 @@ template <typename T>
 class Serializer
 {
 public:
-    static njson::json Serialize(const T& obj_j)
+    static njson::json Serialize(const T&)
     {
         throw std::logic_error("Type has not been provided with a Serialize method!");
     }
 
-    static T DeSerialize(const njson::json& obj_j)
+    static T DeSerialize(const njson::json&)
     {
         throw std::logic_error("Type has not been provided with a DeSerialize method!");
     }
