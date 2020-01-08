@@ -2,7 +2,7 @@
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Header-only library for serialized RPC usage
 ///@version 0.1.0.0
-///@date 01-07-2020
+///@date 01-08-2020
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -38,8 +38,6 @@
 
 #pragma once
 
-//#include <nlohmann/json.hpp>
-
 #include <array>
 #include <cstdint>
 #include <functional>
@@ -48,8 +46,6 @@
 #include <string>
 #include <tuple>
 #include <type_traits>
-
-//namespace njson = nlohmann;
 
 namespace rpc
 {
@@ -457,7 +453,8 @@ T_Value DecodeArgContainer(const T_Serial& obj, uint8_t* buf, size_t* count)
         {
             std::transform(adapter.begin(), adapter.end(), std::back_inserter(container),
                 [](const T_Serial& ser) -> P {
-                    return SerialAdapter(ser).template GetValue<P>();
+                    const SerialAdapter adp(ser);
+                    return adp.template GetValue<P>();
                 });
         }
         else if constexpr (is_container_v<P>)

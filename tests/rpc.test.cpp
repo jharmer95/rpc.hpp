@@ -1,8 +1,8 @@
 ///@file rpc.test.cpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
-///@brief Example dispatcher.hpp file for use with the example main.cpp file
+///@brief Unit test source file for rpc.hpp
 ///@version 0.1.0.0
-///@date 01-06-2020
+///@date 01-08-2020
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -40,7 +40,7 @@
 #include <catch2/catch.hpp>
 
 #include "rpc.hpp"
-#include "rpc_njson.ipp"
+#include "adapters/rpc_njson.hpp"
 
 #include <fstream>
 #include <iostream>
