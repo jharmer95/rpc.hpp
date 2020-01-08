@@ -38,7 +38,7 @@
 
 #pragma once
 
-#include <nlohmann/json.hpp>
+//#include <nlohmann/json.hpp>
 
 #include <array>
 #include <cstdint>
@@ -49,61 +49,242 @@
 #include <tuple>
 #include <type_traits>
 
-namespace njson = nlohmann;
-
-template<typename T>
-struct function_traits;
-
-template<typename R, typename... Args>
-struct function_traits<std::function<R(Args...)>>
-{
-    static constexpr size_t nargs = sizeof...(Args);
-
-    using result_type = R;
-
-    template<size_t i>
-    struct arg
-    {
-        using type = typename std::tuple_element<i, std::tuple<Args...>>::type;
-    };
-};
-
-template<typename R, typename... Args>
-inline constexpr size_t function_param_count_v = function_traits<std::function<R(Args...)>>::nargs;
-
-template<typename R, typename... Args>
-using function_result_t = typename function_traits<std::function<R(Args...)>>::type;
-
-template<size_t i, typename R, typename... Args>
-using function_args_t = typename function_traits<std::function<R(Args...)>>::template arg<i>::type;
-
-// template <typename T>
-// class Serializer
-// {
-// public:
-//     static njson::json Serialize(const T&)
-//     {
-//         throw std::logic_error("Type has not been provided with a Serialize method!");
-//     }
-
-//     static T DeSerialize(const njson::json&)
-//     {
-//         throw std::logic_error("Type has not been provided with a DeSerialize method!");
-//     }
-// };
+//namespace njson = nlohmann;
 
 namespace rpc
 {
-extern std::string dispatch(const std::string& funcName, const njson::json& obj_j);
+template<typename T_Serial>
+class SerialAdapter
+{
+public:
+    SerialAdapter() : m_serialObj() {}
+    SerialAdapter(T_Serial obj) : m_serialObj(std::move(obj)) {}
 
-template<typename T>
-njson::json Serialize(const T&)
+    // TODO: Get SerialAdapter to handle serialization/deserialization functions
+    //template<typename T_Value>
+    //[[nodiscard]] static T_Serial Serialize(const T_Value&);
+
+    //template<typename T_Value>
+    //[[nodiscard]] static T_Value DeSerialize(const T_Serial&);
+
+    template<typename T_Value>
+    [[nodiscard]] T_Value GetValue() const;
+
+    template<typename T_Value>
+    [[nodiscard]] T_Value GetValue(const std::string& name) const;
+
+    template<typename T_Value>
+    [[nodiscard]] T_Value& GetValueRef();
+
+    template<typename T_Value>
+    [[nodiscard]] T_Value& GetValueRef(const std::string& name);
+
+    template<typename T_Value>
+    void SetValue(T_Value value);
+
+    template<typename T_Value>
+    void SetValue(const std::string& name, T_Value value);
+
+    template<typename T_Value>
+    void push_back(T_Value value);
+
+    template<typename T_Value>
+    void AppendValue(T_Value value);
+
+    template<typename T_Value>
+    void AppendValue(const std::string& name, T_Value value);
+
+    [[nodiscard]] std::string ToString() const;
+    [[nodiscard]] bool IsArray() const;
+    [[nodiscard]] bool IsEmpty() const;
+
+    template<typename T_SerialIter>
+    T_SerialIter begin() const;
+
+    template<typename T_SerialIter>
+    T_SerialIter end() const;
+
+    [[nodiscard]] T_Serial get() const { return m_serialObj; }
+    [[nodiscard]] size_t size() const;
+    T_Serial operator[](size_t n) const;
+    static T_Serial EmptyArray();
+
+protected:
+    T_Serial m_serialObj;
+};
+
+template<typename T_Serial>
+template<typename T_Value>
+T_Value SerialAdapter<T_Serial>::GetValue() const
+{
+    const std::string errMesg =
+        "Serialization type: \"" + std::string(typeid(T_Serial).name()) + "\" is not supported!";
+
+    throw std::logic_error(errMesg);
+}
+
+template<typename T_Serial>
+template<typename T_Value>
+T_Value SerialAdapter<T_Serial>::GetValue(const std::string& name) const
+{
+    const std::string errMesg =
+        "Serialization type: \"" + std::string(typeid(T_Serial).name()) + "\" is not supported!";
+
+    throw std::logic_error(errMesg);
+}
+
+template<typename T_Serial>
+template<typename T_Value>
+T_Value& SerialAdapter<T_Serial>::GetValueRef()
+{
+    const std::string errMesg =
+        "Serialization type: \"" + std::string(typeid(T_Serial).name()) + "\" is not supported!";
+
+    throw std::logic_error(errMesg);
+}
+
+template<typename T_Serial>
+template<typename T_Value>
+T_Value& SerialAdapter<T_Serial>::GetValueRef(const std::string& name)
+{
+    const std::string errMesg =
+        "Serialization type: \"" + std::string(typeid(T_Serial).name()) + "\" is not supported!";
+
+    throw std::logic_error(errMesg);
+}
+
+template<typename T_Serial>
+template<typename T_Value>
+void SerialAdapter<T_Serial>::SetValue(T_Value value)
+{
+    const std::string errMesg =
+        "Serialization type: \"" + std::string(typeid(T_Serial).name()) + "\" is not supported!";
+
+    throw std::logic_error(errMesg);
+}
+
+template<typename T_Serial>
+template<typename T_Value>
+void SerialAdapter<T_Serial>::SetValue(const std::string& name, T_Value value)
+{
+    const std::string errMesg =
+        "Serialization type: \"" + std::string(typeid(T_Serial).name()) + "\" is not supported!";
+
+    throw std::logic_error(errMesg);
+}
+
+template<typename T_Serial>
+template<typename T_Value>
+void SerialAdapter<T_Serial>::push_back(T_Value value)
+{
+    const std::string errMesg =
+        "Serialization type: \"" + std::string(typeid(T_Serial).name()) + "\" is not supported!";
+
+    throw std::logic_error(errMesg);
+}
+
+template<typename T_Serial>
+template<typename T_Value>
+void SerialAdapter<T_Serial>::AppendValue(T_Value value)
+{
+    push_back(value);
+}
+
+template<typename T_Serial>
+template<typename T_Value>
+void SerialAdapter<T_Serial>::AppendValue(const std::string& name, T_Value value)
+{
+    const std::string errMesg =
+        "Serialization type: \"" + std::string(typeid(T_Serial).name()) + "\" is not supported!";
+
+    throw std::logic_error(errMesg);
+}
+
+template<typename T_Serial>
+std::string SerialAdapter<T_Serial>::ToString() const
+{
+    const std::string errMesg =
+        "Serialization type: \"" + std::string(typeid(T_Serial).name()) + "\" is not supported!";
+
+    throw std::logic_error(errMesg);
+}
+
+template<typename T_Serial>
+bool SerialAdapter<T_Serial>::IsArray() const
+{
+    const std::string errMesg =
+        "Serialization type: \"" + std::string(typeid(T_Serial).name()) + "\" is not supported!";
+
+    throw std::logic_error(errMesg);
+}
+
+template<typename T_Serial>
+bool SerialAdapter<T_Serial>::IsEmpty() const
+{
+    const std::string errMesg =
+        "Serialization type: \"" + std::string(typeid(T_Serial).name()) + "\" is not supported!";
+
+    throw std::logic_error(errMesg);
+}
+
+template<typename T_Serial>
+template<typename T_SerialIter>
+T_SerialIter SerialAdapter<T_Serial>::begin() const
+{
+    const std::string errMesg =
+        "Serialization type: \"" + std::string(typeid(T_Serial).name()) + "\" is not supported!";
+
+    throw std::logic_error(errMesg);
+}
+
+template<typename T_Serial>
+template<typename T_SerialIter>
+T_SerialIter SerialAdapter<T_Serial>::end() const
+{
+    const std::string errMesg =
+        "Serialization type: \"" + std::string(typeid(T_Serial).name()) + "\" is not supported!";
+
+    throw std::logic_error(errMesg);
+}
+
+template<typename T_Serial>
+size_t SerialAdapter<T_Serial>::size() const
+{
+    const std::string errMesg =
+        "Serialization type: \"" + std::string(typeid(T_Serial).name()) + "\" is not supported!";
+
+    throw std::logic_error(errMesg);
+}
+
+template<typename T_Serial>
+T_Serial SerialAdapter<T_Serial>::operator[](size_t n) const
+{
+    const std::string errMesg =
+        "Serialization type: \"" + std::string(typeid(T_Serial).name()) + "\" is not supported!";
+
+    throw std::logic_error(errMesg);
+}
+
+template<typename T_Serial>
+T_Serial SerialAdapter<T_Serial>::EmptyArray()
+{
+    const std::string errMesg =
+        "Serialization type: \"" + std::string(typeid(T_Serial).name()) + "\" is not supported!";
+
+    throw std::logic_error(errMesg);
+}
+
+template<typename T_Serial>
+extern std::string dispatch(const std::string& funcName, const T_Serial& obj);
+
+template<typename T_Obj, typename T_Serial>
+T_Serial Serialize(const T_Obj&)
 {
     throw std::logic_error("Type has not been provided with a Serialize method!");
 }
 
-template<typename T>
-T DeSerialize(const njson::json&)
+template<typename T_Obj, typename T_Serial>
+T_Obj DeSerialize(const T_Serial&)
 {
     throw std::logic_error("Type has not been provided with a DeSerialize method!");
 }
@@ -158,15 +339,15 @@ public:
     static constexpr bool value = type::value;
 };
 
-template<typename T1, typename T2>
-struct is_serializable
-    : std::integral_constant<bool,
-          is_serializable_base<T1, T2>::value && is_deserializable_base<T1, T2>::value>
+template<typename T_Obj, typename T_Serial>
+struct is_serializable : std::integral_constant<bool,
+                             is_serializable_base<T_Obj, T_Serial(const T_Obj&)>::value
+                                 && is_deserializable_base<T_Obj, T_Obj(const T_Serial&)>::value>
 {
 };
 
-template<typename T1, typename T2>
-inline constexpr bool is_serializable_v = is_serializable<T1, T2>::value;
+template<typename T_Obj, typename T_Serial>
+inline constexpr bool is_serializable_v = is_serializable<T_Obj, T_Serial>::value;
 
 template<typename C>
 struct has_begin
@@ -229,49 +410,74 @@ template<typename C>
 inline constexpr bool is_container_v = is_container<C>::value;
 
 template<typename T>
-T DecodeArgContainer(const njson::json& obj_j, uint8_t* buf, size_t* count)
-{
-    T container;
-    *count = 0UL;
+struct function_traits;
 
-    if (obj_j.is_array())
+template<typename R, typename... Args>
+struct function_traits<std::function<R(Args...)>>
+{
+    static constexpr size_t nargs = sizeof...(Args);
+    using result_type = R;
+
+    template<size_t i>
+    struct arg
+    {
+        using type = typename std::tuple_element<i, std::tuple<Args...>>::type;
+    };
+};
+
+template<typename R, typename... Args>
+inline constexpr size_t function_param_count_v = function_traits<std::function<R(Args...)>>::nargs;
+
+template<typename R, typename... Args>
+using function_result_t = typename function_traits<std::function<R(Args...)>>::type;
+
+template<size_t i, typename R, typename... Args>
+using function_args_t = typename function_traits<std::function<R(Args...)>>::template arg<i>::type;
+
+template<typename T_Serial, typename T_Value>
+T_Value DecodeArgContainer(const T_Serial& obj, uint8_t* buf, size_t* count)
+{
+#ifdef _DEBUG
+    const auto t_name = typeid(T_Value).name();
+#endif
+
+    T_Value container;
+    *count = 0UL;
+    SerialAdapter adapter(obj);
+
+    if (adapter.IsArray())
     {
         // Multi-value container (array)
-        using P = typename T::value_type;
+        using P = typename T_Value::value_type;
         static_assert(!std::is_void_v<P>,
             "Void containers are not supported, either cast to a different type or do the "
-            "conversion "
-            "manually!");
+            "conversion manually!");
 
         if constexpr (std::is_arithmetic_v<P> || std::is_same_v<P, std::string>)
         {
-            for (size_t i = 0; i < obj_j.size(); ++i)
-            {
-                container.push_back(obj_j[i].get<P>());
-            }
+            std::transform(adapter.begin(), adapter.end(), std::back_inserter(container),
+                [](const T_Serial& ser) -> P {
+                    return SerialAdapter(ser).template GetValue<P>();
+                });
         }
         else if constexpr (is_container_v<P>)
         {
-            for (size_t i = 0; i < obj_j.size(); ++i)
+            for (const T_Serial& ser : adapter)
             {
-                size_t ncount = 0UL;
-                container.push_back(DecodeArgContainer<P>(obj_j[i], buf, &ncount));
+                size_t ncount = 0Ul;
+                container.push_back(DecodeArgContainer<P>(ser, buf, &ncount));
                 *count += ncount;
             }
         }
-        else if constexpr (is_serializable_v<P, njson::json(const P&)>)
+        else if constexpr (is_serializable_v<P, T_Serial>)
         {
-            for (size_t i = 0; i < obj_j.size(); ++i)
-            {
-                container.push_back(P::DeSerialize(obj_j[i]));
-            }
+            std::transform(adapter.begin(), adapter.end(), std::back_inserter(container),
+                [](const T_Serial& ser) -> P { return P::DeSerialize(ser); });
         }
         else
         {
-            for (size_t i = 0; i < obj_j.size(); ++i)
-            {
-                container.push_back(DeSerialize<P>(obj_j[i]));
-            }
+            std::transform(adapter.begin(), adapter.end(), std::back_inserter(container),
+                [](const T_Serial& ser) -> P { return DeSerialize<P>(ser); });
         }
 
         if (*count == 0UL)
@@ -283,7 +489,7 @@ T DecodeArgContainer(const njson::json& obj_j, uint8_t* buf, size_t* count)
     }
 
     // Single value container
-    using P = typename T::value_type;
+    using P = typename T_Value::value_type;
     static_assert(!std::is_void_v<P>,
         "Void containers are not supported, either cast to a different type or do the conversion "
         "manually!");
@@ -291,25 +497,25 @@ T DecodeArgContainer(const njson::json& obj_j, uint8_t* buf, size_t* count)
     if constexpr (is_container_v<P>)
     {
         size_t ncount = 0UL;
-        container.push_back(DecodeArgContainer<P>(obj_j, buf, &ncount));
+        container.push_back(DecodeArgContainer<P>(obj, buf, &ncount));
         *count += ncount;
     }
-    else if constexpr (is_serializable_v<P, njson::json(const P&)>)
+    else if constexpr (is_serializable_v<P, T_Serial>)
     {
-        container.push_back(P::DeSerialize(obj_j));
+        container.push_back(P::DeSerialize(obj));
     }
     else if constexpr (std::is_same_v<P, char>)
     {
-        const auto str = obj_j.get<std::string>();
+        const auto str = adapter.template GetValue<std::string>();
         std::copy(str.begin(), str.end(), std::back_inserter(container));
     }
     else if constexpr (std::is_arithmetic_v<P> || std::is_same_v<P, std::string>)
     {
-        container.push_back(obj_j.get<P>());
+        container.push_back(adapter.template GetValue<P>());
     }
     else
     {
-        container.push_back(DeSerialize<P>(obj_j));
+        container.push_back(DeSerialize<P>(obj));
     }
 
     if (*count == 0UL)
@@ -320,208 +526,226 @@ T DecodeArgContainer(const njson::json& obj_j, uint8_t* buf, size_t* count)
     return container;
 }
 
-template<typename T>
-T DecodeArgPtr(const njson::json& obj_j, uint8_t* buf, size_t* count)
+template<typename T_Serial, typename T_Value>
+T_Value DecodeArgPtr(const T_Serial& obj, uint8_t* buf, size_t* count)
 {
-    *count = 1UL;
+#ifdef _DEBUG
+    const auto t_name = typeid(T_Value).name();
+#endif
 
-    if (obj_j.is_null())
+    *count = 1UL;
+    SerialAdapter adapter(obj);
+
+    if (adapter.IsEmpty())
     {
         return nullptr;
     }
 
-    if (obj_j.is_array())
+    if (adapter.IsArray())
     {
         // Multi-value pointer (array)
-        using P = std::remove_pointer_t<T>;
+        using P = std::remove_pointer_t<T_Value>;
         static_assert(!std::is_void_v<P>,
             "Void pointers are not supported, either cast to a different type or do the conversion "
             "manually!");
 
-        if constexpr (is_serializable_v<P, njson::json(const P&)>)
+        if constexpr (is_serializable_v<P, T_Serial>)
         {
-            for (size_t i = 0; i < obj_j.size(); ++i)
+            for (size_t i = 0; i < adapter.size(); ++i)
             {
-                const auto value = P::DeSerialize(obj_j[i]);
+                const auto value = P::DeSerialize(adapter[i]);
                 memcpy(&buf[i * sizeof(value)], &value, sizeof(value));
             }
         }
         else if constexpr (std::is_arithmetic_v<P> || std::is_same_v<P, std::string>)
         {
-            for (size_t i = 0; i < obj_j.size(); ++i)
+            for (size_t i = 0; i < adapter.size(); ++i)
             {
-                const auto value = obj_j[i].get<P>();
+                const auto sub = SerialAdapter(adapter[i]);
+                const auto value = sub.template GetValue<P>();
                 memcpy(&buf[i * sizeof(value)], &value, sizeof(value));
             }
         }
         else
         {
-            for (size_t i = 0; i < obj_j.size(); ++i)
+            for (size_t i = 0; i < adapter.size(); ++i)
             {
-                const auto value = DeSerialize<P>(obj_j[i]);
+                const auto value = DeSerialize<P>(adapter[i]);
                 memcpy(&buf[i * sizeof(value)], &value, sizeof(value));
             }
         }
 
-        *count = obj_j.size();
-        return reinterpret_cast<T>(buf);
+        *count = adapter.size();
+        return reinterpret_cast<T_Value>(buf);
     }
 
     // Single value pointer
-    using P = std::remove_pointer_t<T>;
+    using P = std::remove_pointer_t<T_Value>;
     static_assert(!std::is_void_v<P>,
         "Void pointers are not supported, either cast to a different type or do the conversion "
         "manually!");
 
-    if constexpr (is_serializable_v<P, njson::json(const P&)>)
+    if constexpr (is_serializable_v<P, T_Serial>)
     {
-        const auto value = P::DeSerialize(obj_j);
+        const auto value = P::DeSerialize(obj);
         memcpy(buf, &value, sizeof(value));
     }
     else if constexpr (std::is_same_v<P, char>)
     {
-        const auto str = obj_j.get<std::string>();
-        std::copy(str.begin(), str.end(), reinterpret_cast<T>(buf));
+        const auto str = adapter.template GetValue<std::string>();
+        std::copy(str.begin(), str.end(), reinterpret_cast<T_Value>(buf));
     }
     else if constexpr (std::is_arithmetic_v<P> || std::is_same_v<P, std::string>)
     {
-        const auto value = obj_j.get<P>();
+        const auto value = adapter.template GetValue<P>();
         memcpy(buf, &value, sizeof(value));
     }
     else
     {
-        const auto value = DeSerialize<P>(obj_j);
+        const auto value = DeSerialize<P>(obj);
         memcpy(buf, &value, sizeof(value));
     }
 
-    return reinterpret_cast<T>(buf);
+    return reinterpret_cast<T_Value>(buf);
 }
 
-template<typename T>
-T DecodeArg(const njson::json& obj_j, uint8_t* buf, size_t* count, unsigned* paramNum)
+template<typename T_Serial, typename T_Value>
+T_Value DecodeArg(const T_Serial& obj, uint8_t* buf, size_t* count, unsigned* paramNum)
 {
+#ifdef _DEBUG
+    const auto t_name = typeid(T_Value).name();
+#endif
+
     *paramNum += 1;
     *count = 1UL;
 
-    if constexpr (std::is_pointer_v<T>)
+    if constexpr (std::is_pointer_v<T_Value>)
     {
-        return DecodeArgPtr<T>(obj_j, buf, count);
+        return DecodeArgPtr<T_Serial, T_Value>(obj, buf, count);
     }
-    else if constexpr (is_serializable_v<T, njson::json(const T&)>)
+    else if constexpr (is_serializable_v<T_Value, T_Serial>)
     {
-        return T::DeSerialize(obj_j);
+        return T_Value::DeSerialize(obj);
     }
-    else if constexpr (std::is_arithmetic_v<T> || std::is_same_v<T, std::string>)
+    else if constexpr (std::is_arithmetic_v<T_Value> || std::is_same_v<T_Value, std::string>)
     {
-        T retVal = obj_j.get<T>();
-        return retVal;
+        const SerialAdapter adapter(obj);
+        return adapter.template GetValue<T_Value>();
     }
-    else if constexpr (is_container_v<T>)
+    else if constexpr (is_container_v<T_Value>)
     {
-        return DecodeArgContainer<T>(obj_j, buf, count);
+        return DecodeArgContainer<T_Value>(obj, buf, count);
     }
     else
     {
-        return DeSerialize<T>(obj_j);
+        return DeSerialize<T_Value>(obj);
     }
 }
 
-template<typename T>
-void EncodeArgs(njson::json& args_j, const size_t count, const T& val)
+template<typename T_Serial, typename T_Value>
+void EncodeArgs(T_Serial& obj, const size_t count, const T_Value& val)
 {
-    if constexpr (std::is_pointer_v<T>)
+#ifdef _DEBUG
+    const auto t_name = typeid(T_Value).name();
+#endif
+
+    SerialAdapter adapter(obj);
+
+    if constexpr (std::is_pointer_v<T_Value>)
     {
         if (val == nullptr)
         {
-            args_j.push_back(njson::json{});
+            adapter.push_back(T_Serial{});
         }
         else
         {
-            using P = std::remove_pointer_t<T>;
+            using P = std::remove_pointer_t<T_Value>;
 
             for (size_t i = 0; i < count; ++i)
             {
-                if constexpr (is_serializable_v<P, njson::json(const P&)>)
+                if constexpr (is_serializable_v<P, T_Serial>)
                 {
-                    args_j.push_back(P::Serialize(val[i]));
+                    adapter.push_back(P::Serialize(val[i]));
                 }
                 else if constexpr (std::is_same_v<P, char>)
                 {
                     if (val[0] == '\0')
                     {
-                        args_j.push_back("");
+                        adapter.push_back("");
                     }
                     else
                     {
-                        args_j.push_back(std::string(val, count));
+                        adapter.push_back(std::string(val, count));
                     }
                 }
                 else if constexpr (std::is_arithmetic_v<P> || std::is_same_v<P, std::string>)
                 {
-                    args_j.push_back(val[i]);
+                    adapter.push_back(val[i]);
                 }
                 else
                 {
-                    args_j.push_back(Serialize<P>(val[i]));
+                    adapter.push_back(Serialize<P, T_Serial>(val[i]));
                 }
             }
         }
     }
-    else if constexpr (is_container_v<T>)
+    else if constexpr (is_container_v<T_Value>)
     {
-        using P = typename T::value_type;
+        using P = typename T_Value::value_type;
 
         if constexpr (std::is_same_v<P, std::string>)
         {
-            std::copy(val.begin(), val.end(), args_j.begin());
+            std::copy(val.begin(), val.end(), std::back_inserter(adapter));
         }
         else if constexpr (is_container_v<P>)
         {
             for (const auto& c : val)
             {
-                auto sargs_j = njson::json::array();
-                EncodeArgs<P>(sargs_j, c.size(), c);
-                args_j.push_back(sargs_j);
+                auto args = SerialAdapter<T_Serial>::EmptyArray();
+                EncodeArgs<P>(args, c.size(), c);
+                adapter.push_back(args);
             }
         }
         else
         {
-            for (const auto& v : val)
-            {
-                if constexpr (is_serializable_v<P, njson::json(const P&)>)
-                {
-                    args_j.push_back(P::Serialize(v));
-                }
-                else if constexpr (std::is_same_v<P, char>)
-                {
-                    args_j.push_back(std::string(val, count));
-                }
-                else if constexpr (std::is_arithmetic_v<P> || std::is_same_v<P, std::string>)
-                {
-                    args_j.push_back(v);
-                }
-                else
-                {
-                    args_j.push_back(Serialize<P>(v));
-                }
-            }
+            std::transform(
+                val.begin(), val.end(), std::back_inserter(adapter), [&val, &count](const auto& v) {
+                    if constexpr (is_serializable_v<P, T_Serial>)
+                    {
+                        return P::Serialize(v);
+                    }
+                    else if constexpr (std::is_same_v<P, char>)
+                    {
+                        return std::string(val, count);
+                    }
+                    else if constexpr (std::is_arithmetic_v<P> || std::is_same_v<P, std::string>)
+                    {
+                        return v;
+                    }
+                    else
+                    {
+                        return Serialize<P>(v);
+                    }
+                });
         }
     }
     else
     {
-        if constexpr (is_serializable_v<T, njson::json(const T&)>)
+        if constexpr (is_serializable_v<T_Value, T_Serial>)
         {
-            args_j.push_back(T::Serialize(val));
+            adapter.push_back(T_Value::Serialize(val));
         }
-        else if constexpr (std::is_arithmetic_v<T> || std::is_same_v<T, std::string>)
+        else if constexpr (std::is_arithmetic_v<T_Value> || std::is_same_v<T_Value, std::string>)
         {
-            args_j.push_back(val);
+            adapter.push_back(val);
         }
         else
         {
-            args_j.push_back(Serialize<T>(val));
+            adapter.push_back(Serialize<T_Value>(val));
         }
     }
+
+    obj = adapter.get();
 }
 
 template<typename F, typename... Ts, size_t... Is>
@@ -708,6 +932,7 @@ template<typename R, typename... Args>
 std::string RunCallBack(const njson::json& obj_j, R(__vectorcall* func)(Args...))
 {
     unsigned count = 0;
+
     std::array<std::pair<size_t, std::unique_ptr<unsigned char[]>>,
         function_param_count_v<R, Args...>>
         buffers;
@@ -720,28 +945,34 @@ std::string RunCallBack(const njson::json& obj_j, R(__vectorcall* func)(Args...)
 
     std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...> args{
         DecodeArg<std::remove_cv_t<std::remove_reference_t<Args>>>(
-            obj_j[count], buffers[count].second.get(), &(buffers[count].first), &count)...
+            SerialAdapter(adapter[count]), buffers[count].second.get(),
+            &(buffers[count].first), &count)...
     };
 
     const auto result = std::apply(func, args);
-    njson::json retObj_j;
-    retObj_j["result"] = result;
-    retObj_j["args"] = njson::json::array();
-    auto& argList = retObj_j["args"];
+
+    SerialAdapter<T_Serial> retSer;
+
+    retSer.SetValue("result", result);
+    retSer.SetValue("args", retSer.EmptyArray());
+    auto& argList = retSer.GetValueRef("args");
+
     unsigned count2 = 0;
 
     for_each_tuple(args, [&argList, &buffers, &count2](const auto& x) {
         EncodeArgs(argList, buffers[count2++].first, x);
     });
 
-    return retObj_j.dump();
+    return retSer.ToString();
 }
 #endif
 
-template<typename R, typename... Args>
-std::string RunCallBack(const njson::json& obj_j, std::function<R(Args...)> func)
+template<typename T_Serial, typename R, typename... Args>
+std::string RunCallBack(const T_Serial& obj, std::function<R(Args...)> func)
 {
     unsigned count = 0;
+
+    SerialAdapter adapter(obj);
 
     std::array<std::pair<size_t, std::unique_ptr<unsigned char[]>>,
         function_param_count_v<R, Args...>>
@@ -754,17 +985,18 @@ std::string RunCallBack(const njson::json& obj_j, std::function<R(Args...)> func
     }
 
     std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...> args{
-        DecodeArg<std::remove_cv_t<std::remove_reference_t<Args>>>(
-            obj_j[count], buffers[count].second.get(), &(buffers[count].first), &count)...
+        DecodeArg<T_Serial, std::remove_cv_t<std::remove_reference_t<Args>>>(
+            adapter[count], buffers[count].second.get(),
+            &(buffers[count].first), &count)...
     };
 
     const auto result = std::apply(func, args);
 
-    njson::json retObj_j;
+    SerialAdapter<T_Serial> retSer;
 
-    retObj_j["result"] = result;
-    retObj_j["args"] = njson::json::array();
-    auto& argList = retObj_j["args"];
+    retSer.SetValue("result", result);
+    retSer.SetValue("args", retSer.EmptyArray());
+    auto& argList = retSer.template GetValueRef<T_Serial>("args");
 
     unsigned count2 = 0;
 
@@ -772,13 +1004,15 @@ std::string RunCallBack(const njson::json& obj_j, std::function<R(Args...)> func
         EncodeArgs(argList, buffers[count2++].first, x);
     });
 
-    return retObj_j.dump();
+    return retSer.ToString();
 }
 
-template<typename R, typename... Args>
-std::string RunCallBack(const njson::json& obj_j, R (*func)(Args...))
+template<typename T_Serial, typename R, typename... Args>
+std::string RunCallBack(const T_Serial& obj, R (*func)(Args...))
 {
     unsigned count = 0;
+
+    SerialAdapter adapter(obj);
 
     std::array<std::pair<size_t, std::unique_ptr<unsigned char[]>>,
         function_param_count_v<R, Args...>>
@@ -791,17 +1025,17 @@ std::string RunCallBack(const njson::json& obj_j, R (*func)(Args...))
     }
 
     std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...> args{
-        DecodeArg<std::remove_cv_t<std::remove_reference_t<Args>>>(
-            obj_j[count], buffers[count].second.get(), &(buffers[count].first), &count)...
+        DecodeArg<T_Serial, std::remove_cv_t<std::remove_reference_t<Args>>>(
+            adapter[count], buffers[count].second.get(), &(buffers[count].first), &count)...
     };
 
     const auto result = std::apply(func, args);
 
-    njson::json retObj_j;
+    SerialAdapter<T_Serial> retSer;
 
-    retObj_j["result"] = result;
-    retObj_j["args"] = njson::json::array();
-    auto& argList = retObj_j["args"];
+    retSer.SetValue("result", result);
+    retSer.SetValue("args", retSer.EmptyArray());
+    auto& argList = retSer.template GetValueRef<T_Serial>("args");
 
     unsigned count2 = 0;
 
@@ -809,22 +1043,26 @@ std::string RunCallBack(const njson::json& obj_j, R (*func)(Args...))
         EncodeArgs(argList, buffers[count2++].first, x);
     });
 
-    return retObj_j.dump();
+    return retSer.ToString();
 }
 
-inline std::string RunFromJSON(const njson::json& obj_j)
+template<typename T_Serial>
+std::string Run(const T_Serial& obj)
 {
-    const auto funcName = obj_j["function"].get<std::string>();
-    const auto& argList = obj_j["args"];
+    const auto adapter = SerialAdapter(obj);
+    const auto funcName = adapter.template GetValue<std::string>("function");
+    const auto argList = adapter.template GetValue<T_Serial>("args");
 
     try
     {
-        return dispatch(funcName, argList);
+        return dispatch<T_Serial>(funcName, argList);
     }
     catch (std::exception& ex)
     {
         std::cerr << ex.what() << '\n';
-        return "{ \"result\": -1 }";
+        SerialAdapter<T_Serial> result;
+        result.SetValue("result", -1);
+        return result.ToString();
     }
 }
 } // namespace rpc

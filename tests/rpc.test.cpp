@@ -40,6 +40,7 @@
 #include <catch2/catch.hpp>
 
 #include "rpc.hpp"
+#include "rpc_njson.ipp"
 
 #include <fstream>
 #include <iostream>
@@ -67,7 +68,6 @@ struct TestMessage
 
     [[nodiscard]] static nlohmann::json Serialize(const TestMessage& mesg)
     {
-        std::cout << "Serialize: class method\n";
         nlohmann::json obj_j;
         obj_j["ID"] = mesg.ID;
         obj_j["Flag1"] = mesg.Flag1;
@@ -89,7 +89,6 @@ struct TestMessage
 
     [[nodiscard]] static TestMessage DeSerialize(const nlohmann::json& obj_j)
     {
-        std::cout << "DeSerialize: class method\n";
         TestMessage mesg;
         mesg.ID = obj_j["ID"].get<int>();
         mesg.Flag1 = obj_j["Flag1"].get<bool>();
@@ -102,9 +101,8 @@ struct TestMessage
 };
 
 template<>
-[[nodiscard]] nlohmann::json rpc::Serialize<TestMessage>(const TestMessage& mesg)
+[[nodiscard]] nlohmann::json rpc::Serialize(const TestMessage& mesg)
 {
-    std::cout << "Serialize: template method\n";
     nlohmann::json obj_j;
     obj_j["ID"] = mesg.ID;
     obj_j["Flag1"] = mesg.Flag1;
@@ -125,9 +123,8 @@ template<>
 }
 
 template<>
-[[nodiscard]] TestMessage rpc::DeSerialize<TestMessage>(const nlohmann::json& obj_j)
+[[nodiscard]] TestMessage rpc::DeSerialize(const nlohmann::json& obj_j)
 {
-    std::cout << "DeSerialize: template method\n";
     TestMessage mesg;
     mesg.ID = obj_j["ID"].get<int>();
     mesg.Flag1 = obj_j["Flag1"].get<bool>();
@@ -152,7 +149,7 @@ int ReadMessages(TestMessage* mesgBuf, int* numMesgs)
         {
             if (i < *numMesgs)
             {
-                mesgBuf[i++] = rpc::DeSerialize<TestMessage>(nlohmann::json::parse(s));
+                mesgBuf[i++] = rpc::DeSerialize<TestMessage, njson::json>(njson::json::parse(s));
             }
             else
             {
@@ -182,7 +179,7 @@ int WriteMessages(TestMessage* mesgBuf, int* numMesgs)
     {
         try
         {
-            file_out << rpc::Serialize<TestMessage>(mesgBuf[i]).dump() << '\n';
+            file_out << rpc::Serialize<TestMessage, njson::json>(mesgBuf[i]).dump() << '\n';
         }
         catch (...)
         {
@@ -194,16 +191,17 @@ int WriteMessages(TestMessage* mesgBuf, int* numMesgs)
     return 0;
 }
 
-[[nodiscard]] std::string rpc::dispatch(const std::string& funcName, const nlohmann::json& obj_j)
+template<typename T_Serial>
+std::string rpc::dispatch(const std::string& funcName, const T_Serial& obj)
 {
     if (funcName == "WriteMessages")
     {
-        return rpc::RunCallBack(obj_j, WriteMessages);
+        return rpc::RunCallBack(obj, WriteMessages);
     }
 
     if (funcName == "ReadMessages")
     {
-        return rpc::RunCallBack(obj_j, ReadMessages);
+        return rpc::RunCallBack(obj, ReadMessages);
     }
 
     throw std::runtime_error("RPC error: Called function: \"" + funcName + "\" not found!");
@@ -234,12 +232,12 @@ TEST_CASE("ReadWriteMessages", "[]")
     auto& argList = send_j["args"];
 
     nlohmann::json mesgList = nlohmann::json::array();
-    mesgList.push_back(rpc::Serialize<TestMessage>(mesg1));
-    mesgList.push_back(rpc::Serialize<TestMessage>(mesg2));
+    mesgList.push_back(rpc::Serialize<TestMessage, njson::json>(mesg1));
+    mesgList.push_back(rpc::Serialize<TestMessage, njson::json>(mesg2));
     argList.push_back(mesgList);
     argList.push_back(2);
 
-    const auto retMsg = rpc::RunFromJSON(send_j);
+    const auto retMsg = rpc::Run<nlohmann::json>(send_j);
 
     const size_t numMesg = 2;
     const auto rdMsg = std::make_unique<TestMessage[]>(numMesg);
@@ -253,18 +251,18 @@ TEST_CASE("ReadWriteMessages", "[]")
 
     for (size_t i = 0; i < numMesg; ++i)
     {
-        subArgList.push_back(rpc::Serialize<TestMessage>(rdMsg[i]));
+        subArgList.push_back(rpc::Serialize<TestMessage, njson::json>(rdMsg[i]));
     }
 
     argList2.push_back(subArgList);
     argList2.push_back(numMesg);
 
-    const auto retMsg2 = rpc::RunFromJSON(recv_j);
+    const auto retMsg2 = rpc::Run<nlohmann::json>(recv_j);
     const auto retData = nlohmann::json::parse(retMsg2)["args"];
 
     for (size_t i = 0; i < retData.back().get<size_t>(); ++i)
     {
-        rdMsg[i] = rpc::DeSerialize<TestMessage>(retData.at(i));
+        rdMsg[i] = rpc::DeSerialize<TestMessage, njson::json>(retData.at(i));
     }
 
     for (size_t i = 0; i < numMesg; ++i)
