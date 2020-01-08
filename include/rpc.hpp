@@ -109,14 +109,14 @@ T DeSerialize(const njson::json&)
 }
 
 template<typename, typename T>
-struct is_serializable
+struct is_serializable_base
 {
     static_assert(std::integral_constant<T, false>::value,
         "Second template parameter needs to be of function type");
 };
 
 template<typename C, typename R, typename... Args>
-struct is_serializable<C, R(Args...)>
+struct is_serializable_base<C, R(Args...)>
 {
 private:
     template<typename T>
@@ -132,6 +132,41 @@ private:
 public:
     static constexpr bool value = type::value;
 };
+
+template<typename, typename T>
+struct is_deserializable_base
+{
+    static_assert(std::integral_constant<T, false>::value,
+        "Second template parameter needs to be of function type");
+};
+
+template<typename C, typename R, typename... Args>
+struct is_deserializable_base<C, R(Args...)>
+{
+private:
+    template<typename T>
+    static constexpr auto check(T*) ->
+        typename std::is_same<decltype(std::declval<T>().DeSerialize(std::declval<Args>()...)),
+            R>::type;
+
+    template<typename>
+    static constexpr std::false_type check(...);
+
+    using type = decltype(check<C>(nullptr));
+
+public:
+    static constexpr bool value = type::value;
+};
+
+template<typename T1, typename T2>
+struct is_serializable
+    : std::integral_constant<bool,
+          is_serializable_base<T1, T2>::value && is_deserializable_base<T1, T2>::value>
+{
+};
+
+template<typename T1, typename T2>
+inline constexpr bool is_serializable_v = is_serializable<T1, T2>::value;
 
 template<typename C>
 struct has_begin
@@ -190,6 +225,9 @@ struct is_container
 {
 };
 
+template<typename C>
+inline constexpr bool is_container_v = is_container<C>::value;
+
 template<typename T>
 T DecodeArgContainer(const njson::json& obj_j, uint8_t* buf, size_t* count)
 {
@@ -212,7 +250,7 @@ T DecodeArgContainer(const njson::json& obj_j, uint8_t* buf, size_t* count)
                 container.push_back(obj_j[i].get<P>());
             }
         }
-        else if constexpr (is_container<P>::value)
+        else if constexpr (is_container_v<P>)
         {
             for (size_t i = 0; i < obj_j.size(); ++i)
             {
@@ -221,7 +259,7 @@ T DecodeArgContainer(const njson::json& obj_j, uint8_t* buf, size_t* count)
                 *count += ncount;
             }
         }
-        else if constexpr (is_serializable<P, njson::json(const P&)>::value)
+        else if constexpr (is_serializable_v<P, njson::json(const P&)>)
         {
             for (size_t i = 0; i < obj_j.size(); ++i)
             {
@@ -250,13 +288,13 @@ T DecodeArgContainer(const njson::json& obj_j, uint8_t* buf, size_t* count)
         "Void containers are not supported, either cast to a different type or do the conversion "
         "manually!");
 
-    if constexpr (is_container<P>::value)
+    if constexpr (is_container_v<P>)
     {
         size_t ncount = 0UL;
         container.push_back(DecodeArgContainer<P>(obj_j, buf, &ncount));
         *count += ncount;
     }
-    else if constexpr (is_serializable<P, njson::json(const P&)>::value)
+    else if constexpr (is_serializable_v<P, njson::json(const P&)>)
     {
         container.push_back(P::DeSerialize(obj_j));
     }
@@ -300,7 +338,7 @@ T DecodeArgPtr(const njson::json& obj_j, uint8_t* buf, size_t* count)
             "Void pointers are not supported, either cast to a different type or do the conversion "
             "manually!");
 
-        if constexpr (is_serializable<P, njson::json(const P&)>::value)
+        if constexpr (is_serializable_v<P, njson::json(const P&)>)
         {
             for (size_t i = 0; i < obj_j.size(); ++i)
             {
@@ -335,7 +373,7 @@ T DecodeArgPtr(const njson::json& obj_j, uint8_t* buf, size_t* count)
         "Void pointers are not supported, either cast to a different type or do the conversion "
         "manually!");
 
-    if constexpr (is_serializable<P, njson::json(const P&)>::value)
+    if constexpr (is_serializable_v<P, njson::json(const P&)>)
     {
         const auto value = P::DeSerialize(obj_j);
         memcpy(buf, &value, sizeof(value));
@@ -369,7 +407,7 @@ T DecodeArg(const njson::json& obj_j, uint8_t* buf, size_t* count, unsigned* par
     {
         return DecodeArgPtr<T>(obj_j, buf, count);
     }
-    else if constexpr (is_serializable<T, njson::json(const T&)>::value)
+    else if constexpr (is_serializable_v<T, njson::json(const T&)>)
     {
         return T::DeSerialize(obj_j);
     }
@@ -378,7 +416,7 @@ T DecodeArg(const njson::json& obj_j, uint8_t* buf, size_t* count, unsigned* par
         T retVal = obj_j.get<T>();
         return retVal;
     }
-    else if constexpr (is_container<T>::value)
+    else if constexpr (is_container_v<T>)
     {
         return DecodeArgContainer<T>(obj_j, buf, count);
     }
@@ -403,7 +441,7 @@ void EncodeArgs(njson::json& args_j, const size_t count, const T& val)
 
             for (size_t i = 0; i < count; ++i)
             {
-                if constexpr (is_serializable<P, njson::json(const P&)>::value)
+                if constexpr (is_serializable_v<P, njson::json(const P&)>)
                 {
                     args_j.push_back(P::Serialize(val[i]));
                 }
@@ -429,7 +467,7 @@ void EncodeArgs(njson::json& args_j, const size_t count, const T& val)
             }
         }
     }
-    else if constexpr (is_container<T>::value)
+    else if constexpr (is_container_v<T>)
     {
         using P = typename T::value_type;
 
@@ -437,7 +475,7 @@ void EncodeArgs(njson::json& args_j, const size_t count, const T& val)
         {
             std::copy(val.begin(), val.end(), args_j.begin());
         }
-        else if constexpr (is_container<P>::value)
+        else if constexpr (is_container_v<P>)
         {
             for (const auto& c : val)
             {
@@ -450,7 +488,7 @@ void EncodeArgs(njson::json& args_j, const size_t count, const T& val)
         {
             for (const auto& v : val)
             {
-                if constexpr (is_serializable<P, njson::json(const P&)>::value)
+                if constexpr (is_serializable_v<P, njson::json(const P&)>)
                 {
                     args_j.push_back(P::Serialize(v));
                 }
@@ -471,7 +509,7 @@ void EncodeArgs(njson::json& args_j, const size_t count, const T& val)
     }
     else
     {
-        if constexpr (is_serializable<T, njson::json(const T&)>::value)
+        if constexpr (is_serializable_v<T, njson::json(const T&)>)
         {
             args_j.push_back(T::Serialize(val));
         }

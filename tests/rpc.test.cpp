@@ -42,7 +42,6 @@
 #include "rpc.hpp"
 
 #include <fstream>
-#include <functional>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -55,7 +54,7 @@ struct TestMessage
     int Data[256]{};
     uint8_t DataSize{};
 
-    bool operator==(const TestMessage& other)
+    [[nodiscard]] bool operator==(const TestMessage& other) const noexcept
     {
         if (Flag1 != other.Flag1 || Flag2 != other.Flag2 || ID != other.ID
             || DataSize != other.DataSize)
@@ -65,11 +64,47 @@ struct TestMessage
 
         return memcmp(Data, other.Data, DataSize) == 0;
     }
+
+    [[nodiscard]] static nlohmann::json Serialize(const TestMessage& mesg)
+    {
+        std::cout << "Serialize: class method\n";
+        nlohmann::json obj_j;
+        obj_j["ID"] = mesg.ID;
+        obj_j["Flag1"] = mesg.Flag1;
+        obj_j["Flag2"] = mesg.Flag2;
+        obj_j["DataSize"] = mesg.DataSize;
+
+        if (mesg.DataSize > 0)
+        {
+            std::vector<int> tmpVec(mesg.Data, mesg.Data + mesg.DataSize);
+            obj_j["Data"] = tmpVec;
+        }
+        else
+        {
+            obj_j["Data"] = nlohmann::json::array();
+        }
+
+        return obj_j;
+    }
+
+    [[nodiscard]] static TestMessage DeSerialize(const nlohmann::json& obj_j)
+    {
+        std::cout << "DeSerialize: class method\n";
+        TestMessage mesg;
+        mesg.ID = obj_j["ID"].get<int>();
+        mesg.Flag1 = obj_j["Flag1"].get<bool>();
+        mesg.Flag2 = obj_j["Flag2"].get<bool>();
+        mesg.DataSize = obj_j["DataSize"].get<uint8_t>();
+        const auto sData = obj_j["Data"].get<std::vector<int>>();
+        std::copy(sData.begin(), sData.begin() + mesg.DataSize, mesg.Data);
+        return mesg;
+    }
 };
 
 template<>
-nlohmann::json rpc::Serialize<TestMessage>(const TestMessage& mesg)
+[[nodiscard]] nlohmann::json rpc::Serialize<TestMessage>(const TestMessage& mesg)
 {
+    std::cout << "Serialize: template method\n";
     nlohmann::json obj_j;
     obj_j["ID"] = mesg.ID;
     obj_j["Flag1"] = mesg.Flag1;
@@ -90,8 +125,9 @@ nlohmann::json rpc::Serialize<TestMessage>(const TestMessage& mesg)
 }
 
 template<>
-TestMessage rpc::DeSerialize<TestMessage>(const nlohmann::json& obj_j)
+[[nodiscard]] TestMessage rpc::DeSerialize<TestMessage>(const nlohmann::json& obj_j)
 {
+    std::cout << "DeSerialize: template method\n";
     TestMessage mesg;
     mesg.ID = obj_j["ID"].get<int>();
     mesg.Flag1 = obj_j["Flag1"].get<bool>();
@@ -158,13 +194,14 @@ int WriteMessages(TestMessage* mesgBuf, int* numMesgs)
     return 0;
 }
 
-std::string rpc::dispatch(const std::string& funcName, const nlohmann::json& obj_j)
+[[nodiscard]] std::string rpc::dispatch(const std::string& funcName, const nlohmann::json& obj_j)
 {
     if (funcName == "WriteMessages")
     {
         return rpc::RunCallBack(obj_j, WriteMessages);
     }
-    else if (funcName == "ReadMessages")
+
+    if (funcName == "ReadMessages")
     {
         return rpc::RunCallBack(obj_j, ReadMessages);
     }
