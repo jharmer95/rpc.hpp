@@ -760,8 +760,8 @@ void for_each_tuple(const std::tuple<Ts...>& tuple, F func)
 
 // Support for other Windows (x86) calling conventions
 #if defined(_WIN32) && !defined(_WIN64)
-template<typename R, typename... Args>
-std::string RunCallBack(const njson::json& obj_j, std::function<R __stdcall(Args...)> func)
+template<typename T_Serial, typename R, typename... Args>
+std::string RunCallBack(const T_Serial& obj, std::function<R __stdcall(Args...)> func)
 {
     unsigned count = 0;
     SerialAdapter adapter(obj);
@@ -797,8 +797,8 @@ std::string RunCallBack(const njson::json& obj_j, std::function<R __stdcall(Args
     return retSer.ToString();
 }
 
-template<typename R, typename... Args>
-std::string RunCallBack(const njson::json& obj_j, R(__stdcall* func)(Args...))
+template<typename T_Serial, typename R, typename... Args>
+std::string RunCallBack(const T_Serial& obj, R(__stdcall* func)(Args...))
 {
     unsigned count = 0;
     SerialAdapter adapter(obj);
@@ -834,8 +834,8 @@ std::string RunCallBack(const njson::json& obj_j, R(__stdcall* func)(Args...))
     return retSer.ToString();
 }
 
-template<typename R, typename... Args>
-std::string RunCallBack(const njson::json& obj_j, std::function<R __fastcall(Args...)> func)
+template<typename T_Serial, typename R, typename... Args>
+std::string RunCallBack(const T_Serial& obj, std::function<R __fastcall(Args...)> func)
 {
     unsigned count = 0;
     SerialAdapter adapter(obj);
@@ -871,8 +871,8 @@ std::string RunCallBack(const njson::json& obj_j, std::function<R __fastcall(Arg
     return retSer.ToString();
 }
 
-template<typename R, typename... Args>
-std::string RunCallBack(const njson::json& obj_j, R(__fastcall* func)(Args...))
+template<typename T_Serial, typename R, typename... Args>
+std::string RunCallBack(const T_Serial& obj, R(__fastcall* func)(Args...))
 {
     unsigned count = 0;
     SerialAdapter adapter(obj);
@@ -908,8 +908,8 @@ std::string RunCallBack(const njson::json& obj_j, R(__fastcall* func)(Args...))
     return retSer.ToString();
 }
 
-template<typename R, typename... Args>
-std::string RunCallBack(const njson::json& obj_j, std::function<R __vectorcall(Args...)> func)
+template<typename T_Serial, typename R, typename... Args>
+std::string RunCallBack(const T_Serial& obj, std::function<R __vectorcall(Args...)> func)
 {
     unsigned count = 0;
     SerialAdapter adapter(obj);
@@ -945,8 +945,8 @@ std::string RunCallBack(const njson::json& obj_j, std::function<R __vectorcall(A
     return retSer.ToString();
 }
 
-template<typename R, typename... Args>
-std::string RunCallBack(const njson::json& obj_j, R(__vectorcall* func)(Args...))
+template<typename T_Serial, typename R, typename... Args>
+std::string RunCallBack(const T_Serial& obj, R(__vectorcall* func)(Args...))
 {
     unsigned count = 0;
     SerialAdapter adapter(obj);
