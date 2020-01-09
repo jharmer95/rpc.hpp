@@ -764,6 +764,8 @@ template<typename R, typename... Args>
 std::string RunCallBack(const njson::json& obj_j, std::function<R __stdcall(Args...)> func)
 {
     unsigned count = 0;
+    SerialAdapter adapter(obj);
+
     std::array<std::pair<size_t, std::unique_ptr<unsigned char[]>>,
         function_param_count_v<R, Args...>>
         buffers;
@@ -775,28 +777,32 @@ std::string RunCallBack(const njson::json& obj_j, std::function<R __stdcall(Args
     }
 
     std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...> args{
-        DecodeArg<std::remove_cv_t<std::remove_reference_t<Args>>>(
-            obj_j[count], buffers[count].second.get(), &(buffers[count].first), &count)...
+        DecodeArg<T_Serial, std::remove_cv_t<std::remove_reference_t<Args>>>(
+            adapter[count], buffers[count].second.get(), &(buffers[count].first), &count)...
     };
 
     const auto result = std::apply(func, args);
-    njson::json retObj_j;
-    retObj_j["result"] = result;
-    retObj_j["args"] = njson::json::array();
-    auto& argList = retObj_j["args"];
+    SerialAdapter<T_Serial> retSer;
+
+    retSer.SetValue("result", result);
+    retSer.SetValue("args", retSer.EmptyArray());
+    auto& argList = retSer.template GetValueRef<T_Serial>("args");
+
     unsigned count2 = 0;
 
     for_each_tuple(args, [&argList, &buffers, &count2](const auto& x) {
         EncodeArgs(argList, buffers[count2++].first, x);
     });
 
-    return retObj_j.dump();
+    return retSer.ToString();
 }
 
 template<typename R, typename... Args>
 std::string RunCallBack(const njson::json& obj_j, R(__stdcall* func)(Args...))
 {
     unsigned count = 0;
+    SerialAdapter adapter(obj);
+
     std::array<std::pair<size_t, std::unique_ptr<unsigned char[]>>,
         function_param_count_v<R, Args...>>
         buffers;
@@ -808,28 +814,32 @@ std::string RunCallBack(const njson::json& obj_j, R(__stdcall* func)(Args...))
     }
 
     std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...> args{
-        DecodeArg<std::remove_cv_t<std::remove_reference_t<Args>>>(
-            obj_j[count], buffers[count].second.get(), &(buffers[count].first), &count)...
+        DecodeArg<T_Serial, std::remove_cv_t<std::remove_reference_t<Args>>>(
+            adapter[count], buffers[count].second.get(), &(buffers[count].first), &count)...
     };
 
     const auto result = std::apply(func, args);
-    njson::json retObj_j;
-    retObj_j["result"] = result;
-    retObj_j["args"] = njson::json::array();
-    auto& argList = retObj_j["args"];
+    SerialAdapter<T_Serial> retSer;
+
+    retSer.SetValue("result", result);
+    retSer.SetValue("args", retSer.EmptyArray());
+    auto& argList = retSer.template GetValueRef<T_Serial>("args");
+
     unsigned count2 = 0;
 
     for_each_tuple(args, [&argList, &buffers, &count2](const auto& x) {
         EncodeArgs(argList, buffers[count2++].first, x);
     });
 
-    return retObj_j.dump();
+    return retSer.ToString();
 }
 
 template<typename R, typename... Args>
 std::string RunCallBack(const njson::json& obj_j, std::function<R __fastcall(Args...)> func)
 {
     unsigned count = 0;
+    SerialAdapter adapter(obj);
+
     std::array<std::pair<size_t, std::unique_ptr<unsigned char[]>>,
         function_param_count_v<R, Args...>>
         buffers;
@@ -841,28 +851,32 @@ std::string RunCallBack(const njson::json& obj_j, std::function<R __fastcall(Arg
     }
 
     std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...> args{
-        DecodeArg<std::remove_cv_t<std::remove_reference_t<Args>>>(
-            obj_j[count], buffers[count].second.get(), &(buffers[count].first), &count)...
+        DecodeArg<T_Serial, std::remove_cv_t<std::remove_reference_t<Args>>>(
+            adapter[count], buffers[count].second.get(), &(buffers[count].first), &count)...
     };
 
     const auto result = std::apply(func, args);
-    njson::json retObj_j;
-    retObj_j["result"] = result;
-    retObj_j["args"] = njson::json::array();
-    auto& argList = retObj_j["args"];
+    SerialAdapter<T_Serial> retSer;
+
+    retSer.SetValue("result", result);
+    retSer.SetValue("args", retSer.EmptyArray());
+    auto& argList = retSer.template GetValueRef<T_Serial>("args");
+
     unsigned count2 = 0;
 
     for_each_tuple(args, [&argList, &buffers, &count2](const auto& x) {
         EncodeArgs(argList, buffers[count2++].first, x);
     });
 
-    return retObj_j.dump();
+    return retSer.ToString();
 }
 
 template<typename R, typename... Args>
 std::string RunCallBack(const njson::json& obj_j, R(__fastcall* func)(Args...))
 {
     unsigned count = 0;
+    SerialAdapter adapter(obj);
+
     std::array<std::pair<size_t, std::unique_ptr<unsigned char[]>>,
         function_param_count_v<R, Args...>>
         buffers;
@@ -874,28 +888,32 @@ std::string RunCallBack(const njson::json& obj_j, R(__fastcall* func)(Args...))
     }
 
     std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...> args{
-        DecodeArg<std::remove_cv_t<std::remove_reference_t<Args>>>(
-            obj_j[count], buffers[count].second.get(), &(buffers[count].first), &count)...
+        DecodeArg<T_Serial, std::remove_cv_t<std::remove_reference_t<Args>>>(
+            adapter[count], buffers[count].second.get(), &(buffers[count].first), &count)...
     };
 
     const auto result = std::apply(func, args);
-    njson::json retObj_j;
-    retObj_j["result"] = result;
-    retObj_j["args"] = njson::json::array();
-    auto& argList = retObj_j["args"];
+    SerialAdapter<T_Serial> retSer;
+
+    retSer.SetValue("result", result);
+    retSer.SetValue("args", retSer.EmptyArray());
+    auto& argList = retSer.template GetValueRef<T_Serial>("args");
+
     unsigned count2 = 0;
 
     for_each_tuple(args, [&argList, &buffers, &count2](const auto& x) {
         EncodeArgs(argList, buffers[count2++].first, x);
     });
 
-    return retObj_j.dump();
+    return retSer.ToString();
 }
 
 template<typename R, typename... Args>
 std::string RunCallBack(const njson::json& obj_j, std::function<R __vectorcall(Args...)> func)
 {
     unsigned count = 0;
+    SerialAdapter adapter(obj);
+
     std::array<std::pair<size_t, std::unique_ptr<unsigned char[]>>,
         function_param_count_v<R, Args...>>
         buffers;
@@ -907,28 +925,31 @@ std::string RunCallBack(const njson::json& obj_j, std::function<R __vectorcall(A
     }
 
     std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...> args{
-        DecodeArg<std::remove_cv_t<std::remove_reference_t<Args>>>(
-            obj_j[count], buffers[count].second.get(), &(buffers[count].first), &count)...
+        DecodeArg<T_Serial, std::remove_cv_t<std::remove_reference_t<Args>>>(
+            adapter[count], buffers[count].second.get(), &(buffers[count].first), &count)...
     };
 
     const auto result = std::apply(func, args);
-    njson::json retObj_j;
-    retObj_j["result"] = result;
-    retObj_j["args"] = njson::json::array();
-    auto& argList = retObj_j["args"];
+    SerialAdapter<T_Serial> retSer;
+
+    retSer.SetValue("result", result);
+    retSer.SetValue("args", retSer.EmptyArray());
+    auto& argList = retSer.template GetValueRef<T_Serial>("args");
+
     unsigned count2 = 0;
 
     for_each_tuple(args, [&argList, &buffers, &count2](const auto& x) {
         EncodeArgs(argList, buffers[count2++].first, x);
     });
 
-    return retObj_j.dump();
+    return retSer.ToString();
 }
 
 template<typename R, typename... Args>
 std::string RunCallBack(const njson::json& obj_j, R(__vectorcall* func)(Args...))
 {
     unsigned count = 0;
+    SerialAdapter adapter(obj);
 
     std::array<std::pair<size_t, std::unique_ptr<unsigned char[]>>,
         function_param_count_v<R, Args...>>
@@ -941,18 +962,16 @@ std::string RunCallBack(const njson::json& obj_j, R(__vectorcall* func)(Args...)
     }
 
     std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...> args{
-        DecodeArg<std::remove_cv_t<std::remove_reference_t<Args>>>(
-            SerialAdapter(adapter[count]), buffers[count].second.get(),
-            &(buffers[count].first), &count)...
+        DecodeArg<T_Serial, std::remove_cv_t<std::remove_reference_t<Args>>>(
+            adapter[count], buffers[count].second.get(), &(buffers[count].first), &count)...
     };
 
     const auto result = std::apply(func, args);
-
     SerialAdapter<T_Serial> retSer;
 
     retSer.SetValue("result", result);
     retSer.SetValue("args", retSer.EmptyArray());
-    auto& argList = retSer.GetValueRef("args");
+    auto& argList = retSer.template GetValueRef<T_Serial>("args");
 
     unsigned count2 = 0;
 
@@ -968,7 +987,6 @@ template<typename T_Serial, typename R, typename... Args>
 std::string RunCallBack(const T_Serial& obj, std::function<R(Args...)> func)
 {
     unsigned count = 0;
-
     SerialAdapter adapter(obj);
 
     std::array<std::pair<size_t, std::unique_ptr<unsigned char[]>>,
@@ -983,12 +1001,10 @@ std::string RunCallBack(const T_Serial& obj, std::function<R(Args...)> func)
 
     std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...> args{
         DecodeArg<T_Serial, std::remove_cv_t<std::remove_reference_t<Args>>>(
-            adapter[count], buffers[count].second.get(),
-            &(buffers[count].first), &count)...
+            adapter[count], buffers[count].second.get(), &(buffers[count].first), &count)...
     };
 
     const auto result = std::apply(func, args);
-
     SerialAdapter<T_Serial> retSer;
 
     retSer.SetValue("result", result);
@@ -1008,7 +1024,6 @@ template<typename T_Serial, typename R, typename... Args>
 std::string RunCallBack(const T_Serial& obj, R (*func)(Args...))
 {
     unsigned count = 0;
-
     SerialAdapter adapter(obj);
 
     std::array<std::pair<size_t, std::unique_ptr<unsigned char[]>>,
@@ -1027,7 +1042,6 @@ std::string RunCallBack(const T_Serial& obj, R (*func)(Args...))
     };
 
     const auto result = std::apply(func, args);
-
     SerialAdapter<T_Serial> retSer;
 
     retSer.SetValue("result", result);
