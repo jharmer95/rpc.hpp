@@ -330,8 +330,14 @@ std::string rpc::dispatch(const std::string& funcName, const T_Serial& obj)
     throw std::runtime_error("RPC error: Called function: \"" + funcName + "\" not found!");
 }
 
+void ClearBus()
+{
+    std::ofstream("bus.txt");
+}
+
 TEST_CASE("References", "[]")
 {
+    ClearBus();
     TestMessage mesg;
     mesg.ID = 16;
     mesg.Flag1 = true;
@@ -358,6 +364,7 @@ TEST_CASE("References", "[]")
 
 TEST_CASE("Vectors", "[]")
 {
+    ClearBus();
     TestMessage mesg1;
     mesg1.ID = 16;
     mesg1.Flag1 = true;
@@ -382,15 +389,19 @@ TEST_CASE("Vectors", "[]")
     std::copy(md3.begin(), md3.end(), mesg3.Data);
     mesg3.DataSize = static_cast<uint8_t>(md3.size());
 
-    std::vector<TestMessage> mesgVec { mesg1, mesg2, mesg3 };
+    std::vector<TestMessage> mesgVec{ mesg1, mesg2, mesg3 };
 
     njson::json send_j;
     send_j["args"] = njson::json::array();
 
+    njson::json argList = njson::json::array();
+
     for (const auto& mesg : mesgVec)
     {
-        send_j["args"].push_back(rpc::Serialize<TestMessage, njson::json>(mesg));
+        argList.push_back(rpc::Serialize<TestMessage, njson::json>(mesg));
     }
+
+    send_j["args"].push_back(argList);
 
     send_j["function"] = "WriteMessageVec";
 
@@ -398,13 +409,12 @@ TEST_CASE("Vectors", "[]")
 
     std::vector<TestMessage> rmesgVec;
     njson::json recv_j;
-    recv_j["args"] = njson::json::array({ rpc::Serialize<TestMessage, njson::json>(TestMessage{}), rpc::Serialize<TestMessage, njson::json>(TestMessage{}), rpc::Serialize<TestMessage, njson::json>(TestMessage{}) });
+    recv_j["args"] = njson::json::array({ njson::json::array(), 3 });
+
     recv_j["function"] = "ReadMessageVec";
 
     const auto retMsg2 = rpc::Run<njson::json>(recv_j);
-    const auto obj = njson::json::parse(retMsg2)["args"];
-
-    std::cout << retMsg2 << '\n';
+    const auto obj = njson::json::parse(retMsg2)["args"][0];
 
     for (const auto& val : obj)
     {
@@ -415,8 +425,9 @@ TEST_CASE("Vectors", "[]")
     REQUIRE((rmesgVec.front() == mesgVec.front()));
 }
 
-TEST_CASE("ReadWriteMessages", "[]")
+TEST_CASE("Pointers", "[]")
 {
+    ClearBus();
     TestMessage mesg1;
     mesg1.ID = 24;
     mesg1.Flag1 = true;
@@ -468,7 +479,7 @@ TEST_CASE("ReadWriteMessages", "[]")
     const auto retMsg2 = rpc::Run<nlohmann::json>(recv_j);
     const auto retData = nlohmann::json::parse(retMsg2)["args"];
 
-    for (size_t i = 0; i < retData.back().get<size_t>(); ++i)
+    for (size_t i = 0; i < retData.size(); ++i)
     {
         rdMsg[i] = rpc::DeSerialize<TestMessage, njson::json>(retData.at(i));
     }

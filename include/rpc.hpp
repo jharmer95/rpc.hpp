@@ -461,7 +461,7 @@ T_Value DecodeArgContainer(const T_Serial& obj, uint8_t* buf, size_t* count)
         {
             for (const T_Serial& ser : adapter)
             {
-                size_t ncount = 0Ul;
+                size_t ncount = 0UL;
                 container.push_back(DecodeArgContainer<T_Serial, P>(ser, buf, &ncount));
                 *count += ncount;
             }
@@ -534,7 +534,7 @@ T_Value DecodeArgPtr(const T_Serial& obj, uint8_t* buf, size_t* count)
     const auto t_name = typeid(T_Value).name();
 #endif
 
-    *count = 1UL;
+    *count = 0UL;
     SerialAdapter adapter(obj);
 
     if (adapter.IsEmpty())
@@ -693,6 +693,7 @@ void EncodeArgs(T_Serial& obj, const size_t count, const T_Value& val)
     else if constexpr (is_container_v<T_Value>)
     {
         using P = typename T_Value::value_type;
+        auto argList = SerialAdapter<T_Serial>::EmptyArray();
 
         if constexpr (std::is_same_v<P, std::string>)
         {
@@ -702,9 +703,8 @@ void EncodeArgs(T_Serial& obj, const size_t count, const T_Value& val)
         {
             for (const auto& c : val)
             {
-                auto args = SerialAdapter<T_Serial>::EmptyArray();
-                EncodeArgs<P>(args, c.size(), c);
-                adapter.push_back(args);
+                EncodeArgs<P>(argList, c.size(), c);
+                adapter.push_back(argList);
             }
         }
         else
@@ -713,21 +713,23 @@ void EncodeArgs(T_Serial& obj, const size_t count, const T_Value& val)
             {
                 if constexpr (is_serializable_v<P, T_Serial>)
                 {
-                    adapter.push_back(P::Serialize(v));
+                    argList.push_back(P::Serialize(v));
                 }
                 else if constexpr (std::is_same_v<P, char>)
                 {
-                    adapter.push_back(std::string(val, count));
+                    argList.push_back(std::string(val, count));
                 }
                 else if constexpr (std::is_arithmetic_v<P> || std::is_same_v<P, std::string>)
                 {
-                    adapter.push_back(v);
+                    argList.push_back(v);
                 }
                 else
                 {
-                    adapter.push_back(Serialize<P, T_Serial>(v));
+                    argList.push_back(Serialize<P, T_Serial>(v));
                 }
             }
+
+            adapter.push_back(argList);
         }
     }
     else
