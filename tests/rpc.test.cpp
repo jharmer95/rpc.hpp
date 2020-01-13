@@ -191,6 +191,109 @@ int WriteMessages(TestMessage* mesgBuf, int* numMesgs)
     return 0;
 }
 
+int ReadMessageRef(TestMessage& mesg)
+{
+    std::ifstream file_in("bus.txt");
+    std::stringstream ss;
+
+    std::string s;
+    int i = 0;
+
+    try
+    {
+        if (file_in >> s)
+        {
+            mesg = rpc::DeSerialize<TestMessage, njson::json>(njson::json::parse(s));
+        }
+        while (file_in >> s)
+        {
+            ss << s << '\n';
+        }
+    }
+    catch (...)
+    {
+        return 1;
+    }
+
+    file_in.close();
+
+    std::ofstream file_out("bus.txt");
+
+    file_out << ss.str();
+    return 0;
+}
+
+int WriteMessageRef(const TestMessage& mesg)
+{
+    std::ofstream file_out("bus.txt", std::fstream::out | std::fstream::app);
+
+    try
+    {
+        file_out << rpc::Serialize<TestMessage, njson::json>(mesg).dump() << '\n';
+    }
+    catch (...)
+    {
+        return 1;
+    }
+
+    return 0;
+}
+
+int ReadMessageVec(std::vector<TestMessage>& vec, int& numMesgs)
+{
+    std::ifstream file_in("bus.txt");
+    std::stringstream ss;
+
+    std::string s;
+    int i = 0;
+
+    try
+    {
+        while (file_in >> s)
+        {
+            if (i < numMesgs)
+            {
+                vec.push_back(rpc::DeSerialize<TestMessage, njson::json>(njson::json::parse(s)));
+            }
+            else
+            {
+                ss << s << '\n';
+            }
+        }
+    }
+    catch (...)
+    {
+        numMesgs = i;
+        return 1;
+    }
+
+    file_in.close();
+
+    std::ofstream file_out("bus.txt");
+
+    file_out << ss.str();
+    return 0;
+}
+
+int WriteMessageVec(const std::vector<TestMessage>& vec)
+{
+    std::ofstream file_out("bus.txt", std::fstream::out | std::fstream::app);
+
+    for (const auto& mesg : vec)
+    {
+        try
+        {
+            file_out << rpc::Serialize<TestMessage, njson::json>(mesg).dump() << '\n';
+        }
+        catch (...)
+        {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
 template<typename T_Serial>
 std::string rpc::dispatch(const std::string& funcName, const T_Serial& obj)
 {
@@ -199,12 +302,117 @@ std::string rpc::dispatch(const std::string& funcName, const T_Serial& obj)
         return rpc::RunCallBack(obj, WriteMessages);
     }
 
+    if (funcName == "WriteMessageRef")
+    {
+        return rpc::RunCallBack(obj, WriteMessageRef);
+    }
+
+    if (funcName == "WriteMessageVec")
+    {
+        return rpc::RunCallBack(obj, WriteMessageVec);
+    }
+
     if (funcName == "ReadMessages")
     {
         return rpc::RunCallBack(obj, ReadMessages);
     }
 
+    if (funcName == "ReadMessageRef")
+    {
+        return rpc::RunCallBack(obj, ReadMessageRef);
+    }
+
+    if (funcName == "ReadMessageVec")
+    {
+        return rpc::RunCallBack(obj, ReadMessageVec);
+    }
+
     throw std::runtime_error("RPC error: Called function: \"" + funcName + "\" not found!");
+}
+
+TEST_CASE("References", "[]")
+{
+    TestMessage mesg;
+    mesg.ID = 16;
+    mesg.Flag1 = true;
+    mesg.Flag2 = false;
+    const std::vector<int> md = { 10, 20, 30 };
+    std::copy(md.begin(), md.end(), mesg.Data);
+    mesg.DataSize = static_cast<uint8_t>(md.size());
+
+    njson::json send_j;
+    send_j["args"] = njson::json::array({ rpc::Serialize<TestMessage, njson::json>(mesg) });
+    send_j["function"] = "WriteMessageRef";
+
+    const auto retMsg = rpc::Run<nlohmann::json>(send_j);
+
+    TestMessage rmesg;
+    njson::json recv_j;
+    recv_j["args"] = njson::json::array({ rpc::Serialize<TestMessage, njson::json>(rmesg) });
+    recv_j["function"] = "ReadMessageRef";
+
+    const auto retMsg2 = rpc::Run<njson::json>(recv_j);
+    rmesg = rpc::DeSerialize<TestMessage, njson::json>(njson::json::parse(retMsg2)["args"][0]);
+    REQUIRE((mesg == rmesg));
+}
+
+TEST_CASE("Vectors", "[]")
+{
+    TestMessage mesg1;
+    mesg1.ID = 16;
+    mesg1.Flag1 = true;
+    mesg1.Flag2 = false;
+    const std::vector<int> md1 = { 10, 20, 30 };
+    std::copy(md1.begin(), md1.end(), mesg1.Data);
+    mesg1.DataSize = static_cast<uint8_t>(md1.size());
+
+    TestMessage mesg2;
+    mesg2.ID = 16;
+    mesg2.Flag1 = true;
+    mesg2.Flag2 = false;
+    const std::vector<int> md2 = { 10, 20, 30 };
+    std::copy(md2.begin(), md2.end(), mesg2.Data);
+    mesg2.DataSize = static_cast<uint8_t>(md2.size());
+
+    TestMessage mesg3;
+    mesg3.ID = 16;
+    mesg3.Flag1 = true;
+    mesg3.Flag2 = false;
+    const std::vector<int> md3 = { 10, 20, 30 };
+    std::copy(md3.begin(), md3.end(), mesg3.Data);
+    mesg3.DataSize = static_cast<uint8_t>(md3.size());
+
+    std::vector<TestMessage> mesgVec { mesg1, mesg2, mesg3 };
+
+    njson::json send_j;
+    send_j["args"] = njson::json::array();
+
+    for (const auto& mesg : mesgVec)
+    {
+        send_j["args"].push_back(rpc::Serialize<TestMessage, njson::json>(mesg));
+    }
+
+    send_j["function"] = "WriteMessageVec";
+
+    const auto retMsg = rpc::Run<nlohmann::json>(send_j);
+
+    std::vector<TestMessage> rmesgVec;
+    njson::json recv_j;
+    recv_j["args"] = njson::json::array({ rpc::Serialize<TestMessage, njson::json>(TestMessage{}), rpc::Serialize<TestMessage, njson::json>(TestMessage{}), rpc::Serialize<TestMessage, njson::json>(TestMessage{}) });
+    recv_j["function"] = "ReadMessageVec";
+
+    const auto retMsg2 = rpc::Run<njson::json>(recv_j);
+    const auto obj = njson::json::parse(retMsg2)["args"];
+
+    std::cout << retMsg2 << '\n';
+
+    for (const auto& val : obj)
+    {
+        rmesgVec.push_back(rpc::DeSerialize<TestMessage, njson::json>(val));
+    }
+
+    REQUIRE(rmesgVec.size() == mesgVec.size());
+    REQUIRE((rmesgVec.front() == mesgVec.front()));
 }
 
 TEST_CASE("ReadWriteMessages", "[]")
@@ -263,11 +471,6 @@ TEST_CASE("ReadWriteMessages", "[]")
     for (size_t i = 0; i < retData.back().get<size_t>(); ++i)
     {
         rdMsg[i] = rpc::DeSerialize<TestMessage, njson::json>(retData.at(i));
-    }
-
-    for (size_t i = 0; i < numMesg; ++i)
-    {
-        std::cout << rdMsg[i].ID << '\n';
     }
 
     REQUIRE((rdMsg[0] == mesg1));

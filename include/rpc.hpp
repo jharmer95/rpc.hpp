@@ -462,19 +462,23 @@ T_Value DecodeArgContainer(const T_Serial& obj, uint8_t* buf, size_t* count)
             for (const T_Serial& ser : adapter)
             {
                 size_t ncount = 0Ul;
-                container.push_back(DecodeArgContainer<P>(ser, buf, &ncount));
+                container.push_back(DecodeArgContainer<T_Serial, P>(ser, buf, &ncount));
                 *count += ncount;
             }
         }
         else if constexpr (is_serializable_v<P, T_Serial>)
         {
-            std::transform(adapter.begin(), adapter.end(), std::back_inserter(container),
-                [](const T_Serial& ser) -> P { return P::DeSerialize(ser); });
+            for (const auto& ser : adapter.get())
+            {
+                container.push_back(P::DeSerialize(ser));
+            }
         }
         else
         {
-            std::transform(adapter.begin(), adapter.end(), std::back_inserter(container),
-                [](const T_Serial& ser) -> P { return DeSerialize<P>(ser); });
+            for (const auto& ser : adapter.get())
+            {
+                container.push_back(DeSerialize<P, T_Serial>(ser));
+            }
         }
 
         if (*count == 0UL)
@@ -494,7 +498,7 @@ T_Value DecodeArgContainer(const T_Serial& obj, uint8_t* buf, size_t* count)
     if constexpr (is_container_v<P>)
     {
         size_t ncount = 0UL;
-        container.push_back(DecodeArgContainer<P>(obj, buf, &ncount));
+        container.push_back(DecodeArgContainer<T_Serial, P>(obj, buf, &ncount));
         *count += ncount;
     }
     else if constexpr (is_serializable_v<P, T_Serial>)
@@ -558,7 +562,7 @@ T_Value DecodeArgPtr(const T_Serial& obj, uint8_t* buf, size_t* count)
         {
             for (size_t i = 0; i < adapter.size(); ++i)
             {
-                const auto sub = SerialAdapter(adapter[i]);
+                const auto sub = SerialAdapter<T_Serial>(adapter[i]);
                 const auto value = sub.template GetValue<P>();
                 memcpy(&buf[i * sizeof(value)], &value, sizeof(value));
             }
@@ -626,12 +630,12 @@ T_Value DecodeArg(const T_Serial& obj, uint8_t* buf, size_t* count, unsigned* pa
     }
     else if constexpr (std::is_arithmetic_v<T_Value> || std::is_same_v<T_Value, std::string>)
     {
-        const SerialAdapter adapter(obj);
+        const SerialAdapter<T_Serial> adapter(obj);
         return adapter.template GetValue<T_Value>();
     }
     else if constexpr (is_container_v<T_Value>)
     {
-        return DecodeArgContainer<T_Value>(obj, buf, count);
+        return DecodeArgContainer<T_Serial, T_Value>(obj, buf, count);
     }
     else
     {
@@ -646,7 +650,7 @@ void EncodeArgs(T_Serial& obj, const size_t count, const T_Value& val)
     const auto t_name = typeid(T_Value).name();
 #endif
 
-    SerialAdapter adapter(obj);
+    SerialAdapter<T_Serial> adapter(obj);
 
     if constexpr (std::is_pointer_v<T_Value>)
     {
@@ -705,25 +709,25 @@ void EncodeArgs(T_Serial& obj, const size_t count, const T_Value& val)
         }
         else
         {
-            std::transform(
-                val.begin(), val.end(), std::back_inserter(adapter), [&val, &count](const auto& v) {
-                    if constexpr (is_serializable_v<P, T_Serial>)
-                    {
-                        return P::Serialize(v);
-                    }
-                    else if constexpr (std::is_same_v<P, char>)
-                    {
-                        return std::string(val, count);
-                    }
-                    else if constexpr (std::is_arithmetic_v<P> || std::is_same_v<P, std::string>)
-                    {
-                        return v;
-                    }
-                    else
-                    {
-                        return Serialize<P>(v);
-                    }
-                });
+            for (const auto& v : val)
+            {
+                if constexpr (is_serializable_v<P, T_Serial>)
+                {
+                    adapter.push_back(P::Serialize(v));
+                }
+                else if constexpr (std::is_same_v<P, char>)
+                {
+                    adapter.push_back(std::string(val, count));
+                }
+                else if constexpr (std::is_arithmetic_v<P> || std::is_same_v<P, std::string>)
+                {
+                    adapter.push_back(v);
+                }
+                else
+                {
+                    adapter.push_back(Serialize<P, T_Serial>(v));
+                }
+            }
         }
     }
     else
@@ -1024,7 +1028,7 @@ template<typename T_Serial, typename R, typename... Args>
 std::string RunCallBack(const T_Serial& obj, R (*func)(Args...))
 {
     unsigned count = 0;
-    SerialAdapter adapter(obj);
+    SerialAdapter<T_Serial> adapter(obj);
 
     std::array<std::pair<size_t, std::unique_ptr<unsigned char[]>>,
         function_param_count_v<R, Args...>>
@@ -1060,7 +1064,7 @@ std::string RunCallBack(const T_Serial& obj, R (*func)(Args...))
 template<typename T_Serial>
 std::string Run(const T_Serial& obj)
 {
-    const auto adapter = SerialAdapter(obj);
+    const auto adapter = SerialAdapter<T_Serial>(obj);
     const auto funcName = adapter.template GetValue<std::string>("function");
     const auto argList = adapter.template GetValue<T_Serial>("args");
 
