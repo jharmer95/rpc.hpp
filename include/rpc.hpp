@@ -49,6 +49,8 @@
 
 namespace rpc
 {
+using namespace std::string_literals;
+
 template<typename T_Serial>
 class SerialAdapter
 {
@@ -439,7 +441,7 @@ T_Value DecodeArgContainer(const T_Serial& obj, uint8_t* buf, size_t* count)
 
     T_Value container;
     *count = 0UL;
-    SerialAdapter adapter(obj);
+    SerialAdapter<T_Serial> adapter(obj);
 
     if (adapter.IsArray())
     {
@@ -451,11 +453,10 @@ T_Value DecodeArgContainer(const T_Serial& obj, uint8_t* buf, size_t* count)
 
         if constexpr (std::is_arithmetic_v<P> || std::is_same_v<P, std::string>)
         {
-            std::transform(adapter.begin(), adapter.end(), std::back_inserter(container),
-                [](const T_Serial& ser) -> P {
-                    const SerialAdapter adp(ser);
-                    return adp.template GetValue<P>();
-                });
+            for (const auto& val : adapter.get())
+            {
+                container.push_back(val);
+            }
         }
         else if constexpr (is_container_v<P>)
         {
@@ -534,11 +535,12 @@ T_Value DecodeArgPtr(const T_Serial& obj, uint8_t* buf, size_t* count)
     const auto t_name = typeid(T_Value).name();
 #endif
 
-    *count = 0UL;
-    SerialAdapter adapter(obj);
+    *count = 1UL;
+    SerialAdapter<T_Serial> adapter(obj);
 
     if (adapter.IsEmpty())
     {
+        *count = 0UL;
         return nullptr;
     }
 
@@ -639,7 +641,7 @@ T_Value DecodeArg(const T_Serial& obj, uint8_t* buf, size_t* count, unsigned* pa
     }
     else
     {
-        return DeSerialize<T_Value>(obj);
+        return DeSerialize<T_Value, T_Serial>(obj);
     }
 }
 
@@ -672,7 +674,7 @@ void EncodeArgs(T_Serial& obj, const size_t count, const T_Value& val)
                 {
                     if (val[0] == '\0')
                     {
-                        adapter.push_back("");
+                        adapter.push_back(""s);
                     }
                     else
                     {
@@ -689,6 +691,10 @@ void EncodeArgs(T_Serial& obj, const size_t count, const T_Value& val)
                 }
             }
         }
+    }
+    else if constexpr (std::is_arithmetic_v<T_Value> || std::is_same_v<T_Value, std::string>)
+    {
+        adapter.push_back(val);
     }
     else if constexpr (is_container_v<T_Value>)
     {
@@ -738,13 +744,9 @@ void EncodeArgs(T_Serial& obj, const size_t count, const T_Value& val)
         {
             adapter.push_back(T_Value::Serialize(val));
         }
-        else if constexpr (std::is_arithmetic_v<T_Value> || std::is_same_v<T_Value, std::string>)
-        {
-            adapter.push_back(val);
-        }
         else
         {
-            adapter.push_back(Serialize<T_Value>(val));
+            adapter.push_back(Serialize<T_Value, T_Serial>(val));
         }
     }
 
@@ -770,7 +772,7 @@ template<typename T_Serial, typename R, typename... Args>
 std::string RunCallBack(const T_Serial& obj, std::function<R __stdcall(Args...)> func)
 {
     unsigned count = 0;
-    SerialAdapter adapter(obj);
+    SerialAdapter<T_Serial> adapter(obj);
 
     std::array<std::pair<size_t, std::unique_ptr<unsigned char[]>>,
         function_param_count_v<R, Args...>>
@@ -787,10 +789,19 @@ std::string RunCallBack(const T_Serial& obj, std::function<R __stdcall(Args...)>
             adapter[count], buffers[count].second.get(), &(buffers[count].first), &count)...
     };
 
-    const auto result = std::apply(func, args);
     SerialAdapter<T_Serial> retSer;
 
-    retSer.SetValue("result", result);
+    if constexpr(std::is_void_v<R>)
+    {
+        std::apply(func, args);
+        retSer.SetValue("result", nullptr);
+    }
+    else
+    {
+        const auto result = std::apply(func, args);
+        retSer.SetValue("result", result);
+    }
+
     retSer.SetValue("args", retSer.EmptyArray());
     auto& argList = retSer.template GetValueRef<T_Serial>("args");
 
@@ -807,7 +818,7 @@ template<typename T_Serial, typename R, typename... Args>
 std::string RunCallBack(const T_Serial& obj, R(__stdcall* func)(Args...))
 {
     unsigned count = 0;
-    SerialAdapter adapter(obj);
+    SerialAdapter<T_Serial> adapter(obj);
 
     std::array<std::pair<size_t, std::unique_ptr<unsigned char[]>>,
         function_param_count_v<R, Args...>>
@@ -824,10 +835,19 @@ std::string RunCallBack(const T_Serial& obj, R(__stdcall* func)(Args...))
             adapter[count], buffers[count].second.get(), &(buffers[count].first), &count)...
     };
 
-    const auto result = std::apply(func, args);
     SerialAdapter<T_Serial> retSer;
 
-    retSer.SetValue("result", result);
+    if constexpr(std::is_void_v<R>)
+    {
+        std::apply(func, args);
+        retSer.SetValue("result", nullptr);
+    }
+    else
+    {
+        const auto result = std::apply(func, args);
+        retSer.SetValue("result", result);
+    }
+
     retSer.SetValue("args", retSer.EmptyArray());
     auto& argList = retSer.template GetValueRef<T_Serial>("args");
 
@@ -844,7 +864,7 @@ template<typename T_Serial, typename R, typename... Args>
 std::string RunCallBack(const T_Serial& obj, std::function<R __fastcall(Args...)> func)
 {
     unsigned count = 0;
-    SerialAdapter adapter(obj);
+    SerialAdapter<T_Serial> adapter(obj);
 
     std::array<std::pair<size_t, std::unique_ptr<unsigned char[]>>,
         function_param_count_v<R, Args...>>
@@ -861,10 +881,19 @@ std::string RunCallBack(const T_Serial& obj, std::function<R __fastcall(Args...)
             adapter[count], buffers[count].second.get(), &(buffers[count].first), &count)...
     };
 
-    const auto result = std::apply(func, args);
     SerialAdapter<T_Serial> retSer;
 
-    retSer.SetValue("result", result);
+    if constexpr(std::is_void_v<R>)
+    {
+        std::apply(func, args);
+        retSer.SetValue("result", nullptr);
+    }
+    else
+    {
+        const auto result = std::apply(func, args);
+        retSer.SetValue("result", result);
+    }
+
     retSer.SetValue("args", retSer.EmptyArray());
     auto& argList = retSer.template GetValueRef<T_Serial>("args");
 
@@ -881,7 +910,7 @@ template<typename T_Serial, typename R, typename... Args>
 std::string RunCallBack(const T_Serial& obj, R(__fastcall* func)(Args...))
 {
     unsigned count = 0;
-    SerialAdapter adapter(obj);
+    SerialAdapter<T_Serial> adapter(obj);
 
     std::array<std::pair<size_t, std::unique_ptr<unsigned char[]>>,
         function_param_count_v<R, Args...>>
@@ -898,10 +927,19 @@ std::string RunCallBack(const T_Serial& obj, R(__fastcall* func)(Args...))
             adapter[count], buffers[count].second.get(), &(buffers[count].first), &count)...
     };
 
-    const auto result = std::apply(func, args);
     SerialAdapter<T_Serial> retSer;
 
-    retSer.SetValue("result", result);
+    if constexpr(std::is_void_v<R>)
+    {
+        std::apply(func, args);
+        retSer.SetValue("result", nullptr);
+    }
+    else
+    {
+        const auto result = std::apply(func, args);
+        retSer.SetValue("result", result);
+    }
+
     retSer.SetValue("args", retSer.EmptyArray());
     auto& argList = retSer.template GetValueRef<T_Serial>("args");
 
@@ -918,7 +956,7 @@ template<typename T_Serial, typename R, typename... Args>
 std::string RunCallBack(const T_Serial& obj, std::function<R __vectorcall(Args...)> func)
 {
     unsigned count = 0;
-    SerialAdapter adapter(obj);
+    SerialAdapter<T_Serial> adapter(obj);
 
     std::array<std::pair<size_t, std::unique_ptr<unsigned char[]>>,
         function_param_count_v<R, Args...>>
@@ -935,10 +973,19 @@ std::string RunCallBack(const T_Serial& obj, std::function<R __vectorcall(Args..
             adapter[count], buffers[count].second.get(), &(buffers[count].first), &count)...
     };
 
-    const auto result = std::apply(func, args);
     SerialAdapter<T_Serial> retSer;
 
-    retSer.SetValue("result", result);
+    if constexpr(std::is_void_v<R>)
+    {
+        std::apply(func, args);
+        retSer.SetValue("result", nullptr);
+    }
+    else
+    {
+        const auto result = std::apply(func, args);
+        retSer.SetValue("result", result);
+    }
+
     retSer.SetValue("args", retSer.EmptyArray());
     auto& argList = retSer.template GetValueRef<T_Serial>("args");
 
@@ -955,7 +1002,7 @@ template<typename T_Serial, typename R, typename... Args>
 std::string RunCallBack(const T_Serial& obj, R(__vectorcall* func)(Args...))
 {
     unsigned count = 0;
-    SerialAdapter adapter(obj);
+    SerialAdapter<T_Serial> adapter(obj);
 
     std::array<std::pair<size_t, std::unique_ptr<unsigned char[]>>,
         function_param_count_v<R, Args...>>
@@ -972,10 +1019,19 @@ std::string RunCallBack(const T_Serial& obj, R(__vectorcall* func)(Args...))
             adapter[count], buffers[count].second.get(), &(buffers[count].first), &count)...
     };
 
-    const auto result = std::apply(func, args);
     SerialAdapter<T_Serial> retSer;
 
-    retSer.SetValue("result", result);
+    if constexpr(std::is_void_v<R>)
+    {
+        std::apply(func, args);
+        retSer.SetValue("result", nullptr);
+    }
+    else
+    {
+        const auto result = std::apply(func, args);
+        retSer.SetValue("result", result);
+    }
+
     retSer.SetValue("args", retSer.EmptyArray());
     auto& argList = retSer.template GetValueRef<T_Serial>("args");
 
@@ -993,7 +1049,7 @@ template<typename T_Serial, typename R, typename... Args>
 std::string RunCallBack(const T_Serial& obj, std::function<R(Args...)> func)
 {
     unsigned count = 0;
-    SerialAdapter adapter(obj);
+    SerialAdapter<T_Serial> adapter(obj);
 
     std::array<std::pair<size_t, std::unique_ptr<unsigned char[]>>,
         function_param_count_v<R, Args...>>
@@ -1010,10 +1066,19 @@ std::string RunCallBack(const T_Serial& obj, std::function<R(Args...)> func)
             adapter[count], buffers[count].second.get(), &(buffers[count].first), &count)...
     };
 
-    const auto result = std::apply(func, args);
     SerialAdapter<T_Serial> retSer;
 
-    retSer.SetValue("result", result);
+    if constexpr(std::is_void_v<R>)
+    {
+        std::apply(func, args);
+        retSer.SetValue("result", nullptr);
+    }
+    else
+    {
+        const auto result = std::apply(func, args);
+        retSer.SetValue("result", result);
+    }
+
     retSer.SetValue("args", retSer.EmptyArray());
     auto& argList = retSer.template GetValueRef<T_Serial>("args");
 
@@ -1047,10 +1112,19 @@ std::string RunCallBack(const T_Serial& obj, R (*func)(Args...))
             adapter[count], buffers[count].second.get(), &(buffers[count].first), &count)...
     };
 
-    const auto result = std::apply(func, args);
     SerialAdapter<T_Serial> retSer;
 
-    retSer.SetValue("result", result);
+    if constexpr(std::is_void_v<R>)
+    {
+        std::apply(func, args);
+        retSer.SetValue("result", nullptr);
+    }
+    else
+    {
+        const auto result = std::apply(func, args);
+        retSer.SetValue("result", result);
+    }
+
     retSer.SetValue("args", retSer.EmptyArray());
     auto& argList = retSer.template GetValueRef<T_Serial>("args");
 
