@@ -13,7 +13,7 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     set(FULL_WARNING /W4 /experimental:external /external:W0 /external:anglebrackets
         /permissive- /wd4619 /w14242 /w14254 /w14263 /w14265 /w14287 /we4289 /w14296 /w14311 /w14545
         /w14546 /w14547 /w14549 /w14555 /w14640 /w14826 /w14905 /w14906 /w14928)
-    set(MIN_WARNING /W3 /experimental:external /external:W0 /external:anglebrackets)
+    set(MIN_WARNING /W1 /experimental:external /external:W0 /external:anglebrackets /wd4619)
 elseif (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
     set(FULL_WARNING -Wall -Wextra -Wpedantic -Wshadow -Wnon-virtual-dtor -Wold-style-cast
         -Wcast-align -Wunused -Woverloaded-virtual -Wconversion -Wsign-conversion
