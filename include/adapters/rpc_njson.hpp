@@ -74,6 +74,20 @@ T_Value& JSONAdapter::GetValueRef(const std::string& name)
 
 template<>
 template<typename T_Value>
+T_Value& JSONAdapter::GetValueRef() const
+{
+    return m_serialObj;
+}
+
+template<>
+template<typename T_Value>
+T_Value& JSONAdapter::GetValueRef(const std::string& name) const
+{
+    return m_serialObj[name];
+}
+
+template<>
+template<typename T_Value>
 void JSONAdapter::SetValue(T_Value value)
 {
     m_serialObj = value;
@@ -135,33 +149,75 @@ inline std::string JSONAdapter::ToString() const
 }
 
 template<>
-inline bool JSONAdapter::IsArray() const
+inline bool JSONAdapter::IsArray() const noexcept
 {
     return m_serialObj.is_array();
 }
 
 template<>
-inline bool JSONAdapter::IsEmpty() const
+inline bool JSONAdapter::IsEmpty() const noexcept
 {
     return m_serialObj.is_null() || (m_serialObj.is_array() && m_serialObj.empty());
 }
 
 template<>
 template<>
-inline njson::json::const_iterator JSONAdapter::begin() const
+inline njson::json::iterator JSONAdapter::begin() noexcept
 {
     return m_serialObj.begin();
 }
 
 template<>
 template<>
-inline njson::json::const_iterator JSONAdapter::end() const
+inline njson::json::iterator JSONAdapter::end() noexcept
 {
     return m_serialObj.end();
 }
 
 template<>
-inline size_t JSONAdapter::size() const
+template<>
+inline njson::json::const_iterator JSONAdapter::begin() const noexcept
+{
+    return m_serialObj.begin();
+}
+
+template<>
+template<>
+inline njson::json::const_iterator JSONAdapter::end() const noexcept
+{
+    return m_serialObj.end();
+}
+
+template<>
+template<>
+inline njson::json::reverse_iterator JSONAdapter::rbegin() noexcept
+{
+    return m_serialObj.rbegin();
+}
+
+template<>
+template<>
+inline njson::json::reverse_iterator JSONAdapter::rend() noexcept
+{
+    return m_serialObj.rend();
+}
+
+template<>
+template<>
+inline njson::json::const_reverse_iterator JSONAdapter::rbegin() const noexcept
+{
+    return m_serialObj.rbegin();
+}
+
+template<>
+template<>
+inline njson::json::const_reverse_iterator JSONAdapter::rend() const noexcept
+{
+    return m_serialObj.rend();
+}
+
+template<>
+inline size_t JSONAdapter::size() const noexcept
 {
     return m_serialObj.size();
 }
@@ -173,7 +229,7 @@ inline njson::json JSONAdapter::operator[](size_t n) const
 }
 
 template<>
-inline njson::json JSONAdapter::EmptyArray()
+inline njson::json JSONAdapter::EmptyArray() noexcept
 {
     return njson::json::array();
 }
