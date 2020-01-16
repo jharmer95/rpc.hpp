@@ -479,7 +479,7 @@ TEST_CASE("Pointers", "[]")
     const auto retMsg2 = rpc::Run<nlohmann::json>(recv_j);
     const auto retData = nlohmann::json::parse(retMsg2)["args"];
 
-    for (size_t i = 0; i < retData.size(); ++i)
+    for (size_t i = 0; i < retData.size() - 1; ++i)
     {
         rdMsg[i] = rpc::DeSerialize<TestMessage, njson::json>(retData.at(i));
     }

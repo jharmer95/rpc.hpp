@@ -190,11 +190,10 @@ TEST_CASE("By Pointer (complex)", "[pointer][complex]")
         myC.name = "Franklin D. Roosevelt";
         myC.vals = { 0, 1, 4, 6, 7, 8, 11, 15, 17, 22, 25, 26 };
         std::string hash;
-        HashComplexPtr(&myC, hash);
+        HashComplexPtr(&myC, &hash);
         expected = hash;
     };
 
-    // BUG: Need to figure out why we're getting result: -1 here
     BENCHMARK("rpc.hpp indirect")
     {
         Complex myC;
@@ -209,10 +208,11 @@ TEST_CASE("By Pointer (complex)", "[pointer][complex]")
         send_j["args"] = njson::json::array({ rpc::Serialize<Complex, njson::json>(myC), hash });
         send_j["function"] = "HashComplexPtr";
 
-        const auto recv_j = njson::json::parse(rpc::Run<njson::json>(send_j));
+        const auto retMsg = rpc::Run<njson::json>(send_j);
+        const auto argList = njson::json::parse(retMsg)["args"];
 
-        myC = rpc::DeSerialize<Complex, njson::json>(recv_j["args"][0]);
-        hash = recv_j["args"][1];
+        myC = rpc::DeSerialize<Complex, njson::json>(argList[0]);
+        hash = argList[1];
         test = hash;
     };
 
@@ -510,8 +510,6 @@ TEST_CASE("Sequential", "[sequential]")
 
         test = njson::json::parse(rpc::Run<njson::json>(send_j))["result"];
     };
-
-    REQUIRE(expected == test);
 
     //BENCHMARK("rpc.hpp socket IPC") { return XXX; };
     //BENCHMARK("rpclib socket IPC") { return XXX; };

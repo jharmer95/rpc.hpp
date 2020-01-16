@@ -362,7 +362,8 @@ std::string HashComplex(Complex cx)
     return hash.str();
 }
 
-void HashComplexPtr(Complex* cx, std::string& hashStr)
+// TODO: Test this with char* instead of string*
+void HashComplexPtr(Complex* cx, std::string* hashStr)
 {
     std::stringstream hash;
 
@@ -378,7 +379,7 @@ void HashComplexPtr(Complex* cx, std::string& hashStr)
         hash << std::hex << acc;
     }
 
-    hashStr = hash.str();
+    *hashStr = hash.str();
 }
 
 void HashComplexRef(Complex& cx, std::string& hashStr)

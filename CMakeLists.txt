@@ -12,7 +12,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     set(FULL_WARNING /W4 /experimental:external /external:W0 /external:anglebrackets
         /permissive- /wd4619 /w14242 /w14254 /w14263 /w14265 /w14287 /we4289 /w14296 /w14311 /w14545
-        /w14546 /w14547 /w14549 /w14555 /w14640 /w14826 /w14905 /w14906 /w14928)
+        /w14546 /w14547 /w14549 /w14555 /w14640 /w14826 /w14905 /w14906 /w14928 /we4834)
     set(MIN_WARNING /W1 /experimental:external /external:W0 /external:anglebrackets /wd4619)
 elseif (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
     set(FULL_WARNING -Wall -Wextra -Wpedantic -Wshadow -Wnon-virtual-dtor -Wold-style-cast
@@ -38,7 +38,7 @@ target_compile_options(rpc_test PRIVATE ${FULL_WARNING})
 
 add_executable(rpc_benchmark "${PROJECT_SOURCE_DIR}/tests/rpc.benchmark.cpp")
 target_link_libraries(rpc_benchmark rpc_hpp)
-target_compile_options(rpc_benchmark PRIVATE ${MIN_WARNING})
+target_compile_options(rpc_benchmark PRIVATE ${MIN_WARNING} /D NOTHROW)
 
 catch_discover_tests(rpc_test)
 catch_discover_tests(rpc_benchmark)
