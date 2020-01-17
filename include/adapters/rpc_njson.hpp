@@ -2,7 +2,7 @@
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Implementation of adapting nlohmann/json (https://github.com/nlohmann/json)
 ///@version 0.1.0.0
-///@date 01-08-2020
+///@date 01-17-2020
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -40,199 +40,201 @@
 
 #include <nlohmann/json.hpp>
 
+#include <string_view>
+
 namespace njson = nlohmann;
 
-using JSONAdapter = rpc::SerialAdapter<njson::json>;
+using JSONAdapter = rpc::serial_adapter<njson::json>;
 
 template<>
-JSONAdapter::SerialAdapter(std::string_view obj_str) : m_serialObj(njson::json::parse(obj_str)) {}
+JSONAdapter::serial_adapter(std::string_view obj_str) : m_serial_object(njson::json::parse(obj_str)) {}
 
 template<>
-template<typename T_Value>
-T_Value JSONAdapter::GetValue() const
+template<typename Value>
+Value JSONAdapter::get_value() const
 {
-    return m_serialObj.get<T_Value>();
+    return m_serial_object.get<Value>();
 }
 
 template<>
-template<typename T_Value>
-T_Value JSONAdapter::GetValue(const std::string& name) const
+template<typename Value>
+Value JSONAdapter::get_value(const std::string& name) const
 {
-    return m_serialObj[name].get<T_Value>();
+    return m_serial_object[name].get<Value>();
 }
 
 template<>
-template<typename T_Value>
-T_Value& JSONAdapter::GetValueRef()
+template<typename Value>
+Value& JSONAdapter::get_value_ref()
 {
-    return m_serialObj;
+    return m_serial_object;
 }
 
 template<>
-template<typename T_Value>
-T_Value& JSONAdapter::GetValueRef(const std::string& name)
+template<typename Value>
+Value& JSONAdapter::get_value_ref(const std::string& name)
 {
-    return m_serialObj[name];
+    return m_serial_object[name];
 }
 
 template<>
-template<typename T_Value>
-T_Value& JSONAdapter::GetValueRef() const
+template<typename Value>
+Value& JSONAdapter::get_value_ref() const
 {
-    return m_serialObj;
+    return m_serial_object;
 }
 
 template<>
-template<typename T_Value>
-T_Value& JSONAdapter::GetValueRef(const std::string& name) const
+template<typename Value>
+Value& JSONAdapter::get_value_ref(const std::string& name) const
 {
-    return m_serialObj[name];
+    return m_serial_object[name];
 }
 
 template<>
-template<typename T_Value>
-void JSONAdapter::SetValue(T_Value value)
+template<typename Value>
+void JSONAdapter::set_value(Value value)
 {
-    m_serialObj = value;
+    m_serial_object = value;
 }
 
 template<>
-template<typename T_Value>
-void JSONAdapter::SetValue(const std::string& name, T_Value value)
+template<typename Value>
+void JSONAdapter::set_value(const std::string& name, Value value)
 {
-    m_serialObj[name] = value;
+    m_serial_object[name] = value;
 }
 
 template<>
-template<typename T_Value>
-void JSONAdapter::push_back(T_Value value)
+template<typename Value>
+void JSONAdapter::push_back(Value value)
 {
-    if (!m_serialObj.is_array())
+    if (!m_serial_object.is_array())
     {
-        if (m_serialObj.is_null())
+        if (m_serial_object.is_null())
         {
-            m_serialObj = njson::json::array();
+            m_serial_object = njson::json::array();
         }
         else
         {
-            const auto tmp = m_serialObj.get<T_Value>();
-            m_serialObj = njson::json::array();
-            m_serialObj.push_back(tmp);
+            const auto tmp = m_serial_object.get<Value>();
+            m_serial_object = njson::json::array();
+            m_serial_object.push_back(tmp);
         }
     }
 
-    m_serialObj.push_back(value);
+    m_serial_object.push_back(value);
 }
 
 template<>
-template<typename T_Value>
-void JSONAdapter::AppendValue(const std::string& name, T_Value value)
+template<typename Value>
+void JSONAdapter::append_value(const std::string& name, Value value)
 {
-    if (!m_serialObj[name].is_array())
+    if (!m_serial_object[name].is_array())
     {
-        if (m_serialObj[name].is_null())
+        if (m_serial_object[name].is_null())
         {
-            m_serialObj[name] = njson::json::array();
+            m_serial_object[name] = njson::json::array();
         }
         else
         {
-            const auto tmp = m_serialObj[name].get<T_Value>();
-            m_serialObj[name] = njson::json::array();
-            m_serialObj[name].push_back(tmp);
+            const auto tmp = m_serial_object[name].get<Value>();
+            m_serial_object[name] = njson::json::array();
+            m_serial_object[name].push_back(tmp);
         }
     }
 
-    m_serialObj[name].push_back(value);
+    m_serial_object[name].push_back(value);
 }
 
 template<>
-inline std::string JSONAdapter::ToString() const
+inline std::string JSONAdapter::to_string() const
 {
-    return m_serialObj.dump();
+    return m_serial_object.dump();
 }
 
 template<>
-inline bool JSONAdapter::IsArray() const noexcept
+inline bool JSONAdapter::is_array() const noexcept
 {
-    return m_serialObj.is_array();
+    return m_serial_object.is_array();
 }
 
 template<>
-inline bool JSONAdapter::IsEmpty() const noexcept
+inline bool JSONAdapter::is_empty() const noexcept
 {
-    return m_serialObj.is_null() || (m_serialObj.is_array() && m_serialObj.empty());
+    return m_serial_object.is_null() || (m_serial_object.is_array() && m_serial_object.empty());
 }
 
 template<>
 template<>
 inline njson::json::iterator JSONAdapter::begin() noexcept
 {
-    return m_serialObj.begin();
+    return m_serial_object.begin();
 }
 
 template<>
 template<>
 inline njson::json::iterator JSONAdapter::end() noexcept
 {
-    return m_serialObj.end();
+    return m_serial_object.end();
 }
 
 template<>
 template<>
 inline njson::json::const_iterator JSONAdapter::begin() const noexcept
 {
-    return m_serialObj.begin();
+    return m_serial_object.begin();
 }
 
 template<>
 template<>
 inline njson::json::const_iterator JSONAdapter::end() const noexcept
 {
-    return m_serialObj.end();
+    return m_serial_object.end();
 }
 
 template<>
 template<>
 inline njson::json::reverse_iterator JSONAdapter::rbegin() noexcept
 {
-    return m_serialObj.rbegin();
+    return m_serial_object.rbegin();
 }
 
 template<>
 template<>
 inline njson::json::reverse_iterator JSONAdapter::rend() noexcept
 {
-    return m_serialObj.rend();
+    return m_serial_object.rend();
 }
 
 template<>
 template<>
 inline njson::json::const_reverse_iterator JSONAdapter::rbegin() const noexcept
 {
-    return m_serialObj.rbegin();
+    return m_serial_object.rbegin();
 }
 
 template<>
 template<>
 inline njson::json::const_reverse_iterator JSONAdapter::rend() const noexcept
 {
-    return m_serialObj.rend();
+    return m_serial_object.rend();
 }
 
 template<>
 inline size_t JSONAdapter::size() const noexcept
 {
-    return m_serialObj.size();
+    return m_serial_object.size();
 }
 
 template<>
 inline njson::json JSONAdapter::operator[](size_t n) const
 {
-    return m_serialObj[n];
+    return m_serial_object[n];
 }
 
 template<>
-inline njson::json JSONAdapter::EmptyArray() noexcept
+inline njson::json JSONAdapter::make_array() noexcept
 {
     return njson::json::array();
 }
