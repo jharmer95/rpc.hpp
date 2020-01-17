@@ -45,6 +45,9 @@ namespace njson = nlohmann;
 using JSONAdapter = rpc::SerialAdapter<njson::json>;
 
 template<>
+JSONAdapter::SerialAdapter(std::string_view obj_str) : m_serialObj(njson::json::parse(obj_str)) {}
+
+template<>
 template<typename T_Value>
 T_Value JSONAdapter::GetValue() const
 {

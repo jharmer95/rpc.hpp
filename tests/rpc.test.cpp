@@ -294,6 +294,11 @@ int WriteMessageVec(const std::vector<TestMessage>& vec)
     return 0;
 }
 
+int SimpleSum(int n1, int n2)
+{
+    return n1 + n2;
+}
+
 template<typename T_Serial>
 std::string rpc::dispatch(const std::string& funcName, const T_Serial& obj)
 {
@@ -325,6 +330,11 @@ std::string rpc::dispatch(const std::string& funcName, const T_Serial& obj)
     if (funcName == "ReadMessageVec")
     {
         return rpc::RunCallBack(obj, ReadMessageVec);
+    }
+
+    if (funcName == "SimpleSum")
+    {
+        return rpc::RunCallBack(obj, SimpleSum);
     }
 
     throw std::runtime_error("RPC error: Called function: \"" + funcName + "\" not found!");
@@ -486,4 +496,12 @@ TEST_CASE("Pointers", "[]")
 
     REQUIRE((rdMsg[0] == mesg1));
     REQUIRE((rdMsg[1] == mesg2));
+}
+
+TEST_CASE("From String")
+{
+    const auto retMsg = rpc::Run<njson::json>(R"({ "args": [3, 4], "function": "SimpleSum" })");
+    const int result = njson::json::parse(retMsg)["result"].get<int>();
+
+    REQUIRE(result == 7);
 }

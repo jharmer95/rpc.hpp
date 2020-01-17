@@ -63,6 +63,7 @@ class SerialAdapter
 public:
     SerialAdapter() : m_serialObj() {}
     SerialAdapter(T_Serial obj) : m_serialObj(std::move(obj)) {}
+    SerialAdapter(std::string_view obj_str);
 
     template<typename T_Value>
     [[nodiscard]] T_Value GetValue() const
@@ -970,6 +971,26 @@ template<typename T_Serial>
 std::string Run(const T_Serial& obj) EXCEPT
 {
     const auto adapter = SerialAdapter<T_Serial>(obj);
+    const auto funcName = adapter.template GetValue<std::string>("function");
+    const auto argList = adapter.template GetValue<T_Serial>("args");
+
+    try
+    {
+        return dispatch<T_Serial>(funcName, argList);
+    }
+    catch (std::exception& ex)
+    {
+        std::cerr << ex.what() << '\n';
+        SerialAdapter<T_Serial> result;
+        result.SetValue("result", -1);
+        return result.ToString();
+    }
+}
+
+template<typename T_Serial>
+std::string Run(std::string_view obj_str) EXCEPT
+{
+    const auto adapter = SerialAdapter<T_Serial>(obj_str);
     const auto funcName = adapter.template GetValue<std::string>("function");
     const auto argList = adapter.template GetValue<T_Serial>("args");
 
