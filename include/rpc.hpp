@@ -64,13 +64,6 @@ public:
     SerialAdapter() : m_serialObj() {}
     SerialAdapter(T_Serial obj) : m_serialObj(std::move(obj)) {}
 
-    // TODO: Get SerialAdapter to handle serialization/deserialization functions
-    //template<typename T_Value>
-    //[[nodiscard]] static T_Serial Serialize(const T_Value&);
-
-    //template<typename T_Value>
-    //[[nodiscard]] static T_Value DeSerialize(const T_Serial&);
-
     template<typename T_Value>
     [[nodiscard]] T_Value GetValue() const
     {
@@ -625,7 +618,7 @@ void EncodeArgs(T_Serial& obj, const size_t count, const T_Value& val) EXCEPT
                     }
                     else
                     {
-                        adapter.push_back(std::string(val, count));
+                        adapter.push_back(std::string(val));
                     }
                 }
                 else if constexpr (std::is_arithmetic_v<P> || std::is_same_v<P, std::string>)
