@@ -1,3 +1,41 @@
+///@file bench_funcs.hpp
+///@author Jackson Harmer (jharmer95@gmail.com)
+///@brief Functions for benchmarking rpc
+///@version 0.1.0.0
+///@date 01-17-2020
+///
+///@copyright
+///BSD 3-Clause License
+///
+///Copyright (c) 2020, Jackson Harmer
+///All rights reserved.
+///
+///Redistribution and use in source and binary forms, with or without
+///modification, are permitted provided that the following conditions are met:
+///
+///1. Redistributions of source code must retain the above copyright notice, this
+///   list of conditions and the following disclaimer.
+///
+///2. Redistributions in binary form must reproduce the above copyright notice,
+///   this list of conditions and the following disclaimer in the documentation
+///   and/or other materials provided with the distribution.
+///
+///3. Neither the name of the copyright holder nor the names of its
+///   contributors may be used to endorse or promote products derived from
+///   this software without specific prior written permission.
+///
+///THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+///AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+///IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+///DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+///FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+///DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+///SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+///CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+///OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+///OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+///
+
 #pragma once
 
 #include "rpc.hpp"
@@ -27,43 +65,10 @@ struct TestMessage
 
         return memcmp(Data, other.Data, DataSize) == 0;
     }
-
-    // [[nodiscard]] static nlohmann::json Serialize(const TestMessage& mesg)
-    // {
-    //     nlohmann::json obj_j;
-    //     obj_j["ID"] = mesg.ID;
-    //     obj_j["Flag1"] = mesg.Flag1;
-    //     obj_j["Flag2"] = mesg.Flag2;
-    //     obj_j["DataSize"] = mesg.DataSize;
-
-    //     if (mesg.DataSize > 0)
-    //     {
-    //         std::vector<int> tmpVec(mesg.Data, mesg.Data + mesg.DataSize);
-    //         obj_j["Data"] = tmpVec;
-    //     }
-    //     else
-    //     {
-    //         obj_j["Data"] = nlohmann::json::array();
-    //     }
-
-    //     return obj_j;
-    // }
-
-    // [[nodiscard]] static TestMessage DeSerialize(const nlohmann::json& obj_j)
-    // {
-    //     TestMessage mesg;
-    //     mesg.ID = obj_j["ID"].get<int>();
-    //     mesg.Flag1 = obj_j["Flag1"].get<bool>();
-    //     mesg.Flag2 = obj_j["Flag2"].get<bool>();
-    //     mesg.DataSize = obj_j["DataSize"].get<uint8_t>();
-    //     const auto sData = obj_j["Data"].get<std::vector<int>>();
-    //     std::copy(sData.begin(), sData.begin() + mesg.DataSize, mesg.Data);
-    //     return mesg;
-    // }
 };
 
 template<>
-[[nodiscard]] nlohmann::json rpc::Serialize(const TestMessage& mesg)
+inline nlohmann::json rpc::serialize(const TestMessage& mesg) RPC_HPP_EXCEPT
 {
     nlohmann::json obj_j;
     obj_j["ID"] = mesg.ID;
@@ -85,7 +90,7 @@ template<>
 }
 
 template<>
-[[nodiscard]] TestMessage rpc::DeSerialize(const nlohmann::json& obj_j)
+inline TestMessage rpc::deserialize(const nlohmann::json& obj_j) RPC_HPP_EXCEPT
 {
     TestMessage mesg;
     mesg.ID = obj_j["ID"].get<int>();
@@ -111,7 +116,7 @@ int ReadMessages(TestMessage* mesgBuf, int* numMesgs)
         {
             if (i < *numMesgs)
             {
-                mesgBuf[i++] = rpc::DeSerialize<TestMessage, njson::json>(njson::json::parse(s));
+                mesgBuf[i++] = rpc::deserialize<njson::json, TestMessage>(njson::json::parse(s));
             }
             else
             {
@@ -141,7 +146,7 @@ int WriteMessages(TestMessage* mesgBuf, int* numMesgs)
     {
         try
         {
-            file_out << rpc::Serialize<TestMessage, njson::json>(mesgBuf[i]).dump() << '\n';
+            file_out << rpc::serialize<njson::json, TestMessage>(mesgBuf[i]).dump() << '\n';
         }
         catch (...)
         {
@@ -159,13 +164,12 @@ int ReadMessageRef(TestMessage& mesg)
     std::stringstream ss;
 
     std::string s;
-    int i = 0;
 
     try
     {
         if (file_in >> s)
         {
-            mesg = rpc::DeSerialize<TestMessage, njson::json>(njson::json::parse(s));
+            mesg = rpc::deserialize<njson::json, TestMessage>(njson::json::parse(s));
         }
         while (file_in >> s)
         {
@@ -191,7 +195,7 @@ int WriteMessageRef(const TestMessage& mesg)
 
     try
     {
-        file_out << rpc::Serialize<TestMessage, njson::json>(mesg).dump() << '\n';
+        file_out << rpc::serialize<njson::json, TestMessage>(mesg).dump() << '\n';
     }
     catch (...)
     {
@@ -215,7 +219,7 @@ int ReadMessageVec(std::vector<TestMessage>& vec, int& numMesgs)
         {
             if (i < numMesgs)
             {
-                vec.push_back(rpc::DeSerialize<TestMessage, njson::json>(njson::json::parse(s)));
+                vec.push_back(rpc::deserialize<njson::json, TestMessage>(njson::json::parse(s)));
             }
             else
             {
@@ -245,7 +249,7 @@ int WriteMessageVec(const std::vector<TestMessage>& vec)
     {
         try
         {
-            file_out << rpc::Serialize<TestMessage, njson::json>(mesg).dump() << '\n';
+            file_out << rpc::serialize<njson::json, TestMessage>(mesg).dump() << '\n';
         }
         catch (...)
         {
@@ -301,15 +305,15 @@ void FibonacciRef(uint64_t& number)
 struct Complex
 {
 public:
-    int id;
-    std::string name;
-    bool flag1;
-    bool flag2;
-    std::array<uint8_t, 12> vals;
+    int id{};
+    std::string name{};
+    bool flag1{};
+    bool flag2{};
+    std::array<uint8_t, 12> vals{};
 };
 
 template<>
-[[nodiscard]] njson::json rpc::Serialize(const Complex& cx)
+inline njson::json rpc::serialize(const Complex& cx) RPC_HPP_EXCEPT
 {
     njson::json obj_j;
     obj_j["id"] = cx.id;
@@ -322,7 +326,7 @@ template<>
 }
 
 template<>
-[[nodiscard]] Complex rpc::DeSerialize(const njson::json& obj_j)
+inline Complex rpc::deserialize(const njson::json& obj_j) RPC_HPP_EXCEPT
 {
     Complex cx;
     cx.id = obj_j["id"].get<int>();
@@ -399,162 +403,162 @@ void HashComplexRef(Complex& cx, std::string& hashStr)
     hashStr = hash.str();
 }
 
-long double Average(long double n1, long double n2, long double n3, long double n4, long double n5, long double n6, long double n7, long double n8, long double n9, long double n10)
+double Average(double n1, double n2, double n3, double n4, double n5, double n6, double n7, double n8, double n9, double n10)
 {
-    return (n1 + n2 + n3 + n4 + n5 + n6 + n7 + n8 + n9 + n10) / 10.00L;
+    return (n1 + n2 + n3 + n4 + n5 + n6 + n7 + n8 + n9 + n10) / 10.00;
 }
 
-long double StdDev(long double n1, long double n2, long double n3, long double n4, long double n5, long double n6, long double n7, long double n8, long double n9, long double n10)
+double StdDev(double n1, double n2, double n3, double n4, double n5, double n6, double n7, double n8, double n9, double n10)
 {
     auto avg = Average(n1 * n1, n2 * n2, n3 * n3, n4 * n4, n5 * n5, n6 * n6, n7 * n7, n8 * n8, n9 * n9, n10 * n10);
-    return sqrtl(avg);
+    return sqrt(avg);
 }
 
-void SquareRootPtr(long double* n1, long double* n2, long double* n3, long double* n4, long double* n5, long double* n6, long double* n7, long double* n8, long double* n9, long double* n10)
+void SquareRootPtr(double* n1, double* n2, double* n3, double* n4, double* n5, double* n6, double* n7, double* n8, double* n9, double* n10)
 {
-    *n1 = sqrtl(*n1);
-    *n2 = sqrtl(*n2);
-    *n3 = sqrtl(*n3);
-    *n4 = sqrtl(*n4);
-    *n5 = sqrtl(*n5);
-    *n6 = sqrtl(*n6);
-    *n7 = sqrtl(*n7);
-    *n8 = sqrtl(*n8);
-    *n9 = sqrtl(*n9);
-    *n10 = sqrtl(*n10);
+    *n1 = sqrt(*n1);
+    *n2 = sqrt(*n2);
+    *n3 = sqrt(*n3);
+    *n4 = sqrt(*n4);
+    *n5 = sqrt(*n5);
+    *n6 = sqrt(*n6);
+    *n7 = sqrt(*n7);
+    *n8 = sqrt(*n8);
+    *n9 = sqrt(*n9);
+    *n10 = sqrt(*n10);
 }
 
-void SquareRootRef(long double& n1, long double& n2, long double& n3, long double& n4, long double& n5, long double& n6, long double& n7, long double& n8, long double& n9, long double& n10)
+void SquareRootRef(double& n1, double& n2, double& n3, double& n4, double& n5, double& n6, double& n7, double& n8, double& n9, double& n10)
 {
-    n1 = sqrtl(n1);
-    n2 = sqrtl(n2);
-    n3 = sqrtl(n3);
-    n4 = sqrtl(n4);
-    n5 = sqrtl(n5);
-    n6 = sqrtl(n6);
-    n7 = sqrtl(n7);
-    n8 = sqrtl(n8);
-    n9 = sqrtl(n9);
-    n10 = sqrtl(n10);
+    n1 = sqrt(n1);
+    n2 = sqrt(n2);
+    n3 = sqrt(n3);
+    n4 = sqrt(n4);
+    n5 = sqrt(n5);
+    n6 = sqrt(n6);
+    n7 = sqrt(n7);
+    n8 = sqrt(n8);
+    n9 = sqrt(n9);
+    n10 = sqrt(n10);
 }
 
 template <typename T>
-long double AverageContainer(const std::vector<T>& vec)
+double AverageContainer(const std::vector<T>& vec)
 {
-    long double sum = std::accumulate(vec.begin(), vec.end(), 0.00L);
-    return sum / vec.size();
+    double sum = std::accumulate(vec.begin(), vec.end(), 0.00);
+    return sum / static_cast<double>(vec.size());
 }
 
-std::vector<int> RandInt(int min, int max, size_t sz = 1000UL)
+std::vector<uint64_t> RandInt(uint64_t min, uint64_t max, size_t sz = 1000)
 {
-    std::vector<int> vec;
+    std::vector<uint64_t> vec;
     vec.reserve(sz);
 
     for (size_t i = 0; i < sz; ++i)
     {
-        vec.push_back(std::rand() % (max - min + 1) + min);
+        vec.push_back(static_cast<uint64_t>(std::rand()) % (max - min + 1) + min);
     }
 
     return vec;
 }
 
-template<typename T_Serial>
-std::string rpc::dispatch(const std::string& funcName, const T_Serial& obj)
+template<typename Serial>
+std::string rpc::dispatch(const std::string& func_name, const Serial& obj)
 {
-    if (funcName == "WriteMessages")
+    if (func_name == "WriteMessages")
     {
-        return rpc::RunCallBack(obj, WriteMessages);
+        return rpc::run_callback(obj, WriteMessages);
     }
 
-    if (funcName == "WriteMessageRef")
+    if (func_name == "WriteMessageRef")
     {
-        return rpc::RunCallBack(obj, WriteMessageRef);
+        return rpc::run_callback(obj, WriteMessageRef);
     }
 
-    if (funcName == "WriteMessageVec")
+    if (func_name == "WriteMessageVec")
     {
-        return rpc::RunCallBack(obj, WriteMessageVec);
+        return rpc::run_callback(obj, WriteMessageVec);
     }
 
-    if (funcName == "ReadMessages")
+    if (func_name == "ReadMessages")
     {
-        return rpc::RunCallBack(obj, ReadMessages);
+        return rpc::run_callback(obj, ReadMessages);
     }
 
-    if (funcName == "ReadMessageRef")
+    if (func_name == "ReadMessageRef")
     {
-        return rpc::RunCallBack(obj, ReadMessageRef);
+        return rpc::run_callback(obj, ReadMessageRef);
     }
 
-    if (funcName == "ReadMessageVec")
+    if (func_name == "ReadMessageVec")
     {
-        return rpc::RunCallBack(obj, ReadMessageVec);
+        return rpc::run_callback(obj, ReadMessageVec);
     }
 
-    if (funcName == "Fibonacci")
+    if (func_name == "Fibonacci")
     {
-        return rpc::RunCallBack(obj, Fibonacci);
+        return rpc::run_callback(obj, Fibonacci);
     }
 
-    if (funcName == "FibonacciPtr")
+    if (func_name == "FibonacciPtr")
     {
-        return rpc::RunCallBack(obj, FibonacciPtr);
+        return rpc::run_callback(obj, FibonacciPtr);
     }
 
-    if (funcName == "FibonacciRef")
+    if (func_name == "FibonacciRef")
     {
-        return rpc::RunCallBack(obj, FibonacciRef);
+        return rpc::run_callback(obj, FibonacciRef);
     }
 
-    if (funcName == "HashComplex")
+    if (func_name == "HashComplex")
     {
-        return rpc::RunCallBack(obj, HashComplex);
+        return rpc::run_callback(obj, HashComplex);
     }
 
-    if (funcName == "HashComplexPtr")
+    if (func_name == "HashComplexPtr")
     {
-        return rpc::RunCallBack(obj, HashComplexPtr);
+        return rpc::run_callback(obj, HashComplexPtr);
     }
 
-    if (funcName == "HashComplexRef")
+    if (func_name == "HashComplexRef")
     {
-        return rpc::RunCallBack(obj, HashComplexRef);
+        return rpc::run_callback(obj, HashComplexRef);
     }
 
-    if (funcName == "Average")
+    if (func_name == "Average")
     {
-        return rpc::RunCallBack(obj, Average);
+        return rpc::run_callback(obj, Average);
     }
 
-    if (funcName == "StdDev")
+    if (func_name == "StdDev")
     {
-        return rpc::RunCallBack(obj, StdDev);
+        return rpc::run_callback(obj, StdDev);
     }
 
-    if (funcName == "SquareRootPtr")
+    if (func_name == "SquareRootPtr")
     {
-        return rpc::RunCallBack(obj, SquareRootPtr);
+        return rpc::run_callback(obj, SquareRootPtr);
     }
 
-    if (funcName == "SquareRootRef")
+    if (func_name == "SquareRootRef")
     {
-        return rpc::RunCallBack(obj, SquareRootRef);
+        return rpc::run_callback(obj, SquareRootRef);
     }
 
-    if (funcName == "AverageContainer<long double>")
+    if (func_name == "AverageContainer<double>")
     {
-        return rpc::RunCallBack(obj, AverageContainer<long double>);
+        return rpc::run_callback(obj, AverageContainer<double>);
     }
 
-    if (funcName == "AverageContainer<uint64_t>")
+    if (func_name == "AverageContainer<uint64_t>")
     {
-        return rpc::RunCallBack(obj, AverageContainer<uint64_t>);
+        return rpc::run_callback(obj, AverageContainer<uint64_t>);
     }
 
-    if (funcName == "RandInt")
+    if (func_name == "RandInt")
     {
-        return rpc::RunCallBack(obj, RandInt);
+        return rpc::run_callback(obj, RandInt);
     }
 
-    throw std::runtime_error("RPC error: Called function: \"" + funcName + "\" not found!");
+    throw std::runtime_error("RPC error: Called function: \"" + func_name + "\" not found!");
 }

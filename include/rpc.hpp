@@ -2,7 +2,7 @@
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Header-only library for serialized RPC usage
 ///@version 0.1.0.0
-///@date 01-08-2020
+///@date 01-17-2020
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -44,191 +44,133 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <tuple>
 #include <type_traits>
 
+// NOTHROW can be defined at compile-time to add additional 'noexcept' specifiers to functions to
+// potentially improve performance when you are sure that your implentations will not throw an
+// uncaught exception
 #if defined(NOTHROW)
-#   define EXCEPT noexcept
+#   define RPC_HPP_EXCEPT noexcept
 #else
-#   define EXCEPT
+#   define RPC_HPP_EXCEPT
 #endif
 
 namespace rpc
 {
 using namespace std::string_literals;
 
-template<typename T_Serial>
-class SerialAdapter
+constexpr auto MAX_BUFFER_SIZE = 64U * 1024U;
+
+class arg_buffer
 {
 public:
-    SerialAdapter() : m_serialObj() {}
-    SerialAdapter(T_Serial obj) : m_serialObj(std::move(obj)) {}
-    SerialAdapter(std::string_view obj_str);
+    size_t count = 0;
 
-    template<typename T_Value>
-    [[nodiscard]] T_Value GetValue() const
+    uint8_t* data() const
     {
-        static_assert(false, "Serialization type is not supported");
+        return m_buffer.get();
     }
 
-    template<typename T_Value>
-    [[nodiscard]] T_Value GetValue(const std::string& name) const
-    {
-        static_assert(false, "Serialization type is not supported");
-    }
+protected:
+    std::unique_ptr<uint8_t[]> m_buffer = std::make_unique<uint8_t[]>(MAX_BUFFER_SIZE);
+};
 
-    template<typename T_Value>
-    [[nodiscard]] T_Value& GetValueRef()
-    {
-        static_assert(false, "Serialization type is not supported");
-    }
+template<typename Serial>
+class serial_adapter
+{
+public:
+    serial_adapter() : m_serial_object() {}
+    explicit serial_adapter(Serial obj) : m_serial_object(std::move(obj)) {}
+    serial_adapter(std::string_view obj_str);
 
-    template<typename T_Value>
-    [[nodiscard]] T_Value& GetValueRef(const std::string& name)
-    {
-        static_assert(false, "Serialization type is not supported");
-    }
+    template<typename Value>
+    [[nodiscard]] Value get_value() const;
 
-    template<typename T_Value>
-    [[nodiscard]] T_Value& GetValueRef() const
-    {
-        static_assert(false, "Serialization type is not supported");
-    }
+    template<typename Value>
+    [[nodiscard]] Value get_value(const std::string& name) const;
 
-    template<typename T_Value>
-    [[nodiscard]] T_Value& GetValueRef(const std::string& name) const
-    {
-        static_assert(false, "Serialization type is not supported");
-    }
+    template<typename Value>
+    [[nodiscard]] Value& get_value_ref();
 
-    template<typename T_Value>
-    void SetValue(T_Value value)
-    {
-        static_assert(false, "Serialization type is not supported");
-    }
+    template<typename Value>
+    [[nodiscard]] Value& get_value_ref(const std::string& name);
 
-    template<typename T_Value>
-    void SetValue(const std::string& name, T_Value value)
-    {
-        static_assert(false, "Serialization type is not supported");
-    }
+    template<typename Value>
+    [[nodiscard]] Value& get_value_ref() const;
 
-    template<typename T_Value>
-    void push_back(T_Value value)
-    {
-        static_assert(false, "Serialization type is not supported");
-    }
+    template<typename Value>
+    [[nodiscard]] Value& get_value_ref(const std::string& name) const;
 
-    template<typename T_Value>
-    void AppendValue(T_Value value)
+    template<typename Value>
+    void set_value(Value value);
+
+    template<typename Value>
+    void set_value(const std::string& name, Value value);
+
+    template<typename Value>
+    void push_back(Value value);
+
+    template<typename Value>
+    void append_value(Value value)
     {
         push_back(value);
     }
 
-    template<typename T_Value>
-    void AppendValue(const std::string& name, T_Value value)
-    {
-        static_assert(false, "Serialization type is not supported");
-    }
+    template<typename Value>
+    void append_value(const std::string& name, Value value);
 
-    [[nodiscard]] std::string ToString() const
-    {
-        static_assert(false, "Serialization type is not supported");
-    }
+    [[nodiscard]] std::string to_string() const;
 
-    [[nodiscard]] bool IsArray() const noexcept
-    {
-        static_assert(false, "Serialization type is not supported");
-    }
+    [[nodiscard]] bool is_array() const noexcept;
 
-    [[nodiscard]] bool IsEmpty() const noexcept
-    {
-        static_assert(false, "Serialization type is not supported");
-    }
+    [[nodiscard]] bool is_empty() const noexcept;
 
-    template<typename T_SerialIter>
-    [[nodiscard]] T_SerialIter begin() noexcept
-    {
-        static_assert(false, "Serialization type is not supported");
-    }
+    template<typename SerialIterator>
+    [[nodiscard]] SerialIterator begin() noexcept;
 
-    template<typename T_SerialIter>
-    [[nodiscard]] T_SerialIter end() noexcept
-    {
-        static_assert(false, "Serialization type is not supported");
-    }
+    template<typename SerialIterator>
+    [[nodiscard]] SerialIterator end() noexcept;
 
-    template<typename T_SerialConstIter>
-    [[nodiscard]] T_SerialConstIter begin() const noexcept
-    {
-        static_assert(false, "Serialization type is not supported");
-    }
+    template<typename SerialConstIterator>
+    [[nodiscard]] SerialConstIterator begin() const noexcept;
 
-    template<typename T_SerialConstIter>
-    [[nodiscard]] T_SerialConstIter end() const noexcept
-    {
-        static_assert(false, "Serialization type is not supported");
-    }
+    template<typename SerialConstIterator>
+    [[nodiscard]] SerialConstIterator end() const noexcept;
 
-    template<typename T_SerialRIter>
-    [[nodiscard]] T_SerialRIter rbegin() noexcept
-    {
-        static_assert(false, "Serialization type is not supported");
-    }
+    template<typename SerialReverseIterator>
+    [[nodiscard]] SerialReverseIterator rbegin() noexcept;
 
-    template<typename T_SerialRIter>
-    [[nodiscard]] T_SerialRIter rend() noexcept
-    {
-        static_assert(false, "Serialization type is not supported");
-    }
+    template<typename SerialReverseIterator>
+    [[nodiscard]] SerialReverseIterator rend() noexcept;
 
-    template<typename T_SerialConstRIter>
-    [[nodiscard]] T_SerialConstRIter rbegin() const noexcept
-    {
-        static_assert(false, "Serialization type is not supported");
-    }
+    template<typename SerialConstReverseIterator>
+    [[nodiscard]] SerialConstReverseIterator rbegin() const noexcept;
 
-    template<typename T_SerialConstRIter>
-    [[nodiscard]] T_SerialConstRIter rend() const noexcept
-    {
-        static_assert(false, "Serialization type is not supported");
-    }
+    template<typename SerialConstReverseIterator>
+    [[nodiscard]] SerialConstReverseIterator rend() const noexcept;
 
-    [[nodiscard]] T_Serial get() const { return m_serialObj; }
+    [[nodiscard]] Serial get() const { return m_serial_object; }
 
-    [[nodiscard]] size_t size() const noexcept
-    {
-        static_assert(false, "Serialization type is not supported");
-    }
+    [[nodiscard]] size_t size() const noexcept;
 
-    [[nodiscard]] T_Serial operator[](size_t n) const
-    {
-        static_assert(false, "Serialization type is not supported");
-    }
+    [[nodiscard]] Serial operator[](size_t n) const;
 
-    [[nodiscard]] static T_Serial EmptyArray() noexcept
-    {
-        static_assert(false, "Serialization type is not supported");
-    }
+    [[nodiscard]] static Serial make_array() noexcept;
 
 protected:
-    T_Serial m_serialObj;
+    Serial m_serial_object;
 };
 
-template<typename T_Serial>
-extern std::string dispatch(const std::string& funcName, const T_Serial& obj);
+template<typename Serial>
+extern std::string dispatch(const std::string& func_name, const Serial& obj);
 
-template<typename T_Obj, typename T_Serial>
-T_Serial Serialize(const T_Obj&) EXCEPT
-{
-    static_assert(false, "Type has not been provided with a Serialize method!");
-}
+template<typename Serial, typename Value>
+[[nodiscard]] Serial serialize(const Value&) RPC_HPP_EXCEPT;
 
-template<typename T_Obj, typename T_Serial>
-T_Obj DeSerialize(const T_Serial&) EXCEPT
-{
-    static_assert(false, "Type has not been provided with a DeSerialize method!");
-}
+template<typename Serial, typename Value>
+[[nodiscard]] Value deserialize(const Serial&) RPC_HPP_EXCEPT;
 
 template<typename, typename T>
 struct is_serializable_base
@@ -243,7 +185,7 @@ struct is_serializable_base<C, R(Args...)>
 private:
     template<typename T>
     static constexpr auto check(T*) noexcept ->
-        typename std::is_same<decltype(std::declval<T>().Serialize(std::declval<Args>()...)),
+        typename std::is_same<decltype(std::declval<T>().serialize(std::declval<Args>()...)),
             R>::type;
 
     template<typename>
@@ -268,7 +210,7 @@ struct is_deserializable_base<C, R(Args...)>
 private:
     template<typename T>
     static constexpr auto check(T*) noexcept ->
-        typename std::is_same<decltype(std::declval<T>().DeSerialize(std::declval<Args>()...)),
+        typename std::is_same<decltype(std::declval<T>().deserialize(std::declval<Args>()...)),
             R>::type;
 
     template<typename>
@@ -280,15 +222,15 @@ public:
     static constexpr bool value = type::value;
 };
 
-template<typename T_Obj, typename T_Serial>
+template<typename Serial, typename Value>
 struct is_serializable : std::integral_constant<bool,
-                             is_serializable_base<T_Obj, T_Serial(const T_Obj&)>::value
-                                 && is_deserializable_base<T_Obj, T_Obj(const T_Serial&)>::value>
+                             is_serializable_base<Value, Serial(const Value&)>::value
+                                 && is_deserializable_base<Value, Value(const Serial&)>::value>
 {
 };
 
-template<typename T_Obj, typename T_Serial>
-inline constexpr bool is_serializable_v = is_serializable<T_Obj, T_Serial>::value;
+template<typename Serial, typename Value>
+inline constexpr bool is_serializable_v = is_serializable<Serial, Value>::value;
 
 template<typename C>
 struct has_begin
@@ -375,21 +317,21 @@ using function_result_t = typename function_traits<std::function<R(Args...)>>::t
 template<size_t i, typename R, typename... Args>
 using function_args_t = typename function_traits<std::function<R(Args...)>>::template arg<i>::type;
 
-template<typename T_Serial, typename T_Value>
-T_Value DecodeArgContainer(const T_Serial& obj, uint8_t* buf, size_t* count) EXCEPT
+template<typename Serial, typename Value>
+Value decode_container_argument(const Serial& obj, size_t* elem_count) RPC_HPP_EXCEPT
 {
 #ifdef _DEBUG
-    const auto t_name = typeid(T_Value).name();
+    [[maybe_unused]] const auto t_name = typeid(Value).name();
 #endif
 
-    T_Value container;
-    *count = 0UL;
-    SerialAdapter<T_Serial> adapter(obj);
+    Value container;
+    *elem_count = 0;
+    serial_adapter<Serial> adapter(obj);
 
-    if (adapter.IsArray())
+    if (adapter.is_array())
     {
         // Multi-value container (array)
-        using P = typename T_Value::value_type;
+        using P = typename Value::value_type;
         static_assert(!std::is_void_v<P>,
             "Void containers are not supported, either cast to a different type or do the "
             "conversion manually!");
@@ -403,103 +345,102 @@ T_Value DecodeArgContainer(const T_Serial& obj, uint8_t* buf, size_t* count) EXC
         }
         else if constexpr (is_container_v<P>)
         {
-            for (const T_Serial& ser : adapter)
+            for (const Serial& ser : adapter)
             {
-                size_t ncount = 0UL;
-                container.push_back(DecodeArgContainer<T_Serial, P>(ser, buf, &ncount));
-                *count += ncount;
+                size_t ncount = 0;
+                container.push_back(decode_container_argument<Serial, P>(ser, &ncount));
+                *elem_count += ncount;
             }
         }
-        else if constexpr (is_serializable_v<P, T_Serial>)
+        else if constexpr (is_serializable_v<Serial, P>)
         {
             for (const auto& ser : adapter.get())
             {
-                container.push_back(P::DeSerialize(ser));
+                container.push_back(P::deserialize(ser));
             }
         }
         else
         {
             for (const auto& ser : adapter.get())
             {
-                container.push_back(DeSerialize<P, T_Serial>(ser));
+                container.push_back(deserialize<Serial, P>(ser));
             }
         }
 
-        if (*count == 0UL)
+        if (*elem_count == 0)
         {
-            *count = container.size();
+            *elem_count = container.size();
         }
 
         return container;
     }
 
     // Single value container
-    using P = typename T_Value::value_type;
+    using P = typename Value::value_type;
     static_assert(!std::is_void_v<P>,
         "Void containers are not supported, either cast to a different type or do the conversion "
         "manually!");
 
-    if constexpr (is_serializable_v<P, T_Serial>)
+    if constexpr (is_serializable_v<Serial, P>)
     {
-        container.push_back(P::DeSerialize(obj));
+        container.push_back(P::deserialize(obj));
     }
     else if constexpr (std::is_arithmetic_v<P> || std::is_same_v<P, std::string>)
     {
-        container.push_back(adapter.template GetValue<P>());
+        container.push_back(adapter.template get_value<P>());
     }
     else if constexpr (std::is_same_v<P, char>)
     {
-        const auto str = adapter.template GetValue<std::string>();
+        const auto str = adapter.template get_value<std::string>();
         std::copy(str.begin(), str.end(), std::back_inserter(container));
     }
     else if constexpr (is_container_v<P>)
     {
-        size_t ncount = 0UL;
-        container.push_back(DecodeArgContainer<T_Serial, P>(obj, buf, &ncount));
-        *count += ncount;
+        size_t ncount = 0;
+        container.push_back(decode_container_argument<Serial, P>(obj, &ncount));
+        *elem_count += ncount;
     }
     else
     {
-        container.push_back(DeSerialize<P>(obj));
+        container.push_back(deserialize<Serial, P>(obj));
     }
 
-    if (*count == 0UL)
+    if (*elem_count == 0)
     {
-        *count = 1UL;
+        *elem_count = 1;
     }
 
     return container;
 }
 
-template<typename T_Serial, typename T_Value>
-T_Value DecodeArgPtr(const T_Serial& obj, uint8_t* buf, size_t* count) EXCEPT
+template<typename Serial, typename Value>
+Value decode_pointer_argument(const Serial& obj, uint8_t* buf, size_t* elem_count) RPC_HPP_EXCEPT
 {
 #ifdef _DEBUG
-    const auto t_name = typeid(T_Value).name();
+    [[maybe_unused]] const auto t_name = typeid(Value).name();
 #endif
 
-    *count = 1UL;
-    SerialAdapter<T_Serial> adapter(obj);
+    serial_adapter<Serial> adapter(obj);
 
-    if (adapter.IsEmpty())
+    if (adapter.is_empty())
     {
-        *count = 0UL;
+        *elem_count = 0;
         return nullptr;
     }
 
-    if (adapter.IsArray())
+    if (adapter.is_array())
     {
         // Multi-value pointer (array)
-        using P = std::remove_cv_t<std::remove_pointer_t<T_Value>>;
+        using P = std::remove_cv_t<std::remove_pointer_t<Value>>;
         static_assert(!std::is_void_v<P>,
             "Void pointers are not supported, either cast to a different type or do the conversion "
             "manually!");
 
-        if constexpr (is_serializable_v<P, T_Serial>)
+        if constexpr (is_serializable_v<Serial, P>)
         {
             for (size_t i = 0; i < adapter.size(); ++i)
             {
-                const auto value = P::DeSerialize(adapter[i]);
+                const auto value = P::deserialize(adapter[i]);
                 memcpy(&buf[i * sizeof(value)], &value, sizeof(value));
             }
         }
@@ -507,8 +448,8 @@ T_Value DecodeArgPtr(const T_Serial& obj, uint8_t* buf, size_t* count) EXCEPT
         {
             for (size_t i = 0; i < adapter.size(); ++i)
             {
-                const auto sub = SerialAdapter<T_Serial>(adapter[i]);
-                const auto value = sub.template GetValue<P>();
+                const auto sub = serial_adapter<Serial>(adapter[i]);
+                const auto value = sub.template get_value<P>();
                 memcpy(&buf[i * sizeof(value)], &value, sizeof(value));
             }
         }
@@ -516,100 +457,100 @@ T_Value DecodeArgPtr(const T_Serial& obj, uint8_t* buf, size_t* count) EXCEPT
         {
             for (size_t i = 0; i < adapter.size(); ++i)
             {
-                const auto value = DeSerialize<P, T_Serial>(adapter[i]);
+                const auto value = deserialize<Serial, P>(adapter[i]);
                 memcpy(&buf[i * sizeof(value)], &value, sizeof(value));
             }
         }
 
-        *count = adapter.size();
-        return reinterpret_cast<T_Value>(buf);
+        *elem_count = adapter.size();
+        return reinterpret_cast<Value>(buf);
     }
 
     // Single value pointer
-    using P = std::remove_cv_t<std::remove_pointer_t<T_Value>>;
+    using P = std::remove_cv_t<std::remove_pointer_t<Value>>;
     static_assert(!std::is_void_v<P>,
         "Void pointers are not supported, either cast to a different type or do the conversion "
         "manually!");
 
-    if constexpr (is_serializable_v<P, T_Serial>)
+    if constexpr (is_serializable_v<Serial, P>)
     {
-        new (buf) P(P::DeSerialize(obj));
+        new (buf) P(P::deserialize(obj));
     }
     else if constexpr (std::is_same_v<P, char>)
     {
-        const auto str = adapter.template GetValue<std::string>();
-        std::copy(str.begin(), str.end(), reinterpret_cast<T_Value>(buf));
+        const auto str = adapter.template get_value<std::string>();
+        std::copy(str.begin(), str.end(), reinterpret_cast<Value>(buf));
     }
     else if constexpr (std::is_arithmetic_v<P> || std::is_same_v<P, std::string>)
     {
-        new (buf) P(adapter.template GetValue<P>());
+        new (buf) P(adapter.template get_value<P>());
     }
     else
     {
-        new (buf) P(DeSerialize<P, T_Serial>(obj));
+        new (buf) P(deserialize<Serial, P>(obj));
     }
 
-    return reinterpret_cast<T_Value>(buf);
+    return reinterpret_cast<Value>(buf);
 }
 
-template<typename T_Serial, typename T_Value>
-T_Value DecodeArg(const T_Serial& obj, uint8_t* buf, size_t* count, unsigned* paramNum) EXCEPT
+template<typename Serial, typename Value>
+Value decode_argument(const Serial& obj, [[maybe_unused]] uint8_t* buf, size_t* count, unsigned* param_num) RPC_HPP_EXCEPT
 {
 #ifdef _DEBUG
-    const auto t_name = typeid(T_Value).name();
+    [[maybe_unused]] const auto t_name = typeid(Value).name();
 #endif
 
-    *paramNum += 1;
-    *count = 1UL;
+    *param_num += 1;
+    *count = 1;
 
-    if constexpr (std::is_pointer_v<T_Value>)
+    if constexpr (std::is_pointer_v<Value>)
     {
-        auto val = DecodeArgPtr<T_Serial, T_Value>(obj, buf, count);
+        auto val = decode_pointer_argument<Serial, Value>(obj, buf, count);
         return val;
     }
-    else if constexpr (is_serializable_v<T_Value, T_Serial>)
+    else if constexpr (is_serializable_v<Serial, Value>)
     {
-        return T_Value::DeSerialize(obj);
+        return Value::deserialize(obj);
     }
-    else if constexpr (std::is_arithmetic_v<T_Value> || std::is_same_v<T_Value, std::string>)
+    else if constexpr (std::is_arithmetic_v<Value> || std::is_same_v<Value, std::string>)
     {
-        const SerialAdapter<T_Serial> adapter(obj);
-        return adapter.template GetValue<T_Value>();
+        const serial_adapter<Serial> adapter(obj);
+        return adapter.template get_value<Value>();
     }
-    else if constexpr (is_container_v<T_Value>)
+    else if constexpr (is_container_v<Value>)
     {
-        return DecodeArgContainer<T_Serial, T_Value>(obj, buf, count);
+        return decode_container_argument<Serial, Value>(obj, count);
     }
     else
     {
-        return DeSerialize<T_Value, T_Serial>(obj);
+        return deserialize<Serial, Value>(obj);
     }
 }
 
-template<typename T_Serial, typename T_Value>
-void EncodeArgs(T_Serial& obj, const size_t count, const T_Value& val) EXCEPT
+template<typename Serial, typename Value>
+void encode_arguments(Serial& obj, [[maybe_unused]] const size_t count, const Value& val) RPC_HPP_EXCEPT
 {
 #ifdef _DEBUG
-    const auto t_name = typeid(T_Value).name();
+    [[maybe_unused]] const auto t_name = typeid(Value).name();
 #endif
 
-    SerialAdapter<T_Serial> adapter(obj);
+    serial_adapter<Serial> adapter(obj);
 
-    if constexpr (std::is_pointer_v<T_Value>)
+    if constexpr (std::is_pointer_v<Value>)
     {
         if (val == nullptr)
         {
-            adapter.push_back(T_Serial{});
+            adapter.push_back(Serial{});
         }
         else
         {
-            using P = std::remove_cv_t<std::remove_pointer_t<T_Value>>;
+            using P = std::remove_cv_t<std::remove_pointer_t<Value>>;
 
             for (size_t i = 0; i < count; ++i)
             {
-                if constexpr (is_serializable_v<P, T_Serial>)
+                if constexpr (is_serializable_v<Serial, P>)
                 {
-                    adapter.push_back(P::Serialize(val[i]));
+                    adapter.push_back(P::serialize(val[i]));
                 }
                 else if constexpr (std::is_same_v<P, char>)
                 {
@@ -628,19 +569,19 @@ void EncodeArgs(T_Serial& obj, const size_t count, const T_Value& val) EXCEPT
                 }
                 else
                 {
-                    adapter.push_back(Serialize<P, T_Serial>(val[i]));
+                    adapter.push_back(serialize<Serial, P>(val[i]));
                 }
             }
         }
     }
-    else if constexpr (std::is_arithmetic_v<T_Value> || std::is_same_v<T_Value, std::string>)
+    else if constexpr (std::is_arithmetic_v<Value> || std::is_same_v<Value, std::string>)
     {
         adapter.push_back(val);
     }
-    else if constexpr (is_container_v<T_Value>)
+    else if constexpr (is_container_v<Value>)
     {
-        using P = typename T_Value::value_type;
-        auto argList = SerialAdapter<T_Serial>::EmptyArray();
+        using P = typename Value::value_type;
+        auto argList = serial_adapter<Serial>::make_array();
 
         if constexpr (std::is_same_v<P, std::string>)
         {
@@ -650,7 +591,7 @@ void EncodeArgs(T_Serial& obj, const size_t count, const T_Value& val) EXCEPT
         {
             for (const auto& c : val)
             {
-                EncodeArgs<P>(argList, c.size(), c);
+                encode_arguments<P>(argList, c.size(), c);
                 adapter.push_back(argList);
             }
         }
@@ -658,9 +599,9 @@ void EncodeArgs(T_Serial& obj, const size_t count, const T_Value& val) EXCEPT
         {
             for (const auto& v : val)
             {
-                if constexpr (is_serializable_v<P, T_Serial>)
+                if constexpr (is_serializable_v<Serial, P>)
                 {
-                    argList.push_back(P::Serialize(v));
+                    argList.push_back(P::serialize(v));
                 }
                 else if constexpr (std::is_same_v<P, char>)
                 {
@@ -672,7 +613,7 @@ void EncodeArgs(T_Serial& obj, const size_t count, const T_Value& val) EXCEPT
                 }
                 else
                 {
-                    argList.push_back(Serialize<P, T_Serial>(v));
+                    argList.push_back(serialize<Serial, P>(v));
                 }
             }
 
@@ -681,13 +622,13 @@ void EncodeArgs(T_Serial& obj, const size_t count, const T_Value& val) EXCEPT
     }
     else
     {
-        if constexpr (is_serializable_v<T_Value, T_Serial>)
+        if constexpr (is_serializable_v<Serial, Value>)
         {
-            adapter.push_back(T_Value::Serialize(val));
+            adapter.push_back(Value::serialize(val));
         }
         else
         {
-            adapter.push_back(Serialize<T_Value, T_Serial>(val));
+            adapter.push_back(serialize<Serial, Value>(val));
         }
     }
 
@@ -695,24 +636,24 @@ void EncodeArgs(T_Serial& obj, const size_t count, const T_Value& val) EXCEPT
 }
 
 template<typename F, typename... Ts, size_t... Is>
-void for_each_tuple(const std::tuple<Ts...>& tuple, F func, std::index_sequence<Is...>) EXCEPT
+void for_each_tuple(const std::tuple<Ts...>& tuple, F func, std::index_sequence<Is...>) RPC_HPP_EXCEPT
 {
     using expander = int[];
     (void)expander{ 0, ((void)func(std::get<Is>(tuple)), 0)... };
 }
 
 template<typename F, typename... Ts>
-void for_each_tuple(const std::tuple<Ts...>& tuple, F func) EXCEPT
+void for_each_tuple(const std::tuple<Ts...>& tuple, F func) RPC_HPP_EXCEPT
 {
     for_each_tuple(tuple, func, std::make_index_sequence<sizeof...(Ts)>());
 }
 
 template<typename T>
-void FreeBuffer(std::pair<size_t, std::unique_ptr<unsigned char[]>>& buffer) EXCEPT
+void free_buffer(arg_buffer& buffer) RPC_HPP_EXCEPT
 {
-    auto ptr = reinterpret_cast<T>(buffer.second.get());
+    auto ptr = reinterpret_cast<T>(buffer.data());
 
-    for (size_t i = 0; i < buffer.first; ++i)
+    for (size_t i = 0; i < buffer.count; ++i)
     {
         using X = std::remove_reference_t<decltype(*ptr)>;
         ptr[i].~X();
@@ -721,289 +662,259 @@ void FreeBuffer(std::pair<size_t, std::unique_ptr<unsigned char[]>>& buffer) EXC
 
 // Support for other Windows (x86) calling conventions
 #if defined(_WIN32) && !defined(_WIN64)
-template<typename T_Serial, typename R, typename... Args>
-std::string RunCallBack(const T_Serial& obj, std::function<R __stdcall(Args...)> func) EXCEPT
+template<typename Serial, typename R, typename... Args>
+std::string run_callback(const Serial& obj, std::function<R __stdcall(Args...)> func) RPC_HPP_EXCEPT
 {
-    unsigned count = 0;
-    SerialAdapter<T_Serial> adapter(obj);
+    unsigned arg_count = 0;
+    serial_adapter<Serial> adapter(obj);
 
-    std::array<std::pair<size_t, std::unique_ptr<unsigned char[]>>,
-        function_param_count_v<R, Args...>>
-        buffers;
-
-    for (auto& buf : buffers)
-    {
-        buf.first = 0UL;
-        buf.second = std::make_unique<unsigned char[]>(64U * 1024U);
-    }
+    std::array<arg_buffer, function_param_count_v<R, Args...>> arg_buffers;
 
     std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...> args{
-        DecodeArg<T_Serial, std::remove_cv_t<std::remove_reference_t<Args>>>(
-            adapter[count], buffers[count].second.get(), &(buffers[count].first), &count)...
+        decode_argument<Serial, std::remove_cv_t<std::remove_reference_t<Args>>>(
+            adapter[arg_count], arg_buffers[arg_count].data(), &(arg_buffers[arg_count].count), &arg_count)...
     };
 
-    SerialAdapter<T_Serial> retSer;
+    serial_adapter<Serial> retSer;
 
     if constexpr (std::is_void_v<R>)
     {
         std::apply(func, args);
-        retSer.SetValue("result", nullptr);
+        retSer.set_value("result", nullptr);
     }
     else
     {
         const auto result = std::apply(func, args);
-        retSer.SetValue("result", result);
+        retSer.set_value("result", result);
     }
 
-    retSer.SetValue("args", retSer.EmptyArray());
-    auto& argList = retSer.template GetValueRef<T_Serial>("args");
+    retSer.set_value("args", retSer.make_array());
+    auto& argList = retSer.template get_value_ref<Serial>("args");
 
-    unsigned count2 = 0;
+    arg_count = 0;
 
-    for_each_tuple(args, [&argList, &buffers, &count2](const auto& x) {
-        EncodeArgs(argList, buffers[count2].first, x);
+    for_each_tuple(args, [&argList, &arg_buffers, &arg_count](const auto& x) {
+        encode_arguments(argList, arg_buffers[arg_count].count, x);
 
         using P = typename std::remove_cv_t<std::remove_reference_t<decltype(x)>>;
 
         if constexpr (std::is_pointer_v<P> && std::is_class_v<std::remove_pointer_t<P>>)
         {
-            FreeBuffer<P>(buffers[count2]);
+            free_buffer<P>(arg_buffers[arg_count]);
         }
 
-        ++count2;
+        ++arg_count;
     });
 
-    return retSer.ToString();
+    return retSer.to_string();
 }
 
-template<typename T_Serial, typename R, typename... Args>
-std::string RunCallBack(const T_Serial& obj, R(__stdcall* func)(Args...)) EXCEPT
+template<typename Serial, typename R, typename... Args>
+std::string run_callback(const Serial& obj, R(__stdcall* func)(Args...)) RPC_HPP_EXCEPT
 {
-    return RunCallBack(obj, std::function<R __stdcall(Args...)>(func));
+    return run_callback(obj, std::function<R __stdcall(Args...)>(func));
 }
 
-template<typename T_Serial, typename R, typename... Args>
-std::string RunCallBack(const T_Serial& obj, std::function<R __fastcall(Args...)> func) EXCEPT
+template<typename Serial, typename R, typename... Args>
+std::string run_callback(const Serial& obj, std::function<R __fastcall(Args...)> func) RPC_HPP_EXCEPT
 {
-    unsigned count = 0;
-    SerialAdapter<T_Serial> adapter(obj);
+    unsigned arg_count = 0;
+    serial_adapter<Serial> adapter(obj);
 
-    std::array<std::pair<size_t, std::unique_ptr<unsigned char[]>>,
-        function_param_count_v<R, Args...>>
-        buffers;
-
-    for (auto& buf : buffers)
-    {
-        buf.first = 0UL;
-        buf.second = std::make_unique<unsigned char[]>(64U * 1024U);
-    }
+    std::array<arg_buffer, function_param_count_v<R, Args...>> arg_buffers;
 
     std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...> args{
-        DecodeArg<T_Serial, std::remove_cv_t<std::remove_reference_t<Args>>>(
-            adapter[count], buffers[count].second.get(), &(buffers[count].first), &count)...
+        decode_argument<Serial, std::remove_cv_t<std::remove_reference_t<Args>>>(
+            adapter[arg_count], arg_buffers[arg_count].data(), &(arg_buffers[arg_count].count), &arg_count)...
     };
 
-    SerialAdapter<T_Serial> retSer;
+    serial_adapter<Serial> retSer;
 
     if constexpr (std::is_void_v<R>)
     {
         std::apply(func, args);
-        retSer.SetValue("result", nullptr);
+        retSer.set_value("result", nullptr);
     }
     else
     {
         const auto result = std::apply(func, args);
-        retSer.SetValue("result", result);
+        retSer.set_value("result", result);
     }
 
-    retSer.SetValue("args", retSer.EmptyArray());
-    auto& argList = retSer.template GetValueRef<T_Serial>("args");
+    retSer.set_value("args", retSer.make_array());
+    auto& argList = retSer.template get_value_ref<Serial>("args");
 
-    unsigned count2 = 0;
+    arg_count = 0;
 
-    for_each_tuple(args, [&argList, &buffers, &count2](const auto& x) {
-        EncodeArgs(argList, buffers[count2].first, x);
+    for_each_tuple(args, [&argList, &arg_buffers, &arg_count](const auto& x) {
+        encode_arguments(argList, arg_buffers[arg_count].count, x);
 
         using P = typename std::remove_cv_t<std::remove_reference_t<decltype(x)>>;
 
         if constexpr (std::is_pointer_v<P> && std::is_class_v<std::remove_pointer_t<P>>)
         {
-            FreeBuffer<P>(buffers[count2]);
+            free_buffer<P>(arg_buffers[arg_count]);
         }
 
-        ++count2;
+        ++arg_count;
     });
 
-    return retSer.ToString();
+    return retSer.to_string();
 }
 
-template<typename T_Serial, typename R, typename... Args>
-std::string RunCallBack(const T_Serial& obj, R(__fastcall* func)(Args...)) EXCEPT
+template<typename Serial, typename R, typename... Args>
+std::string run_callback(const Serial& obj, R(__fastcall* func)(Args...)) RPC_HPP_EXCEPT
 {
-    return RunCallBack(obj, std::function<R __fastcall(Args...)>(func));
+    return run_callback(obj, std::function<R __fastcall(Args...)>(func));
 }
 
-template<typename T_Serial, typename R, typename... Args>
-std::string RunCallBack(const T_Serial& obj, std::function<R __vectorcall(Args...)> func) EXCEPT
+#   if !defined(__MINGW32__)
+template<typename Serial, typename R, typename... Args>
+std::string run_callback(const Serial& obj, std::function<R __vectorcall(Args...)> func) RPC_HPP_EXCEPT
 {
-    unsigned count = 0;
-    SerialAdapter<T_Serial> adapter(obj);
+    unsigned arg_count = 0;
+    serial_adapter<Serial> adapter(obj);
 
-    std::array<std::pair<size_t, std::unique_ptr<unsigned char[]>>,
-        function_param_count_v<R, Args...>>
-        buffers;
-
-    for (auto& buf : buffers)
-    {
-        buf.first = 0UL;
-        buf.second = std::make_unique<unsigned char[]>(64U * 1024U);
-    }
+    std::array<arg_buffer, function_param_count_v<R, Args...>> arg_buffers;
 
     std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...> args{
-        DecodeArg<T_Serial, std::remove_cv_t<std::remove_reference_t<Args>>>(
-            adapter[count], buffers[count].second.get(), &(buffers[count].first), &count)...
+        decode_argument<Serial, std::remove_cv_t<std::remove_reference_t<Args>>>(
+            adapter[arg_count], arg_buffers[arg_count].data(), &(arg_buffers[arg_count].count), &arg_count)...
     };
 
-    SerialAdapter<T_Serial> retSer;
+    serial_adapter<Serial> retSer;
 
     if constexpr (std::is_void_v<R>)
     {
         std::apply(func, args);
-        retSer.SetValue("result", nullptr);
+        retSer.set_value("result", nullptr);
     }
     else
     {
         const auto result = std::apply(func, args);
-        retSer.SetValue("result", result);
+        retSer.set_value("result", result);
     }
 
-    retSer.SetValue("args", retSer.EmptyArray());
-    auto& argList = retSer.template GetValueRef<T_Serial>("args");
+    retSer.set_value("args", retSer.make_array());
+    auto& argList = retSer.template get_value_ref<Serial>("args");
 
-    unsigned count2 = 0;
+    arg_count = 0;
 
-    for_each_tuple(args, [&argList, &buffers, &count2](const auto& x) {
-        EncodeArgs(argList, buffers[count2].first, x);
+    for_each_tuple(args, [&argList, &arg_buffers, &arg_count](const auto& x) {
+        encode_arguments(argList, arg_buffers[arg_count].count, x);
 
         using P = typename std::remove_cv_t<std::remove_reference_t<decltype(x)>>;
 
         if constexpr (std::is_pointer_v<P> && std::is_class_v<std::remove_pointer_t<P>>)
         {
-            FreeBuffer<P>(buffers[count2]);
+            free_buffer<P>(arg_buffers[arg_count]);
         }
 
-        ++count2;
+        ++arg_count;
     });
 
-    return retSer.ToString();
+    return retSer.to_string();
 }
 
-template<typename T_Serial, typename R, typename... Args>
-std::string RunCallBack(const T_Serial& obj, R(__vectorcall* func)(Args...)) EXCEPT
+template<typename Serial, typename R, typename... Args>
+std::string run_callback(const Serial& obj, R(__vectorcall* func)(Args...)) RPC_HPP_EXCEPT
 {
-    return RunCallBack(obj, std::function<R __vectorcall(Args...)>(func));
+    return run_callback(obj, std::function<R __vectorcall(Args...)>(func));
 }
+#   endif
 #endif
 
 // TODO: Find a way to template/lambda this to avoid copy/paste for WIN32
-template<typename T_Serial, typename R, typename... Args>
-std::string RunCallBack(const T_Serial& obj, std::function<R(Args...)> func) EXCEPT
+template<typename Serial, typename R, typename... Args>
+std::string run_callback(const Serial& obj, std::function<R(Args...)> func) RPC_HPP_EXCEPT
 {
-    unsigned count = 0;
-    SerialAdapter<T_Serial> adapter(obj);
+    unsigned arg_count = 0;
+    serial_adapter<Serial> adapter(obj);
 
-    std::array<std::pair<size_t, std::unique_ptr<unsigned char[]>>,
-        function_param_count_v<R, Args...>>
-        buffers;
-
-    for (auto& buf : buffers)
-    {
-        buf.first = 0UL;
-        buf.second = std::make_unique<unsigned char[]>(64U * 1024U);
-    }
+    std::array<arg_buffer, function_param_count_v<R, Args...>> arg_buffers;
 
     std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...> args{
-        DecodeArg<T_Serial, std::remove_cv_t<std::remove_reference_t<Args>>>(
-            adapter[count], buffers[count].second.get(), &(buffers[count].first), &count)...
+        decode_argument<Serial, std::remove_cv_t<std::remove_reference_t<Args>>>(
+            adapter[arg_count], arg_buffers[arg_count].data(), &(arg_buffers[arg_count].count), &arg_count)...
     };
 
-    SerialAdapter<T_Serial> retSer;
+    serial_adapter<Serial> retSer;
 
     if constexpr (std::is_void_v<R>)
     {
         std::apply(func, args);
-        retSer.SetValue("result", nullptr);
+        retSer.set_value("result", nullptr);
     }
     else
     {
         const auto result = std::apply(func, args);
-        retSer.SetValue("result", result);
+        retSer.set_value("result", result);
     }
 
-    retSer.SetValue("args", retSer.EmptyArray());
-    auto& argList = retSer.template GetValueRef<T_Serial>("args");
+    retSer.set_value("args", retSer.make_array());
+    auto& argList = retSer.template get_value_ref<Serial>("args");
 
-    unsigned count2 = 0;
+    arg_count = 0;
 
-    for_each_tuple(args, [&argList, &buffers, &count2](const auto& x) {
-        EncodeArgs(argList, buffers[count2].first, x);
+    for_each_tuple(args, [&argList, &arg_buffers, &arg_count](const auto& x) {
+        encode_arguments(argList, arg_buffers[arg_count].count, x);
 
-        using P = typename std::remove_cv_t<std::remove_reference_t<decltype(x)>>;
+        using P = std::remove_cv_t<std::remove_reference_t<decltype(x)>>;
 
         if constexpr (std::is_pointer_v<P> && std::is_class_v<std::remove_pointer_t<P>>)
         {
-            FreeBuffer<P>(buffers[count2]);
+            free_buffer<P>(arg_buffers[arg_count]);
         }
 
-        ++count2;
+        ++arg_count;
     });
 
-    return retSer.ToString();
+    return retSer.to_string();
 }
 
-template<typename T_Serial, typename R, typename... Args>
-std::string RunCallBack(const T_Serial& obj, R (*func)(Args...)) EXCEPT
+template<typename Serial, typename R, typename... Args>
+std::string run_callback(const Serial& obj, R (*func)(Args...)) RPC_HPP_EXCEPT
 {
-    return RunCallBack(obj, std::function<R(Args...)>(func));
+    return run_callback(obj, std::function<R(Args...)>(func));
 }
 
-template<typename T_Serial>
-std::string Run(const T_Serial& obj) EXCEPT
+template<typename Serial>
+std::string run(const Serial& obj) RPC_HPP_EXCEPT
 {
-    const auto adapter = SerialAdapter<T_Serial>(obj);
-    const auto funcName = adapter.template GetValue<std::string>("function");
-    const auto argList = adapter.template GetValue<T_Serial>("args");
+    const auto adapter = serial_adapter<Serial>(obj);
+    const auto func_name = adapter.template get_value<std::string>("function");
+    const auto argList = adapter.template get_value<Serial>("args");
 
     try
     {
-        return dispatch<T_Serial>(funcName, argList);
+        return dispatch<Serial>(func_name, argList);
     }
     catch (std::exception& ex)
     {
         std::cerr << ex.what() << '\n';
-        SerialAdapter<T_Serial> result;
-        result.SetValue("result", -1);
-        return result.ToString();
+        serial_adapter<Serial> result;
+        result.set_value("result", -1);
+        return result.to_string();
     }
 }
 
-template<typename T_Serial>
-std::string Run(std::string_view obj_str) EXCEPT
+template<typename Serial>
+std::string run(std::string_view obj_str) RPC_HPP_EXCEPT
 {
-    const auto adapter = SerialAdapter<T_Serial>(obj_str);
-    const auto funcName = adapter.template GetValue<std::string>("function");
-    const auto argList = adapter.template GetValue<T_Serial>("args");
+    const auto adapter = serial_adapter<Serial>(obj_str);
+    const auto func_name = adapter.template get_value<std::string>("function");
+    const auto argList = adapter.template get_value<Serial>("args");
 
     try
     {
-        return dispatch<T_Serial>(funcName, argList);
+        return dispatch<Serial>(func_name, argList);
     }
     catch (std::exception& ex)
     {
         std::cerr << ex.what() << '\n';
-        SerialAdapter<T_Serial> result;
-        result.SetValue("result", -1);
-        return result.ToString();
+        serial_adapter<Serial> result;
+        result.set_value("result", -1);
+        return result.to_string();
     }
 }
 } // namespace rpc
