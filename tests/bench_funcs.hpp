@@ -355,31 +355,30 @@ std::string HashComplex(Complex cx)
     for (size_t i = 0; i < cx.name.size(); ++i)
     {
         int acc = cx.flag2 ? (cx.name[i] + cx.vals[i % 12]) : (cx.name[i] - cx.vals[i % 12]);
-
         hash << std::hex << acc;
     }
 
     return hash.str();
 }
 
-// TODO: Test this with char* instead of string*
-void HashComplexPtr(Complex* cx, std::string* hashStr)
+void HashComplexPtr(const Complex* cx, char* hashStr)
 {
     std::stringstream hash;
+    std::array<uint8_t, 12> valsCpy = cx->vals;
 
     if (cx->flag1)
     {
-        std::reverse(cx->vals.begin(), cx->vals.end());
+        std::reverse(valsCpy.begin(), valsCpy.end());
     }
 
     for (size_t i = 0; i < cx->name.size(); ++i)
     {
-        int acc = cx->flag2 ? (cx->name[i] + cx->vals[i % 12]) : (cx->name[i] - cx->vals[i % 12]);
-
+        int acc = cx->flag2 ? (cx->name[i] + valsCpy[i % 12]) : (cx->name[i] - valsCpy[i % 12]);
         hash << std::hex << acc;
     }
 
-    *hashStr = hash.str();
+    auto str = hash.str();
+    std::copy(str.begin(), str.end(), hashStr);
 }
 
 void HashComplexRef(Complex& cx, std::string& hashStr)
@@ -394,7 +393,6 @@ void HashComplexRef(Complex& cx, std::string& hashStr)
     for (size_t i = 0; i < cx.name.size(); ++i)
     {
         int acc = cx.flag2 ? (cx.name[i] + cx.vals[i % 12]) : (cx.name[i] - cx.vals[i % 12]);
-
         hash << std::hex << acc;
     }
 

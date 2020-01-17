@@ -189,9 +189,9 @@ TEST_CASE("By Pointer (complex)", "[pointer][complex]")
         myC.id = 24;
         myC.name = "Franklin D. Roosevelt";
         myC.vals = { 0, 1, 4, 6, 7, 8, 11, 15, 17, 22, 25, 26 };
-        std::string hash;
-        HashComplexPtr(&myC, &hash);
-        expected = hash;
+        char hash[255]{};
+        HashComplexPtr(&myC, hash);
+        expected = std::string(hash);
     };
 
     BENCHMARK("rpc.hpp indirect")
@@ -202,7 +202,7 @@ TEST_CASE("By Pointer (complex)", "[pointer][complex]")
         myC.id = 24;
         myC.name = "Franklin D. Roosevelt";
         myC.vals = { 0, 1, 4, 6, 7, 8, 11, 15, 17, 22, 25, 26 };
-        std::string hash;
+        char hash[255]{};
 
         njson::json send_j;
         send_j["args"] = njson::json::array({ rpc::Serialize<Complex, njson::json>(myC), hash });
@@ -212,8 +212,8 @@ TEST_CASE("By Pointer (complex)", "[pointer][complex]")
         const auto argList = njson::json::parse(retMsg)["args"];
 
         myC = rpc::DeSerialize<Complex, njson::json>(argList[0]);
-        hash = argList[1];
-        test = hash;
+        auto str = argList[1].get<std::string>();
+        test = str;
     };
 
     REQUIRE_THAT(expected, Catch::Matchers::Equals(test));
