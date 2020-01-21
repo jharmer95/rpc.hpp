@@ -2,7 +2,7 @@
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Unit test source file for rpc.hpp
 ///@version 0.1.0.0
-///@date 01-17-2020
+///@date 01-21-2020
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -68,9 +68,9 @@ struct TestMessage
 };
 
 template<>
-inline nlohmann::json rpc::serialize(const TestMessage& mesg)
+inline njson rpc::serialize(const TestMessage& mesg)
 {
-    nlohmann::json obj_j;
+    njson obj_j;
     obj_j["ID"] = mesg.ID;
     obj_j["Flag1"] = mesg.Flag1;
     obj_j["Flag2"] = mesg.Flag2;
@@ -83,14 +83,14 @@ inline nlohmann::json rpc::serialize(const TestMessage& mesg)
     }
     else
     {
-        obj_j["Data"] = nlohmann::json::array();
+        obj_j["Data"] = njson::array();
     }
 
     return obj_j;
 }
 
 template<>
-inline TestMessage rpc::deserialize(const nlohmann::json& obj_j)
+inline TestMessage rpc::deserialize(const njson& obj_j)
 {
     TestMessage mesg;
     mesg.ID = obj_j["ID"].get<int>();
@@ -116,7 +116,7 @@ int ReadMessages(TestMessage* mesgBuf, int* numMesgs)
         {
             if (i < *numMesgs)
             {
-                mesgBuf[i++] = rpc::deserialize<njson::json, TestMessage>(njson::json::parse(s));
+                mesgBuf[i++] = rpc::deserialize<njson, TestMessage>(njson::parse(s));
             }
             else
             {
@@ -146,7 +146,7 @@ int WriteMessages(TestMessage* mesgBuf, int* numMesgs)
     {
         try
         {
-            file_out << rpc::serialize<njson::json, TestMessage>(mesgBuf[i]).dump() << '\n';
+            file_out << rpc::serialize<njson, TestMessage>(mesgBuf[i]).dump() << '\n';
         }
         catch (...)
         {
@@ -169,7 +169,7 @@ int ReadMessageRef(TestMessage& mesg)
     {
         if (file_in >> s)
         {
-            mesg = rpc::deserialize<njson::json, TestMessage>(njson::json::parse(s));
+            mesg = rpc::deserialize<njson, TestMessage>(njson::parse(s));
         }
         while (file_in >> s)
         {
@@ -195,7 +195,7 @@ int WriteMessageRef(const TestMessage& mesg)
 
     try
     {
-        file_out << rpc::serialize<njson::json, TestMessage>(mesg).dump() << '\n';
+        file_out << rpc::serialize<njson, TestMessage>(mesg).dump() << '\n';
     }
     catch (...)
     {
@@ -219,7 +219,7 @@ int ReadMessageVec(std::vector<TestMessage>& vec, int& numMesgs)
         {
             if (i < numMesgs)
             {
-                vec.push_back(rpc::deserialize<njson::json, TestMessage>(njson::json::parse(s)));
+                vec.push_back(rpc::deserialize<njson, TestMessage>(njson::parse(s)));
             }
             else
             {
@@ -249,7 +249,7 @@ int WriteMessageVec(const std::vector<TestMessage>& vec)
     {
         try
         {
-            file_out << rpc::serialize<njson::json, TestMessage>(mesg).dump() << '\n';
+            file_out << rpc::serialize<njson, TestMessage>(mesg).dump() << '\n';
         }
         catch (...)
         {
@@ -322,19 +322,19 @@ TEST_CASE("References", "[]")
     std::copy(md.begin(), md.end(), mesg.Data);
     mesg.DataSize = static_cast<uint8_t>(md.size());
 
-    njson::json send_j;
-    send_j["args"] = njson::json::array({ rpc::serialize<njson::json, TestMessage>(mesg) });
+    njson send_j;
+    send_j["args"] = njson::array({ rpc::serialize<njson, TestMessage>(mesg) });
     send_j["function"] = "WriteMessageRef";
 
-    const auto retMsg = rpc::run<nlohmann::json>(send_j);
+    const auto retMsg = rpc::run<njson>(send_j);
 
     TestMessage rmesg;
-    njson::json recv_j;
-    recv_j["args"] = njson::json::array({ rpc::serialize<njson::json, TestMessage>(rmesg) });
+    njson recv_j;
+    recv_j["args"] = njson::array({ rpc::serialize<njson, TestMessage>(rmesg) });
     recv_j["function"] = "ReadMessageRef";
 
-    const auto retMsg2 = rpc::run<njson::json>(recv_j);
-    rmesg = rpc::deserialize<njson::json, TestMessage>(njson::json::parse(retMsg2)["args"][0]);
+    const auto retMsg2 = rpc::run<njson>(recv_j);
+    rmesg = rpc::deserialize<njson, TestMessage>(njson::parse(retMsg2)["args"][0]);
     REQUIRE((mesg == rmesg));
 }
 
@@ -367,34 +367,34 @@ TEST_CASE("Vectors", "[]")
 
     std::vector<TestMessage> mesgVec{ mesg1, mesg2, mesg3 };
 
-    njson::json send_j;
-    send_j["args"] = njson::json::array();
+    njson send_j;
+    send_j["args"] = njson::array();
 
-    njson::json argList = njson::json::array();
+    njson argList = njson::array();
 
     for (const auto& mesg : mesgVec)
     {
-        argList.push_back(rpc::serialize<njson::json, TestMessage>(mesg));
+        argList.push_back(rpc::serialize<njson, TestMessage>(mesg));
     }
 
     send_j["args"].push_back(argList);
 
     send_j["function"] = "WriteMessageVec";
 
-    const auto retMsg = rpc::run<nlohmann::json>(send_j);
+    const auto retMsg = rpc::run<njson>(send_j);
 
     std::vector<TestMessage> rmesgVec;
-    njson::json recv_j;
-    recv_j["args"] = njson::json::array({ njson::json::array(), 3 });
+    njson recv_j;
+    recv_j["args"] = njson::array({ njson::array(), 3 });
 
     recv_j["function"] = "ReadMessageVec";
 
-    const auto retMsg2 = rpc::run<njson::json>(recv_j);
-    const auto obj = njson::json::parse(retMsg2)["args"][0];
+    const auto retMsg2 = rpc::run<njson>(recv_j);
+    const auto obj = njson::parse(retMsg2)["args"][0];
 
     for (const auto& val : obj)
     {
-        rmesgVec.push_back(rpc::deserialize<njson::json, TestMessage>(val));
+        rmesgVec.push_back(rpc::deserialize<njson, TestMessage>(val));
     }
 
     REQUIRE(rmesgVec.size() == mesgVec.size());
@@ -420,44 +420,44 @@ TEST_CASE("Pointers", "[]")
     std::copy(md2.begin(), md2.end(), mesg2.Data);
     mesg2.DataSize = static_cast<uint8_t>(md2.size());
 
-    nlohmann::json send_j;
-    send_j["args"] = nlohmann::json::array();
+    njson send_j;
+    send_j["args"] = njson::array();
     send_j["function"] = "WriteMessages";
 
     auto& argList = send_j["args"];
 
-    nlohmann::json mesgList = nlohmann::json::array();
-    mesgList.push_back(rpc::serialize<njson::json, TestMessage>(mesg1));
-    mesgList.push_back(rpc::serialize<njson::json, TestMessage>(mesg2));
+    njson mesgList = njson::array();
+    mesgList.push_back(rpc::serialize<njson, TestMessage>(mesg1));
+    mesgList.push_back(rpc::serialize<njson, TestMessage>(mesg2));
     argList.push_back(mesgList);
     argList.push_back(2);
 
-    const auto retMsg = rpc::run<nlohmann::json>(send_j);
+    const auto retMsg = rpc::run<njson>(send_j);
 
     const size_t numMesg = 2;
     const auto rdMsg = std::make_unique<TestMessage[]>(numMesg);
 
-    nlohmann::json recv_j;
+    njson recv_j;
     recv_j["function"] = "ReadMessages";
-    recv_j["args"] = njson::json::array();
+    recv_j["args"] = njson::array();
     auto& argList2 = recv_j["args"];
 
-    nlohmann::json subArgList = nlohmann::json::array();
+    njson subArgList = njson::array();
 
     for (size_t i = 0; i < numMesg; ++i)
     {
-        subArgList.push_back(rpc::serialize<njson::json, TestMessage>(rdMsg[i]));
+        subArgList.push_back(rpc::serialize<njson, TestMessage>(rdMsg[i]));
     }
 
     argList2.push_back(subArgList);
     argList2.push_back(numMesg);
 
-    const auto retMsg2 = rpc::run<nlohmann::json>(recv_j);
-    const auto retData = nlohmann::json::parse(retMsg2)["args"];
+    const auto retMsg2 = rpc::run<njson>(recv_j);
+    const auto retData = njson::parse(retMsg2)["args"];
 
     for (size_t i = 0; i < retData.size() - 1; ++i)
     {
-        rdMsg[i] = rpc::deserialize<njson::json, TestMessage>(retData.at(i));
+        rdMsg[i] = rpc::deserialize<njson, TestMessage>(retData.at(i));
     }
 
     REQUIRE((rdMsg[0] == mesg1));
@@ -466,8 +466,8 @@ TEST_CASE("Pointers", "[]")
 
 TEST_CASE("From String")
 {
-    const auto retMsg = rpc::run<njson::json>(R"({ "args": [3, 4], "function": "SimpleSum" })");
-    const int result = njson::json::parse(retMsg)["result"].get<int>();
+    const auto retMsg = rpc::run<njson>(R"({ "args": [3, 4], "function": "SimpleSum" })");
+    const int result = njson::parse(retMsg)["result"].get<int>();
 
     REQUIRE(result == 7);
 }

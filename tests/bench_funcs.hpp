@@ -2,7 +2,7 @@
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Functions for benchmarking rpc
 ///@version 0.1.0.0
-///@date 01-17-2020
+///@date 01-21-2020
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -68,9 +68,9 @@ struct TestMessage
 };
 
 template<>
-inline nlohmann::json rpc::serialize(const TestMessage& mesg) RPC_HPP_EXCEPT
+inline njson rpc::serialize(const TestMessage& mesg) RPC_HPP_EXCEPT
 {
-    nlohmann::json obj_j;
+    njson obj_j;
     obj_j["ID"] = mesg.ID;
     obj_j["Flag1"] = mesg.Flag1;
     obj_j["Flag2"] = mesg.Flag2;
@@ -83,14 +83,14 @@ inline nlohmann::json rpc::serialize(const TestMessage& mesg) RPC_HPP_EXCEPT
     }
     else
     {
-        obj_j["Data"] = nlohmann::json::array();
+        obj_j["Data"] = njson::array();
     }
 
     return obj_j;
 }
 
 template<>
-inline TestMessage rpc::deserialize(const nlohmann::json& obj_j) RPC_HPP_EXCEPT
+inline TestMessage rpc::deserialize(const njson& obj_j) RPC_HPP_EXCEPT
 {
     TestMessage mesg;
     mesg.ID = obj_j["ID"].get<int>();
@@ -116,7 +116,7 @@ int ReadMessages(TestMessage* mesgBuf, int* numMesgs)
         {
             if (i < *numMesgs)
             {
-                mesgBuf[i++] = rpc::deserialize<njson::json, TestMessage>(njson::json::parse(s));
+                mesgBuf[i++] = rpc::deserialize<njson, TestMessage>(njson::parse(s));
             }
             else
             {
@@ -146,7 +146,7 @@ int WriteMessages(TestMessage* mesgBuf, int* numMesgs)
     {
         try
         {
-            file_out << rpc::serialize<njson::json, TestMessage>(mesgBuf[i]).dump() << '\n';
+            file_out << rpc::serialize<njson, TestMessage>(mesgBuf[i]).dump() << '\n';
         }
         catch (...)
         {
@@ -169,7 +169,7 @@ int ReadMessageRef(TestMessage& mesg)
     {
         if (file_in >> s)
         {
-            mesg = rpc::deserialize<njson::json, TestMessage>(njson::json::parse(s));
+            mesg = rpc::deserialize<njson, TestMessage>(njson::parse(s));
         }
         while (file_in >> s)
         {
@@ -195,7 +195,7 @@ int WriteMessageRef(const TestMessage& mesg)
 
     try
     {
-        file_out << rpc::serialize<njson::json, TestMessage>(mesg).dump() << '\n';
+        file_out << rpc::serialize<njson, TestMessage>(mesg).dump() << '\n';
     }
     catch (...)
     {
@@ -219,7 +219,7 @@ int ReadMessageVec(std::vector<TestMessage>& vec, int& numMesgs)
         {
             if (i < numMesgs)
             {
-                vec.push_back(rpc::deserialize<njson::json, TestMessage>(njson::json::parse(s)));
+                vec.push_back(rpc::deserialize<njson, TestMessage>(njson::parse(s)));
             }
             else
             {
@@ -249,7 +249,7 @@ int WriteMessageVec(const std::vector<TestMessage>& vec)
     {
         try
         {
-            file_out << rpc::serialize<njson::json, TestMessage>(mesg).dump() << '\n';
+            file_out << rpc::serialize<njson, TestMessage>(mesg).dump() << '\n';
         }
         catch (...)
         {
@@ -313,9 +313,9 @@ public:
 };
 
 template<>
-inline njson::json rpc::serialize(const Complex& cx) RPC_HPP_EXCEPT
+inline njson rpc::serialize(const Complex& cx) RPC_HPP_EXCEPT
 {
-    njson::json obj_j;
+    njson obj_j;
     obj_j["id"] = cx.id;
     obj_j["name"] = cx.name;
     obj_j["flag1"] = cx.flag1;
@@ -326,7 +326,7 @@ inline njson::json rpc::serialize(const Complex& cx) RPC_HPP_EXCEPT
 }
 
 template<>
-inline Complex rpc::deserialize(const njson::json& obj_j) RPC_HPP_EXCEPT
+inline Complex rpc::deserialize(const njson& obj_j) RPC_HPP_EXCEPT
 {
     Complex cx;
     cx.id = obj_j["id"].get<int>();
@@ -403,18 +403,22 @@ void HashComplexRef(Complex& cx, std::string& hashStr)
     hashStr = hash.str();
 }
 
-double Average(double n1, double n2, double n3, double n4, double n5, double n6, double n7, double n8, double n9, double n10)
+double Average(double n1, double n2, double n3, double n4, double n5, double n6, double n7,
+    double n8, double n9, double n10)
 {
     return (n1 + n2 + n3 + n4 + n5 + n6 + n7 + n8 + n9 + n10) / 10.00;
 }
 
-double StdDev(double n1, double n2, double n3, double n4, double n5, double n6, double n7, double n8, double n9, double n10)
+double StdDev(double n1, double n2, double n3, double n4, double n5, double n6, double n7,
+    double n8, double n9, double n10)
 {
-    auto avg = Average(n1 * n1, n2 * n2, n3 * n3, n4 * n4, n5 * n5, n6 * n6, n7 * n7, n8 * n8, n9 * n9, n10 * n10);
+    auto avg = Average(
+        n1 * n1, n2 * n2, n3 * n3, n4 * n4, n5 * n5, n6 * n6, n7 * n7, n8 * n8, n9 * n9, n10 * n10);
     return sqrt(avg);
 }
 
-void SquareRootPtr(double* n1, double* n2, double* n3, double* n4, double* n5, double* n6, double* n7, double* n8, double* n9, double* n10)
+void SquareRootPtr(double* n1, double* n2, double* n3, double* n4, double* n5, double* n6,
+    double* n7, double* n8, double* n9, double* n10)
 {
     *n1 = sqrt(*n1);
     *n2 = sqrt(*n2);
@@ -428,7 +432,8 @@ void SquareRootPtr(double* n1, double* n2, double* n3, double* n4, double* n5, d
     *n10 = sqrt(*n10);
 }
 
-void SquareRootRef(double& n1, double& n2, double& n3, double& n4, double& n5, double& n6, double& n7, double& n8, double& n9, double& n10)
+void SquareRootRef(double& n1, double& n2, double& n3, double& n4, double& n5, double& n6,
+    double& n7, double& n8, double& n9, double& n10)
 {
     n1 = sqrt(n1);
     n2 = sqrt(n2);
@@ -442,7 +447,7 @@ void SquareRootRef(double& n1, double& n2, double& n3, double& n4, double& n5, d
     n10 = sqrt(n10);
 }
 
-template <typename T>
+template<typename T>
 double AverageContainer(const std::vector<T>& vec)
 {
     double sum = std::accumulate(vec.begin(), vec.end(), 0.00);

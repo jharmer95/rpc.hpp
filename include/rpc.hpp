@@ -2,7 +2,7 @@
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Header-only library for serialized RPC usage
 ///@version 0.1.0.0
-///@date 01-17-2020
+///@date 01-21-2020
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -52,9 +52,9 @@
 // potentially improve performance when you are sure that your implentations will not throw an
 // uncaught exception
 #if defined(NOTHROW)
-#   define RPC_HPP_EXCEPT noexcept
+#    define RPC_HPP_EXCEPT noexcept
 #else
-#   define RPC_HPP_EXCEPT
+#    define RPC_HPP_EXCEPT
 #endif
 
 namespace rpc
@@ -68,10 +68,7 @@ class arg_buffer
 public:
     size_t count = 0;
 
-    uint8_t* data() const
-    {
-        return m_buffer.get();
-    }
+    uint8_t* data() const { return m_buffer.get(); }
 
 protected:
     std::unique_ptr<uint8_t[]> m_buffer = std::make_unique<uint8_t[]>(MAX_BUFFER_SIZE);
@@ -494,7 +491,8 @@ Value decode_pointer_argument(const Serial& obj, uint8_t* buf, size_t* elem_coun
 }
 
 template<typename Serial, typename Value>
-Value decode_argument(const Serial& obj, [[maybe_unused]] uint8_t* buf, size_t* count, unsigned* param_num) RPC_HPP_EXCEPT
+Value decode_argument(const Serial& obj, [[maybe_unused]] uint8_t* buf, size_t* count,
+    unsigned* param_num) RPC_HPP_EXCEPT
 {
 #ifdef _DEBUG
     [[maybe_unused]] const auto t_name = typeid(Value).name();
@@ -528,7 +526,8 @@ Value decode_argument(const Serial& obj, [[maybe_unused]] uint8_t* buf, size_t* 
 }
 
 template<typename Serial, typename Value>
-void encode_arguments(Serial& obj, [[maybe_unused]] const size_t count, const Value& val) RPC_HPP_EXCEPT
+void encode_arguments(
+    Serial& obj, [[maybe_unused]] const size_t count, const Value& val) RPC_HPP_EXCEPT
 {
 #ifdef _DEBUG
     [[maybe_unused]] const auto t_name = typeid(Value).name();
@@ -636,7 +635,8 @@ void encode_arguments(Serial& obj, [[maybe_unused]] const size_t count, const Va
 }
 
 template<typename F, typename... Ts, size_t... Is>
-void for_each_tuple(const std::tuple<Ts...>& tuple, F func, std::index_sequence<Is...>) RPC_HPP_EXCEPT
+void for_each_tuple(
+    const std::tuple<Ts...>& tuple, F func, std::index_sequence<Is...>) RPC_HPP_EXCEPT
 {
     using expander = int[];
     (void)expander{ 0, ((void)func(std::get<Is>(tuple)), 0)... };
@@ -671,8 +671,8 @@ std::string run_callback(const Serial& obj, std::function<R __stdcall(Args...)> 
     std::array<arg_buffer, function_param_count_v<R, Args...>> arg_buffers;
 
     std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...> args{
-        decode_argument<Serial, std::remove_cv_t<std::remove_reference_t<Args>>>(
-            adapter[arg_count], arg_buffers[arg_count].data(), &(arg_buffers[arg_count].count), &arg_count)...
+        decode_argument<Serial, std::remove_cv_t<std::remove_reference_t<Args>>>(adapter[arg_count],
+            arg_buffers[arg_count].data(), &(arg_buffers[arg_count].count), &arg_count)...
     };
 
     serial_adapter<Serial> retSer;
@@ -716,7 +716,8 @@ std::string run_callback(const Serial& obj, R(__stdcall* func)(Args...)) RPC_HPP
 }
 
 template<typename Serial, typename R, typename... Args>
-std::string run_callback(const Serial& obj, std::function<R __fastcall(Args...)> func) RPC_HPP_EXCEPT
+std::string run_callback(
+    const Serial& obj, std::function<R __fastcall(Args...)> func) RPC_HPP_EXCEPT
 {
     unsigned arg_count = 0;
     serial_adapter<Serial> adapter(obj);
@@ -724,8 +725,8 @@ std::string run_callback(const Serial& obj, std::function<R __fastcall(Args...)>
     std::array<arg_buffer, function_param_count_v<R, Args...>> arg_buffers;
 
     std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...> args{
-        decode_argument<Serial, std::remove_cv_t<std::remove_reference_t<Args>>>(
-            adapter[arg_count], arg_buffers[arg_count].data(), &(arg_buffers[arg_count].count), &arg_count)...
+        decode_argument<Serial, std::remove_cv_t<std::remove_reference_t<Args>>>(adapter[arg_count],
+            arg_buffers[arg_count].data(), &(arg_buffers[arg_count].count), &arg_count)...
     };
 
     serial_adapter<Serial> retSer;
@@ -768,9 +769,10 @@ std::string run_callback(const Serial& obj, R(__fastcall* func)(Args...)) RPC_HP
     return run_callback(obj, std::function<R __fastcall(Args...)>(func));
 }
 
-#   if !defined(__MINGW32__)
+#    if !defined(__MINGW32__)
 template<typename Serial, typename R, typename... Args>
-std::string run_callback(const Serial& obj, std::function<R __vectorcall(Args...)> func) RPC_HPP_EXCEPT
+std::string run_callback(
+    const Serial& obj, std::function<R __vectorcall(Args...)> func) RPC_HPP_EXCEPT
 {
     unsigned arg_count = 0;
     serial_adapter<Serial> adapter(obj);
@@ -778,8 +780,8 @@ std::string run_callback(const Serial& obj, std::function<R __vectorcall(Args...
     std::array<arg_buffer, function_param_count_v<R, Args...>> arg_buffers;
 
     std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...> args{
-        decode_argument<Serial, std::remove_cv_t<std::remove_reference_t<Args>>>(
-            adapter[arg_count], arg_buffers[arg_count].data(), &(arg_buffers[arg_count].count), &arg_count)...
+        decode_argument<Serial, std::remove_cv_t<std::remove_reference_t<Args>>>(adapter[arg_count],
+            arg_buffers[arg_count].data(), &(arg_buffers[arg_count].count), &arg_count)...
     };
 
     serial_adapter<Serial> retSer;
@@ -821,7 +823,7 @@ std::string run_callback(const Serial& obj, R(__vectorcall* func)(Args...)) RPC_
 {
     return run_callback(obj, std::function<R __vectorcall(Args...)>(func));
 }
-#   endif
+#    endif
 #endif
 
 // TODO: Find a way to template/lambda this to avoid copy/paste for WIN32
@@ -834,8 +836,8 @@ std::string run_callback(const Serial& obj, std::function<R(Args...)> func) RPC_
     std::array<arg_buffer, function_param_count_v<R, Args...>> arg_buffers;
 
     std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...> args{
-        decode_argument<Serial, std::remove_cv_t<std::remove_reference_t<Args>>>(
-            adapter[arg_count], arg_buffers[arg_count].data(), &(arg_buffers[arg_count].count), &arg_count)...
+        decode_argument<Serial, std::remove_cv_t<std::remove_reference_t<Args>>>(adapter[arg_count],
+            arg_buffers[arg_count].data(), &(arg_buffers[arg_count].count), &arg_count)...
     };
 
     serial_adapter<Serial> retSer;

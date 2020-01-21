@@ -2,7 +2,7 @@
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Benchmark comparison for rpc.hpp
 ///@version 0.1.0.0
-///@date 01-17-2020
+///@date 01-21-2020
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -51,11 +51,11 @@ TEST_CASE("By Value (simple)", "[value][simple]")
 
     BENCHMARK("rpc.hpp indirect")
     {
-        njson::json send_j;
-        send_j["args"] = njson::json::array({ 20 });
+        njson send_j;
+        send_j["args"] = njson::array({ 20 });
         send_j["function"] = "Fibonacci";
 
-        test = njson::json::parse(rpc::run<njson::json>(send_j))["result"];
+        test = njson::parse(rpc::run<njson>(send_j))["result"];
     };
 
     REQUIRE(expected == test);
@@ -94,11 +94,11 @@ TEST_CASE("By Value (complex)", "[value][complex]")
         myC.name = "Franklin D. Roosevelt";
         myC.vals = { 0, 1, 4, 6, 7, 8, 11, 15, 17, 22, 25, 26 };
 
-        njson::json send_j;
-        send_j["args"] = njson::json::array( { rpc::serialize<njson::json, Complex>(myC) } );
+        njson send_j;
+        send_j["args"] = njson::array({ rpc::serialize<njson, Complex>(myC) });
         send_j["function"] = "HashComplex";
 
-        test = njson::json::parse(rpc::run<njson::json>(send_j))["result"].get<std::string>();
+        test = njson::parse(rpc::run<njson>(send_j))["result"].get<std::string>();
     };
 
     REQUIRE_THAT(expected, Catch::Matchers::Equals(test));
@@ -119,16 +119,18 @@ TEST_CASE("By Value (many)", "[value][many]")
 
     BENCHMARK("Direct Call")
     {
-        expected = StdDev(55.65, 125.325, 552.125, 12.767, 2599.6, 1245.125663, 9783.49, 125.12, 553.3333333333, 2266.1);
+        expected = StdDev(55.65, 125.325, 552.125, 12.767, 2599.6, 1245.125663, 9783.49, 125.12,
+            553.3333333333, 2266.1);
     };
 
     BENCHMARK("rpc.hpp indirect")
     {
-        njson::json send_j;
-        send_j["args"] = njson::json::array({ 55.65, 125.325, 552.125, 12.767, 2599.6, 1245.125663, 9783.49, 125.12, 553.3333333333, 2266.1 });
+        njson send_j;
+        send_j["args"] = njson::array({ 55.65, 125.325, 552.125, 12.767, 2599.6, 1245.125663,
+            9783.49, 125.12, 553.3333333333, 2266.1 });
         send_j["function"] = "StdDev";
 
-        test = njson::json::parse(rpc::run<njson::json>(send_j))["result"];
+        test = njson::parse(rpc::run<njson>(send_j))["result"];
     };
 
     REQUIRE_THAT(test, Catch::Matchers::WithinRel(expected));
@@ -157,11 +159,11 @@ TEST_CASE("By Pointer (simple)", "[pointer][simple]")
     BENCHMARK("rpc.hpp indirect")
     {
         uint64_t n = 20U;
-        njson::json send_j;
-        send_j["args"] = njson::json::array({ n });
+        njson send_j;
+        send_j["args"] = njson::array({ n });
         send_j["function"] = "FibonacciPtr";
 
-        n = njson::json::parse(rpc::run<njson::json>(send_j))["args"][0];
+        n = njson::parse(rpc::run<njson>(send_j))["args"][0];
         test = n;
     };
 
@@ -204,14 +206,14 @@ TEST_CASE("By Pointer (complex)", "[pointer][complex]")
         myC.vals = { 0, 1, 4, 6, 7, 8, 11, 15, 17, 22, 25, 26 };
         char hash[255]{};
 
-        njson::json send_j;
-        send_j["args"] = njson::json::array({ rpc::serialize<njson::json, Complex>(myC), hash });
+        njson send_j;
+        send_j["args"] = njson::array({ rpc::serialize<njson, Complex>(myC), hash });
         send_j["function"] = "HashComplexPtr";
 
-        const auto retMsg = rpc::run<njson::json>(send_j);
-        const auto argList = njson::json::parse(retMsg)["args"];
+        const auto retMsg = rpc::run<njson>(send_j);
+        const auto argList = njson::parse(retMsg)["args"];
 
-        myC = rpc::deserialize<njson::json, Complex>(argList[0]);
+        myC = rpc::deserialize<njson, Complex>(argList[0]);
         const auto str = argList[1].get<std::string>();
         test = str;
     };
@@ -261,11 +263,11 @@ TEST_CASE("By Pointer (many)", "[pointer][many]")
         double n9 = 553.3333333333;
         double n10 = 2266.1;
 
-        njson::json send_j;
-        send_j["args"] = njson::json::array({ n1, n2, n3, n4, n5, n6, n7, n8, n9, n10 });
+        njson send_j;
+        send_j["args"] = njson::array({ n1, n2, n3, n4, n5, n6, n7, n8, n9, n10 });
         send_j["function"] = "SquareRootPtr";
 
-        const auto argList = njson::json::parse(rpc::run<njson::json>(send_j))["args"];
+        const auto argList = njson::parse(rpc::run<njson>(send_j))["args"];
 
         n1 = argList[0];
         n2 = argList[1];
@@ -307,11 +309,11 @@ TEST_CASE("By Reference (simple)", "[ref][simple]")
     {
         uint64_t n = 20;
 
-        njson::json send_j;
-        send_j["args"] = njson::json::array({ n });
+        njson send_j;
+        send_j["args"] = njson::array({ n });
         send_j["function"] = "FibonacciRef";
 
-        n = njson::json::parse(rpc::run<njson::json>(send_j))["args"][0];
+        n = njson::parse(rpc::run<njson>(send_j))["args"][0];
         test = n;
     };
 
@@ -354,13 +356,13 @@ TEST_CASE("By Reference (complex)", "[ref][complex]")
         myC.vals = { 0, 1, 4, 6, 7, 8, 11, 15, 17, 22, 25, 26 };
         std::string hash;
 
-        njson::json send_j;
-        send_j["args"] = njson::json::array({ rpc::serialize<njson::json, Complex>(myC), hash });
+        njson send_j;
+        send_j["args"] = njson::array({ rpc::serialize<njson, Complex>(myC), hash });
         send_j["function"] = "HashComplexRef";
 
-        const auto recv_j = njson::json::parse(rpc::run<njson::json>(send_j));
+        const auto recv_j = njson::parse(rpc::run<njson>(send_j));
 
-        myC = rpc::deserialize<njson::json, Complex>(recv_j["args"][0]);
+        myC = rpc::deserialize<njson, Complex>(recv_j["args"][0]);
         hash = recv_j["args"][1].get<std::string>();
         test = hash;
     };
@@ -410,11 +412,11 @@ TEST_CASE("By Reference (many)", "[ref][many]")
         double n9 = 553.3333333333;
         double n10 = 2266.1;
 
-        njson::json send_j;
-        send_j["args"] = njson::json::array({ n1, n2, n3, n4, n5, n6, n7, n8, n9, n10 });
+        njson send_j;
+        send_j["args"] = njson::array({ n1, n2, n3, n4, n5, n6, n7, n8, n9, n10 });
         send_j["function"] = "SquareRootRef";
 
-        const auto argList = njson::json::parse(rpc::run<njson::json>(send_j))["args"];
+        const auto argList = njson::parse(rpc::run<njson>(send_j))["args"];
 
         n1 = argList[0];
         n2 = argList[1];
@@ -447,19 +449,21 @@ TEST_CASE("With Container", "[container]")
 
     BENCHMARK("Direct Call")
     {
-        const std::vector<double> vec {55.65, 125.325, 552.125, 12.767, 2599.6, 1245.125663, 9783.49, 125.12, 553.3333333333, 2266.1 };
+        const std::vector<double> vec{ 55.65, 125.325, 552.125, 12.767, 2599.6, 1245.125663,
+            9783.49, 125.12, 553.3333333333, 2266.1 };
         expected = AverageContainer(vec);
     };
 
     BENCHMARK("rpc.hpp indirect")
     {
-        std::vector<double> vec {55.65, 125.325, 552.125, 12.767, 2599.6, 1245.125663, 9783.49, 125.12, 553.3333333333, 2266.1 };
+        std::vector<double> vec{ 55.65, 125.325, 552.125, 12.767, 2599.6, 1245.125663, 9783.49,
+            125.12, 553.3333333333, 2266.1 };
 
-        njson::json send_j;
-        send_j["args"] = njson::json::array({ vec });
+        njson send_j;
+        send_j["args"] = njson::array({ vec });
         send_j["function"] = "AverageContainer<double>";
 
-        test = njson::json::parse(rpc::run<njson::json>(send_j))["result"];
+        test = njson::parse(rpc::run<njson>(send_j))["result"];
     };
 
     REQUIRE_THAT(test, Catch::Matchers::WithinRel(expected));
@@ -489,23 +493,24 @@ TEST_CASE("Sequential", "[sequential]")
 
     BENCHMARK("rpc.hpp indirect")
     {
-        njson::json send_j;
-        send_j["args"] = njson::json::array({ 5, 30, 1000 });
+        njson send_j;
+        send_j["args"] = njson::array({ 5, 30, 1000 });
         send_j["function"] = "RandInt";
 
-        auto vec = njson::json::parse(rpc::run<njson::json>(send_j))["result"].get<std::vector<uint64_t>>();
+        auto vec = njson::parse(rpc::run<njson>(send_j))["result"]
+                       .get<std::vector<uint64_t>>();
 
         for (auto& val : vec)
         {
-            send_j["args"] = njson::json::array({ val });
+            send_j["args"] = njson::array({ val });
             send_j["function"] = "Fibonacci";
-            val = njson::json::parse(rpc::run<njson::json>(send_j))["result"];
+            val = njson::parse(rpc::run<njson>(send_j))["result"];
         }
 
-        send_j["args"] = njson::json::array({ vec });
+        send_j["args"] = njson::array({ vec });
         send_j["function"] = "AverageContainer<uint64_t>";
 
-        return njson::json::parse(rpc::run<njson::json>(send_j))["result"];
+        return njson::parse(rpc::run<njson>(send_j))["result"];
     };
 
     //BENCHMARK("rpc.hpp socket IPC") { return XXX; };
