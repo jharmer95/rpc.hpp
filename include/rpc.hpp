@@ -59,28 +59,34 @@
 
 namespace rpc
 {
-using namespace std::string_literals;
-
-constexpr auto MAX_BUFFER_SIZE = 64U * 1024U;
-
-class arg_buffer
-{
-public:
-    size_t count = 0;
-
-    uint8_t* data() const { return m_buffer.get(); }
-
-protected:
-    std::unique_ptr<uint8_t[]> m_buffer = std::make_unique<uint8_t[]>(MAX_BUFFER_SIZE);
-};
-
 template<typename Serial>
 class serial_adapter
 {
 public:
-    serial_adapter() : m_serial_object() {}
+    ~serial_adapter() = default;
+    serial_adapter() = default;
+
     explicit serial_adapter(Serial obj) : m_serial_object(std::move(obj)) {}
+    serial_adapter(const serial_adapter& other) : m_serial_object(other.m_serial_object) {}
+    serial_adapter(serial_adapter&& other) : m_serial_object(std::move(other.m_serial_object)) {}
+
     serial_adapter(std::string_view obj_str);
+
+    serial_adapter& operator=(const serial_adapter& other)
+    {
+        m_serial_object = other.m_serial_object;
+        return *this;
+    }
+
+    serial_adapter& operator=(serial_adapter&& other)
+    {
+        if (this != &other)
+        {
+            m_serial_object = std::move(other.m_serial_object);
+        }
+
+        return *this;
+    }
 
     template<typename Value>
     [[nodiscard]] Value get_value() const;
@@ -157,7 +163,7 @@ public:
     [[nodiscard]] static Serial make_array() noexcept;
 
 protected:
-    Serial m_serial_object;
+    Serial m_serial_object{};
 };
 
 template<typename Serial>
@@ -169,265 +175,425 @@ template<typename Serial, typename Value>
 template<typename Serial, typename Value>
 [[nodiscard]] Value deserialize(const Serial&) RPC_HPP_EXCEPT;
 
-template<typename, typename T>
-struct is_serializable_base
+namespace details
 {
-    static_assert(std::integral_constant<T, false>::value,
-        "Second template parameter needs to be of function type");
-};
+    using namespace std::string_literals;
 
-template<typename C, typename R, typename... Args>
-struct is_serializable_base<C, R(Args...)>
-{
-private:
-    template<typename T>
-    static constexpr auto check(T*) noexcept ->
-        typename std::is_same<decltype(std::declval<T>().serialize(std::declval<Args>()...)),
-            R>::type;
+    constexpr auto DEFAULT_BUFFER_SIZE = 64U * 1024U;
 
-    template<typename>
-    static constexpr std::false_type check(...) noexcept;
-
-    using type = decltype(check<C>(nullptr));
-
-public:
-    static constexpr bool value = type::value;
-};
-
-template<typename, typename T>
-struct is_deserializable_base
-{
-    static_assert(std::integral_constant<T, false>::value,
-        "Second template parameter needs to be of function type");
-};
-
-template<typename C, typename R, typename... Args>
-struct is_deserializable_base<C, R(Args...)>
-{
-private:
-    template<typename T>
-    static constexpr auto check(T*) noexcept ->
-        typename std::is_same<decltype(std::declval<T>().deserialize(std::declval<Args>()...)),
-            R>::type;
-
-    template<typename>
-    static constexpr std::false_type check(...) noexcept;
-
-    using type = decltype(check<C>(nullptr));
-
-public:
-    static constexpr bool value = type::value;
-};
-
-template<typename Serial, typename Value>
-struct is_serializable : std::integral_constant<bool,
-                             is_serializable_base<Value, Serial(const Value&)>::value
-                                 && is_deserializable_base<Value, Value(const Serial&)>::value>
-{
-};
-
-template<typename Serial, typename Value>
-inline constexpr bool is_serializable_v = is_serializable<Serial, Value>::value;
-
-template<typename C>
-struct has_begin
-{
-private:
-    template<typename T>
-    static constexpr auto check(T*) noexcept ->
-        typename std::is_same<decltype(std::declval<T>().begin()), typename T::iterator>::type;
-
-    template<typename>
-    static constexpr std::false_type check(...) noexcept;
-
-    using type = decltype(check<C>(nullptr));
-
-public:
-    static constexpr bool value = type::value;
-};
-
-template<typename C>
-struct has_end
-{
-private:
-    template<typename T>
-    static constexpr auto check(T*) noexcept ->
-        typename std::is_same<decltype(std::declval<T>().end()), typename T::iterator>::type;
-
-    template<typename>
-    static constexpr std::false_type check(...) noexcept;
-
-    using type = decltype(check<C>(nullptr));
-
-public:
-    static constexpr bool value = type::value;
-};
-
-template<typename C>
-struct has_size
-{
-private:
-    template<typename T>
-    static constexpr auto check(T*) noexcept ->
-        typename std::is_same<decltype(std::declval<T>().size()), size_t>::type;
-
-    template<typename>
-    static constexpr std::false_type check(...) noexcept;
-
-    using type = decltype(check<C>(nullptr));
-
-public:
-    static constexpr bool value = type::value;
-};
-
-template<typename C>
-struct is_container
-    : std::integral_constant<bool, has_size<C>::value && has_begin<C>::value && has_end<C>::value>
-{
-};
-
-template<typename C>
-inline constexpr bool is_container_v = is_container<C>::value;
-
-template<typename T>
-struct function_traits;
-
-template<typename R, typename... Args>
-struct function_traits<std::function<R(Args...)>>
-{
-    static constexpr size_t nargs = sizeof...(Args);
-    using result_type = R;
-
-    template<size_t i>
-    struct arg
+    class arg_buffer
     {
-        using type = typename std::tuple_element<i, std::tuple<Args...>>::type;
+    public:
+        ~arg_buffer() = default;
+        arg_buffer(size_t buffer_size = DEFAULT_BUFFER_SIZE)
+            : count(0), m_buffer_sz(buffer_size), m_buffer(std::make_unique<uint8_t[]>(m_buffer_sz))
+        {
+        }
+
+        // prevent implicit copy of arg_buffer
+        arg_buffer(const arg_buffer&) = delete;
+        arg_buffer& operator=(const arg_buffer&) = delete;
+
+        // arg_buffer cannot be implicitly compared
+        bool operator==(const arg_buffer&) = delete;
+
+        arg_buffer(arg_buffer&& other)
+            : m_buffer_sz(other.m_buffer_sz), m_buffer(std::move(other.m_buffer)),
+              count(other.count)
+        {
+            other.count = 0;
+            other.m_buffer_sz = 0;
+        }
+
+        arg_buffer& operator=(arg_buffer&& other)
+        {
+            if (this != &other)
+            {
+                m_buffer.reset();
+                m_buffer_sz = other.m_buffer_sz;
+                m_buffer = std::move(other.m_buffer);
+                count = other.count;
+                other.m_buffer_sz = 0;
+                other.count = 0;
+            }
+
+            return *this;
+        }
+
+        // // explicit copy of arg_buffer
+        // arg_buffer clone() const
+        // {
+        //     arg_buffer tmp(m_buffer_sz);
+        //     tmp.count = count;
+        //     std::copy(m_buffer.get(), m_buffer.get() + m_buffer_sz, tmp.m_buffer.get());
+        //     return tmp;
+        // }
+
+        // // explicit compare of arg_buffer
+        // bool compare(const arg_buffer& other) const
+        // {
+        //     if (count != other.count)
+        //     {
+        //         return false;
+        //     }
+
+        //     if (other.m_buffer_sz > m_buffer_sz)
+        //     {
+        //         if (other.data()[m_buffer_sz] != 0)
+        //         {
+        //             return false;
+        //         }
+
+        //         const auto result = memcmp(data(), other.data(), m_buffer_sz);
+
+        //         if (result != 0)
+        //         {
+        //             return false;
+        //         }
+
+        //         for (size_t i = m_buffer_sz; i < other.m_buffer_sz; ++i)
+        //         {
+        //             if (other.data()[i] != 0)
+        //             {
+        //                 return false;
+        //             }
+        //         }
+        //     }
+        //     else
+        //     {
+        //         if (data()[other.m_buffer_sz] != 0)
+        //         {
+        //             return false;
+        //         }
+
+        //         const auto result = memcmp(data(), other.data(), other.m_buffer_sz);
+
+        //         if (result != 0)
+        //         {
+        //             return false;
+        //         }
+
+        //         for (size_t i = other.m_buffer_sz; i < m_buffer_sz; ++i)
+        //         {
+        //             if (data()[i] != 0)
+        //             {
+        //                 return false;
+        //             }
+        //         }
+        //     }
+
+        //     return true;
+        // }
+
+        uint8_t* data() const { return m_buffer.get(); }
+
+        size_t count = 0;
+
+    protected:
+        size_t m_buffer_sz;
+        std::unique_ptr<uint8_t[]> m_buffer;
     };
-};
 
-template<typename R, typename... Args>
-inline constexpr size_t function_param_count_v = function_traits<std::function<R(Args...)>>::nargs;
+    template<typename, typename T>
+    struct is_serializable_base
+    {
+        static_assert(std::integral_constant<T, false>::value,
+            "Second template parameter needs to be of function type");
+    };
 
-template<typename R, typename... Args>
-using function_result_t = typename function_traits<std::function<R(Args...)>>::type;
+    template<typename C, typename R, typename... Args>
+    struct is_serializable_base<C, R(Args...)>
+    {
+    private:
+        template<typename T>
+        static constexpr auto check(T*) noexcept ->
+            typename std::is_same<decltype(std::declval<T>().serialize(std::declval<Args>()...)),
+                R>::type;
 
-template<size_t i, typename R, typename... Args>
-using function_args_t = typename function_traits<std::function<R(Args...)>>::template arg<i>::type;
+        template<typename>
+        static constexpr std::false_type check(...) noexcept;
 
-template<typename Serial, typename Value>
-Value decode_container_argument(const Serial& obj, size_t* elem_count) RPC_HPP_EXCEPT
-{
+        using type = decltype(check<C>(nullptr));
+
+    public:
+        static constexpr bool value = type::value;
+    };
+
+    template<typename, typename T>
+    struct is_deserializable_base
+    {
+        static_assert(std::integral_constant<T, false>::value,
+            "Second template parameter needs to be of function type");
+    };
+
+    template<typename C, typename R, typename... Args>
+    struct is_deserializable_base<C, R(Args...)>
+    {
+    private:
+        template<typename T>
+        static constexpr auto check(T*) noexcept ->
+            typename std::is_same<decltype(std::declval<T>().deserialize(std::declval<Args>()...)),
+                R>::type;
+
+        template<typename>
+        static constexpr std::false_type check(...) noexcept;
+
+        using type = decltype(check<C>(nullptr));
+
+    public:
+        static constexpr bool value = type::value;
+    };
+
+    template<typename Serial, typename Value>
+    struct is_serializable : std::integral_constant<bool,
+                                 is_serializable_base<Value, Serial(const Value&)>::value
+                                     && is_deserializable_base<Value, Value(const Serial&)>::value>
+    {
+    };
+
+    template<typename Serial, typename Value>
+    inline constexpr bool is_serializable_v = is_serializable<Serial, Value>::value;
+
+    template<typename C>
+    struct has_begin
+    {
+    private:
+        template<typename T>
+        static constexpr auto check(T*) noexcept ->
+            typename std::is_same<decltype(std::declval<T>().begin()), typename T::iterator>::type;
+
+        template<typename>
+        static constexpr std::false_type check(...) noexcept;
+
+        using type = decltype(check<C>(nullptr));
+
+    public:
+        static constexpr bool value = type::value;
+    };
+
+    template<typename C>
+    struct has_end
+    {
+    private:
+        template<typename T>
+        static constexpr auto check(T*) noexcept ->
+            typename std::is_same<decltype(std::declval<T>().end()), typename T::iterator>::type;
+
+        template<typename>
+        static constexpr std::false_type check(...) noexcept;
+
+        using type = decltype(check<C>(nullptr));
+
+    public:
+        static constexpr bool value = type::value;
+    };
+
+    template<typename C>
+    struct has_size
+    {
+    private:
+        template<typename T>
+        static constexpr auto check(T*) noexcept ->
+            typename std::is_same<decltype(std::declval<T>().size()), size_t>::type;
+
+        template<typename>
+        static constexpr std::false_type check(...) noexcept;
+
+        using type = decltype(check<C>(nullptr));
+
+    public:
+        static constexpr bool value = type::value;
+    };
+
+    template<typename C>
+    struct is_container : std::integral_constant<bool,
+                              has_size<C>::value && has_begin<C>::value && has_end<C>::value>
+    {
+    };
+
+    template<typename C>
+    inline constexpr bool is_container_v = is_container<C>::value;
+
+    template<typename T>
+    struct function_traits;
+
+    template<typename R, typename... Args>
+    struct function_traits<std::function<R(Args...)>>
+    {
+        static constexpr size_t nargs = sizeof...(Args);
+        using result_type = R;
+
+        template<size_t i>
+        struct arg
+        {
+            using type = typename std::tuple_element<i, std::tuple<Args...>>::type;
+        };
+    };
+
+    template<typename R, typename... Args>
+    inline constexpr size_t function_param_count_v =
+        function_traits<std::function<R(Args...)>>::nargs;
+
+    template<typename R, typename... Args>
+    using function_result_t = typename function_traits<std::function<R(Args...)>>::type;
+
+    template<size_t i, typename R, typename... Args>
+    using function_args_t =
+        typename function_traits<std::function<R(Args...)>>::template arg<i>::type;
+
+    template<typename Serial, typename Value>
+    Value decode_container_argument(const Serial& obj, size_t* elem_count) RPC_HPP_EXCEPT
+    {
 #ifdef _DEBUG
-    [[maybe_unused]] const auto t_name = typeid(Value).name();
+        [[maybe_unused]] const auto t_name = typeid(Value).name();
 #endif
 
-    Value container;
-    *elem_count = 0;
-    serial_adapter<Serial> adapter(obj);
+        Value container;
+        *elem_count = 0;
+        serial_adapter<Serial> adapter(obj);
 
-    if (adapter.is_array())
-    {
-        // Multi-value container (array)
+        if (adapter.is_array())
+        {
+            // Multi-value container (array)
+            using P = typename Value::value_type;
+            static_assert(!std::is_void_v<P>,
+                "Void containers are not supported, either cast to a different type or do the "
+                "conversion manually!");
+
+            if constexpr (std::is_arithmetic_v<P> || std::is_same_v<P, std::string>)
+            {
+                for (const auto& val : adapter.get())
+                {
+                    container.push_back(val);
+                }
+            }
+            else if constexpr (is_container_v<P>)
+            {
+                for (const Serial& ser : adapter)
+                {
+                    size_t ncount = 0;
+                    container.push_back(decode_container_argument<Serial, P>(ser, &ncount));
+                    *elem_count += ncount;
+                }
+            }
+            else if constexpr (is_serializable_v<Serial, P>)
+            {
+                for (const auto& ser : adapter.get())
+                {
+                    container.push_back(P::deserialize(ser));
+                }
+            }
+            else
+            {
+                for (const auto& ser : adapter.get())
+                {
+                    container.push_back(deserialize<Serial, P>(ser));
+                }
+            }
+
+            if (*elem_count == 0)
+            {
+                *elem_count = container.size();
+            }
+
+            return container;
+        }
+
+        // Single value container
         using P = typename Value::value_type;
         static_assert(!std::is_void_v<P>,
             "Void containers are not supported, either cast to a different type or do the "
-            "conversion manually!");
+            "conversion "
+            "manually!");
 
-        if constexpr (std::is_arithmetic_v<P> || std::is_same_v<P, std::string>)
+        if constexpr (is_serializable_v<Serial, P>)
         {
-            for (const auto& val : adapter.get())
-            {
-                container.push_back(val);
-            }
+            container.push_back(P::deserialize(obj));
+        }
+        else if constexpr (std::is_arithmetic_v<P> || std::is_same_v<P, std::string>)
+        {
+            container.push_back(adapter.template get_value<P>());
+        }
+        else if constexpr (std::is_same_v<P, char>)
+        {
+            const auto str = adapter.template get_value<std::string>();
+            std::copy(str.begin(), str.end(), std::back_inserter(container));
         }
         else if constexpr (is_container_v<P>)
         {
-            for (const Serial& ser : adapter)
-            {
-                size_t ncount = 0;
-                container.push_back(decode_container_argument<Serial, P>(ser, &ncount));
-                *elem_count += ncount;
-            }
-        }
-        else if constexpr (is_serializable_v<Serial, P>)
-        {
-            for (const auto& ser : adapter.get())
-            {
-                container.push_back(P::deserialize(ser));
-            }
+            size_t ncount = 0;
+            container.push_back(decode_container_argument<Serial, P>(obj, &ncount));
+            *elem_count += ncount;
         }
         else
         {
-            for (const auto& ser : adapter.get())
-            {
-                container.push_back(deserialize<Serial, P>(ser));
-            }
+            container.push_back(deserialize<Serial, P>(obj));
         }
 
         if (*elem_count == 0)
         {
-            *elem_count = container.size();
+            *elem_count = 1;
         }
 
         return container;
     }
 
-    // Single value container
-    using P = typename Value::value_type;
-    static_assert(!std::is_void_v<P>,
-        "Void containers are not supported, either cast to a different type or do the conversion "
-        "manually!");
-
-    if constexpr (is_serializable_v<Serial, P>)
+    template<typename Serial, typename Value>
+    Value decode_pointer_argument(
+        const Serial& obj, uint8_t* const buf, size_t* const elem_count) RPC_HPP_EXCEPT
     {
-        container.push_back(P::deserialize(obj));
-    }
-    else if constexpr (std::is_arithmetic_v<P> || std::is_same_v<P, std::string>)
-    {
-        container.push_back(adapter.template get_value<P>());
-    }
-    else if constexpr (std::is_same_v<P, char>)
-    {
-        const auto str = adapter.template get_value<std::string>();
-        std::copy(str.begin(), str.end(), std::back_inserter(container));
-    }
-    else if constexpr (is_container_v<P>)
-    {
-        size_t ncount = 0;
-        container.push_back(decode_container_argument<Serial, P>(obj, &ncount));
-        *elem_count += ncount;
-    }
-    else
-    {
-        container.push_back(deserialize<Serial, P>(obj));
-    }
-
-    if (*elem_count == 0)
-    {
-        *elem_count = 1;
-    }
-
-    return container;
-}
-
-template<typename Serial, typename Value>
-Value decode_pointer_argument(const Serial& obj, uint8_t* buf, size_t* elem_count) RPC_HPP_EXCEPT
-{
 #ifdef _DEBUG
-    [[maybe_unused]] const auto t_name = typeid(Value).name();
+        [[maybe_unused]] const auto t_name = typeid(Value).name();
 #endif
 
-    serial_adapter<Serial> adapter(obj);
+        serial_adapter<Serial> adapter(obj);
 
-    if (adapter.is_empty())
-    {
-        *elem_count = 0;
-        return nullptr;
-    }
+        if (adapter.is_empty())
+        {
+            *elem_count = 0;
+            return nullptr;
+        }
 
-    if (adapter.is_array())
-    {
-        // Multi-value pointer (array)
+        if (adapter.is_array())
+        {
+            // Multi-value pointer (array)
+            using P = std::remove_cv_t<std::remove_pointer_t<Value>>;
+            static_assert(!std::is_void_v<P>,
+                "Void pointers are not supported, either cast to a different type or do the "
+                "conversion "
+                "manually!");
+
+            if constexpr (is_serializable_v<Serial, P>)
+            {
+                for (size_t i = 0; i < adapter.size(); ++i)
+                {
+                    const auto value = P::deserialize(adapter[i]);
+                    memcpy(&buf[i * sizeof(value)], &value, sizeof(value));
+                }
+            }
+            else if constexpr (std::is_arithmetic_v<P> || std::is_same_v<P, std::string>)
+            {
+                for (size_t i = 0; i < adapter.size(); ++i)
+                {
+                    const auto sub = serial_adapter<Serial>(adapter[i]);
+                    const auto value = sub.template get_value<P>();
+                    memcpy(&buf[i * sizeof(value)], &value, sizeof(value));
+                }
+            }
+            else
+            {
+                for (size_t i = 0; i < adapter.size(); ++i)
+                {
+                    const auto value = deserialize<Serial, P>(adapter[i]);
+                    memcpy(&buf[i * sizeof(value)], &value, sizeof(value));
+                }
+            }
+
+            *elem_count = adapter.size();
+            return reinterpret_cast<Value>(buf);
+        }
+
+        // Single value pointer
         using P = std::remove_cv_t<std::remove_pointer_t<Value>>;
         static_assert(!std::is_void_v<P>,
             "Void pointers are not supported, either cast to a different type or do the conversion "
@@ -435,230 +601,195 @@ Value decode_pointer_argument(const Serial& obj, uint8_t* buf, size_t* elem_coun
 
         if constexpr (is_serializable_v<Serial, P>)
         {
-            for (size_t i = 0; i < adapter.size(); ++i)
-            {
-                const auto value = P::deserialize(adapter[i]);
-                memcpy(&buf[i * sizeof(value)], &value, sizeof(value));
-            }
+            new (buf) P(P::deserialize(obj));
+        }
+        else if constexpr (std::is_same_v<P, char>)
+        {
+            const auto str = adapter.template get_value<std::string>();
+            std::copy(str.begin(), str.end(), reinterpret_cast<Value>(buf));
         }
         else if constexpr (std::is_arithmetic_v<P> || std::is_same_v<P, std::string>)
         {
-            for (size_t i = 0; i < adapter.size(); ++i)
-            {
-                const auto sub = serial_adapter<Serial>(adapter[i]);
-                const auto value = sub.template get_value<P>();
-                memcpy(&buf[i * sizeof(value)], &value, sizeof(value));
-            }
+            new (buf) P(adapter.template get_value<P>());
         }
         else
         {
-            for (size_t i = 0; i < adapter.size(); ++i)
-            {
-                const auto value = deserialize<Serial, P>(adapter[i]);
-                memcpy(&buf[i * sizeof(value)], &value, sizeof(value));
-            }
+            new (buf) P(deserialize<Serial, P>(obj));
         }
 
-        *elem_count = adapter.size();
         return reinterpret_cast<Value>(buf);
     }
 
-    // Single value pointer
-    using P = std::remove_cv_t<std::remove_pointer_t<Value>>;
-    static_assert(!std::is_void_v<P>,
-        "Void pointers are not supported, either cast to a different type or do the conversion "
-        "manually!");
-
-    if constexpr (is_serializable_v<Serial, P>)
+    template<typename Serial, typename Value>
+    Value decode_argument(const Serial& obj, [[maybe_unused]] uint8_t* const buf,
+        size_t* const count, unsigned* param_num) RPC_HPP_EXCEPT
     {
-        new (buf) P(P::deserialize(obj));
-    }
-    else if constexpr (std::is_same_v<P, char>)
-    {
-        const auto str = adapter.template get_value<std::string>();
-        std::copy(str.begin(), str.end(), reinterpret_cast<Value>(buf));
-    }
-    else if constexpr (std::is_arithmetic_v<P> || std::is_same_v<P, std::string>)
-    {
-        new (buf) P(adapter.template get_value<P>());
-    }
-    else
-    {
-        new (buf) P(deserialize<Serial, P>(obj));
-    }
-
-    return reinterpret_cast<Value>(buf);
-}
-
-template<typename Serial, typename Value>
-Value decode_argument(const Serial& obj, [[maybe_unused]] uint8_t* buf, size_t* count,
-    unsigned* param_num) RPC_HPP_EXCEPT
-{
 #ifdef _DEBUG
-    [[maybe_unused]] const auto t_name = typeid(Value).name();
+        [[maybe_unused]] const auto t_name = typeid(Value).name();
 #endif
 
-    *param_num += 1;
-    *count = 1;
+        *param_num += 1;
+        *count = 1;
 
-    if constexpr (std::is_pointer_v<Value>)
-    {
-        auto val = decode_pointer_argument<Serial, Value>(obj, buf, count);
-        return val;
-    }
-    else if constexpr (is_serializable_v<Serial, Value>)
-    {
-        return Value::deserialize(obj);
-    }
-    else if constexpr (std::is_arithmetic_v<Value> || std::is_same_v<Value, std::string>)
-    {
-        const serial_adapter<Serial> adapter(obj);
-        return adapter.template get_value<Value>();
-    }
-    else if constexpr (is_container_v<Value>)
-    {
-        return decode_container_argument<Serial, Value>(obj, count);
-    }
-    else
-    {
-        return deserialize<Serial, Value>(obj);
-    }
-}
-
-template<typename Serial, typename Value>
-void encode_arguments(
-    Serial& obj, [[maybe_unused]] const size_t count, const Value& val) RPC_HPP_EXCEPT
-{
-#ifdef _DEBUG
-    [[maybe_unused]] const auto t_name = typeid(Value).name();
-#endif
-
-    serial_adapter<Serial> adapter(obj);
-
-    if constexpr (std::is_pointer_v<Value>)
-    {
-        if (val == nullptr)
+        if constexpr (std::is_pointer_v<Value>)
         {
-            adapter.push_back(Serial{});
+            auto val = decode_pointer_argument<Serial, Value>(obj, buf, count);
+            return val;
+        }
+        else if constexpr (is_serializable_v<Serial, Value>)
+        {
+            return Value::deserialize(obj);
+        }
+        else if constexpr (std::is_arithmetic_v<Value> || std::is_same_v<Value, std::string>)
+        {
+            const serial_adapter<Serial> adapter(obj);
+            return adapter.template get_value<Value>();
+        }
+        else if constexpr (is_container_v<Value>)
+        {
+            return decode_container_argument<Serial, Value>(obj, count);
         }
         else
         {
-            using P = std::remove_cv_t<std::remove_pointer_t<Value>>;
+            return deserialize<Serial, Value>(obj);
+        }
+    }
 
-            for (size_t i = 0; i < count; ++i)
+    template<typename Serial, typename Value>
+    void encode_arguments(
+        Serial& obj, [[maybe_unused]] const size_t count, const Value& val) RPC_HPP_EXCEPT
+    {
+#ifdef _DEBUG
+        [[maybe_unused]] const auto t_name = typeid(Value).name();
+#endif
+
+        serial_adapter<Serial> adapter(obj);
+
+        if constexpr (std::is_pointer_v<Value>)
+        {
+            if (val == nullptr)
             {
-                if constexpr (is_serializable_v<Serial, P>)
+                adapter.push_back(Serial{});
+            }
+            else
+            {
+                using P = std::remove_cv_t<std::remove_pointer_t<Value>>;
+
+                for (size_t i = 0; i < count; ++i)
                 {
-                    adapter.push_back(P::serialize(val[i]));
-                }
-                else if constexpr (std::is_same_v<P, char>)
-                {
-                    if (val[0] == '\0')
+                    if constexpr (is_serializable_v<Serial, P>)
                     {
-                        adapter.push_back(""s);
+                        adapter.push_back(P::serialize(val[i]));
+                    }
+                    else if constexpr (std::is_same_v<P, char>)
+                    {
+                        if (val[0] == '\0')
+                        {
+                            adapter.push_back(""s);
+                        }
+                        else
+                        {
+                            adapter.push_back(std::string(val));
+                        }
+                    }
+                    else if constexpr (std::is_arithmetic_v<P> || std::is_same_v<P, std::string>)
+                    {
+                        adapter.push_back(val[i]);
                     }
                     else
                     {
-                        adapter.push_back(std::string(val));
+                        adapter.push_back(serialize<Serial, P>(val[i]));
                     }
-                }
-                else if constexpr (std::is_arithmetic_v<P> || std::is_same_v<P, std::string>)
-                {
-                    adapter.push_back(val[i]);
-                }
-                else
-                {
-                    adapter.push_back(serialize<Serial, P>(val[i]));
                 }
             }
         }
-    }
-    else if constexpr (std::is_arithmetic_v<Value> || std::is_same_v<Value, std::string>)
-    {
-        adapter.push_back(val);
-    }
-    else if constexpr (is_container_v<Value>)
-    {
-        using P = typename Value::value_type;
-        auto argList = serial_adapter<Serial>::make_array();
-
-        if constexpr (std::is_same_v<P, std::string>)
+        else if constexpr (std::is_arithmetic_v<Value> || std::is_same_v<Value, std::string>)
         {
-            std::copy(val.begin(), val.end(), std::back_inserter(adapter));
+            adapter.push_back(val);
         }
-        else if constexpr (is_container_v<P>)
+        else if constexpr (is_container_v<Value>)
         {
-            for (const auto& c : val)
+            using P = typename Value::value_type;
+            auto argList = serial_adapter<Serial>::make_array();
+
+            if constexpr (std::is_same_v<P, std::string>)
             {
-                encode_arguments<P>(argList, c.size(), c);
+                std::copy(val.begin(), val.end(), std::back_inserter(adapter));
+            }
+            else if constexpr (is_container_v<P>)
+            {
+                for (const auto& c : val)
+                {
+                    encode_arguments<P>(argList, c.size(), c);
+                    adapter.push_back(argList);
+                }
+            }
+            else
+            {
+                for (const auto& v : val)
+                {
+                    if constexpr (is_serializable_v<Serial, P>)
+                    {
+                        argList.push_back(P::serialize(v));
+                    }
+                    else if constexpr (std::is_same_v<P, char>)
+                    {
+                        argList.push_back(std::string(val, count));
+                    }
+                    else if constexpr (std::is_arithmetic_v<P> || std::is_same_v<P, std::string>)
+                    {
+                        argList.push_back(v);
+                    }
+                    else
+                    {
+                        argList.push_back(serialize<Serial, P>(v));
+                    }
+                }
+
                 adapter.push_back(argList);
             }
         }
         else
         {
-            for (const auto& v : val)
+            if constexpr (is_serializable_v<Serial, Value>)
             {
-                if constexpr (is_serializable_v<Serial, P>)
-                {
-                    argList.push_back(P::serialize(v));
-                }
-                else if constexpr (std::is_same_v<P, char>)
-                {
-                    argList.push_back(std::string(val, count));
-                }
-                else if constexpr (std::is_arithmetic_v<P> || std::is_same_v<P, std::string>)
-                {
-                    argList.push_back(v);
-                }
-                else
-                {
-                    argList.push_back(serialize<Serial, P>(v));
-                }
+                adapter.push_back(Value::serialize(val));
             }
-
-            adapter.push_back(argList);
+            else
+            {
+                adapter.push_back(serialize<Serial, Value>(val));
+            }
         }
+
+        obj = adapter.get();
     }
-    else
+
+    template<typename F, typename... Ts, size_t... Is>
+    void for_each_tuple(
+        const std::tuple<Ts...>& tuple, const F& func, std::index_sequence<Is...>) RPC_HPP_EXCEPT
     {
-        if constexpr (is_serializable_v<Serial, Value>)
-        {
-            adapter.push_back(Value::serialize(val));
-        }
-        else
-        {
-            adapter.push_back(serialize<Serial, Value>(val));
-        }
+        using expander = int[];
+        (void)expander{ 0, ((void)func(std::get<Is>(tuple)), 0)... };
     }
 
-    obj = adapter.get();
-}
-
-template<typename F, typename... Ts, size_t... Is>
-void for_each_tuple(
-    const std::tuple<Ts...>& tuple, F func, std::index_sequence<Is...>) RPC_HPP_EXCEPT
-{
-    using expander = int[];
-    (void)expander{ 0, ((void)func(std::get<Is>(tuple)), 0)... };
-}
-
-template<typename F, typename... Ts>
-void for_each_tuple(const std::tuple<Ts...>& tuple, F func) RPC_HPP_EXCEPT
-{
-    for_each_tuple(tuple, func, std::make_index_sequence<sizeof...(Ts)>());
-}
-
-template<typename T>
-void free_buffer(arg_buffer& buffer) RPC_HPP_EXCEPT
-{
-    auto ptr = reinterpret_cast<T>(buffer.data());
-
-    for (size_t i = 0; i < buffer.count; ++i)
+    template<typename F, typename... Ts>
+    void for_each_tuple(const std::tuple<Ts...>& tuple, const F& func) RPC_HPP_EXCEPT
     {
-        using X = std::remove_reference_t<decltype(*ptr)>;
-        ptr[i].~X();
+        for_each_tuple(tuple, func, std::make_index_sequence<sizeof...(Ts)>());
     }
-}
+
+    template<typename T>
+    void free_buffer(const arg_buffer& buffer) RPC_HPP_EXCEPT
+    {
+        auto ptr = reinterpret_cast<T>(buffer.data());
+
+        for (size_t i = 0; i < buffer.count; ++i)
+        {
+            using X = std::remove_reference_t<decltype(*ptr)>;
+            ptr[i].~X();
+        }
+    }
+} // namespace details
 
 // Support for other Windows (x86) calling conventions
 #if defined(_WIN32) && !defined(_WIN64)
@@ -668,11 +799,12 @@ std::string run_callback(const Serial& obj, std::function<R __stdcall(Args...)> 
     unsigned arg_count = 0;
     serial_adapter<Serial> adapter(obj);
 
-    std::array<arg_buffer, function_param_count_v<R, Args...>> arg_buffers;
+    std::array<details::arg_buffer, details::function_param_count_v<R, Args...>> arg_buffers;
 
     std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...> args{
-        decode_argument<Serial, std::remove_cv_t<std::remove_reference_t<Args>>>(adapter[arg_count],
-            arg_buffers[arg_count].data(), &(arg_buffers[arg_count].count), &arg_count)...
+        details::decode_argument<Serial, std::remove_cv_t<std::remove_reference_t<Args>>>(
+            adapter[arg_count], arg_buffers[arg_count].data(), &(arg_buffers[arg_count].count),
+            &arg_count)...
     };
 
     serial_adapter<Serial> retSer;
@@ -693,14 +825,14 @@ std::string run_callback(const Serial& obj, std::function<R __stdcall(Args...)> 
 
     arg_count = 0;
 
-    for_each_tuple(args, [&argList, &arg_buffers, &arg_count](const auto& x) {
-        encode_arguments(argList, arg_buffers[arg_count].count, x);
+    details::for_each_tuple(args, [&argList, &arg_buffers, &arg_count](const auto& x) {
+        details::encode_arguments(argList, arg_buffers[arg_count].count, x);
 
         using P = typename std::remove_cv_t<std::remove_reference_t<decltype(x)>>;
 
         if constexpr (std::is_pointer_v<P> && std::is_class_v<std::remove_pointer_t<P>>)
         {
-            free_buffer<P>(arg_buffers[arg_count]);
+            details::free_buffer<P>(arg_buffers[arg_count]);
         }
 
         ++arg_count;
@@ -722,11 +854,12 @@ std::string run_callback(
     unsigned arg_count = 0;
     serial_adapter<Serial> adapter(obj);
 
-    std::array<arg_buffer, function_param_count_v<R, Args...>> arg_buffers;
+    std::array<details::arg_buffer, details::function_param_count_v<R, Args...>> arg_buffers;
 
     std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...> args{
-        decode_argument<Serial, std::remove_cv_t<std::remove_reference_t<Args>>>(adapter[arg_count],
-            arg_buffers[arg_count].data(), &(arg_buffers[arg_count].count), &arg_count)...
+        details::decode_argument<Serial, std::remove_cv_t<std::remove_reference_t<Args>>>(
+            adapter[arg_count], arg_buffers[arg_count].data(), &(arg_buffers[arg_count].count),
+            &arg_count)...
     };
 
     serial_adapter<Serial> retSer;
@@ -747,14 +880,14 @@ std::string run_callback(
 
     arg_count = 0;
 
-    for_each_tuple(args, [&argList, &arg_buffers, &arg_count](const auto& x) {
-        encode_arguments(argList, arg_buffers[arg_count].count, x);
+    details::for_each_tuple(args, [&argList, &arg_buffers, &arg_count](const auto& x) {
+        details::encode_arguments(argList, arg_buffers[arg_count].count, x);
 
         using P = typename std::remove_cv_t<std::remove_reference_t<decltype(x)>>;
 
         if constexpr (std::is_pointer_v<P> && std::is_class_v<std::remove_pointer_t<P>>)
         {
-            free_buffer<P>(arg_buffers[arg_count]);
+            details::free_buffer<P>(arg_buffers[arg_count]);
         }
 
         ++arg_count;
@@ -777,11 +910,12 @@ std::string run_callback(
     unsigned arg_count = 0;
     serial_adapter<Serial> adapter(obj);
 
-    std::array<arg_buffer, function_param_count_v<R, Args...>> arg_buffers;
+    std::array<details::arg_buffer, details::function_param_count_v<R, Args...>> arg_buffers;
 
     std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...> args{
-        decode_argument<Serial, std::remove_cv_t<std::remove_reference_t<Args>>>(adapter[arg_count],
-            arg_buffers[arg_count].data(), &(arg_buffers[arg_count].count), &arg_count)...
+        details::decode_argument<Serial, std::remove_cv_t<std::remove_reference_t<Args>>>(
+            adapter[arg_count], arg_buffers[arg_count].data(), &(arg_buffers[arg_count].count),
+            &arg_count)...
     };
 
     serial_adapter<Serial> retSer;
@@ -802,14 +936,14 @@ std::string run_callback(
 
     arg_count = 0;
 
-    for_each_tuple(args, [&argList, &arg_buffers, &arg_count](const auto& x) {
-        encode_arguments(argList, arg_buffers[arg_count].count, x);
+    details::for_each_tuple(args, [&argList, &arg_buffers, &arg_count](const auto& x) {
+        details::encode_arguments(argList, arg_buffers[arg_count].count, x);
 
         using P = typename std::remove_cv_t<std::remove_reference_t<decltype(x)>>;
 
         if constexpr (std::is_pointer_v<P> && std::is_class_v<std::remove_pointer_t<P>>)
         {
-            free_buffer<P>(arg_buffers[arg_count]);
+            details::free_buffer<P>(arg_buffers[arg_count]);
         }
 
         ++arg_count;
@@ -833,11 +967,12 @@ std::string run_callback(const Serial& obj, std::function<R(Args...)> func) RPC_
     unsigned arg_count = 0;
     serial_adapter<Serial> adapter(obj);
 
-    std::array<arg_buffer, function_param_count_v<R, Args...>> arg_buffers;
+    std::array<details::arg_buffer, details::function_param_count_v<R, Args...>> arg_buffers;
 
     std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...> args{
-        decode_argument<Serial, std::remove_cv_t<std::remove_reference_t<Args>>>(adapter[arg_count],
-            arg_buffers[arg_count].data(), &(arg_buffers[arg_count].count), &arg_count)...
+        details::decode_argument<Serial, std::remove_cv_t<std::remove_reference_t<Args>>>(
+            adapter[arg_count], arg_buffers[arg_count].data(), &(arg_buffers[arg_count].count),
+            &arg_count)...
     };
 
     serial_adapter<Serial> retSer;
@@ -858,14 +993,14 @@ std::string run_callback(const Serial& obj, std::function<R(Args...)> func) RPC_
 
     arg_count = 0;
 
-    for_each_tuple(args, [&argList, &arg_buffers, &arg_count](const auto& x) {
-        encode_arguments(argList, arg_buffers[arg_count].count, x);
+    details::for_each_tuple(args, [&argList, &arg_buffers, &arg_count](const auto& x) {
+        details::encode_arguments(argList, arg_buffers[arg_count].count, x);
 
         using P = std::remove_cv_t<std::remove_reference_t<decltype(x)>>;
 
         if constexpr (std::is_pointer_v<P> && std::is_class_v<std::remove_pointer_t<P>>)
         {
-            free_buffer<P>(arg_buffers[arg_count]);
+            details::free_buffer<P>(arg_buffers[arg_count]);
         }
 
         ++arg_count;
