@@ -198,8 +198,8 @@ namespace details
         bool operator==(const arg_buffer&) = delete;
 
         arg_buffer(arg_buffer&& other)
-            : m_buffer_sz(other.m_buffer_sz), m_buffer(std::move(other.m_buffer)),
-              count(other.count)
+            : count(other.count), m_buffer_sz(other.m_buffer_sz),
+              m_buffer(std::move(other.m_buffer))
         {
             other.count = 0;
             other.m_buffer_sz = 0;
