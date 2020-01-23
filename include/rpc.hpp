@@ -44,7 +44,6 @@
 #include <iostream>
 #include <memory>
 #include <string>
-#include <string_view>
 #include <tuple>
 #include <type_traits>
 
@@ -66,19 +65,26 @@ public:
     ~serial_adapter() = default;
     serial_adapter() = default;
 
-    explicit serial_adapter(Serial obj) : m_serial_object(std::move(obj)) {}
-    serial_adapter(const serial_adapter& other) : m_serial_object(other.m_serial_object) {}
-    serial_adapter(serial_adapter&& other) : m_serial_object(std::move(other.m_serial_object)) {}
+    explicit serial_adapter(Serial obj) noexcept : m_serial_object(std::move(obj)) {}
+    serial_adapter(const serial_adapter& other) noexcept : m_serial_object(other.m_serial_object) {}
+    serial_adapter(serial_adapter&& other) noexcept
+        : m_serial_object(std::move(other.m_serial_object))
+    {
+    }
 
     serial_adapter(std::string_view obj_str);
 
-    serial_adapter& operator=(const serial_adapter& other)
+    serial_adapter& operator=(const serial_adapter& other) noexcept
     {
-        m_serial_object = other.m_serial_object;
+        if (this != &other)
+        {
+            m_serial_object = other.m_serial_object;
+        }
+
         return *this;
     }
 
-    serial_adapter& operator=(serial_adapter&& other)
+    serial_adapter& operator=(serial_adapter&& other) noexcept
     {
         if (this != &other)
         {
@@ -186,7 +192,7 @@ namespace details
     public:
         ~arg_buffer() = default;
         arg_buffer(size_t buffer_size = DEFAULT_BUFFER_SIZE)
-            : count(0), m_buffer_sz(buffer_size), m_buffer(std::make_unique<uint8_t[]>(m_buffer_sz))
+            : m_buffer_sz(buffer_size), m_buffer(std::make_unique<uint8_t[]>(m_buffer_sz))
         {
         }
 
@@ -197,7 +203,7 @@ namespace details
         // arg_buffer cannot be implicitly compared
         bool operator==(const arg_buffer&) = delete;
 
-        arg_buffer(arg_buffer&& other)
+        arg_buffer(arg_buffer&& other) noexcept
             : count(other.count), m_buffer_sz(other.m_buffer_sz),
               m_buffer(std::move(other.m_buffer))
         {
@@ -205,7 +211,7 @@ namespace details
             other.m_buffer_sz = 0;
         }
 
-        arg_buffer& operator=(arg_buffer&& other)
+        arg_buffer& operator=(arg_buffer&& other) noexcept
         {
             if (this != &other)
             {
@@ -285,7 +291,7 @@ namespace details
         //     return true;
         // }
 
-        uint8_t* data() const { return m_buffer.get(); }
+        [[nodiscard]] uint8_t* data() const { return m_buffer.get(); }
 
         size_t count = 0;
 
@@ -828,7 +834,7 @@ std::string run_callback(const Serial& obj, std::function<R __stdcall(Args...)> 
     details::for_each_tuple(args, [&argList, &arg_buffers, &arg_count](const auto& x) {
         details::encode_arguments(argList, arg_buffers[arg_count].count, x);
 
-        using P = typename std::remove_cv_t<std::remove_reference_t<decltype(x)>>;
+        using P = std::remove_cv_t<std::remove_reference_t<decltype(x)>>;
 
         if constexpr (std::is_pointer_v<P> && std::is_class_v<std::remove_pointer_t<P>>)
         {
@@ -883,7 +889,7 @@ std::string run_callback(
     details::for_each_tuple(args, [&argList, &arg_buffers, &arg_count](const auto& x) {
         details::encode_arguments(argList, arg_buffers[arg_count].count, x);
 
-        using P = typename std::remove_cv_t<std::remove_reference_t<decltype(x)>>;
+        using P = std::remove_cv_t<std::remove_reference_t<decltype(x)>>;
 
         if constexpr (std::is_pointer_v<P> && std::is_class_v<std::remove_pointer_t<P>>)
         {
@@ -939,7 +945,7 @@ std::string run_callback(
     details::for_each_tuple(args, [&argList, &arg_buffers, &arg_count](const auto& x) {
         details::encode_arguments(argList, arg_buffers[arg_count].count, x);
 
-        using P = typename std::remove_cv_t<std::remove_reference_t<decltype(x)>>;
+        using P = std::remove_cv_t<std::remove_reference_t<decltype(x)>>;
 
         if constexpr (std::is_pointer_v<P> && std::is_class_v<std::remove_pointer_t<P>>)
         {
