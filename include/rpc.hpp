@@ -669,6 +669,19 @@ namespace details
         [[maybe_unused]] const auto t_name = typeid(Value).name();
 #endif
 
+#ifdef RPC_SERIAL_LEVEL_MIN
+        if constexpr (!std::is_pointer_v<Value> && !std::is_reference_v<Value>)
+        {
+            // Pass-by-value does not need to be re-serialized
+            return;
+        }
+        else if constexpr (std::is_const_v<std::remove_reference_t<std::remove_pointer_t<Value>>>)
+        {
+            // Const ref and pointer to const do not need to be re-serialized
+            return;
+        }
+#endif
+
         serial_adapter<Serial> adapter(obj);
 
         if constexpr (std::is_pointer_v<Value>)
@@ -998,6 +1011,8 @@ std::string run_callback(const Serial& obj, std::function<R(Args...)> func) RPC_
     auto& argList = retSer.template get_value_ref<Serial>("args");
 
     arg_count = 0;
+
+    // TODO: Use enum 'serialization_level' to determine the encoding
 
     details::for_each_tuple(args, [&argList, &arg_buffers, &arg_count](const auto& x) {
         details::encode_arguments(argList, arg_buffers[arg_count].count, x);
