@@ -669,7 +669,7 @@ namespace details
         [[maybe_unused]] const auto t_name = typeid(Value).name();
 #endif
 
-#ifdef RPC_SERIAL_LEVEL_MIN
+#ifdef RPC_HPP_SERIAL_MIN
         if constexpr (!std::is_pointer_v<Value> && !std::is_reference_v<Value>)
         {
             // Pass-by-value does not need to be re-serialized
