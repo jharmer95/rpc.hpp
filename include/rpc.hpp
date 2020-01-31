@@ -58,6 +58,16 @@
 
 namespace rpc
 {
+enum class serial_level : uint8_t
+{
+    standard = 0x00U,
+    minimum,
+    minimum_verbose,
+    standard_verbose
+};
+
+extern serial_level serialization_level;
+
 template<typename Serial>
 class serial_adapter
 {
@@ -671,6 +681,22 @@ namespace details
 
         serial_adapter<Serial> adapter(obj);
 
+        if (serialization_level == serial_level::minimum
+            || serialization_level == serial_level::minimum_verbose)
+        {
+            if constexpr (!std::is_pointer_v<Value> && !std::is_reference_v<Value>)
+            {
+                // Pass-by-value does not need to be re-serialized
+                return;
+            }
+            else if constexpr (std::is_const_v<
+                                   std::remove_reference_t<std::remove_pointer_t<Value>>>)
+            {
+                // Const ref and pointer to const do not need to be re-serialized
+                return;
+            }
+        }
+
         if constexpr (std::is_pointer_v<Value>)
         {
             if (val == nullptr)
@@ -998,6 +1024,8 @@ std::string run_callback(const Serial& obj, std::function<R(Args...)> func) RPC_
     auto& argList = retSer.template get_value_ref<Serial>("args");
 
     arg_count = 0;
+
+    // TODO: Use enum 'serialization_level' to determine the encoding
 
     details::for_each_tuple(args, [&argList, &arg_buffers, &arg_count](const auto& x) {
         details::encode_arguments(argList, arg_buffers[arg_count].count, x);
