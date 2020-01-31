@@ -58,16 +58,6 @@
 
 namespace rpc
 {
-enum class serial_level : uint8_t
-{
-    standard = 0x00U,
-    minimum,
-    minimum_verbose,
-    standard_verbose
-};
-
-extern serial_level serialization_level;
-
 template<typename Serial>
 class serial_adapter
 {
@@ -679,23 +669,20 @@ namespace details
         [[maybe_unused]] const auto t_name = typeid(Value).name();
 #endif
 
-        serial_adapter<Serial> adapter(obj);
-
-        if (serialization_level == serial_level::minimum
-            || serialization_level == serial_level::minimum_verbose)
+#ifdef RPC_SERIAL_LEVEL_MIN
+        if constexpr (!std::is_pointer_v<Value> && !std::is_reference_v<Value>)
         {
-            if constexpr (!std::is_pointer_v<Value> && !std::is_reference_v<Value>)
-            {
-                // Pass-by-value does not need to be re-serialized
-                return;
-            }
-            else if constexpr (std::is_const_v<
-                                   std::remove_reference_t<std::remove_pointer_t<Value>>>)
-            {
-                // Const ref and pointer to const do not need to be re-serialized
-                return;
-            }
+            // Pass-by-value does not need to be re-serialized
+            return;
         }
+        else if constexpr (std::is_const_v<std::remove_reference_t<std::remove_pointer_t<Value>>>)
+        {
+            // Const ref and pointer to const do not need to be re-serialized
+            return;
+        }
+#endif
+
+        serial_adapter<Serial> adapter(obj);
 
         if constexpr (std::is_pointer_v<Value>)
         {
