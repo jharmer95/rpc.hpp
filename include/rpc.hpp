@@ -47,17 +47,23 @@
 #include <tuple>
 #include <type_traits>
 
-// NOTHROW can be defined at compile-time to add additional 'noexcept' specifiers to functions to
-// potentially improve performance when you are sure that your implentations will not throw an
-// uncaught exception
+/// @brief NOTHROW can be defined at compile-time to add additional 'noexcept' specifiers to functions to
+/// potentially improve performance when you are sure that your implentations will not throw an
+/// uncaught exception
 #if defined(NOTHROW)
 #    define RPC_HPP_EXCEPT noexcept
 #else
 #    define RPC_HPP_EXCEPT
 #endif
 
+/// @brief Namespace for rpc.hpp functions and variables
 namespace rpc
 {
+/// @brief Class that allows any serialization type to interact with rpc.hpp
+///
+/// The user can provide their own implementations of this class for a serialization type or
+/// use one of the built-in variants (found in the 'apaters' directory)
+/// @tparam Serial Containing class for the serialization library
 template<typename Serial>
 class serial_adapter
 {
@@ -72,6 +78,11 @@ public:
     {
     }
 
+    /// @brief Construct a new serial_adapter object from a string
+    ///
+    /// Provides a way to provide a string-representation of the serialization object to be converted to
+    /// an actual serialization object
+    /// @param obj_str String representation of the serial object
     serial_adapter(std::string_view obj_str);
 
     serial_adapter& operator=(const serial_adapter& other) noexcept
@@ -94,99 +105,265 @@ public:
         return *this;
     }
 
+    /// @brief Get the value of the serial object
+    ///
+    /// Returns the representation of the object as designated by \p Value, if possible
+    /// @tparam Value The type of object to get from the serialization object
+    /// @return Value The value of the object
     template<typename Value>
     [[nodiscard]] Value get_value() const;
 
+    /// @brief Get a value from inside the serial object, given the value's name and type
+    ///
+    /// Returns the representation of the internal object, with \p name as designated by \p Value, if possible
+    /// @tparam Value The type of object to get from the serialization object
+    /// @param name The name of the internal object to retrieve from the top-level serial object
+    /// @return Value The value of the internal object
     template<typename Value>
     [[nodiscard]] Value get_value(const std::string& name) const;
 
+    /// @brief Get the value, by reference, of the serial object
+    ///
+    /// Returns the representation of the object, by reference, as designated by \p Value, if possible
+    /// @tparam Value The type of object to get from the serialization object
+    /// @return Value& The value of the object (reference)
     template<typename Value>
     [[nodiscard]] Value& get_value_ref();
 
+    /// @brief Get a value from inside the serial object, by reference, given the value's name and type
+    ///
+    /// Returns the representation of the internal object, by reference, with \p name, as designated by \p Value, if possible
+    /// @tparam Value The type of object to get from the serialization object
+    /// @param name The name of the internal object to retrieve from the top-level serial object
+    /// @return Value& The value of the internal object (reference)
     template<typename Value>
     [[nodiscard]] Value& get_value_ref(const std::string& name);
 
+    /// @brief Get the value, by (const) reference, of the serial object
+    ///
+    /// Returns the representation of the object, by (const) reference, as designated by \p Value , if possible
+    /// @tparam Value The type of object to get from the serialization object
+    /// @return Value& The value of the object (const reference)
     template<typename Value>
     [[nodiscard]] Value& get_value_ref() const;
 
+    /// @brief Get a value from inside the serial object, by (const) reference, given the value's name and type
+    ///
+    /// Returns the representation of the internal object, by (const) reference, with \p name, as designated by \p Value, if possible
+    /// @tparam Value The type of object to get from the serialization object
+    /// @param name The name of the internal object to retrieve from the top-level serial object
+    /// @return Value& The value of the internal object (const reference)
     template<typename Value>
     [[nodiscard]] Value& get_value_ref(const std::string& name) const;
 
+    /// @brief Sets the value of the serial object
+    ///
+    /// Assigns the serialization object to the given type and value, if possible
+    /// @tparam Value The type of object the serialization object should represent
+    /// @param value The value to assign
     template<typename Value>
     void set_value(Value value);
 
+    /// @brief Sets the value of an internal object within the serial object
+    ///
+    /// Assigns the an object inside the serialization object, by name, creating it if does not already exist
+    /// @tparam Value The type of object the internal object should represent
+    /// @param name The name of the internal object
+    /// @param value The value to assign
     template<typename Value>
     void set_value(const std::string& name, Value value);
 
+    /// @brief Pushes back a value to the serial object, adding to the array
+    ///
+    /// Adds a value to the end of the serialization object's array representation, if the object is not already an array,
+    /// it is re-assigned as an array, with its previous value becoming the first object in the array
+    /// @tparam Value The type of object to be pushed back
+    /// @param value The value to push back
     template<typename Value>
     void push_back(Value value);
 
+    /// @brief Alias for @ref push_back
+    ///
+    /// Calls push_back
+    /// @tparam Value The type of object to be pushed back
+    /// @param value The value to push back
     template<typename Value>
     void append_value(Value value)
     {
         push_back(value);
     }
 
+    /// @brief Pushes back a value to an internal object in the serial object
+    ///
+    /// Adds a value to the end of the internal object, given by \p name. If the object does not exist it will be created.
+    /// If the object exists and is not already an array, it is re-assigned as an array, with its previous value
+    /// becoming the first object in the array
+    /// @tparam Value The type of object to be pushed back
+    /// @param name The name of the internal object
+    /// @param value The value to push back
     template<typename Value>
     void append_value(const std::string& name, Value value);
 
+    /// @brief Converts the serial object to a string
+    ///
+    /// Creates a string representation of the top-level serialization object (including its internal objects)
+    /// @return std::string String representation of the serial object
     [[nodiscard]] std::string to_string() const;
 
+    /// @brief Checks whether the serial object is an array
+    ///
+    /// Determines if the top-level serialization object has been allocated as an array (an iterable and/or indexed sequence)
+    /// @return true Serial object is an array
+    /// @return false Serial object is not an array (single value or null)
     [[nodiscard]] bool is_array() const noexcept;
 
+    /// @brief Checks whether the serial object has a value
+    ///
+    /// Determines if the top-level serialization object is null or empty
+    /// @return true Serial object is null or an array with length == 0
+    /// @return false Serial object has a value or is array with length > 0
     [[nodiscard]] bool is_empty() const noexcept;
 
+    /// @brief Gets the starting iterator (pointing to the first element) of the serial object
+    ///
+    /// Returns an iterator type pointing to the first value of the top-level serialization object.
+    /// If the object is not an array, the iterator simply points to the value
+    /// @tparam SerialIterator Iterator type for the serialization object (may be a simple pointer)
+    /// @return SerialIterator Iterator pointing to the beginning of the serial object
     template<typename SerialIterator>
     [[nodiscard]] SerialIterator begin() noexcept;
 
+    /// @brief Gets the ending iterator (pointing to one past the last element) of the serial object
+    ///
+    /// Returns an iterator type pointing to one past the last value of the top-level serialization object.
+    /// If the object is not an array, the iterator simply points to the value
+    /// @tparam SerialIterator Iterator type for the serialization object (may be a simple pointer)
+    /// @return SerialIterator Iterator pointing to one past the end of the serial object
     template<typename SerialIterator>
     [[nodiscard]] SerialIterator end() noexcept;
 
+    /// @brief Gets the starting (const) iterator (pointing to the first element) of the serial object
+    ///
+    /// Returns an (const) iterator type pointing to the first value of the top-level serialization object.
+    /// If the object is not an array, the iterator simply points to the value
+    /// @tparam SerialConstIterator Iterator type for the serialization object (may be a simple pointer)
+    /// @return SerialConstIterator Iterator pointing to the beginning of the serial object
     template<typename SerialConstIterator>
     [[nodiscard]] SerialConstIterator begin() const noexcept;
 
+    /// @brief Gets the ending (const) iterator (pointing to one past the last element) of the serial object
+    ///
+    /// Returns an (const) iterator type pointing to one past the last value of the top-level serialization object.
+    /// If the object is not an array, the iterator simply points to the value
+    /// @tparam SerialConstIterator Iterator type for the serialization object (may be a simple pointer)
+    /// @return SerialConstIterator Iterator pointing to one past the end of the serial object
     template<typename SerialConstIterator>
     [[nodiscard]] SerialConstIterator end() const noexcept;
 
+    /// @brief Gets the reverse starting iterator (pointing to the last element) of the serial object
+    ///
+    /// Returns an iterator type pointing to the last value of the top-level serialization object.
+    /// If the object is not an array, the iterator simply points to the value
+    /// @tparam SerialReverseIterator Reversed iterator type for the serialization object (may be a pointer, but beware: you will have to use '--')
+    /// @return SerialReverseIterator Iterator pointing to the end of the serial object
     template<typename SerialReverseIterator>
     [[nodiscard]] SerialReverseIterator rbegin() noexcept;
 
+    /// @brief Gets the reverse ending iterator (pointing to one past the first element) of the serial object
+    ///
+    /// Returns an iterator type pointing to one past the first value of the top-level serialization object.
+    /// If the object is not an array, the iterator simply points to the value
+    /// @tparam SerialReverseIterator Reversed iterator type for the serialization object (may be a pointer, but beware: you will have to use '--')
+    /// @return SerialReverseIterator Iterator pointing to one past the beginning of the serial object
     template<typename SerialReverseIterator>
     [[nodiscard]] SerialReverseIterator rend() noexcept;
 
+    /// @brief Gets the reverse starting (const) iterator (pointing to the last element) of the serial object
+    ///
+    /// Returns an (const) iterator type pointing to the last value of the top-level serialization object.
+    /// If the object is not an array, the iterator simply points to the value
+    /// @tparam SerialConstReverseIterator Reversed iterator type for the serialization object (may be a pointer, but beware: you will have to use '--')
+    /// @return SerialConstReverseIterator Iterator pointing to the end of the serial object
     template<typename SerialConstReverseIterator>
     [[nodiscard]] SerialConstReverseIterator rbegin() const noexcept;
 
+    /// @brief Gets the reverse ending (const) iterator (pointing to one past the first element) of the serial object
+    ///
+    /// Returns an (const) iterator type pointing to one past the first value of the top-level serialization object.
+    /// If the object is not an array, the iterator simply points to the value
+    /// @tparam SerialConstReverseIterator Reversed iterator type for the serialization object (may be a pointer, but beware: you will have to use '--')
+    /// @return SerialConstReverseIterator Iterator pointing to one past the beginning of the serial object
     template<typename SerialConstReverseIterator>
     [[nodiscard]] SerialConstReverseIterator rend() const noexcept;
 
+    /// @brief Get the actual serial object
+    ///
+    /// Returns the serialization object without doing any conversion
+    /// @return Serial The contained serial object
     [[nodiscard]] Serial get() const { return m_serial_object; }
 
+    /// @brief Get the size of the serial object
+    ///
+    /// Returns the length of the top-level serialization object if it is an array, if not returns 1 or 0
+    /// @return size_t Size of the serial object
     [[nodiscard]] size_t size() const noexcept;
 
+    /// @brief Retrieves an internal object by index
+    ///
+    /// Returns the specified internal object within the top-level serialization object, provided by an index, \p n
+    /// @param n The index to get the object from
+    /// @return Serial The serial object found at index \p n
     [[nodiscard]] Serial operator[](size_t n) const;
 
+    /// @brief Create an empty array, according to the serial object's type
+    ///
+    /// Uses the serialization object's methods to create an object consisting of an array of length 0
+    /// @return Serial The empty array serial object
     [[nodiscard]] static Serial make_array() noexcept;
 
 protected:
     Serial m_serial_object{};
 };
 
+/// @brief Function used to callback from, given a function's name and some parameters using a serial object
+///
+/// Defines the way in which @ref run_callback will be called for each function
+/// @tparam Serial Serialization type
+/// @param func_name Name of the function to call, represented in a string
+/// @param obj A serialization object containing the parameters to run the callback with
+/// @return std::string The result of the function call, including the return value, and any altered parameters, converted to a string
 template<typename Serial>
 extern std::string dispatch(const std::string& func_name, const Serial& obj);
 
+/// @brief Serializes an object to the desired format
+///
+/// Takes an object of type \c Value and converts it to a serialization object of type \c Serial
+/// @tparam Serial Serialization type
+/// @tparam Value Type of object to be converted
+/// @param val The value to be serialized
+/// @return Serial Serialized version of the object
 template<typename Serial, typename Value>
-[[nodiscard]] Serial serialize(const Value&) RPC_HPP_EXCEPT;
+[[nodiscard]] Serial serialize(const Value& val) RPC_HPP_EXCEPT;
 
+/// @brief De-serializes an object from the desired format
+///
+/// Takes a serial object of type \c Serial and converts it back to an object of type \c Value
+/// @tparam Serial Serialization type
+/// @tparam Value Type of object to be converted to
+/// @param ser The value to be de-serialized
+/// @return Value De-serialized version of the serial object
 template<typename Serial, typename Value>
-[[nodiscard]] Value deserialize(const Serial&) RPC_HPP_EXCEPT;
+[[nodiscard]] Value deserialize(const Serial& ser) RPC_HPP_EXCEPT;
 
+/// @brief Internal namespace for @ref rpc. Not to be used by users
 namespace details
 {
     using namespace std::string_literals;
 
+    /// @brief Size of memory buffer to use when encoding arguments (default 64kB)
     constexpr auto DEFAULT_BUFFER_SIZE = 64U * 1024U;
 
+    /// @brief Class used to store encoded arguments in memory
     class arg_buffer
     {
     public:
@@ -226,73 +403,13 @@ namespace details
             return *this;
         }
 
-        // // explicit copy of arg_buffer
-        // arg_buffer clone() const
-        // {
-        //     arg_buffer tmp(m_buffer_sz);
-        //     tmp.count = count;
-        //     std::copy(m_buffer.get(), m_buffer.get() + m_buffer_sz, tmp.m_buffer.get());
-        //     return tmp;
-        // }
-
-        // // explicit compare of arg_buffer
-        // bool compare(const arg_buffer& other) const
-        // {
-        //     if (count != other.count)
-        //     {
-        //         return false;
-        //     }
-
-        //     if (other.m_buffer_sz > m_buffer_sz)
-        //     {
-        //         if (other.data()[m_buffer_sz] != 0)
-        //         {
-        //             return false;
-        //         }
-
-        //         const auto result = memcmp(data(), other.data(), m_buffer_sz);
-
-        //         if (result != 0)
-        //         {
-        //             return false;
-        //         }
-
-        //         for (size_t i = m_buffer_sz; i < other.m_buffer_sz; ++i)
-        //         {
-        //             if (other.data()[i] != 0)
-        //             {
-        //                 return false;
-        //             }
-        //         }
-        //     }
-        //     else
-        //     {
-        //         if (data()[other.m_buffer_sz] != 0)
-        //         {
-        //             return false;
-        //         }
-
-        //         const auto result = memcmp(data(), other.data(), other.m_buffer_sz);
-
-        //         if (result != 0)
-        //         {
-        //             return false;
-        //         }
-
-        //         for (size_t i = other.m_buffer_sz; i < m_buffer_sz; ++i)
-        //         {
-        //             if (data()[i] != 0)
-        //             {
-        //                 return false;
-        //             }
-        //         }
-        //     }
-
-        //     return true;
-        // }
-
+        /// @brief Gets a raw pointer to the underlying data
+        ///
+        /// Returns a pointer to the bytes stored in the buffer
+        /// @return uint8_t* Pointer to the buffer's data
         [[nodiscard]] uint8_t* data() const { return m_buffer.get(); }
 
+        /// @brief The number of encoded arguments currently stored in the buffer
         size_t count = 0;
 
     protected:
@@ -300,6 +417,7 @@ namespace details
         std::unique_ptr<uint8_t[]> m_buffer;
     };
 
+    /// @brief Default implementation for SFINAE struct
     template<typename, typename T>
     struct is_serializable_base
     {
@@ -307,6 +425,12 @@ namespace details
             "Second template parameter needs to be of function type");
     };
 
+    /// @brief SFINAE struct checking a type for a 'serialize' member function
+    ///
+    /// Checks whether the given type \c C has a member function to serialize it to the type given by \c R
+    /// @tparam C The type to check for 'serialize'
+    /// @tparam R The type to be serialized to
+    /// @tparam Args The types of arguments (generic)
     template<typename C, typename R, typename... Args>
     struct is_serializable_base<C, R(Args...)>
     {
@@ -325,6 +449,7 @@ namespace details
         static constexpr bool value = type::value;
     };
 
+    /// @brief Default implementation for SFINAE struct
     template<typename, typename T>
     struct is_deserializable_base
     {
@@ -332,6 +457,12 @@ namespace details
             "Second template parameter needs to be of function type");
     };
 
+    /// @brief SFINAE struct checking a type for a 'deserialize' member function
+    ///
+    /// Checks whether the given type \c C has a member function to de-serialize it to the type given by \c R
+    /// @tparam C The type to check for 'deserialize'
+    /// @tparam R The type to be de-serialized to
+    /// @tparam Args They types of arguments (generic)
     template<typename C, typename R, typename... Args>
     struct is_deserializable_base<C, R(Args...)>
     {
@@ -350,6 +481,11 @@ namespace details
         static constexpr bool value = type::value;
     };
 
+    /// @brief SFINAE struct combining the logic of @ref is_serializable_base and @ref is_deserializable_base
+    ///
+    /// Checks whether the given type \c Value can be serialized to and de-serialized from the serial type \c Serial
+    /// @tparam Serial The serial object type
+    /// @tparam Value The type of object to serialize/de-serialize
     template<typename Serial, typename Value>
     struct is_serializable : std::integral_constant<bool,
                                  is_serializable_base<Value, Serial(const Value&)>::value
@@ -357,9 +493,17 @@ namespace details
     {
     };
 
+    /// @brief Helper variable for @ref is_serializable
+    ///
+    /// @tparam Serial The serial object type
+    /// @tparam Value The type of object to serialize/de-serialize
     template<typename Serial, typename Value>
     inline constexpr bool is_serializable_v = is_serializable<Serial, Value>::value;
 
+    /// @brief SFINAE struct for checking a type for a 'begin' member function
+    ///
+    /// Checks whether the given type \c C has a function 'begin' that returns an iterator type
+    /// @tparam C Type to check for 'begin'
     template<typename C>
     struct has_begin
     {
@@ -377,6 +521,10 @@ namespace details
         static constexpr bool value = type::value;
     };
 
+    /// @brief SFINAE struct for checking a type for a 'end' member function
+    ///
+    /// Checks whether the given type \c C has a function 'end' that returns an iterator type
+    /// @tparam C Type to check for 'end'
     template<typename C>
     struct has_end
     {
@@ -394,6 +542,10 @@ namespace details
         static constexpr bool value = type::value;
     };
 
+    /// @brief SFINAE struct for checking a type for a 'size' member function
+    ///
+    /// Checks whether the given type \c C has a function 'size' that returns a size type
+    /// @tparam C Type to check for 'size'
     template<typename C>
     struct has_size
     {
@@ -411,18 +563,32 @@ namespace details
         static constexpr bool value = type::value;
     };
 
+    /// @brief SFINAE struct to determine if a type is a container
+    ///
+    /// Combines the logic of @ref has_size, @ref has_begin, and @ref has_end to determine if a given type \c C
+    /// is compatible with STL containers
+    /// @tparam C Type to check
     template<typename C>
     struct is_container : std::integral_constant<bool,
                               has_size<C>::value && has_begin<C>::value && has_end<C>::value>
     {
     };
 
+    /// @brief Helper variable for @ref is_container
+    ///
+    /// @tparam C Type to check
     template<typename C>
     inline constexpr bool is_container_v = is_container<C>::value;
 
+    /// @brief Default implementation for SFINAE struct
     template<typename T>
     struct function_traits;
 
+    /// @brief SFINAE struct to extract information from a function object
+    ///
+    /// Can be used to get return and parameter types, as well as the count of parameters
+    /// @tparam R The return type of the function
+    /// @tparam Args The argument types of the function
     template<typename R, typename... Args>
     struct function_traits<std::function<R(Args...)>>
     {
@@ -436,17 +602,39 @@ namespace details
         };
     };
 
+    /// @brief Helper variable for getting parameter count from @ref function_traits
+    ///
+    /// @tparam R The return type of the function
+    /// @tparam Args The argument types of the function
     template<typename R, typename... Args>
     inline constexpr size_t function_param_count_v =
         function_traits<std::function<R(Args...)>>::nargs;
 
+    /// @brief Helper variable for getting the return type from @ref function_traits
+    ///
+    /// @tparam R The return type of the function
+    /// @tparam Args The argument types of the function
     template<typename R, typename... Args>
     using function_result_t = typename function_traits<std::function<R(Args...)>>::type;
 
+    /// @brief Helper variable for getting the argument types from @ref function_traits
+    ///
+    /// @tparam i The index of the argument to get the type of
+    /// @tparam R The return type of the function
+    /// @tparam Args The argument types of the function
     template<size_t i, typename R, typename... Args>
     using function_args_t =
         typename function_traits<std::function<R(Args...)>>::template arg<i>::type;
 
+    /// @brief Decodes a container-like type from a serial object
+    ///
+    /// This is called when the type \c Value has been determined to be a container.
+    /// This function fills the container, based on the contents of \p obj
+    /// @tparam Serial Serialization type
+    /// @tparam Value The container-like type to decode to
+    /// @param obj The serialization object to parse
+    /// @param elem_count The number of elements placed into the container
+    /// @return Value A container holding the elements represented by \p obj
     template<typename Serial, typename Value>
     Value decode_container_argument(const Serial& obj, size_t* elem_count) RPC_HPP_EXCEPT
     {
@@ -544,6 +732,16 @@ namespace details
         return container;
     }
 
+    /// @brief Decodes a pointer type from a serial object
+    ///
+    /// This is called when the type \c Value has been determined to be a pointer.
+    /// This function populates the value pointed to based on the contents of \p obj
+    /// @tparam Serial Serialization type
+    /// @tparam Value The pointer type to decode to
+    /// @param obj The serialization object to parse
+    /// @param buf Pointer to the buffer in which the decoded values are to be stored
+    /// @param elem_count The number of elements attached to the pointer (if pointer is array)
+    /// @return Value Pointer representing the data decoded from \p obj
     template<typename Serial, typename Value>
     Value decode_pointer_argument(
         const Serial& obj, uint8_t* const buf, size_t* const elem_count) RPC_HPP_EXCEPT
@@ -626,6 +824,16 @@ namespace details
         return reinterpret_cast<Value>(buf);
     }
 
+    /// @brief Decodes a serial object to the proper type
+    ///
+    /// Checks the type based on the functions parameters and decodes the serialization object accordingly, returning the value
+    /// @tparam Serial Serialization type
+    /// @tparam Value The type to decode to
+    /// @param obj The serialization object to parse
+    /// @param buf Pointer to the buffer in which the decoded values are to be stored
+    /// @param count The number of elements represented by the serial object (if array)
+    /// @param param_num The current index of the function's parameter list being decoded
+    /// @return Value The decoded argument value
     template<typename Serial, typename Value>
     Value decode_argument(const Serial& obj, [[maybe_unused]] uint8_t* const buf,
         size_t* const count, unsigned* param_num) RPC_HPP_EXCEPT
@@ -661,6 +869,14 @@ namespace details
         }
     }
 
+    /// @brief Encodes parameter values to a serial object
+    ///
+    /// Takes the value and type of the function parameter to create serialization objects representing each argument
+    /// @tparam Serial The serialization object to encode to
+    /// @tparam Value The type to encode from
+    /// @param obj Reference to the resulting encoded object
+    /// @param count Number of values stored in \p val
+    /// @param val The value to be encoded from
     template<typename Serial, typename Value>
     void encode_arguments(
         Serial& obj, [[maybe_unused]] const size_t count, const Value& val) RPC_HPP_EXCEPT
@@ -783,6 +999,13 @@ namespace details
         obj = adapter.get();
     }
 
+    /// @brief Default implementation of meta-programming function
+    ///
+    /// @tparam F Function type
+    /// @tparam Ts Tuple types (generic)
+    /// @tparam Is Index sequence to iterate over
+    /// @param tuple Tuple to iterate over
+    /// @param func Function to apply to each value
     template<typename F, typename... Ts, size_t... Is>
     void for_each_tuple(
         const std::tuple<Ts...>& tuple, const F& func, std::index_sequence<Is...>) RPC_HPP_EXCEPT
@@ -791,12 +1014,25 @@ namespace details
         (void)expander{ 0, ((void)func(std::get<Is>(tuple)), 0)... };
     }
 
+    /// @brief Meta-programming function to apply a function over each member of a tuple
+    ///
+    /// @tparam F Function type
+    /// @tparam Ts Tuple types (generic)
+    /// @param tuple Tuple to iterate over
+    /// @param func Function to apply to each value
     template<typename F, typename... Ts>
     void for_each_tuple(const std::tuple<Ts...>& tuple, const F& func) RPC_HPP_EXCEPT
     {
         for_each_tuple(tuple, func, std::make_index_sequence<sizeof...(Ts)>());
     }
 
+    /// @brief Frees a dynamically allocated @ref arg_buffer
+    ///
+    /// Due to the way arg_buffers work, they must be constructed using a 'placement new' and therefore do not
+    /// have any helpful RAII method of being cleaned up.
+    /// This function therefore, must be called to ensure their memory does not leak
+    /// @tparam T Pointer type of data contained in \p buffer
+    /// @param buffer The arg_buffer to free
     template<typename T>
     void free_buffer(const arg_buffer& buffer) RPC_HPP_EXCEPT
     {
@@ -980,6 +1216,18 @@ std::string run_callback(const Serial& obj, R(__vectorcall* func)(Args...)) RPC_
 #endif
 
 // TODO: Find a way to template/lambda this to avoid copy/paste for WIN32
+
+/// @brief Runs a function as a callback, returning a string representing the result
+///
+/// This function decodes the arguments of \p func based on the serialization object \p obj.
+/// It then applies the actual function and encodes the results to a new serialization object
+/// and returns a string representing that object
+/// @tparam Serial The serialization object to utilize
+/// @tparam R The function return type
+/// @tparam Args The function argument types
+/// @param obj The serial object representing the function arguments
+/// @param func The function to apply
+/// @return std::string String representing the serialized result of the function call
 template<typename Serial, typename R, typename... Args>
 std::string run_callback(const Serial& obj, std::function<R(Args...)> func) RPC_HPP_EXCEPT
 {
@@ -1036,6 +1284,13 @@ std::string run_callback(const Serial& obj, R (*func)(Args...)) RPC_HPP_EXCEPT
     return run_callback(obj, std::function<R(Args...)>(func));
 }
 
+/// @brief Entry point for running a function with rpc.hpp
+///
+/// Processes the serialization object and calls the function contained in the data
+/// @tparam Serial The serialization object to utilize
+/// @param obj The serialization object containing an object "function" with the function name,
+/// and "args" with the functions arguments
+/// @return std::string The string representation of the result of the function call
 template<typename Serial>
 std::string run(const Serial& obj) RPC_HPP_EXCEPT
 {
@@ -1056,6 +1311,12 @@ std::string run(const Serial& obj) RPC_HPP_EXCEPT
     }
 }
 
+/// @brief Entry point for running a function with rpc.hpp
+///
+/// Converts the string to a serialization object then processes it to call the function contained in the data
+/// @tparam Serial The serialization object to utilize
+/// @param obj_str A string representing the serialization object
+/// @return std::string The string representation of the result of the function call
 template<typename Serial>
 std::string run(std::string_view obj_str) RPC_HPP_EXCEPT
 {
