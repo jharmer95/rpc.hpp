@@ -44,6 +44,7 @@
 
 using njson = nlohmann::json;
 
+/// @brief Adapter to utilize nlohmann/json with rpc.hpp
 using njson_adapter = rpc::serial_adapter<njson>;
 
 template<>
