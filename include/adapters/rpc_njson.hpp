@@ -2,7 +2,7 @@
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Implementation of adapting nlohmann/json (https://github.com/nlohmann/json)
 ///@version 0.1.0.0
-///@date 01-21-2020
+///@date 01-31-2020
 ///
 ///@copyright
 ///BSD 3-Clause License
