@@ -23,3 +23,7 @@ A simple header-only library for supporting remote procedure calls using a varie
 
 - Utilizing C++20's concepts/`requires` statement will make the library a lot simpler, cleaner, and easy to read.
 - Better error/exception handling
+
+## Documentation
+
+See Doxygen docs [here](docs/index.html)
