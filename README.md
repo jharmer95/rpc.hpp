@@ -26,4 +26,4 @@ A simple header-only library for supporting remote procedure calls using a varie
 
 ## Documentation
 
-See Doxygen docs [here](docs/index.html)
+See Doxygen docs [here](https://jharmer95.github.io/rpc.hpp/)
