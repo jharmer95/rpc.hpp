@@ -1,8 +1,7 @@
 var searchData=
 [
-  ['make_5farray',['make_array',['../classrpc_1_1serial__adapter.html#ad877ac1a63f4350cad448b215e91cc55',1,'rpc::serial_adapter']]],
-  ['max_5fsize',['max_size',['../classnlohmann_1_1basic__json.html#a2f47d3c6a441c57dd2be00449fbb88e1',1,'nlohmann::basic_json']]],
-  ['merge_5fpatch',['merge_patch',['../classnlohmann_1_1basic__json.html#a7c43ed2a3004c1fa9543913f37b9fca9',1,'nlohmann::basic_json']]],
-  ['meta',['meta',['../classnlohmann_1_1basic__json.html#a677318a34ade7f8177a2784c06aa3671',1,'nlohmann::basic_json']]],
-  ['mul',['mul',['../structnlohmann_1_1detail_1_1dtoa__impl_1_1diyfp.html#aa5f250d12ce89c81fdb08900c6a823e8',1,'nlohmann::detail::dtoa_impl::diyfp']]]
+  ['serial_5fadapter',['serial_adapter',['../classrpc_1_1serial__adapter.html#aa354a51a688b35a12b5043cd719a830c',1,'rpc::serial_adapter']]],
+  ['serialize',['serialize',['../namespacerpc.html#a21224b9b969648e5f99edfaef5c4ff85',1,'rpc']]],
+  ['set_5fvalue',['set_value',['../classrpc_1_1serial__adapter.html#a3a0bee820d40235b835e41d8d012d8fd',1,'rpc::serial_adapter::set_value(Value value)'],['../classrpc_1_1serial__adapter.html#abf96f300cfe626257b825b090653c6e7',1,'rpc::serial_adapter::set_value(const std::string &amp;name, Value value)']]],
+  ['size',['size',['../classrpc_1_1serial__adapter.html#a29e2c3a466129b98b50f81181aaa9393',1,'rpc::serial_adapter']]]
 ];

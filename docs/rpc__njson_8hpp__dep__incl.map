@@ -1,6 +1,0 @@
-<map id="include/adapters/rpc_njson.hpp" name="include/adapters/rpc_njson.hpp">
-<area shape="rect" id="node1" title="Implementation of adapting nlohmann/json (https://github.com/nlohmann/json)" alt="" coords="106,5,261,47"/>
-<area shape="rect" id="node2" href="$bench__funcs_8hpp.html" title="Functions for benchmarking rpc." alt="" coords="13,95,180,121"/>
-<area shape="rect" id="node4" href="$rpc_8test_8cpp.html" title="Unit test source file for rpc.hpp." alt="" coords="204,95,339,121"/>
-<area shape="rect" id="node3" href="$rpc_8benchmark_8cpp.html" title="Benchmark comparison for rpc.hpp." alt="" coords="5,169,188,196"/>
-</map>

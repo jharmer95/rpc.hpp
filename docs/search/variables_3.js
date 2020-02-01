@@ -1,4 +1,5 @@
 var searchData=
 [
-  ['default_5fbuffer_5fsize',['DEFAULT_BUFFER_SIZE',['../namespacerpc_1_1details.html#a00859ef70b1f789b7511d00d81e0ed78',1,'rpc::details']]]
+  ['is_5fcontainer_5fv',['is_container_v',['../namespacerpc_1_1details.html#a00979fb7b4af46c0f6325866c8ce4cf4',1,'rpc::details']]],
+  ['is_5fserializable_5fv',['is_serializable_v',['../namespacerpc_1_1details.html#a079efa69880ea0b4fa79a207548dfd41',1,'rpc::details']]]
 ];

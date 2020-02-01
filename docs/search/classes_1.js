@@ -1,8 +1,5 @@
 var searchData=
 [
-  ['basic_5fjson',['basic_json',['../classnlohmann_1_1basic__json.html',1,'nlohmann']]],
-  ['binary_5freader',['binary_reader',['../classnlohmann_1_1detail_1_1binary__reader.html',1,'nlohmann::detail']]],
-  ['binary_5fwriter',['binary_writer',['../classnlohmann_1_1detail_1_1binary__writer.html',1,'nlohmann::detail']]],
-  ['binaryexpr',['BinaryExpr',['../class_catch_1_1_binary_expr.html',1,'Catch']]],
-  ['boundaries',['boundaries',['../structnlohmann_1_1detail_1_1dtoa__impl_1_1boundaries.html',1,'nlohmann::detail::dtoa_impl']]]
+  ['function_5ftraits',['function_traits',['../structrpc_1_1details_1_1function__traits.html',1,'rpc::details']]],
+  ['function_5ftraits_3c_20std_3a_3afunction_3c_20r_28args_2e_2e_2e_29_3e_20_3e',['function_traits&lt; std::function&lt; R(Args...)&gt; &gt;',['../structrpc_1_1details_1_1function__traits_3_01std_1_1function_3_01_r_07_args_8_8_8_08_4_01_4.html',1,'rpc::details']]]
 ];
