@@ -41,6 +41,7 @@
 #include <array>
 #include <cstdint>
 #include <functional>
+#include <future>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -1292,7 +1293,7 @@ std::string run_callback(const Serial& obj, R (*func)(Args...)) RPC_HPP_EXCEPT
 /// and "args" with the functions arguments
 /// @return std::string The string representation of the result of the function call
 template<typename Serial>
-std::string run(const Serial& obj) RPC_HPP_EXCEPT
+std::future<std::string> run(const Serial& obj) RPC_HPP_EXCEPT
 {
     const auto adapter = serial_adapter<Serial>(obj);
     const auto func_name = adapter.template get_value<std::string>("function");
@@ -1300,7 +1301,7 @@ std::string run(const Serial& obj) RPC_HPP_EXCEPT
 
     try
     {
-        return dispatch<Serial>(func_name, argList);
+        return std::async(dispatch<Serial>, func_name, argList);
     }
     catch (std::exception& ex)
     {
@@ -1318,7 +1319,7 @@ std::string run(const Serial& obj) RPC_HPP_EXCEPT
 /// @param obj_str A string representing the serialization object
 /// @return std::string The string representation of the result of the function call
 template<typename Serial>
-std::string run(std::string_view obj_str) RPC_HPP_EXCEPT
+std::future<std::string> run(std::string_view obj_str) RPC_HPP_EXCEPT
 {
     const auto adapter = serial_adapter<Serial>(obj_str);
     const auto func_name = adapter.template get_value<std::string>("function");
@@ -1326,7 +1327,7 @@ std::string run(std::string_view obj_str) RPC_HPP_EXCEPT
 
     try
     {
-        return dispatch<Serial>(func_name, argList);
+        return std::async(dispatch<Serial>, func_name, argList);
     }
     catch (std::exception& ex)
     {
