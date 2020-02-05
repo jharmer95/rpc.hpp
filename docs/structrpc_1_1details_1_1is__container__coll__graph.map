@@ -1,4 +1,4 @@
 <map id="rpc::details::is_container&lt; C &gt;" name="rpc::details::is_container&lt; C &gt;">
-<area shape="rect" id="node1" title="SFINAE struct to determine if a type is a container." alt="" coords="252,35,472,61"/>
-<area shape="rect" id="node2" title=" " alt="" coords="5,5,204,91"/>
+<area shape="rect" id="node1" title="SFINAE struct to determine if a type is a container." alt="" coords="228,35,425,61"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,5,180,91"/>
 </map>
