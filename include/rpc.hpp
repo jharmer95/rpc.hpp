@@ -1293,7 +1293,7 @@ std::string run_callback(const Serial& obj, R (*func)(Args...)) RPC_HPP_EXCEPT
 /// and "args" with the functions arguments
 /// @return std::string The string representation of the result of the function call
 template<typename Serial>
-std::future<std::string> run(const Serial& obj) RPC_HPP_EXCEPT
+std::string run(const Serial& obj) RPC_HPP_EXCEPT
 {
     const auto adapter = serial_adapter<Serial>(obj);
     const auto func_name = adapter.template get_value<std::string>("function");
@@ -1301,7 +1301,7 @@ std::future<std::string> run(const Serial& obj) RPC_HPP_EXCEPT
 
     try
     {
-        return std::async(dispatch<Serial>, func_name, argList);
+        return dispatch(func_name, argList);
     }
     catch (std::exception& ex)
     {
@@ -1319,7 +1319,47 @@ std::future<std::string> run(const Serial& obj) RPC_HPP_EXCEPT
 /// @param obj_str A string representing the serialization object
 /// @return std::string The string representation of the result of the function call
 template<typename Serial>
-std::future<std::string> run(std::string_view obj_str) RPC_HPP_EXCEPT
+std::string run(std::string_view obj_str) RPC_HPP_EXCEPT
+{
+    const auto adapter = serial_adapter<Serial>(obj_str);
+    const auto func_name = adapter.template get_value<std::string>("function");
+    const auto argList = adapter.template get_value<Serial>("args");
+
+    try
+    {
+        return dispatch(func_name, argList);
+    }
+    catch (std::exception& ex)
+    {
+        std::cerr << ex.what() << '\n';
+        serial_adapter<Serial> result;
+        result.set_value("result", -1);
+        return result.to_string();
+    }
+}
+
+template<typename Serial>
+std::future<std::string> async_run(const Serial& obj) RPC_HPP_EXCEPT
+{
+    const auto adapter = serial_adapter<Serial>(obj);
+    const auto func_name = adapter.template get_value<std::string>("function");
+    const auto argList = adapter.template get_value<Serial>("args");
+
+    try
+    {
+        return std::async(dispatch<Serial>, func_name, argList);
+    }
+    catch (std::exception& ex)
+    {
+        std::cerr << ex.what() << '\n';
+        serial_adapter<Serial> result;
+        result.set_value("result", -1);
+        return std::async(&serial_adapter<Serial>::to_string, &result);
+    }
+}
+
+template<typename Serial>
+std::future<std::string> async_run(std::string_view obj_str) RPC_HPP_EXCEPT
 {
     const auto adapter = serial_adapter<Serial>(obj_str);
     const auto func_name = adapter.template get_value<std::string>("function");
@@ -1334,7 +1374,7 @@ std::future<std::string> run(std::string_view obj_str) RPC_HPP_EXCEPT
         std::cerr << ex.what() << '\n';
         serial_adapter<Serial> result;
         result.set_value("result", -1);
-        return result.to_string();
+        return std::async(&serial_adapter<Serial>::to_string, &result);
     }
 }
 } // namespace rpc
