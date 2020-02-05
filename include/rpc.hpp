@@ -1338,6 +1338,13 @@ std::string run(std::string_view obj_str) RPC_HPP_EXCEPT
     }
 }
 
+///@brief Entry point for running a function with rpc.hpp (asynchronous version)
+///
+/// Processes the serialization object and calls the function contained in the data.
+/// The call to this function is blocking, but non-blocking call(s) are made from here, returning quickly.
+///@tparam Serial The serialization object to utilize
+///@param obj The serialization object containing an object "function" with the function name,
+///@return std::future<std::string> Future containing the string representation of the result of the function call
 template<typename Serial>
 std::future<std::string> async_run(const Serial& obj) RPC_HPP_EXCEPT
 {
@@ -1358,6 +1365,13 @@ std::future<std::string> async_run(const Serial& obj) RPC_HPP_EXCEPT
     }
 }
 
+///@brief Entry point for running a function with rpc.hpp (asynchronous version)
+///
+/// Converts the string to a serialization object then processes it to call the function contained in the data.
+/// The call to this function is blocking, but non-blocking call(s) are made from here, returning quickly.
+///@tparam Serial The serialization object to utilize
+///@param obj_str A string representing the serialization object
+///@return std::future<std::string> Future containing the string representation of the result of the function call
 template<typename Serial>
 std::future<std::string> async_run(std::string_view obj_str) RPC_HPP_EXCEPT
 {
