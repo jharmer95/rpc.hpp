@@ -41,6 +41,7 @@
 #include <array>
 #include <cstdint>
 #include <functional>
+#include <future>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -1300,7 +1301,7 @@ std::string run(const Serial& obj) RPC_HPP_EXCEPT
 
     try
     {
-        return dispatch<Serial>(func_name, argList);
+        return dispatch(func_name, argList);
     }
     catch (std::exception& ex)
     {
@@ -1326,7 +1327,7 @@ std::string run(std::string_view obj_str) RPC_HPP_EXCEPT
 
     try
     {
-        return dispatch<Serial>(func_name, argList);
+        return dispatch(func_name, argList);
     }
     catch (std::exception& ex)
     {
@@ -1334,6 +1335,60 @@ std::string run(std::string_view obj_str) RPC_HPP_EXCEPT
         serial_adapter<Serial> result;
         result.set_value("result", -1);
         return result.to_string();
+    }
+}
+
+///@brief Entry point for running a function with rpc.hpp (asynchronous version)
+///
+/// Processes the serialization object and calls the function contained in the data.
+/// The call to this function is blocking, but non-blocking call(s) are made from here, returning quickly.
+///@tparam Serial The serialization object to utilize
+///@param obj The serialization object containing an object "function" with the function name,
+///@return std::future<std::string> Future containing the string representation of the result of the function call
+template<typename Serial>
+std::future<std::string> async_run(const Serial& obj) RPC_HPP_EXCEPT
+{
+    const auto adapter = serial_adapter<Serial>(obj);
+    const auto func_name = adapter.template get_value<std::string>("function");
+    const auto argList = adapter.template get_value<Serial>("args");
+
+    try
+    {
+        return std::async(dispatch<Serial>, func_name, argList);
+    }
+    catch (std::exception& ex)
+    {
+        std::cerr << ex.what() << '\n';
+        serial_adapter<Serial> result;
+        result.set_value("result", -1);
+        return std::async(&serial_adapter<Serial>::to_string, &result);
+    }
+}
+
+///@brief Entry point for running a function with rpc.hpp (asynchronous version)
+///
+/// Converts the string to a serialization object then processes it to call the function contained in the data.
+/// The call to this function is blocking, but non-blocking call(s) are made from here, returning quickly.
+///@tparam Serial The serialization object to utilize
+///@param obj_str A string representing the serialization object
+///@return std::future<std::string> Future containing the string representation of the result of the function call
+template<typename Serial>
+std::future<std::string> async_run(std::string_view obj_str) RPC_HPP_EXCEPT
+{
+    const auto adapter = serial_adapter<Serial>(obj_str);
+    const auto func_name = adapter.template get_value<std::string>("function");
+    const auto argList = adapter.template get_value<Serial>("args");
+
+    try
+    {
+        return std::async(dispatch<Serial>, func_name, argList);
+    }
+    catch (std::exception& ex)
+    {
+        std::cerr << ex.what() << '\n';
+        serial_adapter<Serial> result;
+        result.set_value("result", -1);
+        return std::async(&serial_adapter<Serial>::to_string, &result);
     }
 }
 } // namespace rpc
