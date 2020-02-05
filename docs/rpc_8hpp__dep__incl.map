@@ -1,0 +1,6 @@
+<map id="include/rpc.hpp" name="include/rpc.hpp">
+<area shape="rect" id="node1" title="Header&#45;only library for serialized RPC usage." alt="" coords="115,5,225,32"/>
+<area shape="rect" id="node2" href="$bench__funcs_8hpp.html" title="Functions for benchmarking rpc." alt="" coords="12,80,165,107"/>
+<area shape="rect" id="node4" href="$rpc_8test_8cpp.html" title="Unit test source file for rpc.hpp." alt="" coords="189,80,313,107"/>
+<area shape="rect" id="node3" href="$rpc_8benchmark_8cpp.html" title="Benchmark comparison for rpc.hpp." alt="" coords="5,155,172,181"/>
+</map>

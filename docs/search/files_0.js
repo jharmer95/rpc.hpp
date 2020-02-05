@@ -1,5 +1,4 @@
 var searchData=
 [
-  ['rpc_2ehpp_72',['rpc.hpp',['../rpc_8hpp.html',1,'']]],
-  ['rpc_5fnjson_2ehpp_73',['rpc_njson.hpp',['../rpc__njson_8hpp.html',1,'']]]
+  ['bench_5ffuncs_2ehpp_79',['bench_funcs.hpp',['../bench__funcs_8hpp.html',1,'']]]
 ];

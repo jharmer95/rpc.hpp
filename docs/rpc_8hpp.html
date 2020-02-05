@@ -24,7 +24,7 @@
    <div id="projectname">rpc.hpp
    &#160;<span id="projectnumber">0.1.0.0</span>
    </div>
-   <div id="projectbrief">A simple header-only library for supporting remote procedure calls using a variety of extensible features</div>
+   <div id="projectbrief">Simple RPC Header-Only Library</div>
   </td>
  </tr>
  </tbody>
@@ -105,6 +105,17 @@ Include dependency graph for rpc.hpp:</div>
 <area shape="rect" title=" " alt="" coords="537,80,591,107"/>
 <area shape="rect" title=" " alt="" coords="616,80,667,107"/>
 <area shape="rect" title=" " alt="" coords="691,80,773,107"/>
+</map>
+</div>
+</div><div class="textblock"><div class="dynheader">
+This graph shows which files directly or indirectly include this file:</div>
+<div class="dyncontent">
+<div class="center"><img src="rpc_8hpp__dep__incl.png" border="0" usemap="#include_2rpc_8hppdep" alt=""/></div>
+<map name="include_2rpc_8hppdep" id="include_2rpc_8hppdep">
+<area shape="rect" title="Header&#45;only library for serialized RPC usage." alt="" coords="115,5,225,32"/>
+<area shape="rect" href="bench__funcs_8hpp.html" title="Functions for benchmarking rpc." alt="" coords="12,80,165,107"/>
+<area shape="rect" href="rpc_8test_8cpp.html" title="Unit test source file for rpc.hpp." alt="" coords="189,80,313,107"/>
+<area shape="rect" href="rpc_8benchmark_8cpp.html" title="Benchmark comparison for rpc.hpp." alt="" coords="5,155,172,181"/>
 </map>
 </div>
 </div>
@@ -223,30 +234,6 @@ Functions</h2></td></tr>
 <tr class="memitem:a226f75255c3a54ab63cb45a4a703cb4f"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacerpc_1_1details.html#a226f75255c3a54ab63cb45a4a703cb4f">rpc::details::free_buffer</a> (const arg_buffer &amp;buffer) <a class="el" href="rpc_8hpp.html#ad2caafdb1b9ca69cb54ae30f343c5206">RPC_HPP_EXCEPT</a></td></tr>
 <tr class="memdesc:a226f75255c3a54ab63cb45a4a703cb4f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Frees a dynamically allocated <a class="el" href="classrpc_1_1details_1_1arg__buffer.html">arg_buffer</a>.  <a href="namespacerpc_1_1details.html#a226f75255c3a54ab63cb45a4a703cb4f">More...</a><br /></td></tr>
 <tr class="separator:a226f75255c3a54ab63cb45a4a703cb4f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afcc636ac40190ce77fe57c3efb59f608"><td class="memTemplParams" colspan="2"><a id="afcc636ac40190ce77fe57c3efb59f608"></a>
-template&lt;typename Serial , typename R , typename... Args&gt; </td></tr>
-<tr class="memitem:afcc636ac40190ce77fe57c3efb59f608"><td class="memTemplItemLeft" align="right" valign="top">std::string&#160;</td><td class="memTemplItemRight" valign="bottom"><b>rpc::run_callback</b> (const Serial &amp;obj, std::function&lt; R __stdcall(Args...)&gt; func) <a class="el" href="rpc_8hpp.html#ad2caafdb1b9ca69cb54ae30f343c5206">RPC_HPP_EXCEPT</a></td></tr>
-<tr class="separator:afcc636ac40190ce77fe57c3efb59f608"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a60a2058ded4122cba5dbc6730096d5f2"><td class="memTemplParams" colspan="2"><a id="a60a2058ded4122cba5dbc6730096d5f2"></a>
-template&lt;typename Serial , typename R , typename... Args&gt; </td></tr>
-<tr class="memitem:a60a2058ded4122cba5dbc6730096d5f2"><td class="memTemplItemLeft" align="right" valign="top">std::string&#160;</td><td class="memTemplItemRight" valign="bottom"><b>rpc::run_callback</b> (const Serial &amp;obj, R(__stdcall *func)(Args...)) <a class="el" href="rpc_8hpp.html#ad2caafdb1b9ca69cb54ae30f343c5206">RPC_HPP_EXCEPT</a></td></tr>
-<tr class="separator:a60a2058ded4122cba5dbc6730096d5f2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a99825819d0ba0acd7b1cbb696fe899b3"><td class="memTemplParams" colspan="2"><a id="a99825819d0ba0acd7b1cbb696fe899b3"></a>
-template&lt;typename Serial , typename R , typename... Args&gt; </td></tr>
-<tr class="memitem:a99825819d0ba0acd7b1cbb696fe899b3"><td class="memTemplItemLeft" align="right" valign="top">std::string&#160;</td><td class="memTemplItemRight" valign="bottom"><b>rpc::run_callback</b> (const Serial &amp;obj, std::function&lt; R __fastcall(Args...)&gt; func) <a class="el" href="rpc_8hpp.html#ad2caafdb1b9ca69cb54ae30f343c5206">RPC_HPP_EXCEPT</a></td></tr>
-<tr class="separator:a99825819d0ba0acd7b1cbb696fe899b3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aab2eda30830691ea326c24ec0eb0e447"><td class="memTemplParams" colspan="2"><a id="aab2eda30830691ea326c24ec0eb0e447"></a>
-template&lt;typename Serial , typename R , typename... Args&gt; </td></tr>
-<tr class="memitem:aab2eda30830691ea326c24ec0eb0e447"><td class="memTemplItemLeft" align="right" valign="top">std::string&#160;</td><td class="memTemplItemRight" valign="bottom"><b>rpc::run_callback</b> (const Serial &amp;obj, R(__fastcall *func)(Args...)) <a class="el" href="rpc_8hpp.html#ad2caafdb1b9ca69cb54ae30f343c5206">RPC_HPP_EXCEPT</a></td></tr>
-<tr class="separator:aab2eda30830691ea326c24ec0eb0e447"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3992f681b41eb540a869eae8cb896bd6"><td class="memTemplParams" colspan="2"><a id="a3992f681b41eb540a869eae8cb896bd6"></a>
-template&lt;typename Serial , typename R , typename... Args&gt; </td></tr>
-<tr class="memitem:a3992f681b41eb540a869eae8cb896bd6"><td class="memTemplItemLeft" align="right" valign="top">std::string&#160;</td><td class="memTemplItemRight" valign="bottom"><b>rpc::run_callback</b> (const Serial &amp;obj, std::function&lt; R __vectorcall(Args...)&gt; func) <a class="el" href="rpc_8hpp.html#ad2caafdb1b9ca69cb54ae30f343c5206">RPC_HPP_EXCEPT</a></td></tr>
-<tr class="separator:a3992f681b41eb540a869eae8cb896bd6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab3d4c4d1fe1e66d2f1bc37f05fbbc21b"><td class="memTemplParams" colspan="2"><a id="ab3d4c4d1fe1e66d2f1bc37f05fbbc21b"></a>
-template&lt;typename Serial , typename R , typename... Args&gt; </td></tr>
-<tr class="memitem:ab3d4c4d1fe1e66d2f1bc37f05fbbc21b"><td class="memTemplItemLeft" align="right" valign="top">std::string&#160;</td><td class="memTemplItemRight" valign="bottom"><b>rpc::run_callback</b> (const Serial &amp;obj, R(__vectorcall *func)(Args...)) <a class="el" href="rpc_8hpp.html#ad2caafdb1b9ca69cb54ae30f343c5206">RPC_HPP_EXCEPT</a></td></tr>
-<tr class="separator:ab3d4c4d1fe1e66d2f1bc37f05fbbc21b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2cd5c5f047edd7b5d2b1d1553688bf9a"><td class="memTemplParams" colspan="2">template&lt;typename Serial , typename R , typename... Args&gt; </td></tr>
 <tr class="memitem:a2cd5c5f047edd7b5d2b1d1553688bf9a"><td class="memTemplItemLeft" align="right" valign="top">std::string&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacerpc.html#a2cd5c5f047edd7b5d2b1d1553688bf9a">rpc::run_callback</a> (const Serial &amp;obj, std::function&lt; R(Args...)&gt; func) <a class="el" href="rpc_8hpp.html#ad2caafdb1b9ca69cb54ae30f343c5206">RPC_HPP_EXCEPT</a></td></tr>
 <tr class="memdesc:a2cd5c5f047edd7b5d2b1d1553688bf9a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Runs a function as a callback, returning a string representing the result.  <a href="namespacerpc.html#a2cd5c5f047edd7b5d2b1d1553688bf9a">More...</a><br /></td></tr>

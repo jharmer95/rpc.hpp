@@ -58,6 +58,16 @@ endif()
 include(CTest)
 include(Catch)
 
+find_package(Doxygen REQUIRED dot)
+
+set(DOXYGEN_GENERATE_HTML YES)
+set(DOXYGEN_GENERATE_LATEX NO)
+set(DOXYGEN_HTML_OUTPUT "docs")
+set(DOXYGEN_EXCLUDE_PATTERNS "*/include/catch2*" "*/include/nlohmann/*")
+set(DOXYGEN_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}")
+set(DOXYGEN_USE_MDFILE_AS_MAINPAGE "README.md")
+doxygen_add_docs(docs ${PROJECT_SOURCE_DIR} COMMENT "Generate doxygen docs for rpc.hpp")
+
 add_library(rpc_hpp INTERFACE)
 target_include_directories(rpc_hpp INTERFACE "${PROJECT_SOURCE_DIR}/include")
 

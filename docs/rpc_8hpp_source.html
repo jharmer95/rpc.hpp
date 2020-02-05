@@ -24,7 +24,7 @@
    <div id="projectname">rpc.hpp
    &#160;<span id="projectnumber">0.1.0.0</span>
    </div>
-   <div id="projectbrief">A simple header-only library for supporting remote procedure calls using a variety of extensible features</div>
+   <div id="projectbrief">Simple RPC Header-Only Library</div>
   </td>
  </tr>
  </tbody>
@@ -782,7 +782,7 @@ $(function() {
 <div class="line"><a name="l01050"></a><span class="lineno"> 1050</span>&#160;<span class="comment">// Support for other Windows (x86) calling conventions</span></div>
 <div class="line"><a name="l01051"></a><span class="lineno"> 1051</span>&#160;<span class="preprocessor">#if defined(_WIN32) &amp;&amp; !defined(_WIN64)</span></div>
 <div class="line"><a name="l01052"></a><span class="lineno"> 1052</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> Serial, <span class="keyword">typename</span> R, <span class="keyword">typename</span>... Args&gt;</div>
-<div class="line"><a name="l01053"></a><span class="lineno"> 1053</span>&#160;std::string run_callback(<span class="keyword">const</span> Serial&amp; obj, std::function&lt;R __stdcall(Args...)&gt; func) <a class="code" href="rpc_8hpp.html#ad2caafdb1b9ca69cb54ae30f343c5206">RPC_HPP_EXCEPT</a></div>
+<div class="line"><a name="l01053"></a><span class="lineno"> 1053</span>&#160;std::string <a class="code" href="namespacerpc.html#a2cd5c5f047edd7b5d2b1d1553688bf9a">run_callback</a>(<span class="keyword">const</span> Serial&amp; obj, std::function&lt;R __stdcall(Args...)&gt; func) <a class="code" href="rpc_8hpp.html#ad2caafdb1b9ca69cb54ae30f343c5206">RPC_HPP_EXCEPT</a></div>
 <div class="line"><a name="l01054"></a><span class="lineno"> 1054</span>&#160;{</div>
 <div class="line"><a name="l01055"></a><span class="lineno"> 1055</span>&#160;    <span class="keywordtype">unsigned</span> arg_count = 0;</div>
 <div class="line"><a name="l01056"></a><span class="lineno"> 1056</span>&#160;    serial_adapter&lt;Serial&gt; adapter(obj);</div>
@@ -830,13 +830,13 @@ $(function() {
 <div class="line"><a name="l01098"></a><span class="lineno"> 1098</span>&#160;}</div>
 <div class="line"><a name="l01099"></a><span class="lineno"> 1099</span>&#160; </div>
 <div class="line"><a name="l01100"></a><span class="lineno"> 1100</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> Serial, <span class="keyword">typename</span> R, <span class="keyword">typename</span>... Args&gt;</div>
-<div class="line"><a name="l01101"></a><span class="lineno"> 1101</span>&#160;std::string run_callback(<span class="keyword">const</span> Serial&amp; obj, R(__stdcall* func)(Args...)) <a class="code" href="rpc_8hpp.html#ad2caafdb1b9ca69cb54ae30f343c5206">RPC_HPP_EXCEPT</a></div>
+<div class="line"><a name="l01101"></a><span class="lineno"> 1101</span>&#160;std::string <a class="code" href="namespacerpc.html#a2cd5c5f047edd7b5d2b1d1553688bf9a">run_callback</a>(<span class="keyword">const</span> Serial&amp; obj, R(__stdcall* func)(Args...)) <a class="code" href="rpc_8hpp.html#ad2caafdb1b9ca69cb54ae30f343c5206">RPC_HPP_EXCEPT</a></div>
 <div class="line"><a name="l01102"></a><span class="lineno"> 1102</span>&#160;{</div>
-<div class="line"><a name="l01103"></a><span class="lineno"> 1103</span>&#160;    <span class="keywordflow">return</span> run_callback(obj, std::function&lt;R __stdcall(Args...)&gt;(func));</div>
+<div class="line"><a name="l01103"></a><span class="lineno"> 1103</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespacerpc.html#a2cd5c5f047edd7b5d2b1d1553688bf9a">run_callback</a>(obj, std::function&lt;R __stdcall(Args...)&gt;(func));</div>
 <div class="line"><a name="l01104"></a><span class="lineno"> 1104</span>&#160;}</div>
 <div class="line"><a name="l01105"></a><span class="lineno"> 1105</span>&#160; </div>
 <div class="line"><a name="l01106"></a><span class="lineno"> 1106</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> Serial, <span class="keyword">typename</span> R, <span class="keyword">typename</span>... Args&gt;</div>
-<div class="line"><a name="l01107"></a><span class="lineno"> 1107</span>&#160;std::string run_callback(</div>
+<div class="line"><a name="l01107"></a><span class="lineno"> 1107</span>&#160;std::string <a class="code" href="namespacerpc.html#a2cd5c5f047edd7b5d2b1d1553688bf9a">run_callback</a>(</div>
 <div class="line"><a name="l01108"></a><span class="lineno"> 1108</span>&#160;    <span class="keyword">const</span> Serial&amp; obj, std::function&lt;R __fastcall(Args...)&gt; func) <a class="code" href="rpc_8hpp.html#ad2caafdb1b9ca69cb54ae30f343c5206">RPC_HPP_EXCEPT</a></div>
 <div class="line"><a name="l01109"></a><span class="lineno"> 1109</span>&#160;{</div>
 <div class="line"><a name="l01110"></a><span class="lineno"> 1110</span>&#160;    <span class="keywordtype">unsigned</span> arg_count = 0;</div>
@@ -885,14 +885,14 @@ $(function() {
 <div class="line"><a name="l01153"></a><span class="lineno"> 1153</span>&#160;}</div>
 <div class="line"><a name="l01154"></a><span class="lineno"> 1154</span>&#160; </div>
 <div class="line"><a name="l01155"></a><span class="lineno"> 1155</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> Serial, <span class="keyword">typename</span> R, <span class="keyword">typename</span>... Args&gt;</div>
-<div class="line"><a name="l01156"></a><span class="lineno"> 1156</span>&#160;std::string run_callback(<span class="keyword">const</span> Serial&amp; obj, R(__fastcall* func)(Args...)) <a class="code" href="rpc_8hpp.html#ad2caafdb1b9ca69cb54ae30f343c5206">RPC_HPP_EXCEPT</a></div>
+<div class="line"><a name="l01156"></a><span class="lineno"> 1156</span>&#160;std::string <a class="code" href="namespacerpc.html#a2cd5c5f047edd7b5d2b1d1553688bf9a">run_callback</a>(<span class="keyword">const</span> Serial&amp; obj, R(__fastcall* func)(Args...)) <a class="code" href="rpc_8hpp.html#ad2caafdb1b9ca69cb54ae30f343c5206">RPC_HPP_EXCEPT</a></div>
 <div class="line"><a name="l01157"></a><span class="lineno"> 1157</span>&#160;{</div>
-<div class="line"><a name="l01158"></a><span class="lineno"> 1158</span>&#160;    <span class="keywordflow">return</span> run_callback(obj, std::function&lt;R __fastcall(Args...)&gt;(func));</div>
+<div class="line"><a name="l01158"></a><span class="lineno"> 1158</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespacerpc.html#a2cd5c5f047edd7b5d2b1d1553688bf9a">run_callback</a>(obj, std::function&lt;R __fastcall(Args...)&gt;(func));</div>
 <div class="line"><a name="l01159"></a><span class="lineno"> 1159</span>&#160;}</div>
 <div class="line"><a name="l01160"></a><span class="lineno"> 1160</span>&#160; </div>
 <div class="line"><a name="l01161"></a><span class="lineno"> 1161</span>&#160;<span class="preprocessor">#    if !defined(__MINGW32__)</span></div>
 <div class="line"><a name="l01162"></a><span class="lineno"> 1162</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> Serial, <span class="keyword">typename</span> R, <span class="keyword">typename</span>... Args&gt;</div>
-<div class="line"><a name="l01163"></a><span class="lineno"> 1163</span>&#160;std::string run_callback(</div>
+<div class="line"><a name="l01163"></a><span class="lineno"> 1163</span>&#160;std::string <a class="code" href="namespacerpc.html#a2cd5c5f047edd7b5d2b1d1553688bf9a">run_callback</a>(</div>
 <div class="line"><a name="l01164"></a><span class="lineno"> 1164</span>&#160;    <span class="keyword">const</span> Serial&amp; obj, std::function&lt;R __vectorcall(Args...)&gt; func) <a class="code" href="rpc_8hpp.html#ad2caafdb1b9ca69cb54ae30f343c5206">RPC_HPP_EXCEPT</a></div>
 <div class="line"><a name="l01165"></a><span class="lineno"> 1165</span>&#160;{</div>
 <div class="line"><a name="l01166"></a><span class="lineno"> 1166</span>&#160;    <span class="keywordtype">unsigned</span> arg_count = 0;</div>
@@ -941,9 +941,9 @@ $(function() {
 <div class="line"><a name="l01209"></a><span class="lineno"> 1209</span>&#160;}</div>
 <div class="line"><a name="l01210"></a><span class="lineno"> 1210</span>&#160; </div>
 <div class="line"><a name="l01211"></a><span class="lineno"> 1211</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> Serial, <span class="keyword">typename</span> R, <span class="keyword">typename</span>... Args&gt;</div>
-<div class="line"><a name="l01212"></a><span class="lineno"> 1212</span>&#160;std::string run_callback(<span class="keyword">const</span> Serial&amp; obj, R(__vectorcall* func)(Args...)) <a class="code" href="rpc_8hpp.html#ad2caafdb1b9ca69cb54ae30f343c5206">RPC_HPP_EXCEPT</a></div>
+<div class="line"><a name="l01212"></a><span class="lineno"> 1212</span>&#160;std::string <a class="code" href="namespacerpc.html#a2cd5c5f047edd7b5d2b1d1553688bf9a">run_callback</a>(<span class="keyword">const</span> Serial&amp; obj, R(__vectorcall* func)(Args...)) <a class="code" href="rpc_8hpp.html#ad2caafdb1b9ca69cb54ae30f343c5206">RPC_HPP_EXCEPT</a></div>
 <div class="line"><a name="l01213"></a><span class="lineno"> 1213</span>&#160;{</div>
-<div class="line"><a name="l01214"></a><span class="lineno"> 1214</span>&#160;    <span class="keywordflow">return</span> run_callback(obj, std::function&lt;R __vectorcall(Args...)&gt;(func));</div>
+<div class="line"><a name="l01214"></a><span class="lineno"> 1214</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespacerpc.html#a2cd5c5f047edd7b5d2b1d1553688bf9a">run_callback</a>(obj, std::function&lt;R __vectorcall(Args...)&gt;(func));</div>
 <div class="line"><a name="l01215"></a><span class="lineno"> 1215</span>&#160;}</div>
 <div class="line"><a name="l01216"></a><span class="lineno"> 1216</span>&#160;<span class="preprocessor">#    endif</span></div>
 <div class="line"><a name="l01217"></a><span class="lineno"> 1217</span>&#160;<span class="preprocessor">#endif</span></div>
@@ -951,7 +951,7 @@ $(function() {
 <div class="line"><a name="l01219"></a><span class="lineno"> 1219</span>&#160;<span class="comment">// TODO: Find a way to template/lambda this to avoid copy/paste for WIN32</span></div>
 <div class="line"><a name="l01220"></a><span class="lineno"> 1220</span>&#160; </div>
 <div class="line"><a name="l01232"></a><span class="lineno"> 1232</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> Serial, <span class="keyword">typename</span> R, <span class="keyword">typename</span>... Args&gt;</div>
-<div class="line"><a name="l01233"></a><span class="lineno"><a class="line" href="namespacerpc.html#a2cd5c5f047edd7b5d2b1d1553688bf9a"> 1233</a></span>&#160;std::string run_callback(<span class="keyword">const</span> Serial&amp; obj, std::function&lt;R(Args...)&gt; func) <a class="code" href="rpc_8hpp.html#ad2caafdb1b9ca69cb54ae30f343c5206">RPC_HPP_EXCEPT</a></div>
+<div class="line"><a name="l01233"></a><span class="lineno"><a class="line" href="namespacerpc.html#a2cd5c5f047edd7b5d2b1d1553688bf9a"> 1233</a></span>&#160;std::string <a class="code" href="namespacerpc.html#a2cd5c5f047edd7b5d2b1d1553688bf9a">run_callback</a>(<span class="keyword">const</span> Serial&amp; obj, std::function&lt;R(Args...)&gt; func) <a class="code" href="rpc_8hpp.html#ad2caafdb1b9ca69cb54ae30f343c5206">RPC_HPP_EXCEPT</a></div>
 <div class="line"><a name="l01234"></a><span class="lineno"> 1234</span>&#160;{</div>
 <div class="line"><a name="l01235"></a><span class="lineno"> 1235</span>&#160;    <span class="keywordtype">unsigned</span> arg_count = 0;</div>
 <div class="line"><a name="l01236"></a><span class="lineno"> 1236</span>&#160;    <a class="code" href="classrpc_1_1serial__adapter.html">serial_adapter&lt;Serial&gt;</a> adapter(obj);</div>
@@ -1001,9 +1001,9 @@ $(function() {
 <div class="line"><a name="l01280"></a><span class="lineno"> 1280</span>&#160;}</div>
 <div class="line"><a name="l01281"></a><span class="lineno"> 1281</span>&#160; </div>
 <div class="line"><a name="l01282"></a><span class="lineno"> 1282</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> Serial, <span class="keyword">typename</span> R, <span class="keyword">typename</span>... Args&gt;</div>
-<div class="line"><a name="l01283"></a><span class="lineno"> 1283</span>&#160;std::string run_callback(<span class="keyword">const</span> Serial&amp; obj, R (*func)(Args...)) <a class="code" href="rpc_8hpp.html#ad2caafdb1b9ca69cb54ae30f343c5206">RPC_HPP_EXCEPT</a></div>
+<div class="line"><a name="l01283"></a><span class="lineno"> 1283</span>&#160;std::string <a class="code" href="namespacerpc.html#a2cd5c5f047edd7b5d2b1d1553688bf9a">run_callback</a>(<span class="keyword">const</span> Serial&amp; obj, R (*func)(Args...)) <a class="code" href="rpc_8hpp.html#ad2caafdb1b9ca69cb54ae30f343c5206">RPC_HPP_EXCEPT</a></div>
 <div class="line"><a name="l01284"></a><span class="lineno"> 1284</span>&#160;{</div>
-<div class="line"><a name="l01285"></a><span class="lineno"> 1285</span>&#160;    <span class="keywordflow">return</span> run_callback(obj, std::function&lt;R(Args...)&gt;(func));</div>
+<div class="line"><a name="l01285"></a><span class="lineno"> 1285</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespacerpc.html#a2cd5c5f047edd7b5d2b1d1553688bf9a">run_callback</a>(obj, std::function&lt;R(Args...)&gt;(func));</div>
 <div class="line"><a name="l01286"></a><span class="lineno"> 1286</span>&#160;}</div>
 <div class="line"><a name="l01287"></a><span class="lineno"> 1287</span>&#160; </div>
 <div class="line"><a name="l01295"></a><span class="lineno"> 1295</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> Serial&gt;</div>
@@ -1129,7 +1129,8 @@ $(function() {
 <div class="ttc" id="arpc_8hpp_html_ad2caafdb1b9ca69cb54ae30f343c5206"><div class="ttname"><a href="rpc_8hpp.html#ad2caafdb1b9ca69cb54ae30f343c5206">RPC_HPP_EXCEPT</a></div><div class="ttdeci">#define RPC_HPP_EXCEPT</div><div class="ttdoc">NOTHROW can be defined at compile-time to add additional 'noexcept' specifiers to functions to potent...</div><div class="ttdef"><b>Definition:</b> rpc.hpp:57</div></div>
 <div class="ttc" id="aclassrpc_1_1serial__adapter_html_a3a0bee820d40235b835e41d8d012d8fd"><div class="ttname"><a href="classrpc_1_1serial__adapter.html#a3a0bee820d40235b835e41d8d012d8fd">rpc::serial_adapter::set_value</a></div><div class="ttdeci">void set_value(Value value)</div><div class="ttdoc">Sets the value of the serial object.</div><div class="ttdef"><b>Definition:</b> rpc_njson.hpp:97</div></div>
 <div class="ttc" id="aclassrpc_1_1serial__adapter_html_a280a97d506aaebc7f13ea0e42665d538"><div class="ttname"><a href="classrpc_1_1serial__adapter.html#a280a97d506aaebc7f13ea0e42665d538">rpc::serial_adapter::get_value_ref</a></div><div class="ttdeci">Value &amp; get_value_ref()</div><div class="ttdoc">Get the value, by reference, of the serial object.</div><div class="ttdef"><b>Definition:</b> rpc_njson.hpp:69</div></div>
-<div class="ttc" id="anamespacerpc_html_a7e2ea60ef54403f441eb7747decbe36e"><div class="ttname"><a href="namespacerpc.html#a7e2ea60ef54403f441eb7747decbe36e">rpc::dispatch</a></div><div class="ttdeci">std::string dispatch(const std::string &amp;func_name, const Serial &amp;obj)</div><div class="ttdoc">Function used to callback from, given a function's name and some parameters using a serial object.</div></div>
+<div class="ttc" id="anamespacerpc_html_a7e2ea60ef54403f441eb7747decbe36e"><div class="ttname"><a href="namespacerpc.html#a7e2ea60ef54403f441eb7747decbe36e">rpc::dispatch</a></div><div class="ttdeci">std::string dispatch(const std::string &amp;func_name, const Serial &amp;obj)</div><div class="ttdoc">Function used to callback from, given a function's name and some parameters using a serial object.</div><div class="ttdef"><b>Definition:</b> bench_funcs.hpp:471</div></div>
+<div class="ttc" id="anamespacerpc_html_a2cd5c5f047edd7b5d2b1d1553688bf9a"><div class="ttname"><a href="namespacerpc.html#a2cd5c5f047edd7b5d2b1d1553688bf9a">rpc::run_callback</a></div><div class="ttdeci">std::string run_callback(const Serial &amp;obj, std::function&lt; R(Args...)&gt; func) RPC_HPP_EXCEPT</div><div class="ttdoc">Runs a function as a callback, returning a string representing the result.</div><div class="ttdef"><b>Definition:</b> rpc.hpp:1233</div></div>
 <div class="ttc" id="astructrpc_1_1details_1_1has__begin_html"><div class="ttname"><a href="structrpc_1_1details_1_1has__begin.html">rpc::details::has_begin</a></div><div class="ttdoc">SFINAE struct for checking a type for a 'begin' member function.</div><div class="ttdef"><b>Definition:</b> rpc.hpp:509</div></div>
 <div class="ttc" id="aclassrpc_1_1serial__adapter_html_a05328b68d5a1ed9bdd729e15d583d221"><div class="ttname"><a href="classrpc_1_1serial__adapter.html#a05328b68d5a1ed9bdd729e15d583d221">rpc::serial_adapter::get</a></div><div class="ttdeci">Serial get() const</div><div class="ttdoc">Get the actual serial object.</div><div class="ttdef"><b>Definition:</b> rpc.hpp:304</div></div>
 <div class="ttc" id="anamespacerpc_1_1details_html_a2465052b5debcacc577945e3119f82e3"><div class="ttname"><a href="namespacerpc_1_1details.html#a2465052b5debcacc577945e3119f82e3">rpc::details::encode_arguments</a></div><div class="ttdeci">void encode_arguments(Serial &amp;obj, [[maybe_unused]] const size_t count, const Value &amp;val) RPC_HPP_EXCEPT</div><div class="ttdoc">Encodes parameter values to a serial object.</div><div class="ttdef"><b>Definition:</b> rpc.hpp:882</div></div>
