@@ -424,3 +424,21 @@ TEST_CASE("From String")
 
     REQUIRE(result == 7);
 }
+
+TEST_CASE("async")
+{
+    std::future<njson> rec_obj1 = rpc::async_run<njson>("SimpleSum", 5, 9);
+    auto rec_obj2 = rpc::async_run<njson>("SimpleSum", 7, 19);
+    auto rec_obj3 = rpc::async_run<njson>("SimpleSum", 1, 21);
+    auto rec_obj4 = rpc::async_run<njson>("SimpleSum", 2, 2);
+
+    const int val1 = rec_obj1.get()["result"];
+    const int val2 = rec_obj2.get()["result"];
+    const int val3 = rec_obj3.get()["result"];
+    const int val4 = rec_obj4.get()["result"];
+
+    REQUIRE(val1 == 14);
+    REQUIRE(val2 == 26);
+    REQUIRE(val3 == 22);
+    REQUIRE(val4 == 4);
+}

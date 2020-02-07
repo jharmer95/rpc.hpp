@@ -1,5 +1,5 @@
 var searchData=
 [
-  ['details_72',['details',['../namespacerpc_1_1details.html',1,'rpc']]],
-  ['rpc_73',['rpc',['../namespacerpc.html',1,'']]]
+  ['details_76',['details',['../namespacerpc_1_1details.html',1,'rpc']]],
+  ['rpc_77',['rpc',['../namespacerpc.html',1,'']]]
 ];

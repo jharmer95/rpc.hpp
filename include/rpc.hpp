@@ -1406,6 +1406,21 @@ Serial run(std::string_view func_name, const Args&... args)
     }
 }
 
+///@brief Entry point for rpc.hpp to dispatch a function call (asynchronous)
+///
+/// Takes the function name and the provided arguments and encodes them into a serialization
+/// object then calls the function using dispatch and returns a serialized representation of the result
+///@tparam Serial The serialization object to utilize
+///@tparam Args Type(s) of the function parameter(s)
+///@param func_name String containing the name of the function
+///@param args Variadic list of function parameters
+///@return std::future<Serial> Future of a serial representation of the result of function call
+template<typename Serial, typename... Args>
+std::future<Serial> async_run(std::string_view func_name, const Args&... args)
+{
+    return std::async(run<Serial, Args...>, func_name, args...);
+}
+
 ///@brief Entry point for rpc.hpp to dispatch a function call, using a serializable string
 ///
 /// Creates a serialization object from the string then calls the function using dispatch and returns a serialized representation of the result
@@ -1427,6 +1442,18 @@ Serial run_string(std::string_view obj_str)
         result.set_value("error", ex.what());
         return result.get();
     }
+}
+
+///@brief Entry point for rpc.hpp to dispatch a function call, using a serializable string (asynchronous)
+///
+/// Creates a serialization object from the string then calls the function using dispatch and returns a serialized representation of the result
+///@tparam Serial The serialization object to utilize
+///@param obj_str String representing the serialization object containing the function call
+///@return std::future<Serial> Future of a serial representation of the result of function call
+template<typename Serial>
+std::future<Serial> async_run_string(std::string_view obj_str)
+{
+    return std::async(run_string<Serial>, obj_str);
 }
 
 ///@brief Entry point for rpc.hpp to dispatch a function call, using a serial object
@@ -1452,6 +1479,18 @@ Serial run_object(const Serial& obj)
     }
 }
 
+///@brief Entry point for rpc.hpp to dispatch a function call, using a serial object (asynchronous)
+///
+/// Calls the function using dispatch and returns a serialized representation of the result
+///@tparam Serial The serialization object to utilize
+///@param obj Serialization object containg the function call
+///@return std::future<Serial> Future of a serial representation of the result of function call
+template<typename Serial>
+std::future<Serial> async_run_object(const Serial& obj)
+{
+    return std::async(run_object<Serial>, obj);
+}
+
 ///@brief Packs a function call into a serial object
 ///
 /// Takes the function name and the provided arguments and encodes them into a serialization
@@ -1473,5 +1512,20 @@ Serial package(std::string_view func_name, const Args&... args)
 
     (details::encode_arguments(argList, 1, args), ...);
     return adapter.get();
+}
+
+///@brief Packs a function call into a serial object (asynchronous)
+///
+/// Takes the function name and the provided arguments and encodes them into a serialization
+/// object to be passed to a run call or sent to a server
+///@tparam Serial The serialization object to utilize
+///@tparam Args Type(s) of the function parameter(s)
+///@param func_name String containing the name of the function
+///@param args Variadic list of function parameters
+///@return std::future<Serial> Future of a serial representation of the function call
+template<typename Serial, typename... Args>
+std::future<Serial> async_package(std::string_view func_name, const Args&... args)
+{
+    return std::async(package<Serial, Args...>, func_name, args...);
 }
 } // namespace rpc
