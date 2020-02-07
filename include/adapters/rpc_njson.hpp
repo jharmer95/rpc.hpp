@@ -2,7 +2,7 @@
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Implementation of adapting nlohmann/json (https://github.com/nlohmann/json)
 ///@version 0.1.0.0
-///@date 01-31-2020
+///@date 02-07-2020
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -66,6 +66,13 @@ Value njson_adapter::get_value(const std::string& name) const
 
 template<>
 template<typename Value>
+Value njson_adapter::get_value(const size_t index) const
+{
+    return m_serial_object[index];
+}
+
+template<>
+template<typename Value>
 Value& njson_adapter::get_value_ref()
 {
     return m_serial_object;
@@ -80,16 +87,30 @@ Value& njson_adapter::get_value_ref(const std::string& name)
 
 template<>
 template<typename Value>
-Value& njson_adapter::get_value_ref() const
+Value& njson_adapter::get_value_ref(const size_t index)
+{
+    return m_serial_object[index];
+}
+
+template<>
+template<typename Value>
+const Value& njson_adapter::get_value_ref() const
 {
     return m_serial_object;
 }
 
 template<>
 template<typename Value>
-Value& njson_adapter::get_value_ref(const std::string& name) const
+const Value& njson_adapter::get_value_ref(const std::string& name) const
 {
     return m_serial_object[name];
+}
+
+template<>
+template<typename Value>
+const Value& njson_adapter::get_value_ref(const size_t index) const
+{
+    return m_serial_object[index];
 }
 
 template<>
@@ -104,6 +125,13 @@ template<typename Value>
 void njson_adapter::set_value(const std::string& name, Value value)
 {
     m_serial_object[name] = value;
+}
+
+template<>
+template<typename Value>
+void njson_adapter::set_value(const size_t index, Value value)
+{
+    m_serial_object[index] = value;
 }
 
 template<>
@@ -229,13 +257,31 @@ inline size_t njson_adapter::size() const noexcept
 }
 
 template<>
-inline njson njson_adapter::operator[](size_t n) const
+inline njson& njson_adapter::operator[](size_t n)
 {
     return m_serial_object[n];
 }
 
 template<>
-inline njson njson_adapter::make_array() noexcept
+inline const njson& njson_adapter::operator[](size_t n) const
 {
-    return njson::array();
+    return m_serial_object[n];
+}
+
+template<>
+inline njson njson_adapter::make_array(size_t sz) noexcept
+{
+    if (sz == 0)
+    {
+        return njson::array();
+    }
+
+    auto obj = njson::array();
+
+    for (size_t i = 0; i < sz; ++i)
+    {
+        obj.push_back(nullptr);
+    }
+
+    return obj;
 }

@@ -70,8 +70,11 @@ if (DOXYGEN_FOUND)
     doxygen_add_docs(docs ${PROJECT_SOURCE_DIR} COMMENT "Generate doxygen docs for rpc.hpp")
 endif()
 
+find_package(Threads)
+
 add_library(rpc_hpp INTERFACE)
 target_include_directories(rpc_hpp INTERFACE "${PROJECT_SOURCE_DIR}/include")
+target_link_libraries(rpc_hpp INTERFACE ${CMAKE_THREAD_LIBS_INIT})
 
 add_executable(rpc_test "${PROJECT_SOURCE_DIR}/tests/rpc.test.cpp")
 target_link_libraries(rpc_test rpc_hpp)

@@ -89,10 +89,6 @@ Classes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a7e2ea60ef54403f441eb7747decbe36e"><td class="memTemplParams" colspan="2">template&lt;typename Serial &gt; </td></tr>
-<tr class="memitem:a7e2ea60ef54403f441eb7747decbe36e"><td class="memTemplItemLeft" align="right" valign="top">std::string&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacerpc.html#a7e2ea60ef54403f441eb7747decbe36e">dispatch</a> (const std::string &amp;func_name, const Serial &amp;obj)</td></tr>
-<tr class="memdesc:a7e2ea60ef54403f441eb7747decbe36e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Function used to callback from, given a function's name and some parameters using a serial object.  <a href="namespacerpc.html#a7e2ea60ef54403f441eb7747decbe36e">More...</a><br /></td></tr>
-<tr class="separator:a7e2ea60ef54403f441eb7747decbe36e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a21224b9b969648e5f99edfaef5c4ff85"><td class="memTemplParams" colspan="2">template&lt;typename Serial , typename Value &gt; </td></tr>
 <tr class="memitem:a21224b9b969648e5f99edfaef5c4ff85"><td class="memTemplItemLeft" align="right" valign="top">Serial&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacerpc.html#a21224b9b969648e5f99edfaef5c4ff85">serialize</a> (const Value &amp;val) <a class="el" href="rpc_8hpp.html#ad2caafdb1b9ca69cb54ae30f343c5206">RPC_HPP_EXCEPT</a></td></tr>
 <tr class="memdesc:a21224b9b969648e5f99edfaef5c4ff85"><td class="mdescLeft">&#160;</td><td class="mdescRight">Serializes an object to the desired format.  <a href="namespacerpc.html#a21224b9b969648e5f99edfaef5c4ff85">More...</a><br /></td></tr>
@@ -101,36 +97,150 @@ Functions</h2></td></tr>
 <tr class="memitem:a42268aecda6c403fb8c784d8a90bbf87"><td class="memTemplItemLeft" align="right" valign="top">Value&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacerpc.html#a42268aecda6c403fb8c784d8a90bbf87">deserialize</a> (const Serial &amp;ser) <a class="el" href="rpc_8hpp.html#ad2caafdb1b9ca69cb54ae30f343c5206">RPC_HPP_EXCEPT</a></td></tr>
 <tr class="memdesc:a42268aecda6c403fb8c784d8a90bbf87"><td class="mdescLeft">&#160;</td><td class="mdescRight">De-serializes an object from the desired format.  <a href="namespacerpc.html#a42268aecda6c403fb8c784d8a90bbf87">More...</a><br /></td></tr>
 <tr class="separator:a42268aecda6c403fb8c784d8a90bbf87"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2cd5c5f047edd7b5d2b1d1553688bf9a"><td class="memTemplParams" colspan="2">template&lt;typename Serial , typename R , typename... Args&gt; </td></tr>
-<tr class="memitem:a2cd5c5f047edd7b5d2b1d1553688bf9a"><td class="memTemplItemLeft" align="right" valign="top">std::string&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacerpc.html#a2cd5c5f047edd7b5d2b1d1553688bf9a">run_callback</a> (const Serial &amp;obj, std::function&lt; R(Args...)&gt; func) <a class="el" href="rpc_8hpp.html#ad2caafdb1b9ca69cb54ae30f343c5206">RPC_HPP_EXCEPT</a></td></tr>
-<tr class="memdesc:a2cd5c5f047edd7b5d2b1d1553688bf9a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Runs a function as a callback, returning a string representing the result.  <a href="namespacerpc.html#a2cd5c5f047edd7b5d2b1d1553688bf9a">More...</a><br /></td></tr>
-<tr class="separator:a2cd5c5f047edd7b5d2b1d1553688bf9a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8e5554bdcff1a6feacf85c3bfd84adfb"><td class="memTemplParams" colspan="2"><a id="a8e5554bdcff1a6feacf85c3bfd84adfb"></a>
-template&lt;typename Serial , typename R , typename... Args&gt; </td></tr>
-<tr class="memitem:a8e5554bdcff1a6feacf85c3bfd84adfb"><td class="memTemplItemLeft" align="right" valign="top">std::string&#160;</td><td class="memTemplItemRight" valign="bottom"><b>run_callback</b> (const Serial &amp;obj, R(*func)(Args...)) <a class="el" href="rpc_8hpp.html#ad2caafdb1b9ca69cb54ae30f343c5206">RPC_HPP_EXCEPT</a></td></tr>
-<tr class="separator:a8e5554bdcff1a6feacf85c3bfd84adfb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa29163133e6820e87e304c40987a16bf"><td class="memTemplParams" colspan="2">template&lt;typename Serial &gt; </td></tr>
-<tr class="memitem:aa29163133e6820e87e304c40987a16bf"><td class="memTemplItemLeft" align="right" valign="top">std::string&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacerpc.html#aa29163133e6820e87e304c40987a16bf">run</a> (const Serial &amp;obj) <a class="el" href="rpc_8hpp.html#ad2caafdb1b9ca69cb54ae30f343c5206">RPC_HPP_EXCEPT</a></td></tr>
-<tr class="memdesc:aa29163133e6820e87e304c40987a16bf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Entry point for running a function with <a class="el" href="rpc_8hpp.html" title="Header-only library for serialized RPC usage.">rpc.hpp</a>.  <a href="namespacerpc.html#aa29163133e6820e87e304c40987a16bf">More...</a><br /></td></tr>
-<tr class="separator:aa29163133e6820e87e304c40987a16bf"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0b95992b1023679a2c002ae87895390e"><td class="memTemplParams" colspan="2">template&lt;typename Serial &gt; </td></tr>
-<tr class="memitem:a0b95992b1023679a2c002ae87895390e"><td class="memTemplItemLeft" align="right" valign="top">std::string&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacerpc.html#a0b95992b1023679a2c002ae87895390e">run</a> (std::string_view obj_str) <a class="el" href="rpc_8hpp.html#ad2caafdb1b9ca69cb54ae30f343c5206">RPC_HPP_EXCEPT</a></td></tr>
-<tr class="memdesc:a0b95992b1023679a2c002ae87895390e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Entry point for running a function with <a class="el" href="rpc_8hpp.html" title="Header-only library for serialized RPC usage.">rpc.hpp</a>.  <a href="namespacerpc.html#a0b95992b1023679a2c002ae87895390e">More...</a><br /></td></tr>
-<tr class="separator:a0b95992b1023679a2c002ae87895390e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5c98839753425daef20d52796def579c"><td class="memTemplParams" colspan="2">template&lt;typename Serial &gt; </td></tr>
-<tr class="memitem:a5c98839753425daef20d52796def579c"><td class="memTemplItemLeft" align="right" valign="top">std::future&lt; std::string &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacerpc.html#a5c98839753425daef20d52796def579c">async_run</a> (const Serial &amp;obj) <a class="el" href="rpc_8hpp.html#ad2caafdb1b9ca69cb54ae30f343c5206">RPC_HPP_EXCEPT</a></td></tr>
-<tr class="memdesc:a5c98839753425daef20d52796def579c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Entry point for running a function with <a class="el" href="rpc_8hpp.html" title="Header-only library for serialized RPC usage.">rpc.hpp</a> (asynchronous version)  <a href="namespacerpc.html#a5c98839753425daef20d52796def579c">More...</a><br /></td></tr>
-<tr class="separator:a5c98839753425daef20d52796def579c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7f1f3be7e17aa77a6ec39f59fb1e83b2"><td class="memTemplParams" colspan="2">template&lt;typename Serial &gt; </td></tr>
-<tr class="memitem:a7f1f3be7e17aa77a6ec39f59fb1e83b2"><td class="memTemplItemLeft" align="right" valign="top">std::future&lt; std::string &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacerpc.html#a7f1f3be7e17aa77a6ec39f59fb1e83b2">async_run</a> (std::string_view obj_str) <a class="el" href="rpc_8hpp.html#ad2caafdb1b9ca69cb54ae30f343c5206">RPC_HPP_EXCEPT</a></td></tr>
-<tr class="memdesc:a7f1f3be7e17aa77a6ec39f59fb1e83b2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Entry point for running a function with <a class="el" href="rpc_8hpp.html" title="Header-only library for serialized RPC usage.">rpc.hpp</a> (asynchronous version)  <a href="namespacerpc.html#a7f1f3be7e17aa77a6ec39f59fb1e83b2">More...</a><br /></td></tr>
-<tr class="separator:a7f1f3be7e17aa77a6ec39f59fb1e83b2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1465c2c99f6ea860d974f20fabe66f25"><td class="memTemplParams" colspan="2">template&lt;typename Serial &gt; </td></tr>
+<tr class="memitem:a1465c2c99f6ea860d974f20fabe66f25"><td class="memTemplItemLeft" align="right" valign="top">Serial&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacerpc.html#a1465c2c99f6ea860d974f20fabe66f25">dispatch</a> (const <a class="el" href="classrpc_1_1serial__adapter.html">serial_adapter</a>&lt; Serial &gt; &amp;adapter)</td></tr>
+<tr class="memdesc:a1465c2c99f6ea860d974f20fabe66f25"><td class="mdescLeft">&#160;</td><td class="mdescRight">Function used to callback from, given a function's name and some parameters using a <a class="el" href="classrpc_1_1serial__adapter.html">serial_adapter</a>.  <a href="namespacerpc.html#a1465c2c99f6ea860d974f20fabe66f25">More...</a><br /></td></tr>
+<tr class="separator:a1465c2c99f6ea860d974f20fabe66f25"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a22da00463e15e3163b2ac56674230530"><td class="memTemplParams" colspan="2">template&lt;typename Serial , typename R , typename... Args&gt; </td></tr>
+<tr class="memitem:a22da00463e15e3163b2ac56674230530"><td class="memTemplItemLeft" align="right" valign="top">Serial&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacerpc.html#a22da00463e15e3163b2ac56674230530">run_callback</a> (std::function&lt; R(Args...)&gt; func, const <a class="el" href="classrpc_1_1serial__adapter.html">serial_adapter</a>&lt; Serial &gt; &amp;adapter) <a class="el" href="rpc_8hpp.html#ad2caafdb1b9ca69cb54ae30f343c5206">RPC_HPP_EXCEPT</a></td></tr>
+<tr class="memdesc:a22da00463e15e3163b2ac56674230530"><td class="mdescLeft">&#160;</td><td class="mdescRight">Runs a function as a callback, returning a serial object representing the result.  <a href="namespacerpc.html#a22da00463e15e3163b2ac56674230530">More...</a><br /></td></tr>
+<tr class="separator:a22da00463e15e3163b2ac56674230530"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af36c4960f5919af65313f4e2b108f5ea"><td class="memTemplParams" colspan="2">template&lt;typename Serial , typename R , typename... Args&gt; </td></tr>
+<tr class="memitem:af36c4960f5919af65313f4e2b108f5ea"><td class="memTemplItemLeft" align="right" valign="top">Serial&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacerpc.html#af36c4960f5919af65313f4e2b108f5ea">run_callback</a> (R(*func)(Args...), const <a class="el" href="classrpc_1_1serial__adapter.html">serial_adapter</a>&lt; Serial &gt; &amp;adapter) <a class="el" href="rpc_8hpp.html#ad2caafdb1b9ca69cb54ae30f343c5206">RPC_HPP_EXCEPT</a></td></tr>
+<tr class="memdesc:af36c4960f5919af65313f4e2b108f5ea"><td class="mdescLeft">&#160;</td><td class="mdescRight">Runs a function as a callback, returning a serial object representing the result.  <a href="namespacerpc.html#af36c4960f5919af65313f4e2b108f5ea">More...</a><br /></td></tr>
+<tr class="separator:af36c4960f5919af65313f4e2b108f5ea"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abc8a6d55b5accc95cc62a52089442a1d"><td class="memTemplParams" colspan="2">template&lt;typename Serial , typename... Args&gt; </td></tr>
+<tr class="memitem:abc8a6d55b5accc95cc62a52089442a1d"><td class="memTemplItemLeft" align="right" valign="top">Serial&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacerpc.html#abc8a6d55b5accc95cc62a52089442a1d">run</a> (std::string_view func_name, const Args &amp;... args)</td></tr>
+<tr class="memdesc:abc8a6d55b5accc95cc62a52089442a1d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Entry point for <a class="el" href="rpc_8hpp.html" title="Header-only library for serialized RPC usage.">rpc.hpp</a> to dispatch a function call.  <a href="namespacerpc.html#abc8a6d55b5accc95cc62a52089442a1d">More...</a><br /></td></tr>
+<tr class="separator:abc8a6d55b5accc95cc62a52089442a1d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af71d778079186b2dc8061cbc148f2699"><td class="memTemplParams" colspan="2">template&lt;typename Serial , typename... Args&gt; </td></tr>
+<tr class="memitem:af71d778079186b2dc8061cbc148f2699"><td class="memTemplItemLeft" align="right" valign="top">std::future&lt; Serial &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacerpc.html#af71d778079186b2dc8061cbc148f2699">async_run</a> (std::string_view func_name, const Args &amp;... args)</td></tr>
+<tr class="memdesc:af71d778079186b2dc8061cbc148f2699"><td class="mdescLeft">&#160;</td><td class="mdescRight">Entry point for <a class="el" href="rpc_8hpp.html" title="Header-only library for serialized RPC usage.">rpc.hpp</a> to dispatch a function call (asynchronous)  <a href="namespacerpc.html#af71d778079186b2dc8061cbc148f2699">More...</a><br /></td></tr>
+<tr class="separator:af71d778079186b2dc8061cbc148f2699"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5e0ddcbbc1c430cbb2cadcc03ec55c5e"><td class="memTemplParams" colspan="2">template&lt;typename Serial &gt; </td></tr>
+<tr class="memitem:a5e0ddcbbc1c430cbb2cadcc03ec55c5e"><td class="memTemplItemLeft" align="right" valign="top">Serial&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacerpc.html#a5e0ddcbbc1c430cbb2cadcc03ec55c5e">run_string</a> (std::string_view obj_str)</td></tr>
+<tr class="memdesc:a5e0ddcbbc1c430cbb2cadcc03ec55c5e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Entry point for <a class="el" href="rpc_8hpp.html" title="Header-only library for serialized RPC usage.">rpc.hpp</a> to dispatch a function call, using a serializable string.  <a href="namespacerpc.html#a5e0ddcbbc1c430cbb2cadcc03ec55c5e">More...</a><br /></td></tr>
+<tr class="separator:a5e0ddcbbc1c430cbb2cadcc03ec55c5e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af327cbd6e274a0b20e387b42d5429726"><td class="memTemplParams" colspan="2">template&lt;typename Serial &gt; </td></tr>
+<tr class="memitem:af327cbd6e274a0b20e387b42d5429726"><td class="memTemplItemLeft" align="right" valign="top">std::future&lt; Serial &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacerpc.html#af327cbd6e274a0b20e387b42d5429726">async_run_string</a> (std::string_view obj_str)</td></tr>
+<tr class="memdesc:af327cbd6e274a0b20e387b42d5429726"><td class="mdescLeft">&#160;</td><td class="mdescRight">Entry point for <a class="el" href="rpc_8hpp.html" title="Header-only library for serialized RPC usage.">rpc.hpp</a> to dispatch a function call, using a serializable string (asynchronous)  <a href="namespacerpc.html#af327cbd6e274a0b20e387b42d5429726">More...</a><br /></td></tr>
+<tr class="separator:af327cbd6e274a0b20e387b42d5429726"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2bd8d6a9266a0f6c8d83abd626e91cf5"><td class="memTemplParams" colspan="2">template&lt;typename Serial &gt; </td></tr>
+<tr class="memitem:a2bd8d6a9266a0f6c8d83abd626e91cf5"><td class="memTemplItemLeft" align="right" valign="top">Serial&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacerpc.html#a2bd8d6a9266a0f6c8d83abd626e91cf5">run_object</a> (const Serial &amp;obj)</td></tr>
+<tr class="memdesc:a2bd8d6a9266a0f6c8d83abd626e91cf5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Entry point for <a class="el" href="rpc_8hpp.html" title="Header-only library for serialized RPC usage.">rpc.hpp</a> to dispatch a function call, using a serial object.  <a href="namespacerpc.html#a2bd8d6a9266a0f6c8d83abd626e91cf5">More...</a><br /></td></tr>
+<tr class="separator:a2bd8d6a9266a0f6c8d83abd626e91cf5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa06bae0d870a0baeee8a346bde60ec5f"><td class="memTemplParams" colspan="2">template&lt;typename Serial &gt; </td></tr>
+<tr class="memitem:aa06bae0d870a0baeee8a346bde60ec5f"><td class="memTemplItemLeft" align="right" valign="top">std::future&lt; Serial &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacerpc.html#aa06bae0d870a0baeee8a346bde60ec5f">async_run_object</a> (const Serial &amp;obj)</td></tr>
+<tr class="memdesc:aa06bae0d870a0baeee8a346bde60ec5f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Entry point for <a class="el" href="rpc_8hpp.html" title="Header-only library for serialized RPC usage.">rpc.hpp</a> to dispatch a function call, using a serial object (asynchronous)  <a href="namespacerpc.html#aa06bae0d870a0baeee8a346bde60ec5f">More...</a><br /></td></tr>
+<tr class="separator:aa06bae0d870a0baeee8a346bde60ec5f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6f7e937d7141e7dfc9090cfcf884fce6"><td class="memTemplParams" colspan="2">template&lt;typename Serial , typename... Args&gt; </td></tr>
+<tr class="memitem:a6f7e937d7141e7dfc9090cfcf884fce6"><td class="memTemplItemLeft" align="right" valign="top">Serial&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacerpc.html#a6f7e937d7141e7dfc9090cfcf884fce6">package</a> (std::string_view func_name, const Args &amp;... args)</td></tr>
+<tr class="memdesc:a6f7e937d7141e7dfc9090cfcf884fce6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Packs a function call into a serial object.  <a href="namespacerpc.html#a6f7e937d7141e7dfc9090cfcf884fce6">More...</a><br /></td></tr>
+<tr class="separator:a6f7e937d7141e7dfc9090cfcf884fce6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4e4fe9d42225a936d4391ce95efb0ac3"><td class="memTemplParams" colspan="2">template&lt;typename Serial , typename... Args&gt; </td></tr>
+<tr class="memitem:a4e4fe9d42225a936d4391ce95efb0ac3"><td class="memTemplItemLeft" align="right" valign="top">std::future&lt; Serial &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacerpc.html#a4e4fe9d42225a936d4391ce95efb0ac3">async_package</a> (std::string_view func_name, const Args &amp;... args)</td></tr>
+<tr class="memdesc:a4e4fe9d42225a936d4391ce95efb0ac3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Packs a function call into a serial object (asynchronous)  <a href="namespacerpc.html#a4e4fe9d42225a936d4391ce95efb0ac3">More...</a><br /></td></tr>
+<tr class="separator:a4e4fe9d42225a936d4391ce95efb0ac3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Namespace for <a class="el" href="rpc_8hpp.html" title="Header-only library for serialized RPC usage.">rpc.hpp</a> functions and variables. </p>
 </div><h2 class="groupheader">Function Documentation</h2>
-<a id="a5c98839753425daef20d52796def579c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5c98839753425daef20d52796def579c">&#9670;&nbsp;</a></span>async_run() <span class="overload">[1/2]</span></h2>
+<a id="a4e4fe9d42225a936d4391ce95efb0ac3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4e4fe9d42225a936d4391ce95efb0ac3">&#9670;&nbsp;</a></span>async_package()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename Serial , typename... Args&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">std::future&lt;Serial&gt; rpc::async_package </td>
+          <td>(</td>
+          <td class="paramtype">std::string_view&#160;</td>
+          <td class="paramname"><em>func_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const Args &amp;...&#160;</td>
+          <td class="paramname"><em>args</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Packs a function call into a serial object (asynchronous) </p>
+<p>Takes the function name and the provided arguments and encodes them into a serialization object to be passed to a run call or sent to a server </p><dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">Serial</td><td>The serialization object to utilize </td></tr>
+    <tr><td class="paramname">Args</td><td>Type(s) of the function parameter(s) </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">func_name</td><td>String containing the name of the function </td></tr>
+    <tr><td class="paramname">args</td><td>Variadic list of function parameters </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>std::future&lt;Serial&gt; Future of a serial representation of the function call </dd></dl>
+
+</div>
+</div>
+<a id="af71d778079186b2dc8061cbc148f2699"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af71d778079186b2dc8061cbc148f2699">&#9670;&nbsp;</a></span>async_run()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename Serial , typename... Args&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">std::future&lt;Serial&gt; rpc::async_run </td>
+          <td>(</td>
+          <td class="paramtype">std::string_view&#160;</td>
+          <td class="paramname"><em>func_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const Args &amp;...&#160;</td>
+          <td class="paramname"><em>args</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Entry point for <a class="el" href="rpc_8hpp.html" title="Header-only library for serialized RPC usage.">rpc.hpp</a> to dispatch a function call (asynchronous) </p>
+<p>Takes the function name and the provided arguments and encodes them into a serialization object then calls the function using dispatch and returns a serialized representation of the result </p><dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">Serial</td><td>The serialization object to utilize </td></tr>
+    <tr><td class="paramname">Args</td><td>Type(s) of the function parameter(s) </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">func_name</td><td>String containing the name of the function </td></tr>
+    <tr><td class="paramname">args</td><td>Variadic list of function parameters </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>std::future&lt;Serial&gt; Future of a serial representation of the result of function call </dd></dl>
+
+</div>
+</div>
+<a id="aa06bae0d870a0baeee8a346bde60ec5f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa06bae0d870a0baeee8a346bde60ec5f">&#9670;&nbsp;</a></span>async_run_object()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -138,7 +248,7 @@ template&lt;typename Serial , typename R , typename... Args&gt; </td></tr>
 template&lt;typename Serial &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">std::future&lt;std::string&gt; rpc::async_run </td>
+          <td class="memname">std::future&lt;Serial&gt; rpc::async_run_object </td>
           <td>(</td>
           <td class="paramtype">const Serial &amp;&#160;</td>
           <td class="paramname"><em>obj</em></td><td>)</td>
@@ -147,8 +257,8 @@ template&lt;typename Serial &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p>Entry point for running a function with <a class="el" href="rpc_8hpp.html" title="Header-only library for serialized RPC usage.">rpc.hpp</a> (asynchronous version) </p>
-<p>Processes the serialization object and calls the function contained in the data. The call to this function is blocking, but non-blocking call(s) are made from here, returning quickly. </p><dl class="tparams"><dt>Template Parameters</dt><dd>
+<p>Entry point for <a class="el" href="rpc_8hpp.html" title="Header-only library for serialized RPC usage.">rpc.hpp</a> to dispatch a function call, using a serial object (asynchronous) </p>
+<p>Calls the function using dispatch and returns a serialized representation of the result </p><dl class="tparams"><dt>Template Parameters</dt><dd>
   <table class="tparams">
     <tr><td class="paramname">Serial</td><td>The serialization object to utilize </td></tr>
   </table>
@@ -156,16 +266,16 @@ template&lt;typename Serial &gt; </div>
 </dl>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">obj</td><td>The serialization object containing an object "function" with the function name, </td></tr>
+    <tr><td class="paramname">obj</td><td>Serialization object containg the function call </td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>std::future&lt;std::string&gt; Future containing the string representation of the result of the function call </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>std::future&lt;Serial&gt; Future of a serial representation of the result of function call </dd></dl>
 
 </div>
 </div>
-<a id="a7f1f3be7e17aa77a6ec39f59fb1e83b2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7f1f3be7e17aa77a6ec39f59fb1e83b2">&#9670;&nbsp;</a></span>async_run() <span class="overload">[2/2]</span></h2>
+<a id="af327cbd6e274a0b20e387b42d5429726"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af327cbd6e274a0b20e387b42d5429726">&#9670;&nbsp;</a></span>async_run_string()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -173,7 +283,7 @@ template&lt;typename Serial &gt; </div>
 template&lt;typename Serial &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">std::future&lt;std::string&gt; rpc::async_run </td>
+          <td class="memname">std::future&lt;Serial&gt; rpc::async_run_string </td>
           <td>(</td>
           <td class="paramtype">std::string_view&#160;</td>
           <td class="paramname"><em>obj_str</em></td><td>)</td>
@@ -182,8 +292,8 @@ template&lt;typename Serial &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p>Entry point for running a function with <a class="el" href="rpc_8hpp.html" title="Header-only library for serialized RPC usage.">rpc.hpp</a> (asynchronous version) </p>
-<p>Converts the string to a serialization object then processes it to call the function contained in the data. The call to this function is blocking, but non-blocking call(s) are made from here, returning quickly. </p><dl class="tparams"><dt>Template Parameters</dt><dd>
+<p>Entry point for <a class="el" href="rpc_8hpp.html" title="Header-only library for serialized RPC usage.">rpc.hpp</a> to dispatch a function call, using a serializable string (asynchronous) </p>
+<p>Creates a serialization object from the string then calls the function using dispatch and returns a serialized representation of the result </p><dl class="tparams"><dt>Template Parameters</dt><dd>
   <table class="tparams">
     <tr><td class="paramname">Serial</td><td>The serialization object to utilize </td></tr>
   </table>
@@ -191,11 +301,11 @@ template&lt;typename Serial &gt; </div>
 </dl>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">obj_str</td><td>A string representing the serialization object </td></tr>
+    <tr><td class="paramname">obj_str</td><td>String representing the serialization object containing the function call </td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>std::future&lt;std::string&gt; Future containing the string representation of the result of the function call </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>std::future&lt;Serial&gt; Future of a serial representation of the result of function call </dd></dl>
 
 </div>
 </div>
@@ -235,8 +345,8 @@ template&lt;typename Serial , typename Value &gt; </div>
 
 </div>
 </div>
-<a id="a7e2ea60ef54403f441eb7747decbe36e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7e2ea60ef54403f441eb7747decbe36e">&#9670;&nbsp;</a></span>dispatch()</h2>
+<a id="a1465c2c99f6ea860d974f20fabe66f25"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1465c2c99f6ea860d974f20fabe66f25">&#9670;&nbsp;</a></span>dispatch()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -244,27 +354,17 @@ template&lt;typename Serial , typename Value &gt; </div>
 template&lt;typename Serial &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">std::string rpc::dispatch </td>
+          <td class="memname">Serial rpc::dispatch </td>
           <td>(</td>
-          <td class="paramtype">const std::string &amp;&#160;</td>
-          <td class="paramname"><em>func_name</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
+          <td class="paramtype">const <a class="el" href="classrpc_1_1serial__adapter.html">serial_adapter</a>&lt; Serial &gt; &amp;&#160;</td>
+          <td class="paramname"><em>adapter</em></td><td>)</td>
           <td></td>
-          <td class="paramtype">const Serial &amp;&#160;</td>
-          <td class="paramname"><em>obj</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p>Function used to callback from, given a function's name and some parameters using a serial object. </p>
-<p>Defines the way in which <a class="el" href="namespacerpc.html#a2cd5c5f047edd7b5d2b1d1553688bf9a">run_callback</a> will be called for each function </p><dl class="tparams"><dt>Template Parameters</dt><dd>
+<p>Function used to callback from, given a function's name and some parameters using a <a class="el" href="classrpc_1_1serial__adapter.html">serial_adapter</a>. </p>
+<p>Defines the way in which <a class="el" href="namespacerpc.html#a22da00463e15e3163b2ac56674230530">run_callback</a> will be called for each function </p><dl class="tparams"><dt>Template Parameters</dt><dd>
   <table class="tparams">
     <tr><td class="paramname">Serial</td><td>Serialization type </td></tr>
   </table>
@@ -272,104 +372,33 @@ template&lt;typename Serial &gt; </div>
 </dl>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">func_name</td><td>Name of the function to call, represented in a string </td></tr>
-    <tr><td class="paramname">obj</td><td>A serialization object containing the parameters to run the callback with </td></tr>
+    <tr><td class="paramname">adapter</td><td>A <a class="el" href="classrpc_1_1serial__adapter.html" title="Class that allows any serialization type to interact with rpc.hpp.">serial_adapter</a> containing the function call </td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>std::string The result of the function call, including the return value, and any altered parameters, converted to a string </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>Serial Object containing the result and arguments of the function call </dd></dl>
 
 </div>
 </div>
-<a id="aa29163133e6820e87e304c40987a16bf"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa29163133e6820e87e304c40987a16bf">&#9670;&nbsp;</a></span>run() <span class="overload">[1/2]</span></h2>
+<a id="a6f7e937d7141e7dfc9090cfcf884fce6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6f7e937d7141e7dfc9090cfcf884fce6">&#9670;&nbsp;</a></span>package()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename Serial &gt; </div>
+template&lt;typename Serial , typename... Args&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">std::string rpc::run </td>
-          <td>(</td>
-          <td class="paramtype">const Serial &amp;&#160;</td>
-          <td class="paramname"><em>obj</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Entry point for running a function with <a class="el" href="rpc_8hpp.html" title="Header-only library for serialized RPC usage.">rpc.hpp</a>. </p>
-<p>Processes the serialization object and calls the function contained in the data </p><dl class="tparams"><dt>Template Parameters</dt><dd>
-  <table class="tparams">
-    <tr><td class="paramname">Serial</td><td>The serialization object to utilize </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">obj</td><td>The serialization object containing an object "function" with the function name, and "args" with the functions arguments </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>std::string The string representation of the result of the function call </dd></dl>
-
-</div>
-</div>
-<a id="a0b95992b1023679a2c002ae87895390e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0b95992b1023679a2c002ae87895390e">&#9670;&nbsp;</a></span>run() <span class="overload">[2/2]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename Serial &gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">std::string rpc::run </td>
+          <td class="memname">Serial rpc::package </td>
           <td>(</td>
           <td class="paramtype">std::string_view&#160;</td>
-          <td class="paramname"><em>obj_str</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Entry point for running a function with <a class="el" href="rpc_8hpp.html" title="Header-only library for serialized RPC usage.">rpc.hpp</a>. </p>
-<p>Converts the string to a serialization object then processes it to call the function contained in the data </p><dl class="tparams"><dt>Template Parameters</dt><dd>
-  <table class="tparams">
-    <tr><td class="paramname">Serial</td><td>The serialization object to utilize </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">obj_str</td><td>A string representing the serialization object </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>std::string The string representation of the result of the function call </dd></dl>
-
-</div>
-</div>
-<a id="a2cd5c5f047edd7b5d2b1d1553688bf9a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2cd5c5f047edd7b5d2b1d1553688bf9a">&#9670;&nbsp;</a></span>run_callback()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename Serial , typename R , typename... Args&gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">std::string rpc::run_callback </td>
-          <td>(</td>
-          <td class="paramtype">const Serial &amp;&#160;</td>
-          <td class="paramname"><em>obj</em>, </td>
+          <td class="paramname"><em>func_name</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">std::function&lt; R(Args...)&gt;&#160;</td>
-          <td class="paramname"><em>func</em>&#160;</td>
+          <td class="paramtype">const Args &amp;...&#160;</td>
+          <td class="paramname"><em>args</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -379,8 +408,102 @@ template&lt;typename Serial , typename R , typename... Args&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p>Runs a function as a callback, returning a string representing the result. </p>
-<p>This function decodes the arguments of <code>func</code> based on the serialization object <code>obj</code>. It then applies the actual function and encodes the results to a new serialization object and returns a string representing that object </p><dl class="tparams"><dt>Template Parameters</dt><dd>
+<p>Packs a function call into a serial object. </p>
+<p>Takes the function name and the provided arguments and encodes them into a serialization object to be passed to a run call or sent to a server </p><dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">Serial</td><td>The serialization object to utilize </td></tr>
+    <tr><td class="paramname">Args</td><td>Type(s) of the function parameter(s) </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">func_name</td><td>String containing the name of the function </td></tr>
+    <tr><td class="paramname">args</td><td>Variadic list of function parameters </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Serial A serial representation of the function call </dd></dl>
+
+</div>
+</div>
+<a id="abc8a6d55b5accc95cc62a52089442a1d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abc8a6d55b5accc95cc62a52089442a1d">&#9670;&nbsp;</a></span>run()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename Serial , typename... Args&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">Serial rpc::run </td>
+          <td>(</td>
+          <td class="paramtype">std::string_view&#160;</td>
+          <td class="paramname"><em>func_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const Args &amp;...&#160;</td>
+          <td class="paramname"><em>args</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Entry point for <a class="el" href="rpc_8hpp.html" title="Header-only library for serialized RPC usage.">rpc.hpp</a> to dispatch a function call. </p>
+<p>Takes the function name and the provided arguments and encodes them into a serialization object then calls the function using dispatch and returns a serialized representation of the result </p><dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">Serial</td><td>The serialization object to utilize </td></tr>
+    <tr><td class="paramname">Args</td><td>Type(s) of the function parameter(s) </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">func_name</td><td>String containing the name of the function </td></tr>
+    <tr><td class="paramname">args</td><td>Variadic list of function parameters </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Serial A serial representation of the result of function call </dd></dl>
+
+</div>
+</div>
+<a id="af36c4960f5919af65313f4e2b108f5ea"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af36c4960f5919af65313f4e2b108f5ea">&#9670;&nbsp;</a></span>run_callback() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename Serial , typename R , typename... Args&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">Serial rpc::run_callback </td>
+          <td>(</td>
+          <td class="paramtype">R(*)(Args...)&#160;</td>
+          <td class="paramname"><em>func</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classrpc_1_1serial__adapter.html">serial_adapter</a>&lt; Serial &gt; &amp;&#160;</td>
+          <td class="paramname"><em>adapter</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Runs a function as a callback, returning a serial object representing the result. </p>
+<p>This function decodes the arguments of <code>func</code> based on the serialization adapter <code>adapter</code>. It then applies the actual function and encodes the results to a new serialization object and returns that object </p><dl class="tparams"><dt>Template Parameters</dt><dd>
   <table class="tparams">
     <tr><td class="paramname">Serial</td><td>The serialization object to utilize </td></tr>
     <tr><td class="paramname">R</td><td>The function return type </td></tr>
@@ -390,12 +513,130 @@ template&lt;typename Serial , typename R , typename... Args&gt; </div>
 </dl>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">obj</td><td>The serial object representing the function arguments </td></tr>
     <tr><td class="paramname">func</td><td>The function to apply </td></tr>
+    <tr><td class="paramname">adapter</td><td>The serial adapter containing the function arguments </td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>std::string String representing the serialized result of the function call </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>Serial Object containing the result and arguments of the function call </dd></dl>
+
+</div>
+</div>
+<a id="a22da00463e15e3163b2ac56674230530"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a22da00463e15e3163b2ac56674230530">&#9670;&nbsp;</a></span>run_callback() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename Serial , typename R , typename... Args&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">Serial rpc::run_callback </td>
+          <td>(</td>
+          <td class="paramtype">std::function&lt; R(Args...)&gt;&#160;</td>
+          <td class="paramname"><em>func</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classrpc_1_1serial__adapter.html">serial_adapter</a>&lt; Serial &gt; &amp;&#160;</td>
+          <td class="paramname"><em>adapter</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Runs a function as a callback, returning a serial object representing the result. </p>
+<p>This function decodes the arguments of <code>func</code> based on the serialization adapter <code>adapter</code>. It then applies the actual function and encodes the results to a new serialization object and returns that object </p><dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">Serial</td><td>The serialization object to utilize </td></tr>
+    <tr><td class="paramname">R</td><td>The function return type </td></tr>
+    <tr><td class="paramname">Args</td><td>The function argument types </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">func</td><td>The function to apply </td></tr>
+    <tr><td class="paramname">adapter</td><td>The serial adapter containing the function arguments </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Serial Object containing the result and arguments of the function call </dd></dl>
+
+</div>
+</div>
+<a id="a2bd8d6a9266a0f6c8d83abd626e91cf5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2bd8d6a9266a0f6c8d83abd626e91cf5">&#9670;&nbsp;</a></span>run_object()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename Serial &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">Serial rpc::run_object </td>
+          <td>(</td>
+          <td class="paramtype">const Serial &amp;&#160;</td>
+          <td class="paramname"><em>obj</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Entry point for <a class="el" href="rpc_8hpp.html" title="Header-only library for serialized RPC usage.">rpc.hpp</a> to dispatch a function call, using a serial object. </p>
+<p>Calls the function using dispatch and returns a serialized representation of the result </p><dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">Serial</td><td>The serialization object to utilize </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">obj</td><td>Serialization object containg the function call </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Serial A serial representation of the result of function call </dd></dl>
+
+</div>
+</div>
+<a id="a5e0ddcbbc1c430cbb2cadcc03ec55c5e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5e0ddcbbc1c430cbb2cadcc03ec55c5e">&#9670;&nbsp;</a></span>run_string()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename Serial &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">Serial rpc::run_string </td>
+          <td>(</td>
+          <td class="paramtype">std::string_view&#160;</td>
+          <td class="paramname"><em>obj_str</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Entry point for <a class="el" href="rpc_8hpp.html" title="Header-only library for serialized RPC usage.">rpc.hpp</a> to dispatch a function call, using a serializable string. </p>
+<p>Creates a serialization object from the string then calls the function using dispatch and returns a serialized representation of the result </p><dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">Serial</td><td>The serialization object to utilize </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">obj_str</td><td>String representing the serialization object containing the function call </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Serial A serial representation of the result of function call </dd></dl>
 
 </div>
 </div>
