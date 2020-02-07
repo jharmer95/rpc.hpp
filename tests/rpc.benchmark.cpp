@@ -161,7 +161,6 @@ TEST_CASE("By Pointer (simple)", "[pointer][simple]")
     //BENCHMARK("gRPC socket RPC") { return XXX; };
 }
 
-/*
 TEST_CASE("By Pointer (complex)", "[pointer][complex]")
 {
     std::string expected;
@@ -206,7 +205,6 @@ TEST_CASE("By Pointer (complex)", "[pointer][complex]")
     //BENCHMARK("rpclib socket RPC") { return XXX; };
     //BENCHMARK("gRPC socket RPC") { return XXX; };
 }
-*/
 
 TEST_CASE("By Pointer (many)", "[pointer][many]")
 {
