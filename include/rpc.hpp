@@ -1120,6 +1120,160 @@ namespace details
     }
 } // namespace details
 
+template<typename Serial>
+class func_call
+{
+public:
+    ~func_call() = default;
+    func_call() = delete;
+
+    explicit func_call(Serial obj) noexcept : m_adapter(std::move(obj)) {}
+    func_call(const func_call& other) noexcept : m_adapter(other.m_adapter) {}
+    func_call(func_call&& other) noexcept : m_adapter(std::move(other.m_adapter)) {}
+
+    template<typename... Args>
+    func_call(std::string_view func_name, const Args&... args)
+    {
+        m_adapter.set_value("function", func_name);
+        m_adapter.set_value("args", m_adapter.make_array());
+        auto& argList = m_adapter.template get_value_ref<Serial>("args");
+
+        (details::encode_arguments(argList, 1, args), ...);
+    }
+
+    func_call& operator=(const func_call& other) noexcept
+    {
+        if (this != &other)
+        {
+            m_adapter = other.m_adapter;
+        }
+
+        return *this;
+    }
+
+    func_call& operator=(func_call&& other) noexcept
+    {
+        if (this != &other)
+        {
+            m_adapter = std::move(other.m_adapter);
+        }
+
+        return *this;
+    }
+
+    [[nodiscard]] std::string_view get_func_name() const
+    {
+        return m_adapter.template get_value<std::string>("function");
+    }
+
+    [[nodiscard]] std::string to_string() const { return m_adapter.to_string(); }
+
+    operator bool() const noexcept
+    {
+        try
+        {
+            const auto tmp1 = m_adapter.template get_value<std::string>("function");
+            [[maybe_unused]] const auto tmp2 = m_adapter.template get_value<Serial>("args");
+            return !tmp1.empty();
+        }
+        catch (...)
+        {
+            return false;
+        }
+    }
+
+protected:
+    const serial_adapter<Serial> m_adapter;
+};
+
+template<typename Serial>
+class func_result
+{
+public:
+    ~func_result() = default;
+    func_result() = delete;
+
+    explicit func_result(Serial obj) noexcept : m_adapter(std::move(obj)) {}
+    func_result(const func_result& other) noexcept : m_adapter(other.m_adapter) {}
+    func_result(func_result&& other) noexcept : m_adapter(std::move(other.m_adapter)) {}
+
+    template<typename Result, typename... Args>
+    func_result(Result result, const Args&... args)
+    {
+        m_adapter.template set_value<Result>("result", result);
+        m_adapter.template set_value<Serial>("args", m_adapter.make_array());
+        auto& argList = m_adapter.template get_value_ref<Serial>("args");
+
+        (details::encode_arguments(argList, 1, args), ...);
+    }
+
+    static func_result generate_error_result(const std::string& err_mesg)
+    {
+        serial_adapter<Serial> adapter;
+        adapter.template set_value<std::string>("error", err_mesg);
+        return func_result<Serial>(adapter.get());
+    }
+
+    func_result& operator=(const func_result& other) noexcept
+    {
+        if (this != &other)
+        {
+            m_adapter = other.m_adapter;
+        }
+
+        return *this;
+    }
+
+    func_result& operator=(func_result&& other) noexcept
+    {
+        if (this != &other)
+        {
+            m_adapter = std::move(other.m_adapter);
+        }
+
+        return *this;
+    }
+
+    template<typename Result>
+    [[nodiscard]] Result get_result() const
+    {
+        return m_adapter.template get_value<Result>("result");
+    }
+
+    template<typename Value = Serial>
+    [[nodiscard]] Serial get_arg(const size_t n) const
+    {
+        const serial_adapter<Serial> tmp(get_args());
+        return tmp.template get_value<Value>(n);
+    }
+
+    [[nodiscard]] Serial get_args() const { return m_adapter.template get_value<Serial>("args"); }
+
+    [[nodiscard]] size_t get_arg_count() const
+    {
+        const serial_adapter<Serial> tmp(get_args());
+        return tmp.size();
+    }
+
+    [[nodiscard]] std::string to_string() const { return m_adapter.to_string(); }
+
+    operator bool() const noexcept
+    {
+        try
+        {
+            const auto tmp1 = m_adapter.template get_value("result");
+            return true;
+        }
+        catch (...)
+        {
+            return false;
+        }
+    }
+
+protected:
+    serial_adapter<Serial> m_adapter;
+};
+
 ///@brief Function used to callback from, given a function's name and some parameters using a @ref serial_adapter
 ///
 /// Defines the way in which @ref run_callback will be called for each function
@@ -1127,7 +1281,7 @@ namespace details
 ///@param adapter A serial_adapter containing the function call
 ///@return Serial Object containing the result and arguments of the function call
 template<typename Serial>
-extern Serial dispatch(const serial_adapter<Serial>& adapter);
+extern func_result<Serial> dispatch(const serial_adapter<Serial>& adapter);
 
 // Support for other Windows (x86) calling conventions
 #if defined(_WIN32) && !defined(_WIN64)
@@ -1306,7 +1460,7 @@ Serial run_callback(
 ///@param adapter The serial adapter containing the function arguments
 ///@return Serial Object containing the result and arguments of the function call
 template<typename Serial, typename R, typename... Args>
-Serial run_callback(
+func_result<Serial> run_callback(
     std::function<R(Args...)> func, const serial_adapter<Serial>& adapter) RPC_HPP_EXCEPT
 {
     auto& adapter_args = adapter.template get_value_ref<Serial>("args");
@@ -1353,7 +1507,7 @@ Serial run_callback(
         ++arg_count;
     });
 
-    return retSer.get();
+    return func_result<Serial>(retSer.get());
 }
 
 ///@brief Runs a function as a callback, returning a serial object representing the result
@@ -1368,7 +1522,8 @@ Serial run_callback(
 ///@param adapter The serial adapter containing the function arguments
 ///@return Serial Object containing the result and arguments of the function call
 template<typename Serial, typename R, typename... Args>
-Serial run_callback(R (*func)(Args...), const serial_adapter<Serial>& adapter) RPC_HPP_EXCEPT
+func_result<Serial> run_callback(
+    R (*func)(Args...), const serial_adapter<Serial>& adapter) RPC_HPP_EXCEPT
 {
     return run_callback(std::function<R(Args...)>(func), adapter);
 }
@@ -1383,7 +1538,7 @@ Serial run_callback(R (*func)(Args...), const serial_adapter<Serial>& adapter) R
 ///@param args Variadic list of function parameters
 ///@return Serial A serial representation of the result of function call
 template<typename Serial, typename... Args>
-Serial run(std::string_view func_name, const Args&... args)
+func_result<Serial> run(std::string_view func_name, const Args&... args)
 {
     serial_adapter<Serial> adapter;
     adapter.set_value("function", func_name);
@@ -1414,7 +1569,7 @@ Serial run(std::string_view func_name, const Args&... args)
 ///@param args Variadic list of function parameters
 ///@return std::future<Serial> Future of a serial representation of the result of function call
 template<typename Serial, typename... Args>
-std::future<Serial> async_run(std::string_view func_name, const Args&... args)
+std::future<func_result<Serial>> async_run(std::string_view func_name, const Args&... args)
 {
     return std::async(run<Serial, Args...>, func_name, args...);
 }
@@ -1426,7 +1581,7 @@ std::future<Serial> async_run(std::string_view func_name, const Args&... args)
 ///@param obj_str String representing the serialization object containing the function call
 ///@return Serial A serial representation of the result of function call
 template<typename Serial>
-Serial run_string(std::string_view obj_str)
+func_result<Serial> run_string(std::string_view obj_str)
 {
     serial_adapter<Serial> adapter(obj_str);
 
@@ -1449,7 +1604,7 @@ Serial run_string(std::string_view obj_str)
 ///@param obj_str String representing the serialization object containing the function call
 ///@return std::future<Serial> Future of a serial representation of the result of function call
 template<typename Serial>
-std::future<Serial> async_run_string(std::string_view obj_str)
+std::future<func_result<Serial>> async_run_string(std::string_view obj_str)
 {
     return std::async(run_string<Serial>, obj_str);
 }
@@ -1461,7 +1616,7 @@ std::future<Serial> async_run_string(std::string_view obj_str)
 ///@param obj Serialization object containg the function call
 ///@return Serial A serial representation of the result of function call
 template<typename Serial>
-Serial run_object(const Serial& obj)
+func_result<Serial> run_object(const Serial& obj)
 {
     serial_adapter<Serial> adapter(obj);
 
@@ -1484,7 +1639,7 @@ Serial run_object(const Serial& obj)
 ///@param obj Serialization object containg the function call
 ///@return std::future<Serial> Future of a serial representation of the result of function call
 template<typename Serial>
-std::future<Serial> async_run_object(const Serial& obj)
+std::future<func_result<Serial>> async_run_object(const Serial& obj)
 {
     return std::async(run_object<Serial>, obj);
 }
@@ -1499,15 +1654,9 @@ std::future<Serial> async_run_object(const Serial& obj)
 ///@param args Variadic list of function parameters
 ///@return Serial A serial representation of the function call
 template<typename Serial, typename... Args>
-Serial package(std::string_view func_name, const Args&... args)
+func_call<Serial> package(std::string_view func_name, const Args&... args)
 {
-    serial_adapter<Serial> adapter;
-    adapter.set_value("function", func_name);
-    adapter.set_value("args", adapter.make_array());
-    auto& argList = adapter.template get_value_ref<Serial>("args");
-
-    (details::encode_arguments(argList, 1, args), ...);
-    return adapter.get();
+    return func_call<Serial>(func_name, args...);
 }
 
 ///@brief Packs a function call into a serial object (asynchronous)
@@ -1520,7 +1669,7 @@ Serial package(std::string_view func_name, const Args&... args)
 ///@param args Variadic list of function parameters
 ///@return std::future<Serial> Future of a serial representation of the function call
 template<typename Serial, typename... Args>
-std::future<Serial> async_package(std::string_view func_name, const Args&... args)
+std::future<func_call<Serial>> async_package(std::string_view func_name, const Args&... args)
 {
     return std::async(package<Serial, Args...>, func_name, args...);
 }

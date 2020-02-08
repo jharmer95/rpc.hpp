@@ -266,7 +266,7 @@ int SimpleSum(const int n1, const int n2)
 }
 
 template<typename Serial>
-Serial rpc::dispatch(const serial_adapter<Serial>& adapter)
+rpc::func_result<Serial> rpc::dispatch(const serial_adapter<Serial>& adapter)
 {
     const auto func_name = adapter.template get_value<std::string>("function");
 
@@ -330,7 +330,7 @@ TEST_CASE("References", "[]")
 
     const auto ret_obj2 = rpc::run<njson>("ReadMessageRef", rmesg);
 
-    rmesg = rpc::deserialize<njson, TestMessage>(ret_obj2["args"][0]);
+    rmesg = rpc::deserialize<njson, TestMessage>(ret_obj2.get_arg(0));
     REQUIRE((mesg == rmesg));
 }
 
@@ -368,9 +368,8 @@ TEST_CASE("Vectors", "[]")
     std::vector<TestMessage> rmesgVec;
 
     const auto rec_obj2 = rpc::run<njson>("ReadMessageVec", rmesgVec, 3);
-    const auto& args2 = rec_obj2["args"];
 
-    for (const auto& val : args2[0])
+    for (const auto& val : rec_obj2.get_arg(0))
     {
         rmesgVec.push_back(rpc::deserialize<njson, TestMessage>(val));
     }
@@ -398,7 +397,7 @@ TEST_CASE("Pointers", "[]")
     std::copy(md2.begin(), md2.end(), mesg2.Data);
     mesg2.DataSize = static_cast<uint8_t>(md2.size());
 
-    TestMessage mesgs[2] { mesg1, mesg2 };
+    TestMessage mesgs[2]{ mesg1, mesg2 };
     int count = 2;
 
     const auto rec_obj1 = rpc::run<njson>("WriteMessages", mesgs, &count);
@@ -406,11 +405,10 @@ TEST_CASE("Pointers", "[]")
     TestMessage rdMsg[2];
 
     const auto rec_obj2 = rpc::run<njson>("ReadMessages", rdMsg, 2);
-    const auto& args2 = rec_obj2["args"];
 
-    for (size_t i = 0; i < args2.size() - 1; ++i)
+    for (size_t i = 0; i < rec_obj2.get_arg_count() - 1; ++i)
     {
-        rdMsg[i] = rpc::deserialize<njson, TestMessage>(args2.at(i));
+        rdMsg[i] = rpc::deserialize<njson, TestMessage>(rec_obj2.get_arg(i));
     }
 
     REQUIRE((rdMsg[0] == mesg1));
@@ -420,22 +418,22 @@ TEST_CASE("Pointers", "[]")
 TEST_CASE("From String")
 {
     const auto rec_obj = rpc::run_string<njson>(R"({ "function": "SimpleSum", "args": [3, 4] })");
-    const auto result = rec_obj["result"].get<int>();
+    const auto result = rec_obj.template get_result<int>();
 
     REQUIRE(result == 7);
 }
 
 TEST_CASE("async")
 {
-    std::future<njson> rec_obj1 = rpc::async_run<njson>("SimpleSum", 5, 9);
+    auto rec_obj1 = rpc::async_run<njson>("SimpleSum", 5, 9);
     auto rec_obj2 = rpc::async_run<njson>("SimpleSum", 7, 19);
     auto rec_obj3 = rpc::async_run<njson>("SimpleSum", 1, 21);
     auto rec_obj4 = rpc::async_run<njson>("SimpleSum", 2, 2);
 
-    const int val1 = rec_obj1.get()["result"];
-    const int val2 = rec_obj2.get()["result"];
-    const int val3 = rec_obj3.get()["result"];
-    const int val4 = rec_obj4.get()["result"];
+    const int val1 = rec_obj1.get().template get_result<int>();
+    const int val2 = rec_obj2.get().template get_result<int>();
+    const int val3 = rec_obj3.get().template get_result<int>();
+    const int val4 = rec_obj4.get().template get_result<int>();
 
     REQUIRE(val1 == 14);
     REQUIRE(val2 == 26);

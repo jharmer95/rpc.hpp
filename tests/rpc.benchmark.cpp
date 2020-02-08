@@ -51,7 +51,7 @@ TEST_CASE("By Value (simple)", "[value][simple]")
 
     BENCHMARK("rpc.hpp indirect")
     {
-        test = rpc::run<njson>("Fibonacci", 20)["result"];
+        test = rpc::run<njson>("Fibonacci", 20).template get_result<uint64_t>();
     };
 
     REQUIRE(expected == test);
@@ -90,7 +90,7 @@ TEST_CASE("By Value (complex)", "[value][complex]")
         myC.name = "Franklin D. Roosevelt";
         myC.vals = { 0, 1, 4, 6, 7, 8, 11, 15, 17, 22, 25, 26 };
 
-        test = rpc::run<njson>("HashComplex", myC)["result"];
+        test = rpc::run<njson>("HashComplex", myC).template get_result<std::string>();
     };
 
     REQUIRE_THAT(expected, Catch::Matchers::Equals(test));
@@ -117,7 +117,9 @@ TEST_CASE("By Value (many)", "[value][many]")
 
     BENCHMARK("rpc.hpp indirect")
     {
-        test = rpc::run<njson>("StdDev", 55.65, 125.325, 552.125, 12.767, 2599.6, 1245.125663, 9783.49, 125.12, 553.3333333333, 2266.1)["result"];
+        test = rpc::run<njson>("StdDev", 55.65, 125.325, 552.125, 12.767, 2599.6, 1245.125663,
+            9783.49, 125.12, 553.3333333333, 2266.1)
+                   .template get_result<double>();
     };
 
     REQUIRE(test == Approx(expected));
@@ -146,7 +148,7 @@ TEST_CASE("By Pointer (simple)", "[pointer][simple]")
     BENCHMARK("rpc.hpp indirect")
     {
         uint64_t n = 20U;
-        n = rpc::run<njson>("FibonacciPtr", &n)["args"][0];
+        n = rpc::run<njson>("FibonacciPtr", &n).template get_arg<uint64_t>(0);
         test = n;
     };
 
@@ -190,8 +192,8 @@ TEST_CASE("By Pointer (complex)", "[pointer][complex]")
         char hash[255]{};
 
         const auto rec_obj = rpc::run<njson>("HashComplexPtr", myC, hash);
-        myC = rpc::deserialize<njson, Complex>(rec_obj["args"][0]);
-        const auto str = rec_obj["args"][1].get<std::string>();
+        myC = rpc::deserialize<njson, Complex>(rec_obj.get_arg(0));
+        const auto str = rec_obj.template get_arg<std::string>(1);
         test = str;
     };
 
@@ -240,7 +242,9 @@ TEST_CASE("By Pointer (many)", "[pointer][many]")
         double n9 = 553.3333333333;
         double n10 = 2266.1;
 
-        const auto argList = rpc::run<njson>("SquareRootPtr", &n1, &n2, &n3, &n4, &n5, &n6, &n7, &n8, &n9, &n10)["args"];
+        const auto argList =
+            rpc::run<njson>("SquareRootPtr", &n1, &n2, &n3, &n4, &n5, &n6, &n7, &n8, &n9, &n10)
+                .get_args();
 
         n1 = argList[0];
         n2 = argList[1];
@@ -282,7 +286,7 @@ TEST_CASE("By Reference (simple)", "[ref][simple]")
     {
         uint64_t n = 20;
 
-        n = rpc::run<njson>("FibonacciRef", n)["args"][0];
+        n = rpc::run<njson>("FibonacciRef", n).template get_arg<uint64_t>(0);
         test = n;
     };
 
@@ -326,8 +330,8 @@ TEST_CASE("By Reference (complex)", "[ref][complex]")
         std::string hash;
 
         const auto rec_obj = rpc::run<njson>("HashComplexRef", myC, hash);
-        myC = rpc::deserialize<njson, Complex>(rec_obj["args"][0]);
-        hash = rec_obj["args"][1];
+        myC = rpc::deserialize<njson, Complex>(rec_obj.get_arg(0));
+        hash = rec_obj.template get_arg<std::string>(1);
         test = hash;
     };
 
@@ -376,7 +380,8 @@ TEST_CASE("By Reference (many)", "[ref][many]")
         double n9 = 553.3333333333;
         double n10 = 2266.1;
 
-        const auto argList = rpc::run<njson>("SquareRootRef", n1, n2, n3, n4, n5, n6, n7, n8, n9, n10)["args"];
+        const auto argList =
+            rpc::run<njson>("SquareRootRef", n1, n2, n3, n4, n5, n6, n7, n8, n9, n10).get_args();
 
         n1 = argList[0];
         n2 = argList[1];
@@ -420,7 +425,7 @@ TEST_CASE("With Container", "[container]")
         std::vector<double> vec{ 55.65, 125.325, 552.125, 12.767, 2599.6, 1245.125663, 9783.49,
             125.12, 553.3333333333, 2266.1 };
 
-        test = rpc::run<njson>("AverageContainer<double>", vec)["result"];
+        test = rpc::run<njson>("AverageContainer<double>", vec).template get_result<double>();
     };
 
     REQUIRE(test == Approx(expected));
@@ -450,14 +455,15 @@ TEST_CASE("Sequential", "[sequential]")
 
     BENCHMARK("rpc.hpp indirect")
     {
-        auto vec = rpc::run<njson>("RandInt", 5, 30, 1000)["result"].get<std::vector<uint64_t>>();
+        auto vec =
+            rpc::run<njson>("RandInt", 5, 30, 1000).template get_result<std::vector<uint64_t>>();
 
         for (auto& val : vec)
         {
-            val = rpc::run<njson>("Fibonacci", val)["result"];
+            val = rpc::run<njson>("Fibonacci", val).template get_result<uint64_t>();
         }
 
-        return rpc::run<njson>("AverageContainer<uint64_t>", vec)["result"];
+        return rpc::run<njson>("AverageContainer<uint64_t>", vec).template get_result<double>();
     };
 
     //BENCHMARK("rpc.hpp socket IPC") { return XXX; };

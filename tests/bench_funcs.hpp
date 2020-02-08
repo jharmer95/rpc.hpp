@@ -468,7 +468,7 @@ std::vector<uint64_t> RandInt(uint64_t min, uint64_t max, size_t sz = 1000)
 }
 
 template<typename Serial>
-Serial rpc::dispatch(const serial_adapter<Serial>& adapter)
+rpc::func_result<Serial> rpc::dispatch(const serial_adapter<Serial>& adapter)
 {
     const auto func_name = adapter.template get_value<std::string>("function");
 
