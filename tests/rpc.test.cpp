@@ -326,9 +326,13 @@ TEST_CASE("References", "[]")
 
     const auto ret_obj1 = rpc::run<njson>("WriteMessageRef", mesg);
 
+    REQUIRE(ret_obj1);
+
     TestMessage rmesg;
 
     const auto ret_obj2 = rpc::run<njson>("ReadMessageRef", rmesg);
+
+    REQUIRE(ret_obj2);
 
     rmesg = rpc::deserialize<njson, TestMessage>(ret_obj2.get_arg(0));
     REQUIRE((mesg == rmesg));
@@ -365,9 +369,13 @@ TEST_CASE("Vectors", "[]")
 
     const auto rec_obj1 = rpc::run<njson>("WriteMessageVec", mesgVec);
 
+    REQUIRE(rec_obj1);
+
     std::vector<TestMessage> rmesgVec;
 
     const auto rec_obj2 = rpc::run<njson>("ReadMessageVec", rmesgVec, 3);
+
+    REQUIRE(rec_obj2);
 
     for (const auto& val : rec_obj2.get_arg(0))
     {
@@ -402,9 +410,13 @@ TEST_CASE("Pointers", "[]")
 
     const auto rec_obj1 = rpc::run<njson>("WriteMessages", mesgs, &count);
 
+    REQUIRE(rec_obj1);
+
     TestMessage rdMsg[2];
 
     const auto rec_obj2 = rpc::run<njson>("ReadMessages", rdMsg, 2);
+
+    REQUIRE(rec_obj2);
 
     for (size_t i = 0; i < rec_obj2.get_arg_count() - 1; ++i)
     {
@@ -418,6 +430,9 @@ TEST_CASE("Pointers", "[]")
 TEST_CASE("From String")
 {
     const auto rec_obj = rpc::run_string<njson>(R"({ "function": "SimpleSum", "args": [3, 4] })");
+
+    REQUIRE(rec_obj);
+
     const auto result = rec_obj.template get_result<int>();
 
     REQUIRE(result == 7);

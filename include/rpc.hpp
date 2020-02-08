@@ -1261,7 +1261,7 @@ public:
     {
         try
         {
-            const auto tmp1 = m_adapter.template get_value("result");
+            const auto tmp1 = m_adapter.template get_value<Serial>("result");
             return true;
         }
         catch (...)
