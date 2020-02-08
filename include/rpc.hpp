@@ -1741,7 +1741,7 @@ func_result<Serial> run_object(const func_call<Serial>& fc)
 template<typename Serial>
 std::future<func_result<Serial>> async_run_object(const func_call<Serial>& fc)
 {
-    return std::async(run_object<Serial>, obj);
+    return std::async(run_object<Serial>, fc);
 }
 
 /// @brief Packs a function call into a func_call object
