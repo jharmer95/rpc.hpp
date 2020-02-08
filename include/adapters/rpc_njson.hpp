@@ -167,7 +167,7 @@ void njson_adapter::append_value(const std::string& name, Value value)
         }
         else
         {
-            const auto tmp = m_serial_object[name].get<Value>();
+            const auto tmp = m_serial_object[name].template get<Value>();
             m_serial_object[name] = njson::array();
             m_serial_object[name].push_back(tmp);
         }
@@ -284,4 +284,10 @@ inline njson njson_adapter::make_array(size_t sz) noexcept
     }
 
     return obj;
+}
+
+template<>
+inline njson njson_adapter::from_string(std::string_view str)
+{
+    return njson::parse(str);
 }

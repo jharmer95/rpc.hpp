@@ -468,103 +468,103 @@ std::vector<uint64_t> RandInt(uint64_t min, uint64_t max, size_t sz = 1000)
 }
 
 template<typename Serial>
-Serial rpc::dispatch(const serial_adapter<Serial>& adapter)
+rpc::func_result<Serial> rpc::dispatch(const func_call<Serial>& fc)
 {
-    const auto func_name = adapter.template get_value<std::string>("function");
+    const auto func_name = fc.get_func_name();
 
     if (func_name == "WriteMessages")
     {
-        return rpc::run_callback(WriteMessages, adapter);
+        return rpc::run_callback(WriteMessages, fc);
     }
 
     if (func_name == "WriteMessageRef")
     {
-        return rpc::run_callback(WriteMessageRef, adapter);
+        return rpc::run_callback(WriteMessageRef, fc);
     }
 
     if (func_name == "WriteMessageVec")
     {
-        return rpc::run_callback(WriteMessageVec, adapter);
+        return rpc::run_callback(WriteMessageVec, fc);
     }
 
     if (func_name == "ReadMessages")
     {
-        return rpc::run_callback(ReadMessages, adapter);
+        return rpc::run_callback(ReadMessages, fc);
     }
 
     if (func_name == "ReadMessageRef")
     {
-        return rpc::run_callback(ReadMessageRef, adapter);
+        return rpc::run_callback(ReadMessageRef, fc);
     }
 
     if (func_name == "ReadMessageVec")
     {
-        return rpc::run_callback(ReadMessageVec, adapter);
+        return rpc::run_callback(ReadMessageVec, fc);
     }
 
     if (func_name == "Fibonacci")
     {
-        return rpc::run_callback(Fibonacci, adapter);
+        return rpc::run_callback(Fibonacci, fc);
     }
 
     if (func_name == "FibonacciPtr")
     {
-        return rpc::run_callback(FibonacciPtr, adapter);
+        return rpc::run_callback(FibonacciPtr, fc);
     }
 
     if (func_name == "FibonacciRef")
     {
-        return rpc::run_callback(FibonacciRef, adapter);
+        return rpc::run_callback(FibonacciRef, fc);
     }
 
     if (func_name == "HashComplex")
     {
-        return rpc::run_callback(HashComplex, adapter);
+        return rpc::run_callback(HashComplex, fc);
     }
 
     if (func_name == "HashComplexPtr")
     {
-        return rpc::run_callback(HashComplexPtr, adapter);
+        return rpc::run_callback(HashComplexPtr, fc);
     }
 
     if (func_name == "HashComplexRef")
     {
-        return rpc::run_callback(HashComplexRef, adapter);
+        return rpc::run_callback(HashComplexRef, fc);
     }
 
     if (func_name == "Average")
     {
-        return rpc::run_callback(Average, adapter);
+        return rpc::run_callback(Average, fc);
     }
 
     if (func_name == "StdDev")
     {
-        return rpc::run_callback(StdDev, adapter);
+        return rpc::run_callback(StdDev, fc);
     }
 
     if (func_name == "SquareRootPtr")
     {
-        return rpc::run_callback(SquareRootPtr, adapter);
+        return rpc::run_callback(SquareRootPtr, fc);
     }
 
     if (func_name == "SquareRootRef")
     {
-        return rpc::run_callback(SquareRootRef, adapter);
+        return rpc::run_callback(SquareRootRef, fc);
     }
 
     if (func_name == "AverageContainer<double>")
     {
-        return rpc::run_callback(AverageContainer<double>, adapter);
+        return rpc::run_callback(AverageContainer<double>, fc);
     }
 
     if (func_name == "AverageContainer<uint64_t>")
     {
-        return rpc::run_callback(AverageContainer<uint64_t>, adapter);
+        return rpc::run_callback(AverageContainer<uint64_t>, fc);
     }
 
     if (func_name == "RandInt")
     {
-        return rpc::run_callback(RandInt, adapter);
+        return rpc::run_callback(RandInt, fc);
     }
 
     throw std::runtime_error("RPC error: Called function: \"" + func_name + "\" not found!");

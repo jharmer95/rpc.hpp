@@ -338,10 +338,16 @@ public:
     /// @brief Create an empty array, according to the serial object's type
     ///
     /// Uses the serialization object's methods to create an object consisting of an array of length \p sz
-    // (if \p sz > 0, elements are assigned to a default value, as determined by the serialization object)
+    /// (if \p sz > 0, elements are assigned to a default value, as determined by the serialization object)
     ///@param sz Number of elements to populate (default 0)
     /// @return Serial The empty array serial object
     [[nodiscard]] static Serial make_array(size_t sz = 0) noexcept;
+
+    /// @brief Creates a serial object from a string
+    ///
+    /// @param str String representing the serial object
+    /// @return Serial The serial object
+    [[nodiscard]] static Serial from_string(std::string_view str);
 
 protected:
     Serial m_serial_object{};
@@ -372,8 +378,8 @@ namespace details
 {
     using namespace std::string_literals;
 
-    /// @brief Size of memory buffer to use when encoding arguments (default 64kB)
-    constexpr auto DEFAULT_BUFFER_SIZE = 64U * 1024U;
+    /// @brief Size of memory buffer to use when encoding arguments (default 4kB)
+    constexpr auto DEFAULT_BUFFER_SIZE = 4U * 1024U;
 
     /// @brief Class used to store encoded arguments in memory
     class arg_buffer
@@ -414,6 +420,30 @@ namespace details
 
             return *this;
         }
+
+        /// @brief Reallocates to a larger buffer
+        ///
+        /// If it is detected that the size of an arg_buffer is insufficient to store all of the arguemnts,
+        /// it can be reallocated to handle more data
+        /// @param sz The new size to reallocate to
+        void realloc(const size_t sz)
+        {
+            if (sz <= m_buffer_sz)
+            {
+                throw std::logic_error("Realloc size is <= current size!");
+            }
+
+            std::unique_ptr<uint8_t[]> tmp = std::make_unique<uint8_t[]>(sz);
+            memcpy(tmp.get(), m_buffer.get(), m_buffer_sz);
+            m_buffer.reset();
+            m_buffer = std::move(tmp);
+            m_buffer_sz = sz;
+        }
+
+        /// @brief Get the size of the arg_buffer
+        ///
+        /// @return size_t The size of the internal buffer
+        size_t size() const noexcept { return m_buffer_sz; }
 
         /// @brief Gets a raw pointer to the underlying data
         ///
@@ -664,14 +694,14 @@ namespace details
         *elem_count = 0;
         serial_adapter<Serial> adapter(obj);
 
+        using P = typename Value::value_type;
+        static_assert(!std::is_void_v<P>,
+            "Void containers are not supported, either cast to a different type or do the "
+            "conversion "
+            "manually!");
+
         if (adapter.is_array())
         {
-            // Multi-value container (array)
-            using P = typename Value::value_type;
-            static_assert(!std::is_void_v<P>,
-                "Void containers are not supported, either cast to a different type or do the "
-                "conversion manually!");
-
             if constexpr (std::is_arithmetic_v<P> || std::is_same_v<P, std::string>)
             {
                 for (const auto& val : adapter.get())
@@ -712,12 +742,6 @@ namespace details
         }
 
         // Single value container
-        using P = typename Value::value_type;
-        static_assert(!std::is_void_v<P>,
-            "Void containers are not supported, either cast to a different type or do the "
-            "conversion "
-            "manually!");
-
         if constexpr (is_serializable_v<Serial, P>)
         {
             container.push_back(P::deserialize(obj));
@@ -757,12 +781,12 @@ namespace details
     /// @tparam Serial Serialization type
     /// @tparam Value The pointer type to decode to
     /// @param obj The serialization object to parse
-    /// @param buf Pointer to the buffer in which the decoded values are to be stored
+    /// @param buf arg_buffer in which the decoded values are to be stored
     /// @param elem_count The number of elements attached to the pointer (if pointer is array)
     /// @return Value Pointer representing the data decoded from \p obj
     template<typename Serial, typename Value>
     Value decode_pointer_argument(
-        const Serial& obj, uint8_t* const buf, size_t* const elem_count) RPC_HPP_EXCEPT
+        const Serial& obj, arg_buffer& buf, size_t* const elem_count) RPC_HPP_EXCEPT
     {
 #ifdef _DEBUG
         [[maybe_unused]] const auto t_name = typeid(Value).name();
@@ -776,30 +800,32 @@ namespace details
             return nullptr;
         }
 
+        using P = std::remove_cv_t<std::remove_pointer_t<Value>>;
+        static_assert(!std::is_void_v<P>,
+            "Void pointers are not supported, either cast to a different type or do the conversion "
+            "manually!");
+
+        size_t sz = buf.size();
+
+        while (sizeof(P) * adapter.size() >= sz)
+        {
+            sz += DEFAULT_BUFFER_SIZE;
+        }
+
+        if (sz != buf.size())
+        {
+            buf.realloc(sz);
+        }
+
         if (adapter.is_array())
         {
             // Multi-value pointer (array)
-            using P = std::remove_cv_t<std::remove_pointer_t<Value>>;
-            static_assert(!std::is_void_v<P>,
-                "Void pointers are not supported, either cast to a different type or do the "
-                "conversion "
-                "manually!");
-
             if constexpr (is_serializable_v<Serial, P>)
             {
                 for (size_t i = 0; i < adapter.size(); ++i)
                 {
                     const auto value = P::deserialize(adapter[i]);
-                    memcpy(&buf[i * sizeof(value)], &value, sizeof(value));
-                }
-            }
-            else if constexpr (std::is_same_v<P, char>)
-            {
-                for (size_t i = 0; i < adapter.size(); ++i)
-                {
-                    const auto sub = serial_adapter<Serial>(adapter[i]);
-                    const auto value = sub.template get_value<std::string>();
-                    memcpy(&buf[i * sizeof(value)], &value, sizeof(value));
+                    memcpy(&buf.data()[i * sizeof(value)], &value, sizeof(value));
                 }
             }
             else if constexpr (std::is_arithmetic_v<P> || std::is_same_v<P, std::string>)
@@ -808,7 +834,7 @@ namespace details
                 {
                     const auto sub = serial_adapter<Serial>(adapter[i]);
                     const auto value = sub.template get_value<P>();
-                    memcpy(&buf[i * sizeof(value)], &value, sizeof(value));
+                    memcpy(&buf.data()[i * sizeof(value)], &value, sizeof(value));
                 }
             }
             else
@@ -816,39 +842,34 @@ namespace details
                 for (size_t i = 0; i < adapter.size(); ++i)
                 {
                     const auto value = deserialize<Serial, P>(adapter[i]);
-                    memcpy(&buf[i * sizeof(value)], &value, sizeof(value));
+                    memcpy(&buf.data()[i * sizeof(value)], &value, sizeof(value));
                 }
             }
 
             *elem_count = adapter.size();
-            return reinterpret_cast<Value>(buf);
+            return reinterpret_cast<Value>(buf.data());
         }
 
         // Single value pointer
-        using P = std::remove_cv_t<std::remove_pointer_t<Value>>;
-        static_assert(!std::is_void_v<P>,
-            "Void pointers are not supported, either cast to a different type or do the conversion "
-            "manually!");
-
         if constexpr (is_serializable_v<Serial, P>)
         {
-            new (buf) P(P::deserialize(obj));
+            new (buf.data()) P(P::deserialize(obj));
         }
         else if constexpr (std::is_same_v<P, char>)
         {
             const auto str = adapter.template get_value<std::string>();
-            std::copy(str.begin(), str.end(), reinterpret_cast<Value>(buf));
+            std::copy(str.begin(), str.end(), reinterpret_cast<Value>(buf.data()));
         }
         else if constexpr (std::is_arithmetic_v<P> || std::is_same_v<P, std::string>)
         {
-            new (buf) P(adapter.template get_value<P>());
+            new (buf.data()) P(adapter.template get_value<P>());
         }
         else
         {
-            new (buf) P(deserialize<Serial, P>(obj));
+            new (buf.data()) P(deserialize<Serial, P>(obj));
         }
 
-        return reinterpret_cast<Value>(buf);
+        return reinterpret_cast<Value>(buf.data());
     }
 
     /// @brief Decodes a serial object to the proper type
@@ -857,13 +878,13 @@ namespace details
     /// @tparam Serial Serialization type
     /// @tparam Value The type to decode to
     /// @param obj The serialization object to parse
-    /// @param buf Pointer to the buffer in which the decoded values are to be stored
+    /// @param buf arg_buffer in which the decoded values are to be stored
     /// @param count The number of elements represented by the serial object (if array)
     /// @param param_num The current index of the function's parameter list being decoded
     /// @return Value The decoded argument value
     template<typename Serial, typename Value>
-    Value decode_argument(const Serial& obj, [[maybe_unused]] uint8_t* const buf,
-        size_t* const count, unsigned* param_num) RPC_HPP_EXCEPT
+    Value decode_argument(const Serial& obj, [[maybe_unused]] arg_buffer& buf, size_t* const count,
+        unsigned* param_num) RPC_HPP_EXCEPT
     {
 #ifdef _DEBUG
         [[maybe_unused]] const auto t_name = typeid(Value).name();
@@ -874,8 +895,7 @@ namespace details
 
         if constexpr (std::is_pointer_v<Value>)
         {
-            auto val = decode_pointer_argument<Serial, Value>(obj, buf, count);
-            return val;
+            return decode_pointer_argument<Serial, Value>(obj, buf, count);
         }
         else if constexpr (is_serializable_v<Serial, Value>)
         {
@@ -1120,58 +1140,308 @@ namespace details
     }
 } // namespace details
 
-///@brief Function used to callback from, given a function's name and some parameters using a @ref serial_adapter
+/// @brief Class representing a function call
+///
+/// Stores the function name and parameter values into a serialization object
+/// @tparam Serial Type of serial object to utilize
+template<typename Serial>
+class func_call
+{
+public:
+    ~func_call() = default;
+    func_call() = delete;
+
+    explicit func_call(Serial obj) noexcept : m_adapter(std::move(obj)) {}
+    func_call(const func_call& other) noexcept : m_adapter(other.m_adapter) {}
+    func_call(func_call&& other) noexcept : m_adapter(std::move(other.m_adapter)) {}
+
+    /// @brief Construct a new func_call object given a function name and parameters
+    ///
+    /// @tparam Args Type(s) of the parameter(s)
+    /// @param func_name The name of the function
+    /// @param args The value(s) of the parameter(s) to pass to the function
+    template<typename... Args>
+    func_call(std::string_view func_name, const Args&... args)
+    {
+        m_adapter.set_value("function", func_name);
+        m_adapter.set_value("args", m_adapter.make_array());
+        auto& argList = m_adapter.template get_value_ref<Serial>("args");
+
+        (details::encode_arguments(argList, 1, args), ...);
+    }
+
+    func_call& operator=(const func_call& other) noexcept
+    {
+        if (this != &other)
+        {
+            m_adapter = other.m_adapter;
+        }
+
+        return *this;
+    }
+
+    func_call& operator=(func_call&& other) noexcept
+    {
+        if (this != &other)
+        {
+            m_adapter = std::move(other.m_adapter);
+        }
+
+        return *this;
+    }
+
+    /// @brief Get the arguments of the func_call, by reference
+    ///
+    /// @return Serial& Reference to a serial object containing the list of arguments
+    [[nodiscard]] Serial& get_args_ref()
+    {
+        return m_adapter.template get_value_ref<Serial>("args");
+    }
+
+    /// @brief Get the args ref object
+    ///
+    /// @return const Serial& (const) Reference to a serial object containing the list of arguments
+    [[nodiscard]] const Serial& get_args_ref() const
+    {
+        return m_adapter.template get_value_ref<Serial>("args");
+    }
+
+    /// @brief Get the name of the func_call
+    ///
+    /// @return std::string The name of the function represented
+    [[nodiscard]] std::string get_func_name() const
+    {
+        return m_adapter.template get_value<std::string>("function");
+    }
+
+    /// @brief Returns the func_call as a string
+    ///
+    /// @return std::string String representing the func_call
+    [[nodiscard]] std::string to_string() const
+    {
+        return m_adapter.to_string();
+    }
+
+    /// @brief Checks if the func_call is valid
+    ///
+    /// @return true The func_call contains a valid function name and a list of arguments
+    /// @return false The func_call does not contain a valid function name and a list of arguments
+    operator bool() const noexcept
+    {
+        try
+        {
+            const auto tmp1 = m_adapter.template get_value<std::string>("function");
+            [[maybe_unused]] const auto tmp2 = m_adapter.template get_value<Serial>("args");
+            return !tmp1.empty();
+        }
+        catch (...)
+        {
+            return false;
+        }
+    }
+
+protected:
+    serial_adapter<Serial> m_adapter;
+};
+
+/// @brief Class representing the result of a function
+///
+/// Stores the result and parameters into a serialization object
+/// @tparam Serial Type of serial object to utilize
+template<typename Serial>
+class func_result
+{
+public:
+    ~func_result() = default;
+    func_result() = delete;
+
+    explicit func_result(Serial obj) noexcept : m_adapter(std::move(obj)) {}
+    func_result(const func_result& other) noexcept : m_adapter(other.m_adapter) {}
+    func_result(func_result&& other) noexcept : m_adapter(std::move(other.m_adapter)) {}
+
+    /// @brief Construct a new func_result object given a result value and parameter arguments
+    ///
+    /// @tparam Result Type of the result value
+    /// @tparam Args Type(s) of the parameter(s)
+    /// @param result The value of the result
+    /// @param args The value(s) of the parameter(s)
+    template<typename Result, typename... Args>
+    func_result(Result result, const Args&... args)
+    {
+        m_adapter.template set_value<Result>("result", result);
+        m_adapter.template set_value<Serial>("args", m_adapter.make_array());
+        auto& argList = m_adapter.template get_value_ref<Serial>("args");
+
+        (details::encode_arguments(argList, 1, args), ...);
+    }
+
+    /// @brief Creates a function result indicating an error
+    ///
+    /// When an RPC call fails, this should be called and returned to indicate a failure
+    /// @param err_mesg The error message to store
+    /// @return func_result A result object with an error contained inside
+    static func_result generate_error_result(const std::string& err_mesg)
+    {
+        serial_adapter<Serial> adapter;
+        adapter.template set_value<std::string>("error", err_mesg);
+        return func_result<Serial>(adapter.get());
+    }
+
+    func_result& operator=(const func_result& other) noexcept
+    {
+        if (this != &other)
+        {
+            m_adapter = other.m_adapter;
+        }
+
+        return *this;
+    }
+
+    func_result& operator=(func_result&& other) noexcept
+    {
+        if (this != &other)
+        {
+            m_adapter = std::move(other.m_adapter);
+        }
+
+        return *this;
+    }
+
+    /// @brief Gets the result value
+    ///
+    /// The result value represents the return value of a function call
+    /// @tparam Result The result's type
+    /// @return Result The result's value
+    template<typename Result>
+    [[nodiscard]] Result get_result() const
+    {
+        return m_adapter.template get_value<Result>("result");
+    }
+
+    /// @brief Gets the argument by index
+    ///
+    /// Returns the value of the specified argument
+    /// @tparam Value The type of value to return (default is as a serial object)
+    /// @param n The index of the parameter to get the value of
+    /// @return Value The value of the argument
+    template<typename Value = Serial>
+    [[nodiscard]] Value get_arg(const size_t n) const
+    {
+        const serial_adapter<Serial> tmp(get_args());
+        return tmp.template get_value<Value>(n);
+    }
+
+    /// @brief Get the list of arguments as a serial object
+    ///
+    /// @return Serial The serial object representing the argument list
+    [[nodiscard]] Serial get_args() const { return m_adapter.template get_value<Serial>("args"); }
+
+    /// @brief Get the list of arguments, by reference, as a serial object
+    ///
+    /// @return Serial& The serial object reference representing the argument list
+    [[nodiscard]] Serial& get_args_ref()
+    {
+        return m_adapter.template get_value_ref<Serial>("args");
+    }
+
+    /// @brief Get the list of arguments, by const reference, as a serial object
+    ///
+    /// @return const Serial& The serial object (const) reference representing the argument list
+    [[nodiscard]] const Serial& get_args_ref() const
+    {
+        return m_adapter.template get_value_ref<Serial>("args");
+    }
+
+    /// @brief Get the number of arguments stored
+    ///
+    /// @return size_t The number of arguments
+    [[nodiscard]] size_t get_arg_count() const
+    {
+        const serial_adapter<Serial> tmp(get_args());
+        return tmp.size();
+    }
+
+    /// @brief Returns the func_result as a string
+    ///
+    /// @return std::string String representing the func_result
+    [[nodiscard]] std::string to_string() const
+    {
+        return m_adapter.to_string();
+    }
+
+    /// @brief Checks if the func_result is valid
+    ///
+    /// @return true The func_result contains a valid result value
+    /// @return false The func_result does not contain a valid result value (possibly contains an "error")
+    operator bool() const noexcept
+    {
+        try
+        {
+            const auto tmp1 = m_adapter.template get_value<Serial>("result");
+            return true;
+        }
+        catch (...)
+        {
+            return false;
+        }
+    }
+
+protected:
+    serial_adapter<Serial> m_adapter;
+};
+
+/// @brief Function used to callback from, given a function's name and some parameters using a @ref func_call object
 ///
 /// Defines the way in which @ref run_callback will be called for each function
-///@tparam Serial Serialization type
-///@param adapter A serial_adapter containing the function call
-///@return Serial Object containing the result and arguments of the function call
+/// @tparam Serial Serialization type
+/// @param fc A func_call object containing the function call info
+/// @return func_result<Serial> Object containing the result and arguments of the function call
 template<typename Serial>
-extern Serial dispatch(const serial_adapter<Serial>& adapter);
+extern func_result<Serial> dispatch(const func_call<Serial>& fc);
 
 // Support for other Windows (x86) calling conventions
 #if defined(_WIN32) && !defined(_WIN64)
-///@brief Runs a function as a callback, returning a serial object representing the result
+/// @brief Runs a function as a callback, returning a func_result representing the result
 ///
-/// This function decodes the arguments of \p func based on the serialization adapter \p adapter.
+/// This function decodes the arguments of \p func based on the values stored in \p fc
 /// It then applies the actual function and encodes the results to a new serialization object
-/// and returns that object
-///@tparam Serial The serialization object to utilize
-///@tparam R The function return type
-///@tparam Args The function argument types
-///@param func The function to apply
-///@param adapter The serial adapter containing the function arguments
-///@return Serial Object containing the result and arguments of the function call
+/// and returns that object as a func_result
+/// @tparam Serial The serialization object to utilize
+/// @tparam R The function return type
+/// @tparam Args The function argument types
+/// @param func The function to apply
+/// @param fc function_call object holding the function info
+/// @return func_result<Serial> Object containing the result and arguments of the function call
 template<typename Serial, typename R, typename... Args>
-Serial run_callback(
-    std::function<R __stdcall(Args...)> func, const serial_adapter<Serial>& adapter) RPC_HPP_EXCEPT
+func_result<Serial> run_callback(
+    std::function<R __stdcall(Args...)> func, const func_call<Serial>& fc) RPC_HPP_EXCEPT
 {
-    auto& adapter_args = adapter.template get_value_ref<Serial>("args");
+    auto& adapter_args = fc.get_args_ref();
+
     unsigned arg_count = 0;
 
     std::array<details::arg_buffer, details::function_param_count_v<R, Args...>> arg_buffers;
 
     std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...> args{
         details::decode_argument<Serial, std::remove_cv_t<std::remove_reference_t<Args>>>(
-            adapter_args[arg_count], arg_buffers[arg_count].data(), &(arg_buffers[arg_count].count),
+            adapter_args[arg_count], arg_buffers[arg_count], &(arg_buffers[arg_count].count),
             &arg_count)...
     };
 
-    serial_adapter<Serial> retSer;
+    std::unique_ptr<func_result<Serial>> fr;
 
     if constexpr (std::is_void_v<R>)
     {
         std::apply(func, args);
-        retSer.set_value("result", nullptr);
+        fr = std::make_unique<func_result<Serial>>(nullptr);
     }
     else
     {
         const auto result = std::apply(func, args);
-        retSer.set_value("result", result);
+        fr = std::make_unique<func_result<Serial>>(result);
     }
 
-    retSer.set_value("args", retSer.make_array());
-    auto& argList = retSer.template get_value_ref<Serial>("args");
+    auto& argList = fr->get_args_ref();
 
     arg_count = 0;
 
@@ -1190,68 +1460,67 @@ Serial run_callback(
         ++arg_count;
     });
 
-    return retSer.get();
+    return *fr;
 }
 
-///@brief Runs a function as a callback, returning a serial object representing the result
+/// @brief Runs a function as a callback, returning a func_result representing the result
 ///
-/// This function decodes the arguments of \p func based on the serialization adapter \p adapter.
+/// This function decodes the arguments of \p func based on the values stored in \p fc
 /// It then applies the actual function and encodes the results to a new serialization object
-/// and returns that object
-///@tparam Serial The serialization object to utilize
-///@tparam R The function return type
-///@tparam Args The function argument types
-///@param func The function to apply
-///@param adapter The serial adapter containing the function arguments
-///@return Serial Object containing the result and arguments of the function call
+/// and returns that object as a func_result
+/// @tparam Serial The serialization object to utilize
+/// @tparam R The function return type
+/// @tparam Args The function argument types
+/// @param func The function to apply
+/// @param fc function_call object holding the function info
+/// @return func_result<Serial> Object containing the result and arguments of the function call
 template<typename Serial, typename R, typename... Args>
-Serial run_callback(
-    R(__stdcall* func)(Args...), const serial_adapter<Serial>& adapter) RPC_HPP_EXCEPT
+func_result<Serial> run_callback(R (__stdcall* func)(Args...), const func_call<Serial>& fc) RPC_HPP_EXCEPT
 {
-    return run_callback(std::function<R(Args...)>(func), adapter);
+    return run_callback(std::function<R __stdcall(Args...)>(func), fc);
 }
 
-///@brief Runs a function as a callback, returning a serial object representing the result
+/// @brief Runs a function as a callback, returning a func_result representing the result
 ///
-/// This function decodes the arguments of \p func based on the serialization adapter \p adapter.
+/// This function decodes the arguments of \p func based on the values stored in \p fc
 /// It then applies the actual function and encodes the results to a new serialization object
-/// and returns that object
-///@tparam Serial The serialization object to utilize
-///@tparam R The function return type
-///@tparam Args The function argument types
-///@param func The function to apply
-///@param adapter The serial adapter containing the function arguments
-///@return Serial Object containing the result and arguments of the function call
+/// and returns that object as a func_result
+/// @tparam Serial The serialization object to utilize
+/// @tparam R The function return type
+/// @tparam Args The function argument types
+/// @param func The function to apply
+/// @param fc function_call object holding the function info
+/// @return func_result<Serial> Object containing the result and arguments of the function call
 template<typename Serial, typename R, typename... Args>
-Serial run_callback(
-    std::function<R __fastcall(Args...)> func, const serial_adapter<Serial>& adapter) RPC_HPP_EXCEPT
+func_result<Serial> run_callback(
+    std::function<R __fastcall(Args...)> func, const func_call<Serial>& fc) RPC_HPP_EXCEPT
 {
-    auto& adapter_args = adapter.template get_value_ref<Serial>("args");
+    auto& adapter_args = fc.get_args_ref();
+
     unsigned arg_count = 0;
 
     std::array<details::arg_buffer, details::function_param_count_v<R, Args...>> arg_buffers;
 
     std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...> args{
         details::decode_argument<Serial, std::remove_cv_t<std::remove_reference_t<Args>>>(
-            adapter_args[arg_count], arg_buffers[arg_count].data(), &(arg_buffers[arg_count].count),
+            adapter_args[arg_count], arg_buffers[arg_count], &(arg_buffers[arg_count].count),
             &arg_count)...
     };
 
-    serial_adapter<Serial> retSer;
+    std::unique_ptr<func_result<Serial>> fr;
 
     if constexpr (std::is_void_v<R>)
     {
         std::apply(func, args);
-        retSer.set_value("result", nullptr);
+        fr = std::make_unique<func_result<Serial>>(nullptr);
     }
     else
     {
         const auto result = std::apply(func, args);
-        retSer.set_value("result", result);
+        fr = std::make_unique<func_result<Serial>>(result);
     }
 
-    retSer.set_value("args", retSer.make_array());
-    auto& argList = retSer.template get_value_ref<Serial>("args");
+    auto& argList = fr->get_args_ref();
 
     arg_count = 0;
 
@@ -1270,71 +1539,70 @@ Serial run_callback(
         ++arg_count;
     });
 
-    return retSer.get();
+    return *fr;
 }
 
-///@brief Runs a function as a callback, returning a serial object representing the result
+/// @brief Runs a function as a callback, returning a func_result representing the result
 ///
-/// This function decodes the arguments of \p func based on the serialization adapter \p adapter.
+/// This function decodes the arguments of \p func based on the values stored in \p fc
 /// It then applies the actual function and encodes the results to a new serialization object
-/// and returns that object
-///@tparam Serial The serialization object to utilize
-///@tparam R The function return type
-///@tparam Args The function argument types
-///@param func The function to apply
-///@param adapter The serial adapter containing the function arguments
-///@return Serial Object containing the result and arguments of the function call
+/// and returns that object as a func_result
+/// @tparam Serial The serialization object to utilize
+/// @tparam R The function return type
+/// @tparam Args The function argument types
+/// @param func The function to apply
+/// @param fc function_call object holding the function info
+/// @return func_result<Serial> Object containing the result and arguments of the function call
 template<typename Serial, typename R, typename... Args>
-Serial run_callback(
-    R(__fastcall* func)(Args...), const serial_adapter<Serial>& adapter) RPC_HPP_EXCEPT
+func_result<Serial> run_callback(R (__fastcall* func)(Args...), const func_call<Serial>& fc) RPC_HPP_EXCEPT
 {
-    return run_callback(std::function<R(Args...)>(func), adapter);
+    return run_callback(std::function<R __fastcall(Args...)>(func), fc);
 }
 #endif // defined(_WIN32) && !defined(_WIN64)
 
 // TODO: Find a way to template/lambda this to avoid copy/paste for WIN32
 
-///@brief Runs a function as a callback, returning a serial object representing the result
+/// @brief Runs a function as a callback, returning a func_result representing the result
 ///
-/// This function decodes the arguments of \p func based on the serialization adapter \p adapter.
+/// This function decodes the arguments of \p func based on the values stored in \p fc
 /// It then applies the actual function and encodes the results to a new serialization object
-/// and returns that object
-///@tparam Serial The serialization object to utilize
-///@tparam R The function return type
-///@tparam Args The function argument types
-///@param func The function to apply
-///@param adapter The serial adapter containing the function arguments
-///@return Serial Object containing the result and arguments of the function call
+/// and returns that object as a func_result
+/// @tparam Serial The serialization object to utilize
+/// @tparam R The function return type
+/// @tparam Args The function argument types
+/// @param func The function to apply
+/// @param fc function_call object holding the function info
+/// @return func_result<Serial> Object containing the result and arguments of the function call
 template<typename Serial, typename R, typename... Args>
-Serial run_callback(
-    std::function<R(Args...)> func, const serial_adapter<Serial>& adapter) RPC_HPP_EXCEPT
+func_result<Serial> run_callback(
+    std::function<R(Args...)> func, const func_call<Serial>& fc) RPC_HPP_EXCEPT
 {
-    auto& adapter_args = adapter.template get_value_ref<Serial>("args");
+    auto& adapter_args = fc.get_args_ref();
+
     unsigned arg_count = 0;
 
     std::array<details::arg_buffer, details::function_param_count_v<R, Args...>> arg_buffers;
 
     std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...> args{
         details::decode_argument<Serial, std::remove_cv_t<std::remove_reference_t<Args>>>(
-            adapter_args[arg_count], arg_buffers[arg_count].data(), &(arg_buffers[arg_count].count),
+            adapter_args[arg_count], arg_buffers[arg_count], &(arg_buffers[arg_count].count),
             &arg_count)...
     };
 
-    serial_adapter<Serial> retSer;
+    std::unique_ptr<func_result<Serial>> fr;
 
     if constexpr (std::is_void_v<R>)
     {
         std::apply(func, args);
-        retSer.set_value("result", nullptr);
+        fr = std::make_unique<func_result<Serial>>(nullptr);
     }
     else
     {
         const auto result = std::apply(func, args);
-        retSer.set_value("result", result);
+        fr = std::make_unique<func_result<Serial>>(result);
     }
 
-    retSer.set_value("args", retSer.make_array());
-    auto& argList = retSer.template get_value_ref<Serial>("args");
+    auto& argList = fr->get_args_ref();
 
     arg_count = 0;
 
@@ -1353,174 +1621,155 @@ Serial run_callback(
         ++arg_count;
     });
 
-    return retSer.get();
+    return *fr;
 }
 
-///@brief Runs a function as a callback, returning a serial object representing the result
+/// @brief Runs a function as a callback, returning a func_result representing the result
 ///
-/// This function decodes the arguments of \p func based on the serialization adapter \p adapter.
+/// This function decodes the arguments of \p func based on the values stored in \p fc
 /// It then applies the actual function and encodes the results to a new serialization object
-/// and returns that object
-///@tparam Serial The serialization object to utilize
-///@tparam R The function return type
-///@tparam Args The function argument types
-///@param func The function to apply
-///@param adapter The serial adapter containing the function arguments
-///@return Serial Object containing the result and arguments of the function call
+/// and returns that object as a func_result
+/// @tparam Serial The serialization object to utilize
+/// @tparam R The function return type
+/// @tparam Args The function argument types
+/// @param func The function to apply
+/// @param fc function_call object holding the function info
+/// @return func_result<Serial> Object containing the result and arguments of the function call
 template<typename Serial, typename R, typename... Args>
-Serial run_callback(R (*func)(Args...), const serial_adapter<Serial>& adapter) RPC_HPP_EXCEPT
+func_result<Serial> run_callback(R (*func)(Args...), const func_call<Serial>& fc) RPC_HPP_EXCEPT
 {
-    return run_callback(std::function<R(Args...)>(func), adapter);
+    return run_callback(std::function<R(Args...)>(func), fc);
 }
 
-///@brief Entry point for rpc.hpp to dispatch a function call
+/// @brief Entry point for rpc.hpp to dispatch a function call
 ///
-/// Takes the function name and the provided arguments and encodes them into a serialization
-/// object then calls the function using dispatch and returns a serialized representation of the result
-///@tparam Serial The serialization object to utilize
-///@tparam Args Type(s) of the function parameter(s)
-///@param func_name String containing the name of the function
-///@param args Variadic list of function parameters
-///@return Serial A serial representation of the result of function call
+/// Takes the function name and the provided arguments and encodes them into a func_call object
+/// then calls the function using dispatch and returns a serialized representation of the result
+/// @tparam Serial The serialization object to utilize
+/// @tparam Args Type(s) of the function parameter(s)
+/// @param func_name String containing the name of the function
+/// @param args Variadic list of function parameters
+/// @return func_result<Serial> A serial representation of the result of function call
 template<typename Serial, typename... Args>
-Serial run(std::string_view func_name, const Args&... args)
+func_result<Serial> run(std::string_view func_name, const Args&... args)
 {
-    serial_adapter<Serial> adapter;
-    adapter.set_value("function", func_name);
-    adapter.set_value("args", adapter.make_array());
-    auto& argList = adapter.template get_value_ref<Serial>("args");
-
-    (details::encode_arguments(argList, 1, args), ...);
+    func_call<Serial> fc(func_name, args...);
 
     try
     {
-        return dispatch(adapter);
+        return dispatch(fc);
     }
     catch (std::exception& ex)
     {
-        serial_adapter<Serial> result;
-        result.set_value("error", ex.what());
-        return result.get();
+        return func_result<Serial>::generate_error_result(ex.what());
     }
 }
 
-///@brief Entry point for rpc.hpp to dispatch a function call (asynchronous)
+/// @brief Entry point for rpc.hpp to dispatch a function call (asynchronous)
 ///
 /// Takes the function name and the provided arguments and encodes them into a serialization
 /// object then calls the function using dispatch and returns a serialized representation of the result
-///@tparam Serial The serialization object to utilize
-///@tparam Args Type(s) of the function parameter(s)
-///@param func_name String containing the name of the function
-///@param args Variadic list of function parameters
-///@return std::future<Serial> Future of a serial representation of the result of function call
+/// @tparam Serial The serialization object to utilize
+/// @tparam Args Type(s) of the function parameter(s)
+/// @param func_name String containing the name of the function
+/// @param args Variadic list of function parameters
+/// @return std::future<func_result<Serial>> Future of a serial representation of the result of function call
 template<typename Serial, typename... Args>
-std::future<Serial> async_run(std::string_view func_name, const Args&... args)
+std::future<func_result<Serial>> async_run(std::string_view func_name, const Args&... args)
 {
     return std::async(run<Serial, Args...>, func_name, args...);
 }
 
-///@brief Entry point for rpc.hpp to dispatch a function call, using a serializable string
+/// @brief Entry point for rpc.hpp to dispatch a function call, using a serializable string
 ///
-/// Creates a serialization object from the string then calls the function using dispatch and returns a serialized representation of the result
-///@tparam Serial The serialization object to utilize
-///@param obj_str String representing the serialization object containing the function call
-///@return Serial A serial representation of the result of function call
+/// Creates a func_call object from the string then calls the function using dispatch and returns a serialized representation of the result
+/// @tparam Serial The serialization object to utilize
+/// @param obj_str String representing the serialization object containing the function call
+/// @return func_result<Serial> A serial representation of the result of function call
 template<typename Serial>
-Serial run_string(std::string_view obj_str)
+func_result<Serial> run_string(std::string_view obj_str)
 {
-    serial_adapter<Serial> adapter(obj_str);
+    func_call<Serial> fc(serial_adapter<Serial>::from_string(obj_str));
 
     try
     {
-        return dispatch(adapter);
+        return dispatch(fc);
     }
     catch (std::exception& ex)
     {
-        serial_adapter<Serial> result;
-        result.set_value("error", ex.what());
-        return result.get();
+        return func_result<Serial>::generate_error_result(ex.what());
     }
 }
 
-///@brief Entry point for rpc.hpp to dispatch a function call, using a serializable string (asynchronous)
+/// @brief Entry point for rpc.hpp to dispatch a function call, using a serializable string (asynchronous)
 ///
-/// Creates a serialization object from the string then calls the function using dispatch and returns a serialized representation of the result
-///@tparam Serial The serialization object to utilize
-///@param obj_str String representing the serialization object containing the function call
-///@return std::future<Serial> Future of a serial representation of the result of function call
+/// Creates a func_call object from the string then calls the function using dispatch and returns a serialized representation of the result
+/// @tparam Serial The serialization object to utilize
+/// @param obj_str String representing the serialization object containing the function call
+/// @return std::future<func_result<Serial>> Future of a serial representation of the result of function call
 template<typename Serial>
-std::future<Serial> async_run_string(std::string_view obj_str)
+std::future<func_result<Serial>> async_run_string(std::string_view obj_str)
 {
     return std::async(run_string<Serial>, obj_str);
 }
 
-///@brief Entry point for rpc.hpp to dispatch a function call, using a serial object
+/// @brief Entry point for rpc.hpp to dispatch a function call, using a func_call object
 ///
 /// Calls the function using dispatch and returns a serialized representation of the result
-///@tparam Serial The serialization object to utilize
-///@param obj Serialization object containg the function call
-///@return Serial A serial representation of the result of function call
+/// @tparam Serial The serialization object to utilize
+/// @param fc func_call object representing the function call
+/// @return func_result<Serial> A serial representation of the result of function call
 template<typename Serial>
-Serial run_object(const Serial& obj)
+func_result<Serial> run_object(const func_call<Serial>& fc)
 {
-    serial_adapter<Serial> adapter(obj);
-
     try
     {
-        return dispatch(adapter);
+        return dispatch(fc);
     }
     catch (std::exception& ex)
     {
-        serial_adapter<Serial> result;
-        result.set_value("error", ex.what());
-        return result.get();
+        return func_result<Serial>::generate_error_result(ex.what());
     }
 }
 
-///@brief Entry point for rpc.hpp to dispatch a function call, using a serial object (asynchronous)
+/// @brief Entry point for rpc.hpp to dispatch a function call, using a func_call object (asynchronous)
 ///
 /// Calls the function using dispatch and returns a serialized representation of the result
-///@tparam Serial The serialization object to utilize
-///@param obj Serialization object containg the function call
-///@return std::future<Serial> Future of a serial representation of the result of function call
+/// @tparam Serial The serialization object to utilize
+/// @param fc func_call object representing the function call
+/// @return std::future<func_result<Serial>> Future of a serial representation of the result of function call
 template<typename Serial>
-std::future<Serial> async_run_object(const Serial& obj)
+std::future<func_result<Serial>> async_run_object(const func_call<Serial>& fc)
 {
-    return std::async(run_object<Serial>, obj);
+    return std::async(run_object<Serial>, fc);
 }
 
-///@brief Packs a function call into a serial object
+/// @brief Packs a function call into a func_call object
 ///
-/// Takes the function name and the provided arguments and encodes them into a serialization
+/// Takes the function name and the provided arguments and encodes them into a func_call
 /// object to be passed to a run call or sent to a server
-///@tparam Serial The serialization object to utilize
-///@tparam Args Type(s) of the function parameter(s)
-///@param func_name String containing the name of the function
-///@param args Variadic list of function parameters
-///@return Serial A serial representation of the function call
+/// @tparam Serial The serialization object to utilize
+/// @tparam Args Type(s) of the function parameter(s)
+/// @param func_name String containing the name of the function
+/// @param args Variadic list of function parameters
+/// @return func_call<Serial> A serial representation of the function call
 template<typename Serial, typename... Args>
-Serial package(std::string_view func_name, const Args&... args)
+func_call<Serial> package(std::string_view func_name, const Args&... args)
 {
-    serial_adapter<Serial> adapter;
-    adapter.set_value("function", func_name);
-    adapter.set_value("args", adapter.make_array());
-    auto& argList = adapter.template get_value_ref<Serial>("args");
-
-    (details::encode_arguments(argList, 1, args), ...);
-    return adapter.get();
+    return func_call<Serial>(func_name, args...);
 }
 
-///@brief Packs a function call into a serial object (asynchronous)
+/// @brief Packs a function call into a func_call object (asynchronous)
 ///
-/// Takes the function name and the provided arguments and encodes them into a serialization
+/// Takes the function name and the provided arguments and encodes them into a func_call
 /// object to be passed to a run call or sent to a server
-///@tparam Serial The serialization object to utilize
-///@tparam Args Type(s) of the function parameter(s)
-///@param func_name String containing the name of the function
-///@param args Variadic list of function parameters
-///@return std::future<Serial> Future of a serial representation of the function call
+/// @tparam Serial The serialization object to utilize
+/// @tparam Args Type(s) of the function parameter(s)
+/// @param func_name String containing the name of the function
+/// @param args Variadic list of function parameters
+/// @return std::future<func_call<Serial>> Future of a serial representation of the function call
 template<typename Serial, typename... Args>
-std::future<Serial> async_package(std::string_view func_name, const Args&... args)
+std::future<func_call<Serial>> async_package(std::string_view func_name, const Args&... args)
 {
     return std::async(package<Serial, Args...>, func_name, args...);
 }
