@@ -51,7 +51,7 @@ elseif (CXX_GCC OR CXX_MINGW)
     endif()
 elseif(CXX_CLANG)
     set(FULL_WARNING -Weverything -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-c++98-c++11-compat
-        -Wno-c++98-c++11-compat-binary-literal -Wno-c++98-c++11-c++14-compat -Wno-padded -Wno-exit-time-destructors -Wno-missing-prototypes)
+        -Wno-c++98-c++11-compat-binary-literal -Wno-c++98-c++11-c++14-compat -Wno-padded -Wno-exit-time-destructors -Wno-missing-prototypes -Wno-documentation -Wno-documentation-unknown-command)
     set(MIN_WARNING -Wall)
 endif()
 

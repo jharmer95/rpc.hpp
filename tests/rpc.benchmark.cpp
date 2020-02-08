@@ -120,7 +120,7 @@ TEST_CASE("By Value (many)", "[value][many]")
         test = rpc::run<njson>("StdDev", 55.65, 125.325, 552.125, 12.767, 2599.6, 1245.125663, 9783.49, 125.12, 553.3333333333, 2266.1)["result"];
     };
 
-    REQUIRE_THAT(test, Catch::Matchers::WithinRel(expected));
+    REQUIRE(test == Approx(expected));
 
     //BENCHMARK("rpc.hpp socket IPC") { return XXX; };
     //BENCHMARK("rpclib socket IPC") { return XXX; };
@@ -255,7 +255,7 @@ TEST_CASE("By Pointer (many)", "[pointer][many]")
         test = n1 + n2 + n3 + n4 + n5 + n6 + n7 + n8 + n9 + n10;
     };
 
-    REQUIRE_THAT(test, Catch::Matchers::WithinRel(expected));
+    REQUIRE(test == Approx(expected));
 
     //BENCHMARK("rpc.hpp socket IPC") { return XXX; };
     //BENCHMARK("rpclib socket IPC") { return XXX; };
@@ -391,7 +391,7 @@ TEST_CASE("By Reference (many)", "[ref][many]")
         test = n1 + n2 + n3 + n4 + n5 + n6 + n7 + n8 + n9 + n10;
     };
 
-    REQUIRE_THAT(test, Catch::Matchers::WithinRel(expected));
+    REQUIRE(test == Approx(expected));
 
     //BENCHMARK("rpc.hpp socket IPC") { return XXX; };
     //BENCHMARK("rpclib socket IPC") { return XXX; };
@@ -423,7 +423,7 @@ TEST_CASE("With Container", "[container]")
         test = rpc::run<njson>("AverageContainer<double>", vec)["result"];
     };
 
-    REQUIRE_THAT(test, Catch::Matchers::WithinRel(expected));
+    REQUIRE(test == Approx(expected));
 
     //BENCHMARK("rpc.hpp socket IPC") { return XXX; };
     //BENCHMARK("rpclib socket IPC") { return XXX; };

@@ -1390,8 +1390,6 @@ Serial run(std::string_view func_name, const Args&... args)
     adapter.set_value("args", adapter.make_array());
     auto& argList = adapter.template get_value_ref<Serial>("args");
 
-    size_t arg_count = 0;
-
     (details::encode_arguments(argList, 1, args), ...);
 
     try
@@ -1507,8 +1505,6 @@ Serial package(std::string_view func_name, const Args&... args)
     adapter.set_value("function", func_name);
     adapter.set_value("args", adapter.make_array());
     auto& argList = adapter.template get_value_ref<Serial>("args");
-
-    size_t arg_count = 0;
 
     (details::encode_arguments(argList, 1, args), ...);
     return adapter.get();
