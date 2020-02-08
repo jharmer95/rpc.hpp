@@ -266,43 +266,43 @@ int SimpleSum(const int n1, const int n2)
 }
 
 template<typename Serial>
-rpc::func_result<Serial> rpc::dispatch(const serial_adapter<Serial>& adapter)
+rpc::func_result<Serial> rpc::dispatch(const func_call<Serial>& fc)
 {
-    const auto func_name = adapter.template get_value<std::string>("function");
+    const auto func_name = fc.get_func_name();
 
     if (func_name == "WriteMessages")
     {
-        return rpc::run_callback(WriteMessages, adapter);
+        return rpc::run_callback(WriteMessages, fc);
     }
 
     if (func_name == "WriteMessageRef")
     {
-        return rpc::run_callback(WriteMessageRef, adapter);
+        return rpc::run_callback(WriteMessageRef, fc);
     }
 
     if (func_name == "WriteMessageVec")
     {
-        return rpc::run_callback(WriteMessageVec, adapter);
+        return rpc::run_callback(WriteMessageVec, fc);
     }
 
     if (func_name == "ReadMessages")
     {
-        return rpc::run_callback(ReadMessages, adapter);
+        return rpc::run_callback(ReadMessages, fc);
     }
 
     if (func_name == "ReadMessageRef")
     {
-        return rpc::run_callback(ReadMessageRef, adapter);
+        return rpc::run_callback(ReadMessageRef, fc);
     }
 
     if (func_name == "ReadMessageVec")
     {
-        return rpc::run_callback(ReadMessageVec, adapter);
+        return rpc::run_callback(ReadMessageVec, fc);
     }
 
     if (func_name == "SimpleSum")
     {
-        return rpc::run_callback(SimpleSum, adapter);
+        return rpc::run_callback(SimpleSum, fc);
     }
 
     throw std::runtime_error("RPC error: Called function: \"" + func_name + "\" not found!");
