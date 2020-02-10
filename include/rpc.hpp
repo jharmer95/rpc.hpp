@@ -1217,10 +1217,7 @@ public:
     /// @brief Returns the func_call as a string
     ///
     /// @return std::string String representing the func_call
-    [[nodiscard]] std::string to_string() const
-    {
-        return m_adapter.to_string();
-    }
+    [[nodiscard]] std::string to_string() const { return m_adapter.to_string(); }
 
     /// @brief Checks if the func_call is valid
     ///
@@ -1253,7 +1250,8 @@ class func_result
 {
 public:
     ~func_result() = default;
-    func_result() = delete;
+
+    func_result() : m_adapter(std::string_view(R"({ "error": "empty func_result" })")) {}
 
     explicit func_result(Serial obj) noexcept : m_adapter(std::move(obj)) {}
     func_result(const func_result& other) noexcept : m_adapter(other.m_adapter) {}
@@ -1364,10 +1362,7 @@ public:
     /// @brief Returns the func_result as a string
     ///
     /// @return std::string String representing the func_result
-    [[nodiscard]] std::string to_string() const
-    {
-        return m_adapter.to_string();
-    }
+    [[nodiscard]] std::string to_string() const { return m_adapter.to_string(); }
 
     /// @brief Checks if the func_result is valid
     ///
@@ -1475,7 +1470,8 @@ func_result<Serial> run_callback(
 /// @param fc function_call object holding the function info
 /// @return func_result<Serial> Object containing the result and arguments of the function call
 template<typename Serial, typename R, typename... Args>
-func_result<Serial> run_callback(R (__stdcall* func)(Args...), const func_call<Serial>& fc) RPC_HPP_EXCEPT
+func_result<Serial> run_callback(
+    R(__stdcall* func)(Args...), const func_call<Serial>& fc) RPC_HPP_EXCEPT
 {
     return run_callback(std::function<R __stdcall(Args...)>(func), fc);
 }
@@ -1554,7 +1550,8 @@ func_result<Serial> run_callback(
 /// @param fc function_call object holding the function info
 /// @return func_result<Serial> Object containing the result and arguments of the function call
 template<typename Serial, typename R, typename... Args>
-func_result<Serial> run_callback(R (__fastcall* func)(Args...), const func_call<Serial>& fc) RPC_HPP_EXCEPT
+func_result<Serial> run_callback(
+    R(__fastcall* func)(Args...), const func_call<Serial>& fc) RPC_HPP_EXCEPT
 {
     return run_callback(std::function<R __fastcall(Args...)>(func), fc);
 }
