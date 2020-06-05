@@ -858,7 +858,7 @@ namespace details
         else if constexpr (std::is_same_v<P, char>)
         {
             const auto str = adapter.template get_value<std::string>();
-            std::copy(str.begin(), str.end(), reinterpret_cast<Value>(buf.data()));
+            std::copy(str.begin(), str.end(), reinterpret_cast<std::add_pointer_t<P>>(buf.data()));
         }
         else if constexpr (std::is_arithmetic_v<P> || std::is_same_v<P, std::string>)
         {
