@@ -2,7 +2,7 @@
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Unit test source file for rpc.hpp
 ///@version 0.1.0.0
-///@date 02-07-2020
+///@date 06-05-2020
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -41,6 +41,7 @@
 
 #include "rpc.hpp"
 #include "adapters/rpc_njson.hpp"
+#include "rpc_dispatch_helper.hpp"
 
 #include <fstream>
 #include <iostream>
@@ -265,45 +266,16 @@ int SimpleSum(const int n1, const int n2)
     return n1 + n2;
 }
 
+// RPC_DEFAULT_DISPATCH(WriteMessages, WriteMessageRef, WriteMessageVec, ReadMessages, ReadMessageRef,
+//     ReadMessageVec, SimpleSum)
+
 template<typename Serial>
 rpc::func_result<Serial> rpc::dispatch(const func_call<Serial>& fc)
 {
     const auto func_name = fc.get_func_name();
 
-    if (func_name == "WriteMessages")
-    {
-        return rpc::run_callback(WriteMessages, fc);
-    }
-
-    if (func_name == "WriteMessageRef")
-    {
-        return rpc::run_callback(WriteMessageRef, fc);
-    }
-
-    if (func_name == "WriteMessageVec")
-    {
-        return rpc::run_callback(WriteMessageVec, fc);
-    }
-
-    if (func_name == "ReadMessages")
-    {
-        return rpc::run_callback(ReadMessages, fc);
-    }
-
-    if (func_name == "ReadMessageRef")
-    {
-        return rpc::run_callback(ReadMessageRef, fc);
-    }
-
-    if (func_name == "ReadMessageVec")
-    {
-        return rpc::run_callback(ReadMessageVec, fc);
-    }
-
-    if (func_name == "SimpleSum")
-    {
-        return rpc::run_callback(SimpleSum, fc);
-    }
+    RPC_ATTACH_FUNCS(WriteMessages, WriteMessageRef, WriteMessageVec, ReadMessages, ReadMessageRef, ReadMessageVec, SimpleSum)
+    RPC_MULTI_ALIAS_FUNC(SimpleSum, SimpleSum2, SimpleSum3, SimpleSum4)
 
     throw std::runtime_error("RPC error: Called function: \"" + func_name + "\" not found!");
 }
@@ -429,7 +401,7 @@ TEST_CASE("Pointers", "[]")
 
 TEST_CASE("From String")
 {
-    const auto rec_obj = rpc::run_string<njson>(R"({ "function": "SimpleSum", "args": [3, 4] })");
+    const auto rec_obj = rpc::run_string<njson>(R"({ "function": "SimpleSum2", "args": [3, 4] })");
 
     REQUIRE(rec_obj);
 
@@ -440,8 +412,8 @@ TEST_CASE("From String")
 
 TEST_CASE("async")
 {
-    auto rec_obj1 = rpc::async_run<njson>("SimpleSum", 5, 9);
-    auto rec_obj2 = rpc::async_run<njson>("SimpleSum", 7, 19);
+    auto rec_obj1 = rpc::async_run<njson>("SimpleSum3", 5, 9);
+    auto rec_obj2 = rpc::async_run<njson>("SimpleSum4", 7, 19);
     auto rec_obj3 = rpc::async_run<njson>("SimpleSum", 1, 21);
     auto rec_obj4 = rpc::async_run<njson>("SimpleSum", 2, 2);
 
