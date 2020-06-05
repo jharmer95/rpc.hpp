@@ -2,7 +2,7 @@
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Unit test source file for rpc.hpp
 ///@version 0.1.0.0
-///@date 02-07-2020
+///@date 06-05-2020
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -41,6 +41,7 @@
 
 #include "rpc.hpp"
 #include "adapters/rpc_njson.hpp"
+#include "rpc_dispatch_helper.hpp"
 
 #include <fstream>
 #include <iostream>
@@ -265,48 +266,8 @@ int SimpleSum(const int n1, const int n2)
     return n1 + n2;
 }
 
-template<typename Serial>
-rpc::func_result<Serial> rpc::dispatch(const func_call<Serial>& fc)
-{
-    const auto func_name = fc.get_func_name();
-
-    if (func_name == "WriteMessages")
-    {
-        return rpc::run_callback(WriteMessages, fc);
-    }
-
-    if (func_name == "WriteMessageRef")
-    {
-        return rpc::run_callback(WriteMessageRef, fc);
-    }
-
-    if (func_name == "WriteMessageVec")
-    {
-        return rpc::run_callback(WriteMessageVec, fc);
-    }
-
-    if (func_name == "ReadMessages")
-    {
-        return rpc::run_callback(ReadMessages, fc);
-    }
-
-    if (func_name == "ReadMessageRef")
-    {
-        return rpc::run_callback(ReadMessageRef, fc);
-    }
-
-    if (func_name == "ReadMessageVec")
-    {
-        return rpc::run_callback(ReadMessageVec, fc);
-    }
-
-    if (func_name == "SimpleSum")
-    {
-        return rpc::run_callback(SimpleSum, fc);
-    }
-
-    throw std::runtime_error("RPC error: Called function: \"" + func_name + "\" not found!");
-}
+RPC_DEFAULT_DISPATCH(WriteMessages, WriteMessageRef, WriteMessageVec, ReadMessages, ReadMessageRef,
+    ReadMessageVec, SimpleSum)
 
 void ClearBus()
 {
