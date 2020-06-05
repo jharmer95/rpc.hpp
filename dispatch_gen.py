@@ -1,6 +1,6 @@
 import sys
 
-num_iters = 50
+num_iters = 20
 fname = "include/rpc_dispatch_helper.hpp"
 
 if len(sys.argv) > 1:
