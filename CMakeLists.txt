@@ -58,16 +58,28 @@ endif()
 include(CTest)
 include(Catch)
 
-find_package(Doxygen OPTIONAL_COMPONENTS dot)
+option(GENERATE_DOXYGEN "Generate Doxygen documentation from comments" OFF)
 
-if (DOXYGEN_FOUND)
-    set(DOXYGEN_GENERATE_HTML YES)
-    set(DOXYGEN_GENERATE_LATEX NO)
-    set(DOXYGEN_HTML_OUTPUT "docs")
-    set(DOXYGEN_EXCLUDE_PATTERNS "*/include/catch2*" "*/include/nlohmann/*" "*/tests/*")
-    set(DOXYGEN_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}")
-    set(DOXYGEN_USE_MDFILE_AS_MAINPAGE "README.md")
-    doxygen_add_docs(docs ${PROJECT_SOURCE_DIR} COMMENT "Generate doxygen docs for rpc.hpp")
+if(${GENERATE_DOXYGEN})
+  find_package(Doxygen OPTIONAL_COMPONENTS dot)
+
+  if (DOXYGEN_FOUND)
+      set(DOXYGEN_GENERATE_HTML YES)
+      set(DOXYGEN_GENERATE_LATEX NO)
+      set(DOXYGEN_HTML_OUTPUT "docs")
+      set(DOXYGEN_EXCLUDE_PATTERNS "*/tests/*")
+      set(DOXYGEN_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}")
+      set(DOXYGEN_USE_MDFILE_AS_MAINPAGE "README.md")
+      doxygen_add_docs(docs ${PROJECT_SOURCE_DIR} COMMENT "Generate doxygen docs for rpc.hpp")
+  endif()
+endif()
+
+option(USE_CONAN "Use Conan to manage C/C++ dependencies" OFF)
+
+if(${USE_CONAN})
+  set(CONAN_EXTRA_REQUIRES "")
+  set(CONAN_EXTRA_OPTIONS "")
+  include(cmake/Conan.cmake)
 endif()
 
 find_package(Threads)
@@ -75,16 +87,7 @@ find_package(Threads)
 add_library(rpc_hpp INTERFACE)
 target_include_directories(rpc_hpp INTERFACE "${PROJECT_SOURCE_DIR}/include")
 target_link_libraries(rpc_hpp INTERFACE ${CMAKE_THREAD_LIBS_INIT})
+install(FILES "${PROJECT_SOURCE_DIR}/include/rpc.hpp" DESTINATION "${CMAKE_INSTALL_PREFIX}/include")
 
-add_executable(rpc_test "${PROJECT_SOURCE_DIR}/tests/rpc.test.cpp")
-target_link_libraries(rpc_test rpc_hpp)
-target_compile_options(rpc_test PRIVATE ${FULL_WARNING})
-
-add_executable(rpc_benchmark "${PROJECT_SOURCE_DIR}/tests/rpc.benchmark.cpp")
-target_link_libraries(rpc_benchmark rpc_hpp)
-target_compile_options(rpc_benchmark PRIVATE ${MIN_WARNING} -D NOTHROW)
-
-catch_discover_tests(rpc_test)
-
-# TODO: Add adapters folder
-install(FILES "${PROJECT_SOURCE_DIR}/include/rpc.hpp" DESTINATION "/usr/local/include")
+add_subdirectory(tests)
+add_subdirectory(include/rpc_adapters)

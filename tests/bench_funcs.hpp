@@ -39,10 +39,11 @@
 #pragma once
 
 #include "rpc.hpp"
-#include "adapters/rpc_njson.hpp"
+#include "rpc_adapters/rpc_njson.hpp"
 
 #include <algorithm>
 #include <array>
+#include <fstream>
 #include <sstream>
 #include <string>
 #include <vector>

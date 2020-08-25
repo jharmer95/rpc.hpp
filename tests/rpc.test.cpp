@@ -36,15 +36,14 @@
 ///OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ///
 
-#define CATCH_CONFIG_MAIN
 #include <catch2/catch.hpp>
 
 #include "rpc.hpp"
-#include "adapters/rpc_njson.hpp"
+#include "rpc_adapters/rpc_njson.hpp"
 #include "rpc_dispatch_helper.hpp"
 
 #include <fstream>
-#include <iostream>
+#include <sstream>
 #include <string>
 #include <vector>
 
