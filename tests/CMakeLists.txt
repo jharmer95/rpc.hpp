@@ -12,10 +12,9 @@ endif()
 add_executable(rpc_test "rpc.test.cpp")
 target_link_libraries(rpc_test rpc_hpp catch2_lib)
 target_compile_options(rpc_test PRIVATE ${FULL_WARNING})
-
-add_executable(rpc_benchmark "rpc.benchmark.cpp")
-target_link_libraries(rpc_benchmark rpc_hpp catch2_lib)
-target_compile_options(rpc_benchmark PRIVATE ${MIN_WARNING} -D NOTHROW)
-
 catch_discover_tests(rpc_test)
-catch_discover_tests(rpc_benchmark)
+
+#add_executable(rpc_benchmark "rpc.benchmark.cpp")
+#target_link_libraries(rpc_benchmark rpc_hpp catch2_lib)
+#target_compile_options(rpc_benchmark PRIVATE ${MIN_WARNING} -D NOTHROW)
+#catch_discover_tests(rpc_benchmark)

@@ -1,6 +1,6 @@
-///@file rpc_adapters/rpc_njson.hpp
+///@file rpc_adapters/rpc_rapidjson.hpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
-///@brief Implementation of adapting nlohmann/json (https://github.com/nlohmann/json)
+///@brief Implementation of adapting rapidjson (https://github.com/Tencent/rapidjson)
 ///@version 0.1.0.0
 ///@date 08-25-2020
 ///
@@ -38,66 +38,77 @@
 
 #pragma once
 
-#include <nlohmann/json.hpp>
+#include <rapidjson/document.h>
 
-using njson = nlohmann::json;
-
-using njson_adapter = rpc::serial_adapter<njson>;
+using rpdjson_doc = rapidjson::Document;
+using rpdjson_val = rapidjson::Value;
+using rpdjson_adapter = rpc::serial_adapter<rpdjson_doc>;
 
 template<>
 template<typename T>
-T njson_adapter::packArg(const njson& obj, unsigned& i)
+T rpdjson_adapter::packArg(const rpdjson_doc& doc, unsigned& i)
 {
-    return obj["args"][i++].get<T>();
+    const auto& docArgs = doc.FindMember("args")->value.GetArray();
+    return docArgs[i++].Get<T>();
 }
 
 template<>
 template<typename T, typename R, typename... Args>
-T njson_adapter::unpackArg(const rpc::packed_func<R, Args...>& pack, unsigned& i)
+T rpdjson_adapter::unpackArg(const rpc::packed_func<R, Args...>& pack, unsigned& i)
 {
     return pack.template get_arg<T>(i++);
 }
 
 template<>
 template<typename R, typename... Args>
-rpc::packed_func<R, Args...> njson_adapter::to_packed_func(const njson& serial_obj)
+rpc::packed_func<R, Args...> rpdjson_adapter::to_packed_func(const rpdjson_doc& serial_obj)
 {
     unsigned i = 0;
 
     // TODO: Address cases where pointer, container, or custom type is used
     std::array<std::any, sizeof...(Args)> args{ packArg<Args>(serial_obj, i)... };
 
-    if (serial_obj.contains("result"))
+    if (serial_obj.HasMember("result"))
     {
-        return packed_func<R, Args...>(serial_obj["func_name"], serial_obj["result"].get<R>(), args);
+        const rpdjson_val& result = serial_obj["result"];
+        return packed_func<R, Args...>(serial_obj["func_name"].GetString(), result.Get<R>(), args);
     }
 
-    return packed_func<R, Args...>(serial_obj["func_name"], std::nullopt, args);
+    return packed_func<R, Args...>(serial_obj["func_name"].GetString(), std::nullopt, args);
 }
 
 template<>
 template<typename R, typename... Args>
-njson njson_adapter::from_packed_func(const packed_func<R, Args...>& pack)
+rpdjson_doc rpdjson_adapter::from_packed_func(const packed_func<R, Args...>& pack)
 {
-    njson ret_j;
+    rpdjson_doc d;
+    auto& alloc = d.GetAllocator();
 
-    ret_j["func_name"] = pack.get_func_name();
+    rpdjson_val func_name;
+    func_name.SetString(rapidjson::StringRef(pack.get_func_name().c_str()));
+    d.AddMember("func_name", func_name, alloc);
+
+    rpdjson_val result;
 
     if (pack)
     {
-        ret_j["result"] = *pack.get_result();
+        result.Set<R>(*pack.get_result());
     }
     else
     {
-        ret_j["result"] = nullptr;
+        result.Set<R>({});
     }
 
-    ret_j["args"] = njson::array();
+    d.AddMember("result", result, alloc);
+
+    rpdjson_val args;
+    args.SetArray();
+    d.AddMember("args", args, alloc);
     unsigned i = 0;
 
     // TODO: Address cases where pointer, container, or custom type is used
     std::tuple<Args...> argTup{ unpackArg<Args, R, Args...>(pack, i)... };
-    rpc::for_each_tuple(argTup, [&ret_j](auto x) { ret_j["args"].push_back(x); });
+    rpc::for_each_tuple(argTup, [&args, &alloc](auto x) { args.PushBack(x, alloc); });
 
-    return ret_j;
+    return d;
 }
