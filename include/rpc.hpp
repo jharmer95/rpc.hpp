@@ -40,8 +40,10 @@
 
 #include <any>
 #include <future>
+#include <iostream>
 #include <optional>
 #include <string>
+#include <unordered_map>
 #include <utility>
 
 namespace rpc
@@ -98,8 +100,7 @@ using function_args_t = typename function_traits<std::function<R(Args...)>>::tem
 /// @param tuple Tuple to iterate over
 /// @param func Function to apply to each value
 template<typename F, typename... Ts, size_t... Is>
-void for_each_tuple(
-    const std::tuple<Ts...>& tuple, const F& func, std::index_sequence<Is...>)
+void for_each_tuple(const std::tuple<Ts...>& tuple, const F& func, std::index_sequence<Is...>)
 {
     using expander = int[];
     (void)expander{ 0, ((void)func(std::get<Is>(tuple)), 0)... };
@@ -117,8 +118,28 @@ void for_each_tuple(const std::tuple<Ts...>& tuple, const F& func)
     for_each_tuple(tuple, func, std::make_index_sequence<sizeof...(Ts)>());
 }
 
+class packed_func_base
+{
+public:
+    virtual ~packed_func_base() = default;
+    packed_func_base() = delete;
+
+    packed_func_base(std::string func_name) : m_func_name(std::move(func_name)) {}
+
+    packed_func_base(const packed_func_base&) = default;
+    packed_func_base(packed_func_base&&) = default;
+
+    [[nodiscard]] std::string get_func_name() const noexcept { return m_func_name; }
+    [[nodiscard]] std::string get_err_mesg() const noexcept { return m_err_mesg; }
+    void set_err_mesg(const std::string& mesg) noexcept { m_err_mesg = mesg; }
+
+private:
+    const std::string m_func_name;
+    std::string m_err_mesg;
+};
+
 template<typename R, typename... Args>
-class packed_func
+class packed_func : public packed_func_base
 {
 public:
     using result_type = R;
@@ -127,7 +148,7 @@ public:
 
     packed_func(std::string func_name, std::optional<result_type> result,
         std::array<std::any, sizeof...(Args)> args)
-        : m_result(result), m_args(std::move(args)), m_func_name(std::move(func_name))
+        : packed_func_base(std::move(func_name)), m_result(result), m_args(std::move(args))
     {
     }
 
@@ -138,11 +159,10 @@ public:
 
     explicit operator bool() const noexcept { return m_result.has_value(); }
 
-    [[nodiscard]] std::string get_func_name() const noexcept { return m_func_name; }
-
     [[nodiscard]] std::optional<R> get_result() const noexcept { return m_result; }
 
     void set_result(R value) noexcept { m_result = value; }
+
     void clear_result() noexcept { m_result = std::nullopt; }
 
     template<typename T>
@@ -163,14 +183,51 @@ public:
         return std::any_cast<T>(m_args[arg_index]);
     }
 
-    [[nodiscard]] std::string get_err_mesg() const noexcept { return m_err_mesg; }
-    void set_err_mesg(const std::string& mesg) noexcept { m_err_mesg = mesg; }
-
 private:
     std::optional<result_type> m_result{ std::nullopt };
     std::array<std::any, sizeof...(Args)> m_args;
-    const std::string m_func_name;
-    std::string m_err_mesg;
+};
+
+template<typename... Args>
+class packed_func<void, Args...> : public packed_func_base
+{
+public:
+    using result_type = void;
+
+    packed_func() = delete;
+
+    packed_func(std::string func_name, std::array<std::any, sizeof...(Args)> args)
+        : packed_func_base(std::move(func_name)), m_args(std::move(args))
+    {
+    }
+
+    packed_func(const packed_func&) = default;
+    packed_func(packed_func&&) = default;
+    packed_func& operator=(const packed_func&) = default;
+    packed_func& operator=(packed_func&&) = default;
+
+    explicit operator bool() const noexcept { return true; }
+
+    template<typename T>
+    void set_arg(size_t arg_index, T value)
+    {
+        if (m_args[arg_index].type() != typeid(T))
+        {
+            // TODO: Print arg type name
+            throw std::runtime_error("Invalid argument type provided!");
+        }
+
+        m_args[arg_index] = value;
+    }
+
+    template<typename T>
+    [[nodiscard]] T get_arg(size_t arg_index) const
+    {
+        return std::any_cast<T>(m_args[arg_index]);
+    }
+
+private:
+    std::array<std::any, sizeof...(Args)> m_args;
 };
 
 // NOTE: Member functions are to be implemented by an adapter
@@ -213,8 +270,17 @@ namespace details
     template<typename R, typename... Args>
     packed_func<R, Args...> pack_call(const std::string& func_name, Args&&... args)
     {
-        std::array<std::any, sizeof...(Args)> argArray{ args... };
-        return packed_func<R, Args...>(func_name, std::nullopt, argArray);
+        // TODO: Address cases where pointer, container, or custom type is used?
+        std::array<std::any, sizeof...(Args)> argArray{ std::forward<Args>(args)... };
+
+        if constexpr (std::is_void_v<R>)
+        {
+            return packed_func<void, Args...>(func_name, argArray);
+        }
+        else
+        {
+            return packed_func<R, Args...>(func_name, std::nullopt, argArray);
+        }
     }
 } // namespace details
 
@@ -224,9 +290,10 @@ namespace server
     void run_callback(std::function<R(Args...)> func, packed_func<R, Args...>& pack)
     {
         unsigned arg_count = 0;
+        packed_func<R, Args...>& pack_ref = dynamic_cast<packed_func<R, Args...>&>(pack);
         std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...> args{
             details::decode_argument<std::remove_cv_t<std::remove_reference_t<Args>>, R, Args...>(
-                pack, arg_count)...
+                pack_ref, arg_count)...
         };
 
         if constexpr (std::is_void_v<R>)
@@ -236,7 +303,7 @@ namespace server
         else
         {
             auto result = std::apply(func, args);
-            pack.set_result(result);
+            pack_ref.set_result(result);
         }
     }
 
@@ -246,20 +313,26 @@ namespace server
         return run_callback(std::function<R(Args...)>(func), fc);
     }
 
-    // NOTE: Dispatch function to be implemented server-side
-    template<typename R, typename... Args>
-    void dispatch(packed_func<R, Args...>& pack);
+    // NOTE: Dispatch table to be implemented server-side
+    // TODO: Look at using a constexpr map to allow for better compile-time features and performance
+    extern const std::unordered_map<std::string_view, size_t> dispatch_table;
 
     template<typename R, typename... Args>
     packed_func<R, Args...> run(packed_func<R, Args...>& pack)
     {
         try
         {
-            dispatch(pack);
+            const auto func_name = pack.get_func_name();
+            auto func = reinterpret_cast<R (*)(Args...)>(dispatch_table.at(func_name));
+            run_callback(func, pack);
         }
         catch (const std::exception& ex)
         {
-            pack.clear_result();
+            if constexpr (!std::is_void_v<R>)
+            {
+                pack.clear_result();
+            }
+
             pack.set_err_mesg(ex.what());
         }
 
@@ -273,17 +346,20 @@ namespace server
     }
 }
 
-template<typename Serial, typename R, typename... Args>
-Serial serialize_call(const std::string& func_name, Args&&... args)
+inline namespace client
 {
-    auto packed = details::pack_call<R, Args...>(func_name, std::forward<Args>(args)...);
-    return serial_adapter<Serial>::template from_packed_func<R, Args...>(packed);
-}
+    template<typename Serial, typename R = void, typename... Args>
+    Serial serialize_call(const std::string& func_name, Args&&... args)
+    {
+        auto packed = details::pack_call<R, Args...>(func_name, std::forward<Args>(args)...);
+        return serial_adapter<Serial>::template from_packed_func<R, Args...>(packed);
+    }
 
-template<typename Serial, typename R, typename... Args>
-std::future<Serial> async_serialize_call(const std::string& func_name, Args&&... args)
-{
-    auto packed = details::pack_call<R, Args...>(func_name, std::forward<Args>(args)...);
-    return std::async(serial_adapter<Serial>::template from_packed_func<R, Args...>, packed);
-}
+    template<typename Serial, typename R = void, typename... Args>
+    std::future<Serial> async_serialize_call(const std::string& func_name, Args&&... args)
+    {
+        auto packed = details::pack_call<R, Args...>(func_name, std::forward<Args>(args)...);
+        return std::async(serial_adapter<Serial>::template from_packed_func<R, Args...>, packed);
+    }
+} // namespace client
 } // namespace rpc

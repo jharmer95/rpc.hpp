@@ -60,18 +60,15 @@ int SimpleSum(const int n1, const int n2)
     return n1 + n2;
 }
 
-template<typename R, typename... Args>
-void rpc::server::dispatch(packed_func<R, Args...>& pack)
+void PtrSum(const int n1, const int n2, int* result)
 {
-    const auto func_name = pack.get_func_name();
-
-    if (func_name == "SimpleSum")
-    {
-        return run_callback(SimpleSum, pack);
-    }
-
-    throw std::runtime_error("Function not found!");
+    *result = n1 + n2;
 }
+
+const std::unordered_map<std::string_view, size_t> rpc::server::dispatch_table{
+    { "SimpleSum", reinterpret_cast<size_t>(&SimpleSum) },
+    { "PtrSum", reinterpret_cast<size_t>(&PtrSum) },
+};
 
 TEST_CASE("SimpleTest")
 {
@@ -81,29 +78,47 @@ TEST_CASE("SimpleTest")
     REQUIRE(*result.get_result() == 3);
 }
 
+TEST_CASE("PointerTest")
+{
+    int sum = 0;
+    auto pack = rpc::details::pack_call<void>("PtrSum", 1, 2, &sum);
+    auto result = rpc::server::run(pack);
+    REQUIRE(*result.get_arg<int*>(2) == 3);
+}
+
 #if defined(RPC_HPP_NJSON_ENABLED)
 TEST_CASE("NJSON Serialization", "[njson][serialization]")
 {
+    // Client-side
     const auto msg = rpc::serialize_call<njson, int>("SimpleSum", 1, 2);
 
+    // Server-side
     // TODO: Find way to remove requirement for fully specifying to_packed_func template
     auto pack = njson_adapter::to_packed_func<int, int, int>(msg);
     auto result = rpc::server::run(pack);
+    auto send_back = njson_adapter::from_packed_func(pack);
 
-    REQUIRE(*result.get_result() == 3);
+    // Client-side
+    // Receive a serialized_call back
+    REQUIRE(send_back["result"] == 3);
 }
 #endif
 
 #if defined(RPC_HPP_RAPIDJSON_ENABLED)
 TEST_CASE("RapidJSON Serialization", "[rapidjson][serialization]")
 {
-    auto msg = rpc::serialize_call<rpdjson_doc, int>("SimpleSum", 3, 4);
+    // Client-side
+    const auto msg = rpc::serialize_call<rpdjson_doc, int>("SimpleSum", 1, 2);
 
+    // Server-side
     // TODO: Find way to remove requirement for fully specifying to_packed_func template
     auto pack = rpdjson_adapter::to_packed_func<int, int, int>(msg);
     auto result = rpc::server::run(pack);
+    auto send_back = rpdjson_adapter::from_packed_func(pack);
 
-    REQUIRE(*result.get_result() == 7);
+    // Client-side
+    // Receive a serialized_call back
+    REQUIRE(send_back["result"] == 3);
 }
 #endif
 

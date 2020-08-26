@@ -54,7 +54,7 @@ T rpdjson_adapter::packArg(const rpdjson_doc& doc, unsigned& i)
 
 template<>
 template<typename T, typename R, typename... Args>
-T rpdjson_adapter::unpackArg(const rpc::packed_func<R, Args...>& pack, unsigned& i)
+T rpdjson_adapter::unpackArg(const packed_func<R, Args...>& pack, unsigned& i)
 {
     return pack.template get_arg<T>(i++);
 }
