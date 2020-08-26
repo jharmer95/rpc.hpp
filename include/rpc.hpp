@@ -42,6 +42,7 @@
 #include <future>
 #include <optional>
 #include <string>
+#include <utility>
 
 namespace rpc
 {
@@ -124,9 +125,9 @@ public:
 
     packed_func() = delete;
 
-    packed_func(const std::string& func_name, std::optional<result_type> result,
+    packed_func(std::string func_name, std::optional<result_type> result,
         std::array<std::any, sizeof...(Args)> args)
-        : m_result(result), m_args(std::move(args)), m_func_name(func_name)
+        : m_result(result), m_args(std::move(args)), m_func_name(std::move(func_name))
     {
     }
 

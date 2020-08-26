@@ -40,6 +40,8 @@
 
 #include <nlohmann/json.hpp>
 
+#include "../rpc.hpp"
+
 using njson = nlohmann::json;
 
 using njson_adapter = rpc::serial_adapter<njson>;
@@ -53,7 +55,7 @@ T njson_adapter::packArg(const njson& obj, unsigned& i)
 
 template<>
 template<typename T, typename R, typename... Args>
-T njson_adapter::unpackArg(const rpc::packed_func<R, Args...>& pack, unsigned& i)
+T njson_adapter::unpackArg(const packed_func<R, Args...>& pack, unsigned& i)
 {
     return pack.template get_arg<T>(i++);
 }
@@ -67,7 +69,7 @@ rpc::packed_func<R, Args...> njson_adapter::to_packed_func(const njson& serial_o
     // TODO: Address cases where pointer, container, or custom type is used
     std::array<std::any, sizeof...(Args)> args{ packArg<Args>(serial_obj, i)... };
 
-    if (serial_obj.contains("result"))
+    if (serial_obj.contains("result") && !serial_obj["result"].is_null())
     {
         return packed_func<R, Args...>(serial_obj["func_name"], serial_obj["result"].get<R>(), args);
     }

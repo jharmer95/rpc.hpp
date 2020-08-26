@@ -39,8 +39,15 @@
 #include <catch2/catch.hpp>
 
 #include "rpc.hpp"
-#include "rpc_adapters/rpc_njson.hpp"
-#include "rpc_adapters/rpc_rapidjson.hpp"
+
+#if defined(RPC_HPP_NJSON_ENABLED)
+#    include "rpc_adapters/rpc_njson.hpp"
+#endif
+
+#if defined(RPC_HPP_RAPIDJSON_ENABLED)
+#    include "rpc_adapters/rpc_rapidjson.hpp"
+#endif
+
 //#include "rpc_dispatch_helper.hpp"
 
 #include <fstream>
@@ -53,14 +60,14 @@ int SimpleSum(const int n1, const int n2)
     return n1 + n2;
 }
 
-template<typename R, typename ... Args>
+template<typename R, typename... Args>
 void rpc::server::dispatch(packed_func<R, Args...>& pack)
 {
     const auto func_name = pack.get_func_name();
 
     if (func_name == "SimpleSum")
     {
-        run_callback(SimpleSum, pack);
+        return run_callback(SimpleSum, pack);
     }
 
     throw std::runtime_error("Function not found!");
@@ -68,25 +75,37 @@ void rpc::server::dispatch(packed_func<R, Args...>& pack)
 
 TEST_CASE("SimpleTest")
 {
+    // TODO: Find way to remove requirement of specifying return type in pack_call template
     auto pack = rpc::details::pack_call<int>("SimpleSum", 1, 2);
     auto result = rpc::server::run(pack);
     REQUIRE(*result.get_result() == 3);
 }
 
-TEST_CASE("Serialization")
+#if defined(RPC_HPP_NJSON_ENABLED)
+TEST_CASE("NJSON Serialization", "[njson][serialization]")
 {
-    auto msg1 = rpc::serialize_call<njson, int>("SimpleSum", 1, 2);
-    auto msg2 = rpc::serialize_call<rpdjson_doc, int>("SimpleSum", 3, 4);
+    const auto msg = rpc::serialize_call<njson, int>("SimpleSum", 1, 2);
 
-    auto pack1 = njson_adapter::to_packed_func<int, int, int>(msg1);
-    auto pack2 = rpdjson_adapter::to_packed_func<int, int, int>(msg2);
+    // TODO: Find way to remove requirement for fully specifying to_packed_func template
+    auto pack = njson_adapter::to_packed_func<int, int, int>(msg);
+    auto result = rpc::server::run(pack);
 
-    auto result1 = rpc::server::run(pack1);
-    auto result2 = rpc::server::run(pack2);
-
-    REQUIRE(*result1.get_result() == 3);
-    REQUIRE(*result2.get_result() == 7);
+    REQUIRE(*result.get_result() == 3);
 }
+#endif
+
+#if defined(RPC_HPP_RAPIDJSON_ENABLED)
+TEST_CASE("RapidJSON Serialization", "[rapidjson][serialization]")
+{
+    auto msg = rpc::serialize_call<rpdjson_doc, int>("SimpleSum", 3, 4);
+
+    // TODO: Find way to remove requirement for fully specifying to_packed_func template
+    auto pack = rpdjson_adapter::to_packed_func<int, int, int>(msg);
+    auto result = rpc::server::run(pack);
+
+    REQUIRE(*result.get_result() == 7);
+}
+#endif
 
 /*
 struct TestMessage

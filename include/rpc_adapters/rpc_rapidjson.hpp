@@ -82,10 +82,11 @@ template<typename R, typename... Args>
 rpdjson_doc rpdjson_adapter::from_packed_func(const packed_func<R, Args...>& pack)
 {
     rpdjson_doc d;
+    d.SetObject();
     auto& alloc = d.GetAllocator();
 
     rpdjson_val func_name;
-    func_name.SetString(rapidjson::StringRef(pack.get_func_name().c_str()));
+    func_name.SetString(pack.get_func_name().c_str(), alloc);
     d.AddMember("func_name", func_name, alloc);
 
     rpdjson_val result;
@@ -103,12 +104,14 @@ rpdjson_doc rpdjson_adapter::from_packed_func(const packed_func<R, Args...>& pac
 
     rpdjson_val args;
     args.SetArray();
-    d.AddMember("args", args, alloc);
     unsigned i = 0;
 
     // TODO: Address cases where pointer, container, or custom type is used
     std::tuple<Args...> argTup{ unpackArg<Args, R, Args...>(pack, i)... };
-    rpc::for_each_tuple(argTup, [&args, &alloc](auto x) { args.PushBack(x, alloc); });
+    rpc::for_each_tuple(argTup, [&args, &alloc](auto x) {
+        args.PushBack(rpdjson_val().Set<decltype(x)>(x), alloc);
+    });
 
+    d.AddMember("args", args, alloc);
     return d;
 }
