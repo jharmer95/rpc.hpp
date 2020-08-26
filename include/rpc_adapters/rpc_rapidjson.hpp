@@ -39,6 +39,8 @@
 #pragma once
 
 #include <rapidjson/document.h>
+#include <rapidjson/stringbuffer.h>
+#include <rapidjson/writer.h>
 
 using rpdjson_doc = rapidjson::Document;
 using rpdjson_val = rapidjson::Value;
@@ -113,5 +115,22 @@ rpdjson_doc rpdjson_adapter::from_packed_func(const packed_func<R, Args...>& pac
     });
 
     d.AddMember("args", args, alloc);
+    return d;
+}
+
+template<>
+std::string rpdjson_adapter::to_string(const rpdjson_doc& serial_obj)
+{
+    rapidjson::StringBuffer buffer;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+    serial_obj.Accept(writer);
+    return buffer.GetString();
+}
+
+template<>
+rpdjson_doc rpdjson_adapter::from_string(const std::string& str)
+{
+    rpdjson_doc d;
+    d.Parse(str.c_str());
     return d;
 }

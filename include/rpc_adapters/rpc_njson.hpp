@@ -103,3 +103,17 @@ njson njson_adapter::from_packed_func(const packed_func<R, Args...>& pack)
 
     return ret_j;
 }
+
+template<>
+std::string njson_adapter::to_string(const njson& serial_obj)
+{
+    return serial_obj.dump();
+}
+
+template<>
+njson njson_adapter::from_string(const std::string& str)
+{
+    njson j;
+    j.parse(str);
+    return j;
+}

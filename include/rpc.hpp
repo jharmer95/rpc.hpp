@@ -40,7 +40,6 @@
 
 #include <any>
 #include <future>
-#include <iostream>
 #include <optional>
 #include <string>
 #include <unordered_map>
@@ -236,16 +235,20 @@ class serial_adapter
 {
 public:
     template<typename R, typename... Args>
-    static packed_func<R, Args...> to_packed_func(const Serial& serial_obj);
+    [[nodiscard]] static packed_func<R, Args...> to_packed_func(const Serial& serial_obj);
 
     template<typename R, typename... Args>
-    static Serial from_packed_func(const packed_func<R, Args...>& pack);
+    [[nodiscard]] static Serial from_packed_func(const packed_func<R, Args...>& pack);
 
     template<typename T>
-    static T packArg(const Serial& obj, unsigned& i);
+    [[nodiscard]] static T packArg(const Serial& obj, unsigned& i);
 
     template<typename T, typename R, typename... Args>
-    static T unpackArg(const packed_func<R, Args...>& pack, unsigned& i);
+    [[nodiscard]] static T unpackArg(const packed_func<R, Args...>& pack, unsigned& i);
+
+    [[nodiscard]] static std::string to_string(const Serial& serial_obj);
+
+    [[nodiscard]] static Serial from_string(const std::string& str);
 };
 
 namespace details
@@ -314,7 +317,6 @@ namespace server
     }
 
     // NOTE: Dispatch table to be implemented server-side
-    // TODO: Look at using a constexpr map to allow for better compile-time features and performance
     extern const std::unordered_map<std::string_view, size_t> dispatch_table;
 
     template<typename R, typename... Args>
@@ -360,6 +362,23 @@ inline namespace client
     {
         auto packed = details::pack_call<R, Args...>(func_name, std::forward<Args>(args)...);
         return std::async(serial_adapter<Serial>::template from_packed_func<R, Args...>, packed);
+    }
+
+    // NOTE: send_to_server to be implemented client-side
+    template<typename Serial, typename Client>
+    void send_to_server(const Serial& serial_obj, Client& client);
+
+    // NOTE: get_server_response to be implemented client-side
+    template<typename Serial, typename Client>
+    Serial get_server_response(Client& client, int64_t timeout = 0);
+
+    template<typename Serial, typename Client, typename R, typename... Args>
+    packed_func<R, Args...> call(Client& client, const std::string& func_name, Args&&... args)
+    {
+        const auto serial_obj = serialize_call<Serial, R, Args...>(func_name, std::forward<Args>(args)...);
+        send_to_server(serial_obj, client);
+        const auto resp_obj = get_server_response<Serial>(client);
+        return serial_adapter<Serial>::template to_packed_func<R, Args...>(resp_obj);
     }
 } // namespace client
 } // namespace rpc

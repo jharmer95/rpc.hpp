@@ -48,12 +48,7 @@
 #    include "rpc_adapters/rpc_rapidjson.hpp"
 #endif
 
-//#include "rpc_dispatch_helper.hpp"
-
-#include <fstream>
-#include <sstream>
-#include <string>
-#include <vector>
+#include "rpc.client.hpp"
 
 int SimpleSum(const int n1, const int n2)
 {
@@ -70,6 +65,30 @@ const std::unordered_map<std::string_view, size_t> rpc::server::dispatch_table{
     { "PtrSum", reinterpret_cast<size_t>(&PtrSum) },
 };
 
+template<>
+void rpc::client::send_to_server(const njson& serial_obj, TestClient& client)
+{
+    client.send(serial_adapter<njson>::to_string(serial_obj));
+}
+
+template<>
+void rpc::client::send_to_server(const rpdjson_doc& serial_obj, TestClient& client)
+{
+    client.send(serial_adapter<rpdjson_doc>::to_string(serial_obj));
+}
+
+template<>
+njson rpc::client::get_server_response(TestClient& client, int64_t timeout)
+{
+    return serial_adapter<njson>::from_string(client.receive());
+}
+
+template<>
+rpdjson_doc rpc::client::get_server_response(TestClient& client, int64_t timeout)
+{
+    return serial_adapter<rpdjson_doc>::from_string(client.receive());
+}
+
 TEST_CASE("SimpleTest")
 {
     // TODO: Find way to remove requirement of specifying return type in pack_call template
@@ -84,6 +103,13 @@ TEST_CASE("PointerTest")
     auto pack = rpc::details::pack_call<void>("PtrSum", 1, 2, &sum);
     auto result = rpc::server::run(pack);
     REQUIRE(*result.get_arg<int*>(2) == 3);
+}
+
+TEST_CASE("Client")
+{
+    TestClient c("127.0.0.01", "55555");
+    auto pack = rpc::call<njson, TestClient, int>(c, "SimpleSum", 1, 2);
+    REQUIRE(*pack.get_result() == 3);
 }
 
 #if defined(RPC_HPP_NJSON_ENABLED)
