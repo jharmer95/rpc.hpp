@@ -161,7 +161,7 @@ public:
 
     packed_func() = delete;
 
-    packed_func(std::string func_name, std::optional<result_type> result,
+    packed_func(std::string&& func_name, std::optional<result_type> result,
         std::array<std::any, sizeof...(Args)> args)
         : packed_func_base(std::move(func_name)), m_result(result), m_args(std::move(args))
     {
@@ -325,6 +325,12 @@ namespace details
 namespace server
 {
     // TODO: Server-side asynchronous functions (will probably have to return vs. reference)
+
+    template<typename Serial, typename R, typename... Args>
+    packed_func<R, Args...> create_func(R (*/*unused*/)(Args...), const Serial& obj)
+    {
+        return serial_adapter<Serial>::template to_packed_func<R, Args...>(obj);
+    }
 
     template<typename R, typename... Args>
     void run_callback(std::function<R(Args...)> func, packed_func<R, Args...>& pack)
