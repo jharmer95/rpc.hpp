@@ -50,21 +50,6 @@
 
 #include "rpc.client.hpp"
 
-int SimpleSum(const int n1, const int n2)
-{
-    return n1 + n2;
-}
-
-void PtrSum(const int n1, const int n2, int* result)
-{
-    *result = n1 + n2;
-}
-
-const std::unordered_map<std::string_view, size_t> rpc::server::dispatch_table{
-    { "SimpleSum", reinterpret_cast<size_t>(&SimpleSum) },
-    { "PtrSum", reinterpret_cast<size_t>(&PtrSum) },
-};
-
 template<>
 void rpc::client::send_to_server(const njson& serial_obj, TestClient& client)
 {
@@ -78,75 +63,111 @@ void rpc::client::send_to_server(const rpdjson_doc& serial_obj, TestClient& clie
 }
 
 template<>
-njson rpc::client::get_server_response(TestClient& client, int64_t timeout)
+njson rpc::client::get_server_response(TestClient& client)
 {
     return serial_adapter<njson>::from_string(client.receive());
 }
 
 template<>
-rpdjson_doc rpc::client::get_server_response(TestClient& client, int64_t timeout)
+rpdjson_doc rpc::client::get_server_response(TestClient& client)
 {
     return serial_adapter<rpdjson_doc>::from_string(client.receive());
 }
 
-TEST_CASE("SimpleTest")
+#if defined(RPC_HPP_NJSON_ENABLED)
+TestClient& GetClient_NJSON()
 {
-    // TODO: Find way to remove requirement of specifying return type in pack_call template
-    auto pack = rpc::details::pack_call<int>("SimpleSum", 1, 2);
-    auto result = rpc::server::run(pack);
-    REQUIRE(*result.get_result() == 3);
+    static TestClient client("127.0.0.1", "5000");
+    return client;
 }
 
-TEST_CASE("PointerTest")
+TEST_CASE("SimpleSum (njson)")
 {
-    int sum = 0;
-    auto pack = rpc::details::pack_call<void>("PtrSum", 1, 2, &sum);
-    auto result = rpc::server::run(pack);
-    REQUIRE(*result.get_arg<int*>(2) == 3);
-}
-
-TEST_CASE("Client")
-{
-    TestClient c("127.0.0.01", "55555");
+    auto& c = GetClient_NJSON();
     auto pack = rpc::call<njson, TestClient, int>(c, "SimpleSum", 1, 2);
     REQUIRE(*pack.get_result() == 3);
 }
 
-#if defined(RPC_HPP_NJSON_ENABLED)
-TEST_CASE("NJSON Serialization", "[njson][serialization]")
+TEST_CASE("StrLen (njson)")
 {
-    // Client-side
-    const auto msg = rpc::serialize_call<njson, int>("SimpleSum", 1, 2);
-
-    // Server-side
-    // TODO: Find way to remove requirement for fully specifying to_packed_func template
-    auto pack = njson_adapter::to_packed_func<int, int, int>(msg);
-    auto result = rpc::server::run(pack);
-    auto send_back = njson_adapter::from_packed_func(pack);
-
-    // Client-side
-    // Receive a serialized_call back
-    REQUIRE(send_back["result"] == 3);
+    auto& c = GetClient_NJSON();
+    auto pack = rpc::call<njson, TestClient, int>(c, "StrLen", std::string("hello, world"));
+    REQUIRE(*pack.get_result() == 12);
 }
 #endif
 
 #if defined(RPC_HPP_RAPIDJSON_ENABLED)
-TEST_CASE("RapidJSON Serialization", "[rapidjson][serialization]")
+TestClient& GetClient_RAPIDJSON()
 {
-    // Client-side
-    const auto msg = rpc::serialize_call<rpdjson_doc, int>("SimpleSum", 1, 2);
+    static TestClient client("127.0.0.1", "5001");
+    return client;
+}
+TEST_CASE("SimpleSum (rapidjson)")
+{
+    auto& c = GetClient_RAPIDJSON();
+    auto pack = rpc::call<rpdjson_doc, TestClient, int>(c, "SimpleSum", 1, 2);
+    REQUIRE(*pack.get_result() == 3);
+}
 
-    // Server-side
-    // TODO: Find way to remove requirement for fully specifying to_packed_func template
-    auto pack = rpdjson_adapter::to_packed_func<int, int, int>(msg);
-    auto result = rpc::server::run(pack);
-    auto send_back = rpdjson_adapter::from_packed_func(pack);
-
-    // Client-side
-    // Receive a serialized_call back
-    REQUIRE(send_back["result"] == 3);
+TEST_CASE("StrLen (rapidjson)")
+{
+    auto& c = GetClient_RAPIDJSON();
+    auto pack = rpc::call<rpdjson_doc, TestClient, int>(c, "StrLen", std::string("hello, world"));
+    REQUIRE(*pack.get_result() == 12);
 }
 #endif
+
+//TEST_CASE("SimpleTest")
+//{
+//    // TODO: Find way to remove requirement of specifying return type in pack_call template
+//    auto pack = rpc::details::pack_call<int>("SimpleSum", 1, 2);
+//    auto result = rpc::server::run(pack);
+//    REQUIRE(*result.get_result() == 3);
+//}
+
+//TEST_CASE("PointerTest")
+//{
+//    int sum = 0;
+//    auto pack = rpc::details::pack_call<void>("PtrSum", 1, 2, &sum);
+//    auto result = rpc::server::run(pack);
+//    REQUIRE(*result.get_arg<int*>(2) == 3);
+//}
+
+//#if defined(RPC_HPP_NJSON_ENABLED)
+//TEST_CASE("NJSON Serialization", "[njson][serialization]")
+//{
+//    // Client-side
+//    const auto msg = rpc::serialize_call<njson, int>("SimpleSum", 1, 2);
+//
+//    // Server-side
+//    // TODO: Find way to remove requirement for fully specifying to_packed_func template
+//    auto pack = njson_adapter::to_packed_func<int, int, int>(msg);
+//    auto result = rpc::server::run(pack);
+//    auto send_back = njson_adapter::from_packed_func(pack);
+//
+//    // Client-side
+//    // Receive a serialized_call back
+//    REQUIRE(send_back["result"] == 3);
+//}
+//#endif
+
+//#if defined(RPC_HPP_RAPIDJSON_ENABLED)
+//TEST_CASE("RapidJSON Serialization", "[rapidjson][serialization]")
+//{
+//    // Client-side
+//    const auto msg = rpc::serialize_call<rpdjson_doc, int>("SimpleSum", 1, 2);
+//
+//    // Server-side
+//    // TODO: Find way to remove requirement for fully specifying to_packed_func template
+//    auto pack = rpdjson_adapter::to_packed_func<int, int, int>(msg);
+//    auto result = rpc::server::run(pack);
+//    auto send_back = rpdjson_adapter::from_packed_func(pack);
+//
+//    // Client-side
+//    // Receive a serialized_call back
+//    REQUIRE(send_back["result"] == 3);
+//}
+//#endif
 
 /*
 struct TestMessage

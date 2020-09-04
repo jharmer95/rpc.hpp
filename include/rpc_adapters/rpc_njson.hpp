@@ -50,6 +50,7 @@ template<>
 template<typename T>
 T njson_adapter::packArg(const njson& obj, unsigned& i)
 {
+    // TODO: Address cases where pointer, container, or custom type is used
     return obj["args"][i++].get<T>();
 }
 
@@ -57,6 +58,7 @@ template<>
 template<typename T, typename R, typename... Args>
 T njson_adapter::unpackArg(const packed_func<R, Args...>& pack, unsigned& i)
 {
+    // TODO: Address cases where pointer, container, or custom type is used
     return pack.template get_arg<T>(i++);
 }
 
@@ -69,12 +71,20 @@ rpc::packed_func<R, Args...> njson_adapter::to_packed_func(const njson& serial_o
     // TODO: Address cases where pointer, container, or custom type is used
     std::array<std::any, sizeof...(Args)> args{ packArg<Args>(serial_obj, i)... };
 
-    if (serial_obj.contains("result") && !serial_obj["result"].is_null())
+    if constexpr (!std::is_void_v<R>)
     {
-        return packed_func<R, Args...>(serial_obj["func_name"], serial_obj["result"].get<R>(), args);
-    }
+        if (serial_obj.contains("result") && !serial_obj["result"].is_null())
+        {
+            return packed_func<R, Args...>(
+                serial_obj["func_name"], serial_obj["result"].get<R>(), args);
+        }
 
-    return packed_func<R, Args...>(serial_obj["func_name"], std::nullopt, args);
+        return packed_func<R, Args...>(serial_obj["func_name"], std::nullopt, args);
+    }
+    else
+    {
+        return packed_func<void, Args...>(serial_obj["func_name"], args);
+    }
 }
 
 template<>
@@ -84,14 +94,14 @@ njson njson_adapter::from_packed_func(const packed_func<R, Args...>& pack)
     njson ret_j;
 
     ret_j["func_name"] = pack.get_func_name();
+    ret_j["result"] = nullptr;
 
-    if (pack)
+    if constexpr (!std::is_void_v<R>)
     {
-        ret_j["result"] = *pack.get_result();
-    }
-    else
-    {
-        ret_j["result"] = nullptr;
+        if (pack)
+        {
+            ret_j["result"] = *pack.get_result();
+        }
     }
 
     ret_j["args"] = njson::array();
@@ -113,7 +123,11 @@ std::string njson_adapter::to_string(const njson& serial_obj)
 template<>
 njson njson_adapter::from_string(const std::string& str)
 {
-    njson j;
-    j.parse(str);
-    return j;
+    return njson::parse(str);
+}
+
+template<>
+std::string njson_adapter::extract_func_name(const njson& obj)
+{
+    return obj["func_name"].get<std::string>();
 }

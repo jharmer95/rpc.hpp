@@ -42,7 +42,7 @@
 #include <future>
 #include <optional>
 #include <string>
-#include <unordered_map>
+#include <tuple>
 #include <utility>
 
 namespace rpc
@@ -61,11 +61,26 @@ struct function_traits<std::function<R(Args...)>>
 {
     static constexpr size_t nargs = sizeof...(Args);
     using result_type = R;
+    using args_type = std::tuple<Args...>;
 
     template<size_t i>
     struct arg
     {
-        using type = typename std::tuple_element<i, std::tuple<Args...>>::type;
+        using type = typename std::tuple_element<i, args_type>::type;
+    };
+};
+
+template<typename R, typename... Args>
+struct function_traits<R (*)(Args...)>
+{
+    static constexpr size_t nargs = sizeof...(Args);
+    using result_type = R;
+    using args_type = std::tuple<Args...>;
+
+    template<size_t i>
+    struct arg
+    {
+        using type = typename std::tuple_element<i, args_type>::type;
     };
 };
 
@@ -229,6 +244,35 @@ private:
     std::array<std::any, sizeof...(Args)> m_args;
 };
 
+template<typename T>
+struct packed_func_traits;
+
+template<typename R, typename... Args>
+struct packed_func_traits<R (*)(Args...)>
+{
+    using packed_func_type = packed_func<R, Args...>;
+    using result_type = R;
+};
+
+template<typename R, typename... Args>
+struct packed_func_traits<std::function<R(Args...)>>
+{
+    using packed_func_type = packed_func<R, Args...>;
+    using result_type = R;
+};
+
+template<typename R, typename... Args>
+packed_func<R, Args...>& convert_func(std::function<R(Args...)> func, const packed_func_base& pack)
+{
+    return dynamic_cast<packed_func<R, Args...>&>(pack);
+}
+
+template<typename R, typename... Args>
+packed_func<R, Args...>& convert_func(R (*func)(Args...), const packed_func_base& pack)
+{
+    return dynamic_cast<packed_func<R, Args...>&>(pack);
+}
+
 // NOTE: Member functions are to be implemented by an adapter
 template<typename Serial>
 class serial_adapter
@@ -249,26 +293,17 @@ public:
     [[nodiscard]] static std::string to_string(const Serial& serial_obj);
 
     [[nodiscard]] static Serial from_string(const std::string& str);
+
+    [[nodiscard]] static std::string extract_func_name(const Serial& obj);
 };
 
 namespace details
 {
     template<typename Value, typename R, typename... Args>
-    Value decode_container_argument(const packed_func<R, Args...>& call, unsigned& arg_index);
-
-#if defined(RPC_ENABLE_POINTERS)
-    template<typename Value, typename R, typename... Args>
-    Value decode_pointer_argument(const packed_func<R, Args...>& call, unsigned& arg_index);
-#endif
-
-    template<typename Value, typename R, typename... Args>
     Value decode_argument(const packed_func<R, Args...>& pack, unsigned& arg_index)
     {
         return pack.template get_arg<Value>(arg_index++);
     }
-
-    template<typename Value, typename R, typename... Args>
-    void encode_argument(packed_func<R, Args...>& result, unsigned& arg_index);
 
     template<typename R, typename... Args>
     packed_func<R, Args...> pack_call(const std::string& func_name, Args&&... args)
@@ -289,6 +324,8 @@ namespace details
 
 namespace server
 {
+    // TODO: Server-side asynchronous functions (will probably have to return vs. reference)
+
     template<typename R, typename... Args>
     void run_callback(std::function<R(Args...)> func, packed_func<R, Args...>& pack)
     {
@@ -316,36 +353,9 @@ namespace server
         return run_callback(std::function<R(Args...)>(func), fc);
     }
 
-    // NOTE: Dispatch table to be implemented server-side
-    extern const std::unordered_map<std::string_view, size_t> dispatch_table;
-
-    template<typename R, typename... Args>
-    packed_func<R, Args...> run(packed_func<R, Args...>& pack)
-    {
-        try
-        {
-            const auto func_name = pack.get_func_name();
-            auto func = reinterpret_cast<R (*)(Args...)>(dispatch_table.at(func_name));
-            run_callback(func, pack);
-        }
-        catch (const std::exception& ex)
-        {
-            if constexpr (!std::is_void_v<R>)
-            {
-                pack.clear_result();
-            }
-
-            pack.set_err_mesg(ex.what());
-        }
-
-        return pack;
-    }
-
-    template<typename R, typename... Args>
-    std::future<packed_func<R, Args...>> async_run(packed_func<R, Args...>& packed_func)
-    {
-        return std::async(run<R, Args...>, packed_func);
-    }
+    // NOTE: dispatch is to be implemented server-side
+    template<typename Serial>
+    extern void dispatch(Serial& serial_obj);
 }
 
 inline namespace client
@@ -370,12 +380,14 @@ inline namespace client
 
     // NOTE: get_server_response to be implemented client-side
     template<typename Serial, typename Client>
-    Serial get_server_response(Client& client, int64_t timeout = 0);
+    Serial get_server_response(Client& client);
 
     template<typename Serial, typename Client, typename R, typename... Args>
     packed_func<R, Args...> call(Client& client, const std::string& func_name, Args&&... args)
     {
-        const auto serial_obj = serialize_call<Serial, R, Args...>(func_name, std::forward<Args>(args)...);
+        const auto serial_obj =
+            serialize_call<Serial, R, Args...>(func_name, std::forward<Args>(args)...);
+
         send_to_server(serial_obj, client);
         const auto resp_obj = get_server_response<Serial>(client);
         return serial_adapter<Serial>::template to_packed_func<R, Args...>(resp_obj);

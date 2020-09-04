@@ -16,7 +16,7 @@ public:
 
     [[nodiscard]] std::string receive()
     {
-        const auto numBytes = asio::read(m_socket, asio::buffer(m_buffer, 64U * 1024UL));
+        const auto numBytes = m_socket.read_some(asio::buffer(m_buffer, 64U * 1024UL));
         return std::string(m_buffer, m_buffer + numBytes);
     }
 

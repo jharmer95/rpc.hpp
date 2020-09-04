@@ -51,7 +51,15 @@ template<typename T>
 T rpdjson_adapter::packArg(const rpdjson_doc& doc, unsigned& i)
 {
     const auto& docArgs = doc.FindMember("args")->value.GetArray();
-    return docArgs[i++].Get<T>();
+
+    if constexpr (std::is_same_v<T, std::string>)
+    {
+        return docArgs[i++].GetString();
+    }
+    else
+    {
+        return docArgs[i++].Get<T>();
+    }
 }
 
 template<>
@@ -111,7 +119,14 @@ rpdjson_doc rpdjson_adapter::from_packed_func(const packed_func<R, Args...>& pac
     // TODO: Address cases where pointer, container, or custom type is used
     std::tuple<Args...> argTup{ unpackArg<Args, R, Args...>(pack, i)... };
     rpc::for_each_tuple(argTup, [&args, &alloc](auto x) {
-        args.PushBack(rpdjson_val().Set<decltype(x)>(x), alloc);
+        if constexpr (std::is_same_v<decltype(x), std::string>)
+        {
+            args.PushBack(rpdjson_val().SetString(x.c_str(), alloc), alloc);
+        }
+        else
+        {
+            args.PushBack(rpdjson_val().Set<decltype(x)>(x), alloc);
+        }
     });
 
     d.AddMember("args", args, alloc);
@@ -133,4 +148,10 @@ rpdjson_doc rpdjson_adapter::from_string(const std::string& str)
     rpdjson_doc d;
     d.Parse(str.c_str());
     return d;
+}
+
+template<>
+std::string rpdjson_adapter::extract_func_name(const rpdjson_doc& obj)
+{
+    return obj["func_name"].GetString();
 }
