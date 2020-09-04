@@ -15,7 +15,7 @@ if(${BUILD_NJSON_ADAPTER})
 
   add_library(njson_adapter INTERFACE)
   target_include_directories(njson_adapter INTERFACE "${PROJECT_SOURCE_DIR}/include")
-  target_compile_definitions(njson_adapter INTERFACE RPC_HPP_NJSON_ENABLED)
+  target_compile_definitions(njson_adapter INTERFACE RPC_HPP_NJSON_ENABLED RPC_HPP_NCBOR_ENABLED RPC_HPP_NBSON_ENABLED RPC_HPP_NMSGPACK_ENABLED RPC_HPP_NUBJSON_ENABLED)
   target_link_libraries(njson_adapter INTERFACE ${CMAKE_THREAD_LIBS_INIT})
   install(FILES "rpc_njson.hpp" DESTINATION "${CMAKE_INSTALL_PREFIX}/include/rpc_adapters")
 endif()

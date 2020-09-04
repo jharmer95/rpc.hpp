@@ -59,7 +59,8 @@ void rpc::server::dispatch(Serial& serial_obj)
     }
 }
 
-void session_njson(tcp::socket sock)
+template<typename Serial>
+void session(tcp::socket sock)
 {
     try
     {
@@ -80,9 +81,9 @@ void session_njson(tcp::socket sock)
             }
 
             const std::string str(data.get(), data.get() + len);
-            auto serial_obj = rpc::serial_adapter<njson>::from_string(str);
+            auto serial_obj = rpc::serial_adapter<Serial>::from_string(str);
             rpc::server::dispatch(serial_obj);
-            const auto ret_str = rpc::serial_adapter<njson>::to_string(serial_obj);
+            const auto ret_str = rpc::serial_adapter<Serial>::to_string(serial_obj);
 
             write(sock, asio::buffer(ret_str, ret_str.size()));
         }
@@ -93,51 +94,70 @@ void session_njson(tcp::socket sock)
     }
 }
 
-void session_rapidjson(tcp::socket sock)
+constexpr uint16_t PORT_NJSON = 5000;
+constexpr uint16_t PORT_NCBOR = 5001;
+constexpr uint16_t PORT_NBSON = 5002;
+constexpr uint16_t PORT_NMSGPACK = 5003;
+constexpr uint16_t PORT_NUBJSON = 5004;
+constexpr uint16_t PORT_RAPIDJSON = 5005;
+
+void server(asio::io_context& io_context)
 {
-    try
-    {
-        while (true)
-        {
-            std::unique_ptr<char[]> data = std::make_unique<char[]>(64U * 1024UL);
+#if defined(RPC_HPP_NJSON_ENABLED)
+    tcp::acceptor a(io_context, tcp::endpoint(tcp::v4(), PORT_NJSON));
+    std::cout << "Running njson server on port " << PORT_NJSON << "...\n";
+#endif
 
-            asio::error_code error;
-            const size_t len = sock.read_some(asio::buffer(data.get(), 64U * 1024UL), error);
+#if defined(RPC_HPP_NCBOR_ENABLED)
+    tcp::acceptor b(io_context, tcp::endpoint(tcp::v4(), PORT_NCBOR));
+    std::cout << "Running ncbor server on port " << PORT_NCBOR << "...\n";
+#endif
 
-            if (error == asio::error::eof)
-            {
-                break;
-            }
-            else if (error)
-            {
-                throw asio::system_error(error);
-            }
+#if defined(RPC_HPP_NBSON_ENABLED)
+    tcp::acceptor c(io_context, tcp::endpoint(tcp::v4(), PORT_NBSON));
+    std::cout << "Running nbson server on port " << PORT_NBSON << "...\n";
+#endif
 
-            const std::string str(data.get(), data.get() + len);
-            auto serial_obj = rpc::serial_adapter<rpdjson_doc>::from_string(str);
-            rpc::server::dispatch(serial_obj);
-            const auto ret_str = rpc::serial_adapter<rpdjson_doc>::to_string(serial_obj);
+#if defined(RPC_HPP_NMSGPACK_ENABLED)
+    tcp::acceptor d(io_context, tcp::endpoint(tcp::v4(), PORT_NMSGPACK));
+    std::cout << "Running nmsgpack server on port " << PORT_NMSGPACK << "...\n";
+#endif
 
-            write(sock, asio::buffer(ret_str, ret_str.size()));
-        }
-    }
-    catch (const std::exception& ex)
-    {
-        std::cerr << "Exception in thread: " << ex.what() << '\n';
-    }
-}
+#if defined(RPC_HPP_NUBJSON_ENABLED)
+    tcp::acceptor e(io_context, tcp::endpoint(tcp::v4(), PORT_NUBJSON));
+    std::cout << "Running nubjson server on port " << PORT_NUBJSON << "...\n";
+#endif
 
-void server(asio::io_context& io_context, uint16_t port_njson, uint16_t port_rapidjson)
-{
-    tcp::acceptor a(io_context, tcp::endpoint(tcp::v4(), port_njson));
-    tcp::acceptor b(io_context, tcp::endpoint(tcp::v4(), port_rapidjson));
-    std::cout << "Running njson server on port " << port_njson << "...\n";
-    std::cout << "Running rapidjson server on port " << port_rapidjson << "...\n";
+#if defined(RPC_HPP_RAPIDJSON_ENABLED)
+    tcp::acceptor f(io_context, tcp::endpoint(tcp::v4(), PORT_RAPIDJSON));
+    std::cout << "Running rapidjson server on port " << PORT_RAPIDJSON << "...\n";
+#endif
 
     while (true)
     {
-        std::thread(session_njson, a.accept()).detach();
-        std::thread(session_rapidjson, b.accept()).detach();
+#if defined(RPC_HPP_NJSON_ENABLED)
+        std::thread(session<njson>, a.accept()).detach();
+#endif
+
+#if defined(RPC_HPP_NCBOR_ENABLED)
+        std::thread(session<ncbor>, b.accept()).detach();
+#endif
+
+#if defined(RPC_HPP_NBSON_ENABLED)
+        std::thread(session<nbson>, c.accept()).detach();
+#endif
+
+#if defined(RPC_HPP_NMSGPACK_ENABLED)
+        std::thread(session<nmsgpack>, d.accept()).detach();
+#endif
+
+#if defined(RPC_HPP_NUBJSON_ENABLED)
+        std::thread(session<nubjson>, e.accept()).detach();
+#endif
+
+#if defined(RPC_HPP_RAPIDJSON_ENABLED)
+        std::thread(session<rpdjson_doc>, f.accept()).detach();
+#endif
     }
 }
 
@@ -146,7 +166,7 @@ int main()
     try
     {
         asio::io_context io_context;
-        server(io_context, 5000, 5001);
+        server(io_context);
     }
     catch (const std::exception& ex)
     {
