@@ -21,12 +21,22 @@ inline size_t StrLen(std::string str)
     return str.size();
 }
 
+inline std::vector<int> AddOneToEach(std::vector<int> vec)
+{
+    for (auto& n : vec)
+    {
+        ++n;
+    }
+
+    return vec;
+}
+
 void PtrSum(int* n1, const int n2)
 {
     *n1 += n2;
 }
 
-RPC_DEFAULT_DISPATCH(SimpleSum, StrLen)
+RPC_DEFAULT_DISPATCH(SimpleSum, StrLen, AddOneToEach)
 
 template<typename Serial>
 void session(tcp::socket sock)

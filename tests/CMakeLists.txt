@@ -36,8 +36,3 @@ if(${BUILD_RAPIDJSON_ADAPTER})
   target_link_libraries(rpc_server PRIVATE rpdjson_adapter)
 endif()
 target_compile_options(rpc_server PRIVATE ${FULL_WARNING})
-
-#add_executable(rpc_benchmark "rpc.benchmark.cpp")
-#target_link_libraries(rpc_benchmark rpc_hpp catch2_lib)
-#target_compile_options(rpc_benchmark PRIVATE ${MIN_WARNING} -D NOTHROW)
-#catch_discover_tests(rpc_benchmark)

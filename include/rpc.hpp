@@ -106,6 +106,169 @@ using function_result_t = typename function_traits<std::function<R(Args...)>>::t
 template<size_t i, typename R, typename... Args>
 using function_args_t = typename function_traits<std::function<R(Args...)>>::template arg<i>::type;
 
+/// @brief Default implementation for SFINAE struct
+template<typename, typename T>
+struct is_serializable_base
+{
+    static_assert(std::integral_constant<T, false>::value,
+        "Second template parameter needs to be of function type");
+};
+
+/// @brief SFINAE struct checking a type for a 'serialize' member function
+///
+/// Checks whether the given type \c C has a member function to serialize it to the type given by \c R
+/// @tparam C The type to check for 'serialize'
+/// @tparam R The type to be serialized to
+/// @tparam Args The types of arguments (generic)
+template<typename C, typename R, typename... Args>
+struct is_serializable_base<C, R(Args...)>
+{
+private:
+    template<typename T>
+    static constexpr auto check(T*) noexcept ->
+        typename std::is_same<decltype(std::declval<T>().serialize(std::declval<Args>()...)),
+            R>::type;
+
+    template<typename>
+    static constexpr std::false_type check(...) noexcept;
+
+    using type = decltype(check<C>(nullptr));
+
+public:
+    static constexpr bool value = type::value;
+};
+
+/// @brief Default implementation for SFINAE struct
+template<typename, typename T>
+struct is_deserializable_base
+{
+    static_assert(std::integral_constant<T, false>::value,
+        "Second template parameter needs to be of function type");
+};
+
+/// @brief SFINAE struct checking a type for a 'deserialize' member function
+///
+/// Checks whether the given type \c C has a member function to de-serialize it to the type given by \c R
+/// @tparam C The type to check for 'deserialize'
+/// @tparam R The type to be de-serialized to
+/// @tparam Args They types of arguments (generic)
+template<typename C, typename R, typename... Args>
+struct is_deserializable_base<C, R(Args...)>
+{
+private:
+    template<typename T>
+    static constexpr auto check(T*) noexcept ->
+        typename std::is_same<decltype(std::declval<T>().deserialize(std::declval<Args>()...)),
+            R>::type;
+
+    template<typename>
+    static constexpr std::false_type check(...) noexcept;
+
+    using type = decltype(check<C>(nullptr));
+
+public:
+    static constexpr bool value = type::value;
+};
+
+/// @brief SFINAE struct combining the logic of @ref is_serializable_base and @ref is_deserializable_base
+///
+/// Checks whether the given type \c Value can be serialized to and de-serialized from the serial type \c Serial
+/// @tparam Serial The serial object type
+/// @tparam Value The type of object to serialize/de-serialize
+template<typename Serial, typename Value>
+struct is_serializable : std::integral_constant<bool,
+                             is_serializable_base<Value, Serial(const Value&)>::value
+                                 && is_deserializable_base<Value, Value(const Serial&)>::value>
+{
+};
+
+/// @brief Helper variable for @ref is_serializable
+///
+/// @tparam Serial The serial object type
+/// @tparam Value The type of object to serialize/de-serialize
+template<typename Serial, typename Value>
+inline constexpr bool is_serializable_v = is_serializable<Serial, Value>::value;
+
+/// @brief SFINAE struct for checking a type for a 'begin' member function
+///
+/// Checks whether the given type \c C has a function 'begin' that returns an iterator type
+/// @tparam C Type to check for 'begin'
+template<typename C>
+struct has_begin
+{
+private:
+    template<typename T>
+    static constexpr auto check(T*) noexcept ->
+        typename std::is_same<decltype(std::declval<T>().begin()), typename T::iterator>::type;
+
+    template<typename>
+    static constexpr std::false_type check(...) noexcept;
+
+    using type = decltype(check<C>(nullptr));
+
+public:
+    static constexpr bool value = type::value;
+};
+
+/// @brief SFINAE struct for checking a type for a 'end' member function
+///
+/// Checks whether the given type \c C has a function 'end' that returns an iterator type
+/// @tparam C Type to check for 'end'
+template<typename C>
+struct has_end
+{
+private:
+    template<typename T>
+    static constexpr auto check(T*) noexcept ->
+        typename std::is_same<decltype(std::declval<T>().end()), typename T::iterator>::type;
+
+    template<typename>
+    static constexpr std::false_type check(...) noexcept;
+
+    using type = decltype(check<C>(nullptr));
+
+public:
+    static constexpr bool value = type::value;
+};
+
+/// @brief SFINAE struct for checking a type for a 'size' member function
+///
+/// Checks whether the given type \c C has a function 'size' that returns a size type
+/// @tparam C Type to check for 'size'
+template<typename C>
+struct has_size
+{
+private:
+    template<typename T>
+    static constexpr auto check(T*) noexcept ->
+        typename std::is_same<decltype(std::declval<T>().size()), size_t>::type;
+
+    template<typename>
+    static constexpr std::false_type check(...) noexcept;
+
+    using type = decltype(check<C>(nullptr));
+
+public:
+    static constexpr bool value = type::value;
+};
+
+/// @brief SFINAE struct to determine if a type is a container
+///
+/// Combines the logic of @ref has_size, @ref has_begin, and @ref has_end to determine if a given type \c C
+/// is compatible with STL containers
+/// @tparam C Type to check
+template<typename C>
+struct is_container
+    : std::integral_constant<bool, has_size<C>::value && has_begin<C>::value && has_end<C>::value>
+{
+};
+
+/// @brief Helper variable for @ref is_container
+///
+/// @tparam C Type to check
+template<typename C>
+inline constexpr bool is_container_v = is_container<C>::value;
+
 /// @brief Default implementation of meta-programming function
 ///
 /// @tparam F Function type
@@ -161,7 +324,7 @@ public:
 
     packed_func() = delete;
 
-    packed_func(std::string&& func_name, std::optional<result_type> result,
+    packed_func(std::string func_name, std::optional<result_type> result,
         std::array<std::any, sizeof...(Args)> args)
         : packed_func_base(std::move(func_name)), m_result(result), m_args(std::move(args))
     {
@@ -185,17 +348,17 @@ public:
     {
         if (m_args[arg_index].type() != typeid(T))
         {
-            // TODO: Print arg type name
-            throw std::runtime_error("Invalid argument type provided!");
+            const std::string t_name = typeid(T).name();
+            throw std::runtime_error("Invalid argument type: \"" + t_name + "\" provided!");
         }
 
         m_args[arg_index] = value;
     }
 
     template<typename T>
-    [[nodiscard]] T get_arg(size_t arg_index) const
+    [[nodiscard]] std::remove_cv_t<std::remove_reference_t<T>> get_arg(size_t arg_index) const
     {
-        return std::any_cast<T>(m_args[arg_index]);
+        return std::any_cast<std::remove_cv_t<std::remove_reference_t<T>>>(m_args[arg_index]);
     }
 
 private:
@@ -228,17 +391,17 @@ public:
     {
         if (m_args[arg_index].type() != typeid(T))
         {
-            // TODO: Print arg type name
-            throw std::runtime_error("Invalid argument type provided!");
+            const std::string t_name = typeid(T).name();
+            throw std::runtime_error("Invalid argument type: \"" + t_name + "\" provided!");
         }
 
         m_args[arg_index] = value;
     }
 
     template<typename T>
-    [[nodiscard]] T get_arg(size_t arg_index) const
+    [[nodiscard]] std::remove_cv_t<std::remove_reference_t<T>> get_arg(size_t arg_index) const
     {
-        return std::any_cast<T>(m_args[arg_index]);
+        return std::any_cast<std::remove_cv_t<std::remove_reference_t<T>>>(m_args[arg_index]);
     }
 
 private:
@@ -290,19 +453,94 @@ public:
     [[nodiscard]] static T pack_arg(const Serial& obj, unsigned& i);
 
     [[nodiscard]] static std::string to_string(const Serial& serial_obj);
-
     [[nodiscard]] static Serial from_string(const std::string& str);
-
     [[nodiscard]] static std::string extract_func_name(const Serial& obj);
+    [[nodiscard]] static Serial make_sub_object(const Serial& obj, unsigned index);
+    [[nodiscard]] static Serial make_sub_object(const Serial& obj, const std::string& name);
+
+    template<typename T>
+    [[nodiscard]] static T get_value(const Serial& obj);
+
+    template<typename Container>
+    static void populate_array(const Serial& obj, Container& container);
 };
+
+template<typename Serial, typename Value>
+[[nodiscard]] Serial serialize(const Value& val);
+
+template<typename Serial, typename Value>
+[[nodiscard]] Value deserialize(const Serial& serial_obj);
 
 namespace details
 {
     template<typename Value, typename R, typename... Args>
-    Value decode_argument(const packed_func<R, Args...>& pack, unsigned& arg_index)
+    std::remove_cv_t<std::remove_reference_t<Value>> args_from_packed(
+        const packed_func<R, Args...>& pack, unsigned& arg_index)
     {
-        // TODO: Address cases where pointer, container, or custom type is used
-        return pack.template get_arg<Value>(arg_index++);
+        using no_ref_t = std::remove_cv_t<std::remove_reference_t<Value>>;
+
+        if constexpr (std::is_pointer_v<no_ref_t>)
+        {
+#if defined(RPC_HPP_ENABLE_POINTERS)
+            // TODO: Implement pointer
+#else
+            static_assert(false,
+                "Passing pointers across the RPC interface is not recommended. Please consider "
+                "refactoring your RPC calls or define RPC_HPP_ENABLE_POINTERS to ignore this "
+                "error.");
+#endif
+        }
+        else
+        {
+            return pack.template get_arg<no_ref_t>(arg_index++);
+        }
+    }
+
+    template<typename Serial, typename Value>
+    std::remove_cv_t<std::remove_reference_t<Value>> arg_from_serial(const Serial& obj)
+    {
+        using no_ref_t = std::remove_cv_t<std::remove_reference_t<Value>>;
+
+        if constexpr (std::is_pointer_v<no_ref_t>)
+        {
+#if defined(RPC_HPP_ENABLE_POINTERS)
+            // TODO: Implement pointer
+#else
+            static_assert(false,
+                "Passing pointers across the RPC interface is not recommended. Please consider "
+                "refactoring your RPC calls or define RPC_HPP_ENABLE_POINTERS to ignore this "
+                "error.");
+#endif
+        }
+        else if constexpr (std::is_arithmetic_v<no_ref_t> || std::is_same_v<no_ref_t, std::string>)
+        {
+            return serial_adapter<Serial>::template get_value<no_ref_t>(obj);
+        }
+        else if constexpr (is_serializable_v<Serial, no_ref_t>)
+        {
+            // Call custom deserialize member function
+            return no_ref_t::deserialize(obj);
+        }
+        else if constexpr (rpc::is_container_v<no_ref_t>)
+        {
+            no_ref_t container;
+            serial_adapter<Serial>::populate_array(obj, container);
+            return container;
+        }
+        else
+        {
+            // Attempt to find overloaded rpc::deserialize function
+            return deserialize<Serial, no_ref_t>(obj);
+        }
+    }
+
+    template<typename Serial, typename Value>
+    std::remove_cv_t<std::remove_reference_t<Value>> args_from_serial(
+        const Serial& obj, unsigned& arg_index)
+    {
+        const auto args = serial_adapter<Serial>::make_sub_object(obj, "args");
+        const auto sub_obj = serial_adapter<Serial>::make_sub_object(args, arg_index++);
+        return arg_from_serial<Serial, Value>(sub_obj);
     }
 
     template<typename R, typename... Args>
@@ -337,7 +575,7 @@ namespace server
     {
         unsigned arg_count = 0;
         std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...> args{
-            details::decode_argument<std::remove_cv_t<std::remove_reference_t<Args>>, R, Args...>(
+            details::args_from_packed<std::remove_cv_t<std::remove_reference_t<Args>>, R, Args...>(
                 pack, arg_count)...
         };
 

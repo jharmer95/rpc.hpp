@@ -47,29 +47,13 @@ using rpdjson_val = rapidjson::Value;
 using rpdjson_adapter = rpc::serial_adapter<rpdjson_doc>;
 
 template<>
-template<typename T>
-T rpdjson_adapter::pack_arg(const rpdjson_doc& obj, unsigned& i)
-{
-    const auto& docArgs = obj.FindMember("args")->value.GetArray();
-
-    if constexpr (std::is_same_v<T, std::string>)
-    {
-        return docArgs[i++].GetString();
-    }
-    else
-    {
-        return docArgs[i++].Get<T>();
-    }
-}
-
-template<>
 template<typename R, typename... Args>
 rpc::packed_func<R, Args...> rpdjson_adapter::to_packed_func(const rpdjson_doc& serial_obj)
 {
     unsigned i = 0;
 
-    // TODO: Address cases where pointer, container, or custom type is used
-    std::array<std::any, sizeof...(Args)> args{ pack_arg<Args>(serial_obj, i)... };
+    std::array<std::any, sizeof...(Args)> args{ details::args_from_serial<rpdjson_doc, Args>(
+        serial_obj, i)... };
 
     if (serial_obj.HasMember("result"))
     {
@@ -94,13 +78,21 @@ rpdjson_doc rpdjson_adapter::from_packed_func(const packed_func<R, Args...>& pac
 
     rpdjson_val result;
 
-    if (pack)
+    // TODO: Address cases where pointer, container, or custom type is used
+    if constexpr (std::is_void_v<R>)
     {
-        result.Set<R>(*pack.get_result());
+        result.SetNull();
     }
     else
     {
-        result.Set<R>({});
+        if (pack)
+        {
+            result.Set<R>(*pack.get_result());
+        }
+        else
+        {
+            result.Set<R>({});
+        }
     }
 
     d.AddMember("result", result, alloc);
@@ -109,8 +101,10 @@ rpdjson_doc rpdjson_adapter::from_packed_func(const packed_func<R, Args...>& pac
     args.SetArray();
     unsigned i = 0;
 
-    // TODO: Address cases where pointer, container, or custom type is used
-    std::tuple<Args...> argTup{ details::decode_argument<Args, R, Args...>(pack, i)... };
+    std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...> argTup{
+        details::args_from_packed<Args, R, Args...>(pack, i)...
+    };
+
     rpc::for_each_tuple(argTup, [&args, &alloc](auto x) {
         if constexpr (std::is_same_v<decltype(x), std::string>)
         {
@@ -147,4 +141,46 @@ template<>
 inline std::string rpdjson_adapter::extract_func_name(const rpdjson_doc& obj)
 {
     return obj["func_name"].GetString();
+}
+
+template<>
+inline rpdjson_doc rpdjson_adapter::make_sub_object(const rpdjson_doc& obj, unsigned index)
+{
+    rpdjson_doc d;
+    const auto& val = obj[index];
+    d.CopyFrom(val, d.GetAllocator());
+    return d;
+}
+
+template<>
+inline rpdjson_doc rpdjson_adapter::make_sub_object(const rpdjson_doc& obj, const std::string& name)
+{
+    rpdjson_doc d;
+    const auto& val = obj[name.c_str()];
+    d.CopyFrom(val, d.GetAllocator());
+    return d;
+}
+
+template<>
+template<typename T>
+T rpdjson_adapter::get_value(const rpdjson_doc& obj)
+{
+    return obj.Get<T>();
+}
+
+template<>
+template<typename Container>
+void rpdjson_adapter::populate_array(const rpdjson_doc& obj, Container& container)
+{
+    static_assert(is_container_v<Container>, "Type is not a container!");
+    using value_t = typename Container::value_type;
+
+    const auto& arr = obj.GetArray();
+
+    for (const auto& val : arr)
+    {
+        rpdjson_doc d;
+        d.CopyFrom(val, d.GetAllocator());
+        container.push_back(details::arg_from_serial<rpdjson_doc, value_t>(d));
+    }
 }

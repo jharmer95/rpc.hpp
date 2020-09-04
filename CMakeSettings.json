@@ -15,6 +15,11 @@
           "name": "USE_CONAN",
           "value": "False",
           "type": "BOOL"
+        },
+        {
+          "name": "BUILD_RAPIDJSON_ADAPTER",
+          "value": "False",
+          "type": "BOOL"
         }
       ]
     },
