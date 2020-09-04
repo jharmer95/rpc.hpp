@@ -39,6 +39,7 @@
 #pragma once
 
 #include <nlohmann/json.hpp>
+
 #include <utility>
 
 // -------- SECTION: JSON --------
@@ -49,18 +50,10 @@ using njson_adapter = rpc::serial_adapter<njson>;
 
 template<>
 template<typename T>
-T njson_adapter::packArg(const njson& obj, unsigned& i)
+T njson_adapter::pack_arg(const njson& obj, unsigned& i)
 {
     // TODO: Address cases where pointer, container, or custom type is used
     return obj["args"][i++].get<T>();
-}
-
-template<>
-template<typename T, typename R, typename... Args>
-T njson_adapter::unpackArg(const packed_func<R, Args...>& pack, unsigned& i)
-{
-    // TODO: Address cases where pointer, container, or custom type is used
-    return pack.template get_arg<T>(i++);
 }
 
 template<>
@@ -70,7 +63,7 @@ rpc::packed_func<R, Args...> njson_adapter::to_packed_func(const njson& serial_o
     unsigned i = 0;
 
     // TODO: Address cases where pointer, container, or custom type is used
-    std::array<std::any, sizeof...(Args)> args{ packArg<Args>(serial_obj, i)... };
+    std::array<std::any, sizeof...(Args)> args{ pack_arg<Args>(serial_obj, i)... };
 
     if constexpr (!std::is_void_v<R>)
     {
@@ -109,7 +102,7 @@ njson njson_adapter::from_packed_func(const packed_func<R, Args...>& pack)
     unsigned i = 0;
 
     // TODO: Address cases where pointer, container, or custom type is used
-    std::tuple<Args...> argTup{ unpackArg<Args, R, Args...>(pack, i)... };
+    std::tuple<Args...> argTup{ details::decode_argument<Args, R, Args...>(pack, i)... };
     rpc::for_each_tuple(argTup, [&ret_j](auto x) { ret_j["args"].push_back(x); });
 
     return ret_j;
@@ -149,18 +142,10 @@ using ncbor_adapter = rpc::serial_adapter<ncbor>;
 
 template<>
 template<typename T>
-T ncbor_adapter::packArg(const ncbor& obj, unsigned& i)
+T ncbor_adapter::pack_arg(const ncbor& obj, unsigned& i)
 {
     // TODO: Address cases where pointer, container, or custom type is used
-    return njson::from_cbor(obj.value)["args"][i++].template get<T>();
-}
-
-template<>
-template<typename T, typename R, typename... Args>
-T ncbor_adapter::unpackArg(const packed_func<R, Args...>& pack, unsigned& i)
-{
-    // TODO: Address cases where pointer, container, or custom type is used
-    return pack.template get_arg<T>(i++);
+    return njson::from_cbor(obj.value)["args"][i++].get<T>();
 }
 
 template<>
@@ -171,7 +156,7 @@ rpc::packed_func<R, Args...> ncbor_adapter::to_packed_func(const ncbor& serial_o
     const njson j_obj = njson::from_cbor(serial_obj.value);
 
     // TODO: Address cases where pointer, container, or custom type is used
-    std::array<std::any, sizeof...(Args)> args{ packArg<Args>(serial_obj, i)... };
+    std::array<std::any, sizeof...(Args)> args{ pack_arg<Args>(serial_obj, i)... };
 
     if constexpr (!std::is_void_v<R>)
     {
@@ -209,7 +194,7 @@ ncbor ncbor_adapter::from_packed_func(const packed_func<R, Args...>& pack)
     unsigned i = 0;
 
     // TODO: Address cases where pointer, container, or custom type is used
-    std::tuple<Args...> argTup{ unpackArg<Args, R, Args...>(pack, i)... };
+    std::tuple<Args...> argTup{ details::decode_argument<Args, R, Args...>(pack, i)... };
     rpc::for_each_tuple(argTup, [&ret_j](auto x) { ret_j["args"].push_back(x); });
 
     return ncbor(njson::to_cbor(ret_j));
@@ -249,18 +234,10 @@ using nbson_adapter = rpc::serial_adapter<nbson>;
 
 template<>
 template<typename T>
-T nbson_adapter::packArg(const nbson& obj, unsigned& i)
+T nbson_adapter::pack_arg(const nbson& obj, unsigned& i)
 {
     // TODO: Address cases where pointer, container, or custom type is used
-    return njson::from_bson(obj.value)["args"][i++].template get<T>();
-}
-
-template<>
-template<typename T, typename R, typename... Args>
-T nbson_adapter::unpackArg(const packed_func<R, Args...>& pack, unsigned& i)
-{
-    // TODO: Address cases where pointer, container, or custom type is used
-    return pack.template get_arg<T>(i++);
+    return njson::from_bson(obj.value)["args"][i++].get<T>();
 }
 
 template<>
@@ -271,7 +248,7 @@ rpc::packed_func<R, Args...> nbson_adapter::to_packed_func(const nbson& serial_o
     const njson j_obj = njson::from_bson(serial_obj.value);
 
     // TODO: Address cases where pointer, container, or custom type is used
-    std::array<std::any, sizeof...(Args)> args{ packArg<Args>(serial_obj, i)... };
+    std::array<std::any, sizeof...(Args)> args{ pack_arg<Args>(serial_obj, i)... };
 
     if constexpr (!std::is_void_v<R>)
     {
@@ -309,7 +286,7 @@ nbson nbson_adapter::from_packed_func(const packed_func<R, Args...>& pack)
     unsigned i = 0;
 
     // TODO: Address cases where pointer, container, or custom type is used
-    std::tuple<Args...> argTup{ unpackArg<Args, R, Args...>(pack, i)... };
+    std::tuple<Args...> argTup{ details::decode_argument<Args, R, Args...>(pack, i)... };
     rpc::for_each_tuple(argTup, [&ret_j](auto x) { ret_j["args"].push_back(x); });
 
     return nbson(njson::to_bson(ret_j));
@@ -349,18 +326,10 @@ using nmsgpack_adapter = rpc::serial_adapter<nmsgpack>;
 
 template<>
 template<typename T>
-T nmsgpack_adapter::packArg(const nmsgpack& obj, unsigned& i)
+T nmsgpack_adapter::pack_arg(const nmsgpack& obj, unsigned& i)
 {
     // TODO: Address cases where pointer, container, or custom type is used
-    return njson::from_msgpack(obj.value)["args"][i++].template get<T>();
-}
-
-template<>
-template<typename T, typename R, typename... Args>
-T nmsgpack_adapter::unpackArg(const packed_func<R, Args...>& pack, unsigned& i)
-{
-    // TODO: Address cases where pointer, container, or custom type is used
-    return pack.template get_arg<T>(i++);
+    return njson::from_msgpack(obj.value)["args"][i++].get<T>();
 }
 
 template<>
@@ -371,7 +340,7 @@ rpc::packed_func<R, Args...> nmsgpack_adapter::to_packed_func(const nmsgpack& se
     const njson j_obj = njson::from_msgpack(serial_obj.value);
 
     // TODO: Address cases where pointer, container, or custom type is used
-    std::array<std::any, sizeof...(Args)> args{ packArg<Args>(serial_obj, i)... };
+    std::array<std::any, sizeof...(Args)> args{ pack_arg<Args>(serial_obj, i)... };
 
     if constexpr (!std::is_void_v<R>)
     {
@@ -409,7 +378,7 @@ nmsgpack nmsgpack_adapter::from_packed_func(const packed_func<R, Args...>& pack)
     unsigned i = 0;
 
     // TODO: Address cases where pointer, container, or custom type is used
-    std::tuple<Args...> argTup{ unpackArg<Args, R, Args...>(pack, i)... };
+    std::tuple<Args...> argTup{ details::decode_argument<Args, R, Args...>(pack, i)... };
     rpc::for_each_tuple(argTup, [&ret_j](auto x) { ret_j["args"].push_back(x); });
 
     return nmsgpack(njson::to_msgpack(ret_j));
@@ -449,18 +418,10 @@ using nubjson_adapter = rpc::serial_adapter<nubjson>;
 
 template<>
 template<typename T>
-T nubjson_adapter::packArg(const nubjson& obj, unsigned& i)
+T nubjson_adapter::pack_arg(const nubjson& obj, unsigned& i)
 {
     // TODO: Address cases where pointer, container, or custom type is used
-    return njson::from_ubjson(obj.value)["args"][i++].template get<T>();
-}
-
-template<>
-template<typename T, typename R, typename... Args>
-T nubjson_adapter::unpackArg(const packed_func<R, Args...>& pack, unsigned& i)
-{
-    // TODO: Address cases where pointer, container, or custom type is used
-    return pack.template get_arg<T>(i++);
+    return njson::from_ubjson(obj.value)["args"][i++].get<T>();
 }
 
 template<>
@@ -471,7 +432,7 @@ rpc::packed_func<R, Args...> nubjson_adapter::to_packed_func(const nubjson& seri
     const njson j_obj = njson::from_ubjson(serial_obj.value);
 
     // TODO: Address cases where pointer, container, or custom type is used
-    std::array<std::any, sizeof...(Args)> args{ packArg<Args>(serial_obj, i)... };
+    std::array<std::any, sizeof...(Args)> args{ pack_arg<Args>(serial_obj, i)... };
 
     if constexpr (!std::is_void_v<R>)
     {
@@ -509,7 +470,7 @@ nubjson nubjson_adapter::from_packed_func(const packed_func<R, Args...>& pack)
     unsigned i = 0;
 
     // TODO: Address cases where pointer, container, or custom type is used
-    std::tuple<Args...> argTup{ unpackArg<Args, R, Args...>(pack, i)... };
+    std::tuple<Args...> argTup{ details::decode_argument<Args, R, Args...>(pack, i)... };
     rpc::for_each_tuple(argTup, [&ret_j](auto x) { ret_j["args"].push_back(x); });
 
     return nubjson(njson::to_ubjson(ret_j));

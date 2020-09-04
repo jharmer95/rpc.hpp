@@ -9,12 +9,12 @@
 
 using asio::ip::tcp;
 
-int SimpleSum(const int n1, const int n2)
+inline int SimpleSum(const int n1, const int n2)
 {
     return n1 + n2;
 }
 
-int StrLen(std::string str)
+inline size_t StrLen(std::string str)
 {
     return str.size();
 }
@@ -24,8 +24,9 @@ void PtrSum(int* n1, const int n2)
     *n1 += n2;
 }
 
+// TODO: Move inside rpc.hpp
 template<typename Serial, typename R, typename... Args>
-rpc::packed_func<R, Args...> create_func(R (*)(Args...), const Serial& obj)
+rpc::packed_func<R, Args...> create_func(R (*/*unused*/)(Args...), const Serial& obj)
 {
     return rpc::serial_adapter<Serial>::template to_packed_func<R, Args...>(obj);
 }

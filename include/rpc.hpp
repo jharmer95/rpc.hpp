@@ -114,7 +114,8 @@ using function_args_t = typename function_traits<std::function<R(Args...)>>::tem
 /// @param tuple Tuple to iterate over
 /// @param func Function to apply to each value
 template<typename F, typename... Ts, size_t... Is>
-void for_each_tuple(const std::tuple<Ts...>& tuple, const F& func, std::index_sequence<Is...>)
+void for_each_tuple(
+    const std::tuple<Ts...>& tuple, const F& func, std::index_sequence<Is...> /*unused*/)
 {
     using expander = int[];
     (void)expander{ 0, ((void)func(std::get<Is>(tuple)), 0)... };
@@ -138,7 +139,7 @@ public:
     virtual ~packed_func_base() = default;
     packed_func_base() = delete;
 
-    packed_func_base(std::string func_name) : m_func_name(std::move(func_name)) {}
+    explicit packed_func_base(std::string&& func_name) : m_func_name(std::move(func_name)) {}
 
     packed_func_base(const packed_func_base&) = default;
     packed_func_base(packed_func_base&&) = default;
@@ -153,7 +154,7 @@ private:
 };
 
 template<typename R, typename... Args>
-class packed_func : public packed_func_base
+class packed_func final : public packed_func_base
 {
 public:
     using result_type = R;
@@ -203,7 +204,7 @@ private:
 };
 
 template<typename... Args>
-class packed_func<void, Args...> : public packed_func_base
+class packed_func<void, Args...> final : public packed_func_base
 {
 public:
     using result_type = void;
@@ -262,13 +263,14 @@ struct packed_func_traits<std::function<R(Args...)>>
 };
 
 template<typename R, typename... Args>
-packed_func<R, Args...>& convert_func(std::function<R(Args...)> func, const packed_func_base& pack)
+packed_func<R, Args...>& convert_func(
+    std::function<R(Args...)> /*unused*/, const packed_func_base& pack)
 {
     return dynamic_cast<packed_func<R, Args...>&>(pack);
 }
 
 template<typename R, typename... Args>
-packed_func<R, Args...>& convert_func(R (*func)(Args...), const packed_func_base& pack)
+packed_func<R, Args...>& convert_func(R (*/*unused*/)(Args...), const packed_func_base& pack)
 {
     return dynamic_cast<packed_func<R, Args...>&>(pack);
 }
@@ -285,10 +287,7 @@ public:
     [[nodiscard]] static Serial from_packed_func(const packed_func<R, Args...>& pack);
 
     template<typename T>
-    [[nodiscard]] static T packArg(const Serial& obj, unsigned& i);
-
-    template<typename T, typename R, typename... Args>
-    [[nodiscard]] static T unpackArg(const packed_func<R, Args...>& pack, unsigned& i);
+    [[nodiscard]] static T pack_arg(const Serial& obj, unsigned& i);
 
     [[nodiscard]] static std::string to_string(const Serial& serial_obj);
 
@@ -302,6 +301,7 @@ namespace details
     template<typename Value, typename R, typename... Args>
     Value decode_argument(const packed_func<R, Args...>& pack, unsigned& arg_index)
     {
+        // TODO: Address cases where pointer, container, or custom type is used
         return pack.template get_arg<Value>(arg_index++);
     }
 
@@ -330,10 +330,9 @@ namespace server
     void run_callback(std::function<R(Args...)> func, packed_func<R, Args...>& pack)
     {
         unsigned arg_count = 0;
-        packed_func<R, Args...>& pack_ref = dynamic_cast<packed_func<R, Args...>&>(pack);
         std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...> args{
             details::decode_argument<std::remove_cv_t<std::remove_reference_t<Args>>, R, Args...>(
-                pack_ref, arg_count)...
+                pack, arg_count)...
         };
 
         if constexpr (std::is_void_v<R>)
@@ -343,7 +342,7 @@ namespace server
         else
         {
             auto result = std::apply(func, args);
-            pack_ref.set_result(result);
+            pack.set_result(result);
         }
     }
 
@@ -376,11 +375,11 @@ inline namespace client
 
     // NOTE: send_to_server to be implemented client-side
     template<typename Serial, typename Client>
-    void send_to_server(const Serial& serial_obj, Client& client);
+    extern void send_to_server(const Serial& serial_obj, Client& client);
 
     // NOTE: get_server_response to be implemented client-side
     template<typename Serial, typename Client>
-    Serial get_server_response(Client& client);
+    extern Serial get_server_response(Client& client);
 
     template<typename Serial, typename Client, typename R, typename... Args>
     packed_func<R, Args...> call(Client& client, const std::string& func_name, Args&&... args)

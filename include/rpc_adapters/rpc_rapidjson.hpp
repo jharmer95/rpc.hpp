@@ -48,9 +48,9 @@ using rpdjson_adapter = rpc::serial_adapter<rpdjson_doc>;
 
 template<>
 template<typename T>
-T rpdjson_adapter::packArg(const rpdjson_doc& doc, unsigned& i)
+T rpdjson_adapter::pack_arg(const rpdjson_doc& obj, unsigned& i)
 {
-    const auto& docArgs = doc.FindMember("args")->value.GetArray();
+    const auto& docArgs = obj.FindMember("args")->value.GetArray();
 
     if constexpr (std::is_same_v<T, std::string>)
     {
@@ -63,20 +63,13 @@ T rpdjson_adapter::packArg(const rpdjson_doc& doc, unsigned& i)
 }
 
 template<>
-template<typename T, typename R, typename... Args>
-T rpdjson_adapter::unpackArg(const packed_func<R, Args...>& pack, unsigned& i)
-{
-    return pack.template get_arg<T>(i++);
-}
-
-template<>
 template<typename R, typename... Args>
 rpc::packed_func<R, Args...> rpdjson_adapter::to_packed_func(const rpdjson_doc& serial_obj)
 {
     unsigned i = 0;
 
     // TODO: Address cases where pointer, container, or custom type is used
-    std::array<std::any, sizeof...(Args)> args{ packArg<Args>(serial_obj, i)... };
+    std::array<std::any, sizeof...(Args)> args{ pack_arg<Args>(serial_obj, i)... };
 
     if (serial_obj.HasMember("result"))
     {
@@ -117,7 +110,7 @@ rpdjson_doc rpdjson_adapter::from_packed_func(const packed_func<R, Args...>& pac
     unsigned i = 0;
 
     // TODO: Address cases where pointer, container, or custom type is used
-    std::tuple<Args...> argTup{ unpackArg<Args, R, Args...>(pack, i)... };
+    std::tuple<Args...> argTup{ details::decode_argument<Args, R, Args...>(pack, i)... };
     rpc::for_each_tuple(argTup, [&args, &alloc](auto x) {
         if constexpr (std::is_same_v<decltype(x), std::string>)
         {
@@ -134,7 +127,7 @@ rpdjson_doc rpdjson_adapter::from_packed_func(const packed_func<R, Args...>& pac
 }
 
 template<>
-std::string rpdjson_adapter::to_string(const rpdjson_doc& serial_obj)
+inline std::string rpdjson_adapter::to_string(const rpdjson_doc& serial_obj)
 {
     rapidjson::StringBuffer buffer;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
@@ -143,7 +136,7 @@ std::string rpdjson_adapter::to_string(const rpdjson_doc& serial_obj)
 }
 
 template<>
-rpdjson_doc rpdjson_adapter::from_string(const std::string& str)
+inline rpdjson_doc rpdjson_adapter::from_string(const std::string& str)
 {
     rpdjson_doc d;
     d.Parse(str.c_str());
@@ -151,7 +144,7 @@ rpdjson_doc rpdjson_adapter::from_string(const std::string& str)
 }
 
 template<>
-std::string rpdjson_adapter::extract_func_name(const rpdjson_doc& obj)
+inline std::string rpdjson_adapter::extract_func_name(const rpdjson_doc& obj)
 {
     return obj["func_name"].GetString();
 }

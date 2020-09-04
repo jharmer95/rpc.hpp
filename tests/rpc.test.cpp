@@ -40,7 +40,9 @@
 
 #include "rpc.hpp"
 
-#if defined(RPC_HPP_NJSON_ENABLED) || defined(RPC_HPP_NCBOR_ENABLED) || defined(RPC_HPP_NBSON_ENABLED) || defined(RPC_HPP_NMSGPACK_ENABLED) || defined(RPC_HPP_NUBJSON_ENABLED)
+#if defined(RPC_HPP_NJSON_ENABLED) || defined(RPC_HPP_NCBOR_ENABLED)       \
+    || defined(RPC_HPP_NBSON_ENABLED) || defined(RPC_HPP_NMSGPACK_ENABLED) \
+    || defined(RPC_HPP_NUBJSON_ENABLED)
 #    include "rpc_adapters/rpc_njson.hpp"
 #endif
 
