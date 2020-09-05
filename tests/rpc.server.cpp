@@ -5,8 +5,13 @@
 #include <iostream>
 #include <thread>
 
-#include "rpc_adapters/rpc_njson.hpp"
-#include "rpc_adapters/rpc_rapidjson.hpp"
+#if defined(RPC_HPP_NJSON_ENABLED)
+#    include "rpc_adapters/rpc_njson.hpp"
+#endif
+
+#if defined(RPC_HPP_RAPIDJSON_ENABLED)
+#    include "rpc_adapters/rpc_rapidjson.hpp"
+#endif
 
 #include "rpc_dispatch_helper.hpp"
 
