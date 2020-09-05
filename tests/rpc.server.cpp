@@ -3,6 +3,7 @@
 #include <asio.hpp>
 
 #include <iostream>
+#include <thread>
 
 #include "rpc_adapters/rpc_njson.hpp"
 #include "rpc_adapters/rpc_rapidjson.hpp"
@@ -80,7 +81,7 @@ constexpr uint16_t PORT_NMSGPACK = 5003;
 constexpr uint16_t PORT_NUBJSON = 5004;
 constexpr uint16_t PORT_RAPIDJSON = 5005;
 
-void server(asio::io_context& io_context)
+[[noreturn]] void server(asio::io_context& io_context)
 {
 #if defined(RPC_HPP_NJSON_ENABLED)
     tcp::acceptor a(io_context, tcp::endpoint(tcp::v4(), PORT_NJSON));
@@ -152,6 +153,4 @@ int main()
         std::cerr << "Exception: " << ex.what() << '\n';
         return 1;
     }
-
-    return 0;
 }

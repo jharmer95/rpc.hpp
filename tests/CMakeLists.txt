@@ -17,7 +17,7 @@ else()
 endif()
 
 add_executable(rpc_test "rpc.test.cpp")
-target_link_libraries(rpc_test PRIVATE rpc_hpp catch2_lib)
+target_link_libraries(rpc_test PRIVATE rpc_hpp catch2_lib asio_lib)
 if(${BUILD_NJSON_ADAPTER})
   target_link_libraries(rpc_test PRIVATE njson_adapter)
 endif()
