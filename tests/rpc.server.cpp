@@ -19,7 +19,7 @@
 
 using asio::ip::tcp;
 
-inline int SimpleSum(const int n1, const int n2)
+constexpr int SimpleSum(const int n1, const int n2)
 {
     return n1 + n2;
 }
@@ -52,17 +52,12 @@ inline void ChangeNumber(TestObject& obj, int index, int value)
     obj.numbers[index] = value;
 }
 
-inline void ChangeNumber2(TestObject2& obj, int index, int value)
-{
-    obj.numbers[index] = value;
-}
-
-inline void PtrSum(int* n1, const int n2)
+constexpr void PtrSum(int* n1, const int n2)
 {
     *n1 += n2;
 }
 
-RPC_DEFAULT_DISPATCH(SimpleSum, StrLen, AddOneToEach, AddOneToEachRef)
+RPC_DEFAULT_DISPATCH(SimpleSum, StrLen, AddOneToEach, AddOneToEachRef, ChangeNumber)
 
 template<typename Serial>
 void session(tcp::socket sock)
@@ -100,11 +95,8 @@ void session(tcp::socket sock)
 }
 
 constexpr uint16_t PORT_NJSON = 5000;
-constexpr uint16_t PORT_NCBOR = 5001;
-constexpr uint16_t PORT_NBSON = 5002;
-constexpr uint16_t PORT_NMSGPACK = 5003;
-constexpr uint16_t PORT_NUBJSON = 5004;
-constexpr uint16_t PORT_RAPIDJSON = 5005;
+constexpr uint16_t PORT_N_SERIAL = 5001;
+constexpr uint16_t PORT_RAPIDJSON = 5002;
 
 [[noreturn]] void server(asio::io_context& io_context)
 {
@@ -112,29 +104,14 @@ constexpr uint16_t PORT_RAPIDJSON = 5005;
     tcp::acceptor a(io_context, tcp::endpoint(tcp::v4(), PORT_NJSON));
     std::cout << "Running njson server on port " << PORT_NJSON << "...\n";
 
-#    if !defined(RPC_HPP_NCBOR_DISABLED)
-    tcp::acceptor b(io_context, tcp::endpoint(tcp::v4(), PORT_NCBOR));
-    std::cout << "Running ncbor server on port " << PORT_NCBOR << "...\n";
-#    endif
-
-#    if !defined(RPC_HPP_NBSON_DISABLED)
-    tcp::acceptor c(io_context, tcp::endpoint(tcp::v4(), PORT_NBSON));
-    std::cout << "Running nbson server on port " << PORT_NBSON << "...\n";
-#    endif
-
-#    if !defined(RPC_HPP_NMSGPACK_DISABLED)
-    tcp::acceptor d(io_context, tcp::endpoint(tcp::v4(), PORT_NMSGPACK));
-    std::cout << "Running nmsgpack server on port " << PORT_NMSGPACK << "...\n";
-#    endif
-
-#    if !defined(RPC_HPP_NUBJSON_DISABLED)
-    tcp::acceptor e(io_context, tcp::endpoint(tcp::v4(), PORT_NUBJSON));
-    std::cout << "Running nubjson server on port " << PORT_NUBJSON << "...\n";
+#    if defined(RPC_HPP_NLOHMANN_SERIAL_TYPE)
+    tcp::acceptor b(io_context, tcp::endpoint(tcp::v4(), PORT_N_SERIAL));
+    std::cout << "Running nlohmann/serial_type server on port " << PORT_N_SERIAL << "...\n";
 #    endif
 #endif
 
 #if defined(RPC_HPP_RAPIDJSON_ENABLED)
-    tcp::acceptor f(io_context, tcp::endpoint(tcp::v4(), PORT_RAPIDJSON));
+    tcp::acceptor c(io_context, tcp::endpoint(tcp::v4(), PORT_RAPIDJSON));
     std::cout << "Running rapidjson server on port " << PORT_RAPIDJSON << "...\n";
 #endif
 
@@ -142,26 +119,13 @@ constexpr uint16_t PORT_RAPIDJSON = 5005;
     {
 #if defined(RPC_HPP_NJSON_ENABLED)
         std::thread(session<njson>, a.accept()).detach();
-
-#    if !defined(RPC_HPP_NCBOR_DISABLED)
-        std::thread(session<ncbor>, b.accept()).detach();
-#    endif
-
-#    if !defined(RPC_HPP_NBSON_DISABLED)
-        std::thread(session<nbson>, c.accept()).detach();
-#    endif
-
-#    if !defined(RPC_HPP_NMSGPACK_DISABLED)
-        std::thread(session<nmsgpack>, d.accept()).detach();
-#    endif
-
-#    if !defined(RPC_HPP_NUBJSON_DISABLED)
-        std::thread(session<nubjson>, e.accept()).detach();
+#    if defined(RPC_HPP_NLOHMANN_SERIAL_TYPE)
+        std::thread(session<generic_serial_t>, b.accept()).detach();
 #    endif
 #endif
 
 #if defined(RPC_HPP_RAPIDJSON_ENABLED)
-        std::thread(session<rpdjson_doc>, f.accept()).detach();
+        std::thread(session<rpdjson_doc>, c.accept()).detach();
 #endif
     }
 }

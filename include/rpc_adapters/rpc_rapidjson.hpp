@@ -64,41 +64,45 @@ rpc::packed_func<R, Args...> rpdjson_adapter::to_packed_func(const rpdjson_doc& 
         serial_obj, i)... };
 
     // TODO: Can reorganize these ifs to make more sense
-    if (serial_obj.HasMember("result"))
+    if constexpr (std::is_void_v<R>)
     {
-        if constexpr (std::is_void_v<R>)
-        {
-            return packed_func<R, Args...>(serial_obj["func_name"].GetString(), args);
-        }
-
-        const rpdjson_val& result = serial_obj["result"];
-
-        if (result.IsNull())
-        {
-            return packed_func<R, Args...>(serial_obj["func_name"].GetString(), std::nullopt, args);
-        }
-
-        if constexpr (std::is_same_v<R, std::string>)
-        {
-            return packed_func<R, Args...>(
-                serial_obj["func_name"].GetString(), result.GetString(), args);
-        }
-        else if constexpr (is_container_v<R>)
-        {
-            R container;
-            rpdjson_doc d;
-            d.CopyFrom(result, d.GetAllocator());
-            populate_array(d, container);
-            return packed_func<R, Args...>(serial_obj["func_name"].GetString(), container, args);
-        }
-        else
-        {
-            return packed_func<R, Args...>(
-                serial_obj["func_name"].GetString(), result.Get<R>(), args);
-        }
+        return packed_func<void, Args...>(serial_obj["func_name"].GetString(), args);
     }
+    else
+    {
+        if (serial_obj.HasMember("result"))
+        {
+            const rpdjson_val& result = serial_obj["result"];
 
-    return packed_func<R, Args...>(serial_obj["func_name"].GetString(), std::nullopt, args);
+            if (result.IsNull())
+            {
+                return packed_func<R, Args...>(
+                    serial_obj["func_name"].GetString(), std::nullopt, args);
+            }
+
+            if constexpr (std::is_same_v<R, std::string>)
+            {
+                return packed_func<R, Args...>(
+                    serial_obj["func_name"].GetString(), result.GetString(), args);
+            }
+            else if constexpr (is_container_v<R>)
+            {
+                R container;
+                rpdjson_doc d;
+                d.CopyFrom(result, d.GetAllocator());
+                populate_array(d, container);
+                return packed_func<R, Args...>(
+                    serial_obj["func_name"].GetString(), container, args);
+            }
+            else
+            {
+                return packed_func<R, Args...>(
+                    serial_obj["func_name"].GetString(), result.Get<R>(), args);
+            }
+        }
+
+        return packed_func<R, Args...>(serial_obj["func_name"].GetString(), std::nullopt, args);
+    }
 }
 
 template<>
@@ -124,7 +128,11 @@ rpdjson_doc rpdjson_adapter::from_packed_func(const packed_func<R, Args...>& pac
     {
         if (pack)
         {
-            if constexpr (std::is_same_v<R, std::string>)
+            if constexpr (std::is_arithmetic_v<R>)
+            {
+                result.Set<R>(*pack.get_result());
+            }
+            else if constexpr (std::is_same_v<R, std::string>)
             {
                 result.SetString(*pack.get_result().c_str(), alloc);
             }
@@ -139,7 +147,7 @@ rpdjson_doc rpdjson_adapter::from_packed_func(const packed_func<R, Args...>& pac
             }
             else
             {
-                result.Set<R>(*pack.get_result());
+                result = rpc::serialize<rpdjson_doc, R>(*pack.get_result());
             }
         }
         else
@@ -159,11 +167,17 @@ rpdjson_doc rpdjson_adapter::from_packed_func(const packed_func<R, Args...>& pac
     };
 
     rpc::for_each_tuple(argTup, [&args, &alloc](auto x) {
-        if constexpr (std::is_same_v<decltype(x), std::string>)
+        using x_t = decltype(x);
+
+        if constexpr (std::is_arithmetic_v<x_t>)
+        {
+            args.PushBack(rpdjson_val().Set<x_t>(x), alloc);
+        }
+        else if constexpr (std::is_same_v<x_t, std::string>)
         {
             args.PushBack(rpdjson_val().SetString(x.c_str(), alloc), alloc);
         }
-        else if constexpr (is_container_v<decltype(x)>)
+        else if constexpr (is_container_v<x_t>)
         {
             rpdjson_val sub_arr;
             sub_arr.SetArray();
@@ -177,7 +191,7 @@ rpdjson_doc rpdjson_adapter::from_packed_func(const packed_func<R, Args...>& pac
         }
         else
         {
-            args.PushBack(rpdjson_val().Set<decltype(x)>(x), alloc);
+            args.PushBack(rpc::serialize<rpdjson_doc, x_t>(x), alloc);
         }
     });
 

@@ -106,89 +106,6 @@ using function_result_t = typename function_traits<std::function<R(Args...)>>::t
 template<size_t i, typename R, typename... Args>
 using function_args_t = typename function_traits<std::function<R(Args...)>>::template arg<i>::type;
 
-/// @brief Default implementation for SFINAE struct
-template<typename, typename T>
-struct is_serializable_base
-{
-    static_assert(std::integral_constant<T, false>::value,
-        "Second template parameter needs to be of function type");
-};
-
-/// @brief SFINAE struct checking a type for a 'serialize' member function
-///
-/// Checks whether the given type \c C has a member function to serialize it to the type given by \c R
-/// @tparam C The type to check for 'serialize'
-/// @tparam R The type to be serialized to
-/// @tparam Args The types of arguments (generic)
-template<typename C, typename R, typename... Args>
-struct is_serializable_base<C, R(Args...)>
-{
-private:
-    template<typename T>
-    static constexpr auto check(T*) noexcept ->
-        typename std::is_same<decltype(std::declval<T>().serialize(std::declval<Args>()...)),
-            R>::type;
-
-    template<typename>
-    static constexpr std::false_type check(...) noexcept;
-
-    using type = decltype(check<C>(nullptr));
-
-public:
-    static constexpr bool value = type::value;
-};
-
-/// @brief Default implementation for SFINAE struct
-template<typename, typename T>
-struct is_deserializable_base
-{
-    static_assert(std::integral_constant<T, false>::value,
-        "Second template parameter needs to be of function type");
-};
-
-/// @brief SFINAE struct checking a type for a 'deserialize' member function
-///
-/// Checks whether the given type \c C has a member function to de-serialize it to the type given by \c R
-/// @tparam C The type to check for 'deserialize'
-/// @tparam R The type to be de-serialized to
-/// @tparam Args They types of arguments (generic)
-template<typename C, typename R, typename... Args>
-struct is_deserializable_base<C, R(Args...)>
-{
-private:
-    template<typename T>
-    static constexpr auto check(T*) noexcept ->
-        typename std::is_same<decltype(std::declval<T>().deserialize(std::declval<Args>()...)),
-            R>::type;
-
-    template<typename>
-    static constexpr std::false_type check(...) noexcept;
-
-    using type = decltype(check<C>(nullptr));
-
-public:
-    static constexpr bool value = type::value;
-};
-
-/// @brief SFINAE struct combining the logic of @ref is_serializable_base and @ref is_deserializable_base
-///
-/// Checks whether the given type \c Value can be serialized to and de-serialized from the serial type \c Serial
-/// @tparam Serial The serial object type
-/// @tparam Value The type of object to serialize/de-serialize
-template<typename Serial, typename Value>
-struct is_serializable : std::integral_constant<bool,
-                             is_serializable_base<Value, Serial(const Value&)>::value
-                                 && is_deserializable_base<Value, Value(const Serial&)>::value>
-{
-};
-
-/// @brief Helper variable for @ref is_serializable
-///
-/// @tparam Serial The serial object type
-/// @tparam Value The type of object to serialize/de-serialize
-template<typename Serial, typename Value>
-inline constexpr bool is_serializable_v = is_serializable<Serial, Value>::value;
-
 /// @brief SFINAE struct for checking a type for a 'begin' member function
 ///
 /// Checks whether the given type \c C has a function 'begin' that returns an iterator type
@@ -528,11 +445,6 @@ namespace details
         {
             return serial_adapter<Serial>::template get_value<no_ref_t>(obj);
         }
-        else if constexpr (is_serializable_v<Serial, no_ref_t>)
-        {
-            // Call custom deserialize member function
-            return no_ref_t::deserialize(obj);
-        }
         else if constexpr (rpc::is_container_v<no_ref_t>)
         {
             no_ref_t container;
@@ -587,7 +499,7 @@ namespace server
     {
         unsigned arg_count = 0;
 
-        std::tuple<std::remove_cv_t<std::remove_reference_t<Args>> ...> args{
+        std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...> args{
             details::args_from_packed<Args, R, Args...>(pack, arg_count)...
         };
 

@@ -18,7 +18,7 @@
         },
         {
           "name": "BUILD_RAPIDJSON_ADAPTER",
-          "value": "False",
+          "value": "True",
           "type": "BOOL"
         }
       ]

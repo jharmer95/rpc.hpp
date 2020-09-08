@@ -76,59 +76,17 @@ TEST_CASE("NJSON")
     TestType<njson>();
 }
 
-#if !defined(RPC_HPP_NCBOR_DISABLED)
+#if defined(RPC_HPP_NLOHMANN_SERIAL_TYPE)
 template<>
-TestClient& GetClient<ncbor>()
+TestClient& GetClient<generic_serial_t>()
 {
     static TestClient client("127.0.0.1", "5001");
     return client;
 }
 
-TEST_CASE("NCBOR")
+TEST_CASE("GENERIC_SERIAL_T")
 {
-    TestType<ncbor>();
-}
-#endif
-
-#if !defined(RPC_HPP_NBSON_DISABLED)
-template<>
-TestClient& GetClient<nbson>()
-{
-    static TestClient client("127.0.0.1", "5002");
-    return client;
-}
-
-TEST_CASE("NBSON")
-{
-    TestType<nbson>();
-}
-#endif
-
-#if !defined(RPC_HPP_NMSGPACK_DISABLED)
-template<>
-TestClient& GetClient<nmsgpack>()
-{
-    static TestClient client("127.0.0.1", "5003");
-    return client;
-}
-
-TEST_CASE("NMSGPACK")
-{
-    TestType<nmsgpack>();
-}
-#endif
-
-#if !defined(RPC_HPP_NUBJSON_DISABLED)
-template<>
-TestClient& GetClient<nubjson>()
-{
-    static TestClient client("127.0.0.1", "5004");
-    return client;
-}
-
-TEST_CASE("NUBJSON")
-{
-    TestType<nubjson>();
+    TestType<generic_serial_t>();
 }
 #endif
 
@@ -136,7 +94,7 @@ TEST_CASE("NUBJSON")
 template<>
 TestClient& GetClient<rpdjson_doc>()
 {
-    static TestClient client("127.0.0.1", "5005");
+    static TestClient client("127.0.0.1", "5002");
     return client;
 }
 
@@ -146,7 +104,7 @@ TEST_CASE("RAPIDJSON")
 }
 #endif
 
-using test_serial_t = njson;
+using test_serial_t = rpdjson_doc;
 
 TEST_CASE("StrLen")
 {
@@ -177,8 +135,7 @@ TEST_CASE("AddOneToEachRef")
 {
     auto& client = GetClient<test_serial_t>();
     std::vector<int> vec{ 2, 4, 6, 8 };
-    const auto pack =
-        rpc::call<test_serial_t, TestClient, void>(client, "AddOneToEachRef", vec);
+    const auto pack = rpc::call<test_serial_t, TestClient, void>(client, "AddOneToEachRef", vec);
 
     const auto retVec = pack.get_arg<std::vector<int>>(0);
     REQUIRE(retVec.size() == vec.size());
@@ -189,7 +146,6 @@ TEST_CASE("AddOneToEachRef")
     }
 }
 
-/*
 TEST_CASE("ChangeNumber")
 {
     auto& client = GetClient<test_serial_t>();
@@ -203,26 +159,4 @@ TEST_CASE("ChangeNumber")
 
     const auto retObj = pack.get_arg<TestObject>(0);
     REQUIRE(retObj.numbers[1] == 2);
-}
-
-TEST_CASE("ChangeNumber2")
-{
-    auto& client = GetClient<test_serial_t>();
-
-    TestObject2 obj;
-    obj.name = "Franklin";
-    obj.age = 42;
-    obj.numbers = { 1, 4, 5, 6 };
-
-    const auto pack =
-        rpc::call<test_serial_t, TestClient, void>(client, "ChangeNumber2", obj, 1, 2);
-
-    const auto retObj = pack.get_arg<TestObject2>(0);
-    REQUIRE(retObj.numbers[1] == 2);
-}
-*/
-
-TEST_CASE("")
-{
-
 }

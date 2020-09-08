@@ -14,7 +14,10 @@ public:
         asio::connect(m_socket, m_resolver.resolve(host, port));
     }
 
-    void send(const std::string& mesg) override { write(m_socket, asio::buffer(mesg, mesg.size())); }
+    void send(const std::string& mesg) override
+    {
+        write(m_socket, asio::buffer(mesg, mesg.size()));
+    }
 
     [[nodiscard]] std::string receive() override
     {
