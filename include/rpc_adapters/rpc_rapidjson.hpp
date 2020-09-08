@@ -38,9 +38,17 @@
 
 #pragma once
 
+#include "../rpc.hpp"
+
 #include <rapidjson/document.h>
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
+
+#if !defined(RPC_HPP_RAPIDJSON_ENABLED)
+static_assert(false,
+    R"(rpc_rapidjson.hpp included without defining RPC_HPP_RAPIDJSON_ENABLED!
+Please define this macro or do not include this header!)")
+#else
 
 using rpdjson_doc = rapidjson::Document;
 using rpdjson_val = rapidjson::Value;
@@ -184,3 +192,4 @@ void rpdjson_adapter::populate_array(const rpdjson_doc& obj, Container& containe
         container.push_back(details::arg_from_serial<rpdjson_doc, value_t>(d));
     }
 }
+#endif

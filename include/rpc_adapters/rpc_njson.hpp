@@ -38,12 +38,18 @@
 
 #pragma once
 
+#include "../rpc.hpp"
+
 #include <nlohmann/json.hpp>
 
 #include <utility>
 
 // -------- SECTION: JSON --------
-#if defined(RPC_HPP_NJSON_ENABLED)
+#if !defined(RPC_HPP_NJSON_ENABLED)
+static_assert(false,
+    R"(rpc_njson.hpp included without defining RPC_HPP_NJSON_ENABLED!
+Please define this macro or do not include this header!)")
+#else
 
 using njson = nlohmann::json;
 using njson_adapter = rpc::serial_adapter<njson>;
@@ -143,6 +149,7 @@ template<>
 template<typename Container>
 void njson_adapter::populate_array(const njson& obj, Container& container)
 {
+    static_assert(is_container_v<Container>, "Container type must have begin and end iterators");
     static_assert(is_container_v<Container>, "Type is not a container!");
     using value_t = typename Container::value_type;
 
@@ -151,15 +158,14 @@ void njson_adapter::populate_array(const njson& obj, Container& container)
         container.push_back(details::arg_from_serial<njson, value_t>(val));
     }
 }
-#endif
 
 // -------- SECTION: CBOR --------
-#if defined(RPC_HPP_NCBOR_ENABLED)
+#    if !defined(RPC_HPP_NCBOR_DISABLED)
 struct ncbor
 {
-    explicit ncbor(std::vector<uint8_t> vec) : value(std::move(vec)) {}
+    ncbor(std::vector<uint8_t> vec) : value(std::move(vec)) {}
 
-    explicit operator std::vector<uint8_t>() const { return value; }
+    operator std::vector<uint8_t>() const { return value; }
 
     std::vector<uint8_t> value;
 };
@@ -257,26 +263,27 @@ T ncbor_adapter::get_value(const ncbor& obj)
 }
 
 template<>
-template<typename Container, typename = std::enable_if_t<rpc::is_container_v<Container>>>
+template<typename Container>
 void ncbor_adapter::populate_array(const ncbor& obj, Container& container)
 {
+    static_assert(is_container_v<Container>, "Container type must have begin and end iterators");
     using value_t = typename Container::value_type;
-    njson j_obj = json::from_cbor(obj);
+    njson j_obj = njson::from_cbor(obj);
 
     for (const auto& val : j_obj)
     {
         container.push_back(details::arg_from_serial<njson, value_t>(val));
     }
 }
-#endif
+#    endif
 
 // -------- SECTION: BSON --------
-#if defined(RPC_HPP_NBSON_ENABLED)
+#    if !defined(RPC_HPP_NBSON_DISABLED)
 struct nbson
 {
-    explicit nbson(std::vector<uint8_t> vec) : value(std::move(vec)) {}
+    nbson(std::vector<uint8_t> vec) : value(std::move(vec)) {}
 
-    explicit operator std::vector<uint8_t>() const { return value; }
+    operator std::vector<uint8_t>() const { return value; }
 
     std::vector<uint8_t> value;
 };
@@ -374,26 +381,27 @@ T nbson_adapter::get_value(const nbson& obj)
 }
 
 template<>
-template<typename Container, typename = std::enable_if_t<rpc::is_container_v<Container>>>
+template<typename Container>
 void nbson_adapter::populate_array(const nbson& obj, Container& container)
 {
+    static_assert(is_container_v<Container>, "Container type must have begin and end iterators");
     using value_t = typename Container::value_type;
-    njson j_obj = json::from_bson(obj);
+    njson j_obj = njson::from_bson(obj);
 
     for (const auto& val : j_obj)
     {
         container.push_back(details::arg_from_serial<njson, value_t>(val));
     }
 }
-#endif
+#    endif
 
 // -------- SECTION: MSGPACK --------
-#if defined(RPC_HPP_NMSGPACK_ENABLED)
+#    if !defined(RPC_HPP_NMSGPACK_DISABLED)
 struct nmsgpack
 {
-    explicit nmsgpack(std::vector<uint8_t> vec) : value(std::move(vec)) {}
+    nmsgpack(std::vector<uint8_t> vec) : value(std::move(vec)) {}
 
-    explicit operator std::vector<uint8_t>() const { return value; }
+    operator std::vector<uint8_t>() const { return value; }
 
     std::vector<uint8_t> value;
 };
@@ -491,26 +499,27 @@ T nmsgpack_adapter::get_value(const nmsgpack& obj)
 }
 
 template<>
-template<typename Container, typename = std::enable_if_t<rpc::is_container_v<Container>>>
+template<typename Container>
 void nmsgpack_adapter::populate_array(const nmsgpack& obj, Container& container)
 {
+    static_assert(is_container_v<Container>, "Container type must have begin and end iterators");
     using value_t = typename Container::value_type;
-    njson j_obj = json::from_msgpack(obj);
+    njson j_obj = njson::from_msgpack(obj);
 
     for (const auto& val : j_obj)
     {
         container.push_back(details::arg_from_serial<njson, value_t>(val));
     }
 }
-#endif
+#    endif
 
 // -------- SECTION: UBJSON --------
-#if defined(RPC_HPP_NUBJSON_ENABLED)
+#    if !defined(RPC_HPP_NUBJSON_DISABLED)
 struct nubjson
 {
-    explicit nubjson(std::vector<uint8_t> vec) : value(std::move(vec)) {}
+    nubjson(std::vector<uint8_t> vec) : value(std::move(vec)) {}
 
-    explicit operator std::vector<uint8_t>() const { return value; }
+    operator std::vector<uint8_t>() const { return value; }
 
     std::vector<uint8_t> value;
 };
@@ -608,15 +617,17 @@ T nubjson_adapter::get_value(const nubjson& obj)
 }
 
 template<>
-template<typename Container, typename = std::enable_if_t<rpc::is_container_v<Container>>>
+template<typename Container>
 void nubjson_adapter::populate_array(const nubjson& obj, Container& container)
 {
+    static_assert(is_container_v<Container>, "Container type must have begin and end iterators");
     using value_t = typename Container::value_type;
-    njson j_obj = json::from_ubjson(obj);
+    njson j_obj = njson::from_ubjson(obj);
 
     for (const auto& val : j_obj)
     {
         container.push_back(details::arg_from_serial<njson, value_t>(val));
     }
 }
+#    endif
 #endif

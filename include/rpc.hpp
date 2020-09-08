@@ -603,6 +603,14 @@ namespace server
 
 inline namespace client
 {
+    class client_base
+    {
+    public:
+        virtual ~client_base() = default;
+        virtual void send(const std::string& mesg) = 0;
+        virtual std::string receive() = 0;
+    };
+
     template<typename Serial, typename R = void, typename... Args>
     Serial serialize_call(const std::string& func_name, Args&&... args)
     {
@@ -617,13 +625,17 @@ inline namespace client
         return std::async(serial_adapter<Serial>::template from_packed_func<R, Args...>, packed);
     }
 
-    // NOTE: send_to_server to be implemented client-side
-    template<typename Serial, typename Client>
-    extern void send_to_server(const Serial& serial_obj, Client& client);
+    template<typename Serial>
+    void send_to_server(const Serial& serial_obj, client_base& client)
+    {
+        client.send(serial_adapter<Serial>::to_string(serial_obj));
+    }
 
-    // NOTE: get_server_response to be implemented client-side
-    template<typename Serial, typename Client>
-    extern Serial get_server_response(Client& client);
+    template<typename Serial>
+    Serial get_server_response(client_base& client)
+    {
+        return serial_adapter<Serial>::from_string(client.receive());
+    }
 
     template<typename Serial, typename Client, typename R, typename... Args>
     packed_func<R, Args...> call(Client& client, const std::string& func_name, Args&&... args)
