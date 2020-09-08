@@ -51,6 +51,7 @@ static_assert(false, "Test requires nlohmann/json adapter to be enabled!");
 #endif
 
 #include "rpc.client.hpp"
+#include "test_structs.hpp"
 
 template<typename Serial>
 TestClient& GetClient();
@@ -170,4 +171,58 @@ TEST_CASE("AddOneToEach")
     {
         REQUIRE(retVec[i] == vec[i] + 1);
     }
+}
+
+TEST_CASE("AddOneToEachRef")
+{
+    auto& client = GetClient<test_serial_t>();
+    std::vector<int> vec{ 2, 4, 6, 8 };
+    const auto pack =
+        rpc::call<test_serial_t, TestClient, void>(client, "AddOneToEachRef", vec);
+
+    const auto retVec = pack.get_arg<std::vector<int>>(0);
+    REQUIRE(retVec.size() == vec.size());
+
+    for (size_t i = 0; i < retVec.size(); ++i)
+    {
+        REQUIRE(retVec[i] == vec[i] + 1);
+    }
+}
+
+/*
+TEST_CASE("ChangeNumber")
+{
+    auto& client = GetClient<test_serial_t>();
+
+    TestObject obj;
+    obj.name = "Franklin";
+    obj.age = 42;
+    obj.numbers = { 1, 4, 5, 6 };
+
+    const auto pack = rpc::call<test_serial_t, TestClient, void>(client, "ChangeNumber", obj, 1, 2);
+
+    const auto retObj = pack.get_arg<TestObject>(0);
+    REQUIRE(retObj.numbers[1] == 2);
+}
+
+TEST_CASE("ChangeNumber2")
+{
+    auto& client = GetClient<test_serial_t>();
+
+    TestObject2 obj;
+    obj.name = "Franklin";
+    obj.age = 42;
+    obj.numbers = { 1, 4, 5, 6 };
+
+    const auto pack =
+        rpc::call<test_serial_t, TestClient, void>(client, "ChangeNumber2", obj, 1, 2);
+
+    const auto retObj = pack.get_arg<TestObject2>(0);
+    REQUIRE(retObj.numbers[1] == 2);
+}
+*/
+
+TEST_CASE("")
+{
+
 }

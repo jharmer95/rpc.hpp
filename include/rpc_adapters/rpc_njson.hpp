@@ -103,6 +103,7 @@ njson njson_adapter::from_packed_func(const packed_func<R, Args...>& pack)
         details::args_from_packed<Args, R, Args...>(pack, i)...
     };
 
+    // TODO: Handle custom types
     rpc::for_each_tuple(argTup, [&ret_j](auto x) { ret_j["args"].push_back(x); });
 
     return ret_j;
@@ -220,6 +221,7 @@ ncbor ncbor_adapter::from_packed_func(const packed_func<R, Args...>& pack)
         details::args_from_packed<Args, R, Args...>(pack, i)...
     };
 
+    // TODO: Handle custom types
     rpc::for_each_tuple(argTup, [&ret_j](auto x) { ret_j["args"].push_back(x); });
 
     return ncbor(njson::to_cbor(ret_j));
@@ -338,6 +340,7 @@ nbson nbson_adapter::from_packed_func(const packed_func<R, Args...>& pack)
         details::args_from_packed<Args, R, Args...>(pack, i)...
     };
 
+    // TODO: Handle custom types
     rpc::for_each_tuple(argTup, [&ret_j](auto x) { ret_j["args"].push_back(x); });
 
     return nbson(njson::to_bson(ret_j));
@@ -456,6 +459,7 @@ nmsgpack nmsgpack_adapter::from_packed_func(const packed_func<R, Args...>& pack)
         details::args_from_packed<Args, R, Args...>(pack, i)...
     };
 
+    // TODO: Handle custom types
     rpc::for_each_tuple(argTup, [&ret_j](auto x) { ret_j["args"].push_back(x); });
 
     return nmsgpack(njson::to_msgpack(ret_j));
@@ -574,6 +578,7 @@ nubjson nubjson_adapter::from_packed_func(const packed_func<R, Args...>& pack)
         details::args_from_packed<Args, R, Args...>(pack, i)...
     };
 
+    // TODO: Handle custom types
     rpc::for_each_tuple(argTup, [&ret_j](auto x) { ret_j["args"].push_back(x); });
 
     return nubjson(njson::to_ubjson(ret_j));

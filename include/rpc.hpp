@@ -355,6 +355,13 @@ public:
         m_args[arg_index] = value;
     }
 
+    void set_args(const std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...>& args)
+    {
+        size_t i = 0;
+
+        for_each_tuple(args, [&i, this](auto x) { m_args[i++] = x; });
+    }
+
     template<typename T>
     [[nodiscard]] std::remove_cv_t<std::remove_reference_t<T>> get_arg(size_t arg_index) const
     {
@@ -396,6 +403,13 @@ public:
         }
 
         m_args[arg_index] = value;
+    }
+
+    void set_args(const std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...>& args)
+    {
+        size_t i = 0;
+
+        for_each_tuple(args, [&i, this](auto x) { m_args[i++] = x; });
     }
 
     template<typename T>
@@ -509,6 +523,7 @@ namespace details
             "refactoring your RPC calls or define RPC_HPP_ENABLE_POINTERS to ignore this "
             "error.");
 #endif
+
         if constexpr (std::is_arithmetic_v<no_ref_t> || std::is_same_v<no_ref_t, std::string>)
         {
             return serial_adapter<Serial>::template get_value<no_ref_t>(obj);
@@ -571,18 +586,20 @@ namespace server
     void run_callback(std::function<R(Args...)> func, packed_func<R, Args...>& pack)
     {
         unsigned arg_count = 0;
-        std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...> args{
-            details::args_from_packed<std::remove_cv_t<std::remove_reference_t<Args>>, R, Args...>(
-                pack, arg_count)...
+
+        std::tuple<std::remove_cv_t<std::remove_reference_t<Args>> ...> args{
+            details::args_from_packed<Args, R, Args...>(pack, arg_count)...
         };
 
         if constexpr (std::is_void_v<R>)
         {
             std::apply(func, args);
+            pack.set_args(args);
         }
         else
         {
             auto result = std::apply(func, args);
+            pack.set_args(args);
             pack.set_result(result);
         }
     }

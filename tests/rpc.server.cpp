@@ -15,6 +15,8 @@
 
 #include "rpc_dispatch_helper.hpp"
 
+#include "test_structs.hpp"
+
 using asio::ip::tcp;
 
 inline int SimpleSum(const int n1, const int n2)
@@ -22,7 +24,7 @@ inline int SimpleSum(const int n1, const int n2)
     return n1 + n2;
 }
 
-inline size_t StrLen(std::string str)
+inline size_t StrLen(const std::string& str)
 {
     return str.size();
 }
@@ -37,12 +39,30 @@ inline std::vector<int> AddOneToEach(std::vector<int> vec)
     return vec;
 }
 
-void PtrSum(int* n1, const int n2)
+inline void AddOneToEachRef(std::vector<int>& vec)
+{
+    for (auto& n : vec)
+    {
+        ++n;
+    }
+}
+
+inline void ChangeNumber(TestObject& obj, int index, int value)
+{
+    obj.numbers[index] = value;
+}
+
+inline void ChangeNumber2(TestObject2& obj, int index, int value)
+{
+    obj.numbers[index] = value;
+}
+
+inline void PtrSum(int* n1, const int n2)
 {
     *n1 += n2;
 }
 
-RPC_DEFAULT_DISPATCH(SimpleSum, StrLen, AddOneToEach)
+RPC_DEFAULT_DISPATCH(SimpleSum, StrLen, AddOneToEach, AddOneToEachRef)
 
 template<typename Serial>
 void session(tcp::socket sock)
