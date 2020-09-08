@@ -3,9 +3,15 @@
 #include <asio.hpp>
 
 #include <iostream>
+#include <thread>
 
-#include "rpc_adapters/rpc_njson.hpp"
-#include "rpc_adapters/rpc_rapidjson.hpp"
+#if defined(RPC_HPP_NJSON_ENABLED)
+#    include "rpc_adapters/rpc_njson.hpp"
+#endif
+
+#if defined(RPC_HPP_RAPIDJSON_ENABLED)
+#    include "rpc_adapters/rpc_rapidjson.hpp"
+#endif
 
 #include "rpc_dispatch_helper.hpp"
 
@@ -80,31 +86,31 @@ constexpr uint16_t PORT_NMSGPACK = 5003;
 constexpr uint16_t PORT_NUBJSON = 5004;
 constexpr uint16_t PORT_RAPIDJSON = 5005;
 
-void server(asio::io_context& io_context)
+[[noreturn]] void server(asio::io_context& io_context)
 {
 #if defined(RPC_HPP_NJSON_ENABLED)
     tcp::acceptor a(io_context, tcp::endpoint(tcp::v4(), PORT_NJSON));
     std::cout << "Running njson server on port " << PORT_NJSON << "...\n";
-#endif
 
-#if defined(RPC_HPP_NCBOR_ENABLED)
+#    if !defined(RPC_HPP_NCBOR_DISABLED)
     tcp::acceptor b(io_context, tcp::endpoint(tcp::v4(), PORT_NCBOR));
     std::cout << "Running ncbor server on port " << PORT_NCBOR << "...\n";
-#endif
+#    endif
 
-#if defined(RPC_HPP_NBSON_ENABLED)
+#    if !defined(RPC_HPP_NBSON_DISABLED)
     tcp::acceptor c(io_context, tcp::endpoint(tcp::v4(), PORT_NBSON));
     std::cout << "Running nbson server on port " << PORT_NBSON << "...\n";
-#endif
+#    endif
 
-#if defined(RPC_HPP_NMSGPACK_ENABLED)
+#    if !defined(RPC_HPP_NMSGPACK_DISABLED)
     tcp::acceptor d(io_context, tcp::endpoint(tcp::v4(), PORT_NMSGPACK));
     std::cout << "Running nmsgpack server on port " << PORT_NMSGPACK << "...\n";
-#endif
+#    endif
 
-#if defined(RPC_HPP_NUBJSON_ENABLED)
+#    if !defined(RPC_HPP_NUBJSON_DISABLED)
     tcp::acceptor e(io_context, tcp::endpoint(tcp::v4(), PORT_NUBJSON));
     std::cout << "Running nubjson server on port " << PORT_NUBJSON << "...\n";
+#    endif
 #endif
 
 #if defined(RPC_HPP_RAPIDJSON_ENABLED)
@@ -116,22 +122,22 @@ void server(asio::io_context& io_context)
     {
 #if defined(RPC_HPP_NJSON_ENABLED)
         std::thread(session<njson>, a.accept()).detach();
-#endif
 
-#if defined(RPC_HPP_NCBOR_ENABLED)
+#    if !defined(RPC_HPP_NCBOR_DISABLED)
         std::thread(session<ncbor>, b.accept()).detach();
-#endif
+#    endif
 
-#if defined(RPC_HPP_NBSON_ENABLED)
+#    if !defined(RPC_HPP_NBSON_DISABLED)
         std::thread(session<nbson>, c.accept()).detach();
-#endif
+#    endif
 
-#if defined(RPC_HPP_NMSGPACK_ENABLED)
+#    if !defined(RPC_HPP_NMSGPACK_DISABLED)
         std::thread(session<nmsgpack>, d.accept()).detach();
-#endif
+#    endif
 
-#if defined(RPC_HPP_NUBJSON_ENABLED)
+#    if !defined(RPC_HPP_NUBJSON_DISABLED)
         std::thread(session<nubjson>, e.accept()).detach();
+#    endif
 #endif
 
 #if defined(RPC_HPP_RAPIDJSON_ENABLED)
@@ -152,6 +158,4 @@ int main()
         std::cerr << "Exception: " << ex.what() << '\n';
         return 1;
     }
-
-    return 0;
 }

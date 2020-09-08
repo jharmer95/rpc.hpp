@@ -63,10 +63,39 @@ rpc::packed_func<R, Args...> rpdjson_adapter::to_packed_func(const rpdjson_doc& 
     std::array<std::any, sizeof...(Args)> args{ details::args_from_serial<rpdjson_doc, Args>(
         serial_obj, i)... };
 
+    // TODO: Can reorganize these ifs to make more sense
     if (serial_obj.HasMember("result"))
     {
+        if constexpr (std::is_void_v<R>)
+        {
+            return packed_func<R, Args...>(serial_obj["func_name"].GetString(), args);
+        }
+
         const rpdjson_val& result = serial_obj["result"];
-        return packed_func<R, Args...>(serial_obj["func_name"].GetString(), result.Get<R>(), args);
+
+        if (result.IsNull())
+        {
+            return packed_func<R, Args...>(serial_obj["func_name"].GetString(), std::nullopt, args);
+        }
+
+        if constexpr (std::is_same_v<R, std::string>)
+        {
+            return packed_func<R, Args...>(
+                serial_obj["func_name"].GetString(), result.GetString(), args);
+        }
+        else if constexpr (is_container_v<R>)
+        {
+            R container;
+            rpdjson_doc d;
+            d.CopyFrom(result, d.GetAllocator());
+            populate_array(d, container);
+            return packed_func<R, Args...>(serial_obj["func_name"].GetString(), container, args);
+        }
+        else
+        {
+            return packed_func<R, Args...>(
+                serial_obj["func_name"].GetString(), result.Get<R>(), args);
+        }
     }
 
     return packed_func<R, Args...>(serial_obj["func_name"].GetString(), std::nullopt, args);
@@ -95,11 +124,27 @@ rpdjson_doc rpdjson_adapter::from_packed_func(const packed_func<R, Args...>& pac
     {
         if (pack)
         {
-            result.Set<R>(*pack.get_result());
+            if constexpr (std::is_same_v<R, std::string>)
+            {
+                result.SetString(*pack.get_result().c_str(), alloc);
+            }
+            else if constexpr (is_container_v<R>)
+            {
+                result.SetArray();
+
+                for (const auto& val : *pack.get_result())
+                {
+                    result.PushBack(val, alloc);
+                }
+            }
+            else
+            {
+                result.Set<R>(*pack.get_result());
+            }
         }
         else
         {
-            result.Set<R>({});
+            result.SetNull();
         }
     }
 
@@ -117,6 +162,18 @@ rpdjson_doc rpdjson_adapter::from_packed_func(const packed_func<R, Args...>& pac
         if constexpr (std::is_same_v<decltype(x), std::string>)
         {
             args.PushBack(rpdjson_val().SetString(x.c_str(), alloc), alloc);
+        }
+        else if constexpr (is_container_v<decltype(x)>)
+        {
+            rpdjson_val sub_arr;
+            sub_arr.SetArray();
+
+            for (const auto& val : x)
+            {
+                sub_arr.PushBack(val, alloc);
+            }
+
+            args.PushBack(sub_arr, alloc);
         }
         else
         {
@@ -173,7 +230,20 @@ template<>
 template<typename T>
 T rpdjson_adapter::get_value(const rpdjson_doc& obj)
 {
-    return obj.Get<T>();
+    if constexpr (std::is_same_v<T, std::string>)
+    {
+        return obj.GetString();
+    }
+    else if constexpr (is_container_v<T>)
+    {
+        T container;
+        populate_array(obj, container);
+        return container;
+    }
+    else
+    {
+        return obj.Get<T>();
+    }
 }
 
 template<>

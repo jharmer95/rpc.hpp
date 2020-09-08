@@ -479,21 +479,18 @@ namespace details
     {
         using no_ref_t = std::remove_cv_t<std::remove_reference_t<Value>>;
 
+#if defined(RPC_HPP_ENABLE_POINTERS)
         if constexpr (std::is_pointer_v<no_ref_t>)
         {
-#if defined(RPC_HPP_ENABLE_POINTERS)
             // TODO: Implement pointer
+        }
 #else
-            static_assert(false,
-                "Passing pointers across the RPC interface is not recommended. Please consider "
-                "refactoring your RPC calls or define RPC_HPP_ENABLE_POINTERS to ignore this "
-                "error.");
+        static_assert(!std::is_pointer_v<no_ref_t>,
+            "Passing pointers across the RPC interface is not recommended. Please consider "
+            "refactoring your RPC calls or define RPC_HPP_ENABLE_POINTERS to ignore this "
+            "error.");
 #endif
-        }
-        else
-        {
-            return pack.template get_arg<no_ref_t>(arg_index++);
-        }
+        return pack.template get_arg<no_ref_t>(arg_index++);
     }
 
     template<typename Serial, typename Value>
@@ -501,18 +498,18 @@ namespace details
     {
         using no_ref_t = std::remove_cv_t<std::remove_reference_t<Value>>;
 
+#if defined(RPC_HPP_ENABLE_POINTERS)
         if constexpr (std::is_pointer_v<no_ref_t>)
         {
-#if defined(RPC_HPP_ENABLE_POINTERS)
             // TODO: Implement pointer
-#else
-            static_assert(false,
-                "Passing pointers across the RPC interface is not recommended. Please consider "
-                "refactoring your RPC calls or define RPC_HPP_ENABLE_POINTERS to ignore this "
-                "error.");
-#endif
         }
-        else if constexpr (std::is_arithmetic_v<no_ref_t> || std::is_same_v<no_ref_t, std::string>)
+#else
+        static_assert(!std::is_pointer_v<no_ref_t>,
+            "Passing pointers across the RPC interface is not recommended. Please consider "
+            "refactoring your RPC calls or define RPC_HPP_ENABLE_POINTERS to ignore this "
+            "error.");
+#endif
+        if constexpr (std::is_arithmetic_v<no_ref_t> || std::is_same_v<no_ref_t, std::string>)
         {
             return serial_adapter<Serial>::template get_value<no_ref_t>(obj);
         }

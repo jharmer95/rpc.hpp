@@ -179,7 +179,7 @@ rpc::packed_func<R, Args...> ncbor_adapter::to_packed_func(const ncbor& serial_o
     unsigned i = 0;
     const njson j_obj = njson::from_cbor(serial_obj.value);
 
-    std::array<std::any, sizeof...(Args)> args{ details::args_from_serial<Args>(serial_obj, i)... };
+    std::array<std::any, sizeof...(Args)> args{ details::args_from_serial<ncbor, Args>(serial_obj, i)... };
 
     if constexpr (!std::is_void_v<R>)
     {
@@ -246,20 +246,20 @@ inline std::string ncbor_adapter::extract_func_name(const ncbor& obj)
 template<>
 inline ncbor ncbor_adapter::make_sub_object(const ncbor& obj, unsigned index)
 {
-    return njson::to_cbor(njson::from_cbor(obj)[index]);
+    return njson::to_cbor(njson::from_cbor(obj.value)[index]);
 }
 
 template<>
 inline ncbor ncbor_adapter::make_sub_object(const ncbor& obj, const std::string& name)
 {
-    return njson::to_cbor(njson::from_cbor(obj)[name]);
+    return njson::to_cbor(njson::from_cbor(obj.value)[name]);
 }
 
 template<>
 template<typename T>
 T ncbor_adapter::get_value(const ncbor& obj)
 {
-    return njson::from_cbor(obj).get<T>();
+    return njson::from_cbor(obj.value).get<T>();
 }
 
 template<>
@@ -268,7 +268,7 @@ void ncbor_adapter::populate_array(const ncbor& obj, Container& container)
 {
     static_assert(is_container_v<Container>, "Container type must have begin and end iterators");
     using value_t = typename Container::value_type;
-    njson j_obj = njson::from_cbor(obj);
+    njson j_obj = njson::from_cbor(obj.value);
 
     for (const auto& val : j_obj)
     {
@@ -297,7 +297,7 @@ rpc::packed_func<R, Args...> nbson_adapter::to_packed_func(const nbson& serial_o
     unsigned i = 0;
     const njson j_obj = njson::from_bson(serial_obj.value);
 
-    std::array<std::any, sizeof...(Args)> args{ details::args_from_serial<Args>(serial_obj, i)... };
+    std::array<std::any, sizeof...(Args)> args{ details::args_from_serial<nbson, Args>(serial_obj, i)... };
 
     if constexpr (!std::is_void_v<R>)
     {
@@ -364,20 +364,20 @@ inline std::string nbson_adapter::extract_func_name(const nbson& obj)
 template<>
 inline nbson nbson_adapter::make_sub_object(const nbson& obj, unsigned index)
 {
-    return njson::to_bson(njson::from_bson(obj)[index]);
+    return njson::to_bson(njson::from_bson(obj.value)[index]);
 }
 
 template<>
 inline nbson nbson_adapter::make_sub_object(const nbson& obj, const std::string& name)
 {
-    return njson::to_bson(njson::from_bson(obj)[name]);
+    return njson::to_bson(njson::from_bson(obj.value)[name]);
 }
 
 template<>
 template<typename T>
 T nbson_adapter::get_value(const nbson& obj)
 {
-    return njson::from_bson(obj).get<T>();
+    return njson::from_bson(obj.value).get<T>();
 }
 
 template<>
@@ -386,7 +386,7 @@ void nbson_adapter::populate_array(const nbson& obj, Container& container)
 {
     static_assert(is_container_v<Container>, "Container type must have begin and end iterators");
     using value_t = typename Container::value_type;
-    njson j_obj = njson::from_bson(obj);
+    njson j_obj = njson::from_bson(obj.value);
 
     for (const auto& val : j_obj)
     {
@@ -415,7 +415,7 @@ rpc::packed_func<R, Args...> nmsgpack_adapter::to_packed_func(const nmsgpack& se
     unsigned i = 0;
     const njson j_obj = njson::from_msgpack(serial_obj.value);
 
-    std::array<std::any, sizeof...(Args)> args{ details::args_from_serial<Args>(serial_obj, i)... };
+    std::array<std::any, sizeof...(Args)> args{ details::args_from_serial<nmsgpack, Args>(serial_obj, i)... };
 
     if constexpr (!std::is_void_v<R>)
     {
@@ -482,20 +482,20 @@ inline std::string nmsgpack_adapter::extract_func_name(const nmsgpack& obj)
 template<>
 inline nmsgpack nmsgpack_adapter::make_sub_object(const nmsgpack& obj, unsigned index)
 {
-    return njson::to_msgpack(njson::from_msgpack(obj)[index]);
+    return njson::to_msgpack(njson::from_msgpack(obj.value)[index]);
 }
 
 template<>
 inline nmsgpack nmsgpack_adapter::make_sub_object(const nmsgpack& obj, const std::string& name)
 {
-    return njson::to_msgpack(njson::from_msgpack(obj)[name]);
+    return njson::to_msgpack(njson::from_msgpack(obj.value)[name]);
 }
 
 template<>
 template<typename T>
 T nmsgpack_adapter::get_value(const nmsgpack& obj)
 {
-    return njson::from_msgpack(obj).get<T>();
+    return njson::from_msgpack(obj.value).get<T>();
 }
 
 template<>
@@ -504,7 +504,7 @@ void nmsgpack_adapter::populate_array(const nmsgpack& obj, Container& container)
 {
     static_assert(is_container_v<Container>, "Container type must have begin and end iterators");
     using value_t = typename Container::value_type;
-    njson j_obj = njson::from_msgpack(obj);
+    njson j_obj = njson::from_msgpack(obj.value);
 
     for (const auto& val : j_obj)
     {
@@ -533,7 +533,7 @@ rpc::packed_func<R, Args...> nubjson_adapter::to_packed_func(const nubjson& seri
     unsigned i = 0;
     const njson j_obj = njson::from_ubjson(serial_obj.value);
 
-    std::array<std::any, sizeof...(Args)> args{ details::args_from_serial<Args>(serial_obj, i)... };
+    std::array<std::any, sizeof...(Args)> args{ details::args_from_serial<nubjson, Args>(serial_obj, i)... };
 
     if constexpr (!std::is_void_v<R>)
     {
@@ -600,20 +600,20 @@ inline std::string nubjson_adapter::extract_func_name(const nubjson& obj)
 template<>
 inline nubjson nubjson_adapter::make_sub_object(const nubjson& obj, unsigned index)
 {
-    return njson::to_ubjson(njson::from_ubjson(obj)[index]);
+    return njson::to_ubjson(njson::from_ubjson(obj.value)[index]);
 }
 
 template<>
 inline nubjson nubjson_adapter::make_sub_object(const nubjson& obj, const std::string& name)
 {
-    return njson::to_ubjson(njson::from_ubjson(obj)[name]);
+    return njson::to_ubjson(njson::from_ubjson(obj.value)[name]);
 }
 
 template<>
 template<typename T>
 T nubjson_adapter::get_value(const nubjson& obj)
 {
-    return njson::from_ubjson(obj).get<T>();
+    return njson::from_ubjson(obj.value).get<T>();
 }
 
 template<>
@@ -622,7 +622,7 @@ void nubjson_adapter::populate_array(const nubjson& obj, Container& container)
 {
     static_assert(is_container_v<Container>, "Container type must have begin and end iterators");
     using value_t = typename Container::value_type;
-    njson j_obj = njson::from_ubjson(obj);
+    njson j_obj = njson::from_ubjson(obj.value);
 
     for (const auto& val : j_obj)
     {
