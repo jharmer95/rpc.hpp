@@ -28,6 +28,7 @@ jobs:
           export PATH=$PATH:/home/runner/.local/bin
           echo $PATH
           conan --version
+          sudo ln -s ~/.local/bin/conan /usr/local/bin/conan
       - name: Build with CMake
         uses: docker://lpenz/ghaction-cmake:latest
         with:
@@ -79,6 +80,7 @@ jobs:
           export PATH=$PATH:/home/runner/.local/bin
           echo $PATH
           conan --version
+          sudo ln -s ~/.local/bin/conan /usr/local/bin/conan
       - name: Build with CMake
         uses: docker://lpenz/ghaction-cmake:latest
         with:
