@@ -18,6 +18,7 @@ jobs:
       - uses: docker://lpenz/ghaction-cmake:latest
         with:
           cc: ${{ matrix.cc }}
+          cmakeflags: '-DUSE_CONAN=ON'
   coverage:
     runs-on: ubuntu-latest
     env:
@@ -51,6 +52,7 @@ jobs:
         with:
           cc: clang
           cflags: ${{ matrix.cflags }}
+          cmakeflags: '-DUSE_CONAN=ON'
   clang-format:
     runs-on: ubuntu-latest
     steps:
