@@ -1,4 +1,4 @@
-![cmake](https://github.com/jharmer95/rpc.hpp/workflows/cmake/badge.svg?branch=master&event=push)
+![cmake](https://github.com/jharmer95/rpc.hpp/workflows/cmake/badge.svg?branch=main&event=push)
 
 # rpc.hpp
 
