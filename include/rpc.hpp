@@ -531,10 +531,7 @@ public:
 ///@param val The object to be serialized
 ///@return Serial The serialized value
 template<typename Serial, typename Value>
-[[nodiscard]] Serial serialize(const Value& val)
-{
-    static_assert(false, "template method 'serialize' not implemented for this type");
-}
+[[nodiscard]] Serial serialize(const Value& val);
 
 ///@brief De-serializes a serial object to a generic object
 ///
@@ -544,10 +541,7 @@ template<typename Serial, typename Value>
 ///@param serial_obj The serial object to be de-serialized
 ///@return Value The de-serialized value
 template<typename Serial, typename Value>
-[[nodiscard]] Value deserialize(const Serial& serial_obj)
-{
-    static_assert(false, "template method 'deserialize' not implemented for this type");
-}
+[[nodiscard]] Value deserialize(const Serial& serial_obj);
 
 ///@brief Namespace for functions/variables that should be used only from within the library
 /// Using anything in this namespace in your project is discouraged

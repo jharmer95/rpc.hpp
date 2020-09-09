@@ -7,7 +7,7 @@ if(${USE_CONAN})
     asio/[>=1.14.0]
   )
   run_conan()
-  target_link_libraries(catch2_lib PRIVATE CONAN_PKG::catch2)
+  target_link_libraries(catch2_lib PUBLIC CONAN_PKG::catch2)
   target_link_libraries(asio_lib INTERFACE CONAN_PKG::asio)
 else()
   find_path(catch2_path catch2/catch.hpp)
