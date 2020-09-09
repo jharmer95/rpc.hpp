@@ -333,7 +333,7 @@ inline std::string generic_serial_adapter::to_string(const generic_serial_t& ser
 template<>
 inline generic_serial_t generic_serial_adapter::from_string(const std::string& str)
 {
-    return generic_serial_t(to_func(njson::parse(str)));
+    return to_func(njson::parse(str));
 }
 
 template<>

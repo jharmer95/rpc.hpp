@@ -85,7 +85,7 @@ inline void AddOneToEachRef(std::vector<int>& vec)
     }
 }
 
-inline void ChangeNumber(TestObject& obj, const int index, const int value)
+inline void ChangeNumber(TestObject& obj, const size_t index, const int value)
 {
     obj.numbers[index] = value;
 }

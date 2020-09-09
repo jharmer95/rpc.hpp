@@ -44,7 +44,7 @@
 
 struct TestObject
 {
-    std::string name;
+    std::string name{};
     int age{};
     std::array<int, 4> numbers{};
 };
