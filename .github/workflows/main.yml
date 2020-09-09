@@ -30,7 +30,7 @@ jobs:
       - name: Build with CMake (gcc)
         run: |
           sudo apt update
-          sudo apt install cmake ninja gcc
+          sudo apt install cmake ninja-build gcc
           cmake --version
           gcc --version
           ls
@@ -60,7 +60,7 @@ jobs:
       - name: Build with CMake (clang)
         run: |
           sudo apt update
-          sudo apt install cmake ninja clang
+          sudo apt install cmake ninja-build clang
           cmake --version
           clang --version
           ls
