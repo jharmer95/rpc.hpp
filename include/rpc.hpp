@@ -250,7 +250,7 @@ public:
 
 private:
     const std::string m_func_name;
-    std::string m_err_mesg;
+    std::string m_err_mesg{};
 };
 
 ///@brief Class reprensenting a function call including its name, result, and parameters
