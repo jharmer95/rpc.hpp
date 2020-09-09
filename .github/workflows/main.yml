@@ -36,7 +36,7 @@ jobs:
           ls
           mkdir build-gcc
           cd build-gcc
-          cmake .. -G Ninja -DUSE_CONAN -DCMAKE_CXX_COMPILER=g++ -DCMAKE_C_COMPILER=gcc -DCMAKE_BUILD_TYPE=Release
+          cmake .. -G Ninja -DUSE_CONAN=ON -DCMAKE_CXX_COMPILER=g++ -DCMAKE_C_COMPILER=gcc -DCMAKE_BUILD_TYPE=Release
           ninja
   build-clang:
     name: Build w/ clang
@@ -66,5 +66,5 @@ jobs:
           ls
           mkdir build-clang
           cd build-clang
-          cmake .. -G Ninja -DUSE_CONAN -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang -DCMAKE_BUILD_TYPE=Release
+          cmake .. -G Ninja -DUSE_CONAN=ON -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang -DCMAKE_BUILD_TYPE=Release
           ninja
