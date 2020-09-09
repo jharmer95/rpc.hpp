@@ -30,13 +30,13 @@ jobs:
       - name: Build with CMake (gcc)
         run: |
           sudo apt update
-          sudo apt install cmake ninja gcc
+          sudo apt install cmake ninja-build gcc
           cmake --version
           gcc --version
           ls
           mkdir build-gcc
           cd build-gcc
-          cmake .. -G Ninja -DUSE_CONAN -DCMAKE_CXX_COMPILER=g++ -DCMAKE_C_COMPILER=gcc -DCMAKE_BUILD_TYPE=Release
+          cmake .. -G Ninja -DUSE_CONAN=ON -DCMAKE_CXX_COMPILER=g++ -DCMAKE_C_COMPILER=gcc -DCMAKE_BUILD_TYPE=Release
           ninja
   build-clang:
     name: Build w/ clang
@@ -60,11 +60,11 @@ jobs:
       - name: Build with CMake (clang)
         run: |
           sudo apt update
-          sudo apt install cmake ninja clang
+          sudo apt install cmake ninja-build clang
           cmake --version
           clang --version
           ls
           mkdir build-clang
           cd build-clang
-          cmake .. -G Ninja -DUSE_CONAN -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang -DCMAKE_BUILD_TYPE=Release
+          cmake .. -G Ninja -DUSE_CONAN=ON -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang -DCMAKE_BUILD_TYPE=Release
           ninja
