@@ -1,8 +1,8 @@
 ///@file rpc.hpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Header-only library for serialized RPC usage
-///@version 0.1.0.0
-///@date 08-25-2020
+///@version 0.2.0.0
+///@date 09-09-2020
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -70,6 +70,11 @@ struct function_traits<std::function<R(Args...)>>
     };
 };
 
+///@brief SFINAE struct to extract information from a function pointer
+///
+/// Can be used to get return and parameter types, as well as the count of parameters
+///@tparam R The return type of the function
+///@tparam Args The argument types of the function
 template<typename R, typename... Args>
 struct function_traits<R (*)(Args...)>
 {
@@ -213,19 +218,34 @@ void for_each_tuple(const std::tuple<Ts...>& tuple, const F& func)
     for_each_tuple(tuple, func, std::make_index_sequence<sizeof...(Ts)>());
 }
 
+///@brief Polymorphic base class for \ref packed_func
 class packed_func_base
 {
 public:
     virtual ~packed_func_base() = default;
     packed_func_base() = delete;
 
+    ///@brief Construct a new packed_func_base object
+    ///
+    ///@param func_name Name of the function (case-sensitive)
     explicit packed_func_base(std::string&& func_name) : m_func_name(std::move(func_name)) {}
 
     packed_func_base(const packed_func_base&) = default;
     packed_func_base(packed_func_base&&) = default;
 
+    ///@brief Get the function name
+    ///
+    ///@return std::string Name of the stored function (case-sensitive)
     [[nodiscard]] std::string get_func_name() const noexcept { return m_func_name; }
+
+    ///@brief Get the error message
+    ///
+    ///@return std::string The error message (if any)
     [[nodiscard]] std::string get_err_mesg() const noexcept { return m_err_mesg; }
+
+    ///@brief Set the error message
+    ///
+    ///@param mesg String to set as the error message
     void set_err_mesg(const std::string& mesg) noexcept { m_err_mesg = mesg; }
 
 private:
@@ -233,14 +253,24 @@ private:
     std::string m_err_mesg;
 };
 
+///@brief Class reprensenting a function call including its name, result, and parameters
+///
+///@tparam R The return type
+///@tparam Args The list of parameter type(s)
 template<typename R, typename... Args>
 class packed_func final : public packed_func_base
 {
 public:
+    ///@brief The type of the packed_func's result
     using result_type = R;
 
     packed_func() = delete;
 
+    ///@brief Construct a new packed_func object
+    ///
+    ///@param func_name Name of the function (case-sensitive)
+    ///@param result Function call result (if no result yet, use std::nullopt)
+    ///@param args List of parameters for the function call
     packed_func(std::string func_name, std::optional<result_type> result,
         std::array<std::any, sizeof...(Args)> args)
         : packed_func_base(std::move(func_name)), m_result(result), m_args(std::move(args))
@@ -254,15 +284,33 @@ public:
 
     explicit operator bool() const noexcept { return m_result.has_value(); }
 
+    ///@brief Get the result of the function call (if it exists)
+    ///
+    ///@return std::optional<R> If the function has not been called, or resulted in an error: std::nullopt, else: the result of the function call
     [[nodiscard]] std::optional<R> get_result() const noexcept { return m_result; }
 
+    ///@brief Set the result
+    ///
+    ///@param value Value of type R to set as the result
     void set_result(R value) noexcept { m_result = value; }
 
+    ///@brief Sets the result back to null
     void clear_result() noexcept { m_result = std::nullopt; }
 
+    ///@brief Set a particular argument
+    ///
+    ///@tparam T Type of the argument to be set
+    ///@param arg_index The index (0 start) of the argument to change
+    ///@param value The value to set the argument to
     template<typename T>
     void set_arg(size_t arg_index, T value)
     {
+        if (arg_index > m_args.size())
+        {
+            throw std::logic_error("Index out of bounds for argument list: "
+                + std::to_string(arg_index) + " > " + std::to_string(m_args.size()) + "!");
+        }
+
         if (m_args[arg_index].type() != typeid(T))
         {
             const std::string t_name = typeid(T).name();
@@ -272,6 +320,9 @@ public:
         m_args[arg_index] = value;
     }
 
+    ///@brief Set all arguments
+    ///
+    ///@param args A tuple containing the list of arguments to set
     void set_args(const std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...>& args)
     {
         size_t i = 0;
@@ -279,9 +330,15 @@ public:
         for_each_tuple(args, [&i, this](auto x) { m_args[i++] = x; });
     }
 
+    ///@brief Get the arg object
+    ///
+    ///@tparam T Type to be acquired from the argument list (via std::any_cast)
+    ///@param arg_index The index (0 start) of the argument to retrieve
+    ///@return std::remove_cv_t<std::remove_reference_t<T>> The argument's value
     template<typename T>
     [[nodiscard]] std::remove_cv_t<std::remove_reference_t<T>> get_arg(size_t arg_index) const
     {
+        // TODO: Remove the remove_cv/remove_reference?
         return std::any_cast<std::remove_cv_t<std::remove_reference_t<T>>>(m_args[arg_index]);
     }
 
@@ -290,14 +347,22 @@ private:
     std::array<std::any, sizeof...(Args)> m_args;
 };
 
+///@brief Class reprensenting a function call (with void result) including its name and parameters
+///
+///@tparam Args The list of parameter type(s)
 template<typename... Args>
 class packed_func<void, Args...> final : public packed_func_base
 {
 public:
+    ///@brief The type of the result (void)
     using result_type = void;
 
     packed_func() = delete;
 
+    ///@brief Construct a new packed_func object
+    ///
+    ///@param func_name Name of the function (case-sensitive)
+    ///@param args List of parameters for the function call
     packed_func(std::string func_name, std::array<std::any, sizeof...(Args)> args)
         : packed_func_base(std::move(func_name)), m_args(std::move(args))
     {
@@ -310,6 +375,11 @@ public:
 
     explicit operator bool() const noexcept { return true; }
 
+    ///@brief Set a particular argument
+    ///
+    ///@tparam T Type of the argument to be set
+    ///@param arg_index The index (0 start) of the argument to change
+    ///@param value The value to set the argument to
     template<typename T>
     void set_arg(size_t arg_index, T value)
     {
@@ -322,6 +392,9 @@ public:
         m_args[arg_index] = value;
     }
 
+    ///@brief Set all arguments
+    ///
+    ///@param args A tuple containing the list of arguments to set
     void set_args(const std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...>& args)
     {
         size_t i = 0;
@@ -329,9 +402,15 @@ public:
         for_each_tuple(args, [&i, this](auto x) { m_args[i++] = x; });
     }
 
+    ///@brief Get the arg object
+    ///
+    ///@tparam T Type to be acquired from the argument list (via std::any_cast)
+    ///@param arg_index The index (0 start) of the argument to retrieve
+    ///@return std::remove_cv_t<std::remove_reference_t<T>> The argument's value
     template<typename T>
     [[nodiscard]] std::remove_cv_t<std::remove_reference_t<T>> get_arg(size_t arg_index) const
     {
+        // TODO: Remove the remove_cv/remove_reference?
         return std::any_cast<std::remove_cv_t<std::remove_reference_t<T>>>(m_args[arg_index]);
     }
 
@@ -339,23 +418,13 @@ private:
     std::array<std::any, sizeof...(Args)> m_args;
 };
 
-template<typename T>
-struct packed_func_traits;
-
-template<typename R, typename... Args>
-struct packed_func_traits<R (*)(Args...)>
-{
-    using packed_func_type = packed_func<R, Args...>;
-    using result_type = R;
-};
-
-template<typename R, typename... Args>
-struct packed_func_traits<std::function<R(Args...)>>
-{
-    using packed_func_type = packed_func<R, Args...>;
-    using result_type = R;
-};
-
+///@brief Converts a \ref packed_func_base to a specific templated \ref packed_func
+///
+///@tparam R Return type for the \ref packed_func
+///@tparam Args List of parameter type(s) for the \ref packed_func
+///@param unused Function object to derive R and Args from
+///@param pack packed_func_base reference to be converted
+///@return packed_func<R, Args...>& A casted reference to a specific \ref packed_func
 template<typename R, typename... Args>
 packed_func<R, Args...>& convert_func(
     std::function<R(Args...)> /*unused*/, const packed_func_base& pack)
@@ -363,50 +432,135 @@ packed_func<R, Args...>& convert_func(
     return dynamic_cast<packed_func<R, Args...>&>(pack);
 }
 
+///@brief Converts a \ref packed_func_base to a specific templated \ref packed_func
+///
+///@tparam R Return type for the \ref packed_func
+///@tparam Args List of parameter type(s) for the \ref packed_func
+///@param unused Function pointer to derive R and Args from
+///@param pack packed_func_base reference to be converted
+///@return packed_func<R, Args...>& A casted reference to a specific \ref packed_func
 template<typename R, typename... Args>
 packed_func<R, Args...>& convert_func(R (*/*unused*/)(Args...), const packed_func_base& pack)
 {
     return dynamic_cast<packed_func<R, Args...>&>(pack);
 }
 
-// NOTE: Member functions are to be implemented by an adapter
+///@brief Template class that provides an interface for going to and from a \ref packed_func and a serial object
+///
+///@note Member functions of serial_adapter are to be implemented by an adapter
+///@tparam Serial The serial object type
 template<typename Serial>
 class serial_adapter
 {
 public:
+    ///@brief Converts a serial object into a specific \ref packed_func
+    ///
+    ///@tparam R The result type for the \ref packed_func
+    ///@tparam Args The list of paramter type(s) for the \ref packed_func
+    ///@param serial_obj The serial object to be converted
+    ///@return packed_func<R, Args...> The packaged function call
     template<typename R, typename... Args>
     [[nodiscard]] static packed_func<R, Args...> to_packed_func(const Serial& serial_obj);
 
+    ///@brief Converts a \ref packed_func into a serial object
+    ///
+    ///@tparam R The result type for the \ref packed_func
+    ///@tparam Args The list of parameter type(s) for the \ref packed_func
+    ///@param pack The packaged function call to be converted
+    ///@return Serial The serial object
     template<typename R, typename... Args>
     [[nodiscard]] static Serial from_packed_func(const packed_func<R, Args...>& pack);
 
+    ///@brief Converts a serial object to a readable std::string
+    ///
+    ///@param serial_obj The serial object to be converted
+    ///@return std::string The string representation of the serial object
     [[nodiscard]] static std::string to_string(const Serial& serial_obj);
+
+    ///@brief Parses a std::string into a serial object
+    ///
+    ///@param str The string to be parsed
+    ///@return Serial The serial object represented by the string
     [[nodiscard]] static Serial from_string(const std::string& str);
+
+    ///@brief Retrieve the function name from a serial object
+    ///
+    ///@param obj The serial object to retrieve the function name from
+    ///@return std::string The function name (case-sensitive)
     [[nodiscard]] static std::string extract_func_name(const Serial& obj);
+
+    ///@brief Creates a serial object from inside another serial object
+    ///
+    ///@param obj The original object to extract the sub-object from
+    ///@param index The index of the sub-object, relative to the original object
+    ///@return Serial The serial object representing an inner object of the original
     [[nodiscard]] static Serial make_sub_object(const Serial& obj, unsigned index);
+
+    ///@brief Creates a serial object from inside another serial object
+    ///
+    ///@param obj The original object to extract the sub-object from
+    ///@param name The name of the member of the original object to copy out
+    ///@return Serial The serial object representing an inner object of the original
     [[nodiscard]] static Serial make_sub_object(const Serial& obj, const std::string& name);
 
+    // TODO: Change get_value to return std::optional?
+
+    ///@brief Extract a value from a serial object
+    ///
+    ///@tparam T The type of the object to extract
+    ///@param obj The serial object to extract from
+    ///@return T The extracted type
     template<typename T>
     [[nodiscard]] static T get_value(const Serial& obj);
 
+    ///@brief Populate a container with the contents of a serial object
+    ///
+    ///@tparam Container Type of container used, must satisfy \ref is_container
+    ///@param obj The serial object to populate from
+    ///@param container Reference to the container to populate
     template<typename Container>
     static void populate_array(const Serial& obj, Container& container);
 };
 
+///@brief Serializes a generic object to a serial object
+///
+///@note This template must be instantiated for every custom struct/class that needs to be passed
+/// as a result or parameter via RPC
+///@tparam Serial The type of serial object to use
+///@tparam Value The type of generic object to use
+///@param val The object to be serialized
+///@return Serial The serialized value
 template<typename Serial, typename Value>
 [[nodiscard]] Serial serialize(const Value& val)
 {
     static_assert(false, "template method 'serialize' not implemented for this type");
 }
 
+///@brief De-serializes a serial object to a generic object
+///
+///@note This template must be instantiated for every custom struct/class that needs to be passed as a result or parameter via RPC
+///@tparam Serial The type of serial object to use
+///@tparam Value The type of generic object to use
+///@param serial_obj The serial object to be de-serialized
+///@return Value The de-serialized value
 template<typename Serial, typename Value>
 [[nodiscard]] Value deserialize(const Serial& serial_obj)
 {
     static_assert(false, "template method 'deserialize' not implemented for this type");
 }
 
+///@brief Namespace for functions/variables that should be used only from within the library
+/// Using anything in this namespace in your project is discouraged
 namespace details
 {
+    ///@brief Unpacks the argument values from a \ref packed_func
+    ///
+    ///@tparam Value The type of the argument to be unpacked
+    ///@tparam R The type of the result for the \ref packed_func
+    ///@tparam Args The list of parameter type(s) for the \ref packed_func
+    ///@param pack The packaged function call to unpack
+    ///@param arg_index The index of the argument to be unpacked (is iterated in a parameter pack when called from a tuple)
+    ///@return std::remove_cv_t<std::remove_reference_t<Value>> The unpacked argument value
     template<typename Value, typename R, typename... Args>
     std::remove_cv_t<std::remove_reference_t<Value>> args_from_packed(
         const packed_func<R, Args...>& pack, unsigned& arg_index)
@@ -427,6 +581,12 @@ namespace details
         return pack.template get_arg<no_ref_t>(arg_index++);
     }
 
+    ///@brief Retrieves a single argument value from a serial object
+    ///
+    ///@tparam Serial The type of serial object
+    ///@tparam Value The type of the argument to be retrieved
+    ///@param obj The serial object containing the value
+    ///@return std::remove_cv_t<std::remove_reference_t<Value>> The retrieved argument value
     template<typename Serial, typename Value>
     std::remove_cv_t<std::remove_reference_t<Value>> arg_from_serial(const Serial& obj)
     {
@@ -461,6 +621,13 @@ namespace details
         }
     }
 
+    ///@brief Retrieves the argument values from a serial object
+    ///
+    ///@tparam Serial The type of serial object
+    ///@tparam Value The type of the argument to be retrieved
+    ///@param obj The serial object containing the value
+    ///@param arg_index The index of the argument to be retrieved (is iterated in a parameter pack when called from a tuple)
+    ///@return std::remove_cv_t<std::remove_reference_t<Value>> The retrieved argument value
     template<typename Serial, typename Value>
     std::remove_cv_t<std::remove_reference_t<Value>> args_from_serial(
         const Serial& obj, unsigned& arg_index)
@@ -470,10 +637,16 @@ namespace details
         return arg_from_serial<Serial, Value>(sub_obj);
     }
 
+    ///@brief Packages a function call into a \ref packed_func
+    ///
+    ///@tparam R The type of the result for the \ref packed_func
+    ///@tparam Args The list of parameter type(s) for the \ref packed_func
+    ///@param func_name The name of the function to call (case-sensitive)
+    ///@param args List of arguments to be packaged
+    ///@return packed_func<R, Args...> The packaged function call
     template<typename R, typename... Args>
     packed_func<R, Args...> pack_call(const std::string& func_name, Args&&... args)
     {
-        // TODO: Address cases where pointer, container, or custom type is used?
         std::array<std::any, sizeof...(Args)> argArray{ std::forward<Args>(args)... };
 
         if constexpr (std::is_void_v<R>)
@@ -487,16 +660,32 @@ namespace details
     }
 } // namespace details
 
+///@brief Namespace for server-specific functions and variables
+/// Client-side code should not need to use anything in this namespace
 namespace server
 {
     // TODO: Server-side asynchronous functions (will probably have to return vs. reference)
 
+    ///@brief Create a \ref packed_func object from a serial object
+    ///
+    ///@tparam Serial The type of serial object
+    ///@tparam R The type of the result for the \ref packed_func
+    ///@tparam Args The list of parameter type(s) for the \ref packed_func
+    ///@param unused Function pointer to the function to extract R and Args from
+    ///@param obj The serial object to be converted
+    ///@return packed_func<R, Args...> The packaged function call
     template<typename Serial, typename R, typename... Args>
     packed_func<R, Args...> create_func(R (*/*unused*/)(Args...), const Serial& obj)
     {
         return serial_adapter<Serial>::template to_packed_func<R, Args...>(obj);
     }
 
+    ///@brief Runs the callback function and populates the \ref packed_func with the result and/or updated arguments
+    ///
+    ///@tparam R The type of the result for the function call
+    ///@tparam Args The list of parameter type(s) for the function call
+    ///@param func The function object to call
+    ///@param pack The packaged function call to get/set result and/or parameters
     template<typename R, typename... Args>
     void run_callback(std::function<R(Args...)> func, packed_func<R, Args...>& pack)
     {
@@ -519,20 +708,34 @@ namespace server
         }
     }
 
+    ///@brief Runs the callback function and populates the \ref packed_func with the result and/or updated arguments
+    ///
+    ///@tparam R The type of the result for the function call
+    ///@tparam Args The list of parameter type(s) for the function call
+    ///@param func Pointer to the function to call
+    ///@param pack The packaged function call to get/set result and/or parameters
     template<typename R, typename... Args>
-    void run_callback(R (*func)(Args...), packed_func<R, Args...>& fc)
+    void run_callback(R (*func)(Args...), packed_func<R, Args...>& pack)
     {
-        return run_callback(std::function<R(Args...)>(func), fc);
+        return run_callback(std::function<R(Args...)>(func), pack);
     }
 
     // NOTE: dispatch is to be implemented server-side
+    ///@brief Dispatches the function call based on the received serial object
+    ///
+    ///@note This function must be implemented in ther server-side code (or by using the macros found in \file rpc_dispatch_helper.hpp)
+    ///@tparam Serial The type of serial object
+    ///@param serial_obj The serial object to be used by the function call, will (potentially) be modified by calling the function
     template<typename Serial>
     extern void dispatch(Serial& serial_obj);
 }
 
+///@brief Namespace containing client-specific functions and classes
+/// Server-side code should not need anything from this namespace
 inline namespace client
 {
-    // NOTE: client_base to be inherited by client-side class
+    ///@brief Polymorphic base class for sending and receiving data to/from the server
+    ///@note client_base must be inherited by a client-side class
     class client_base
     {
     public:
@@ -541,6 +744,14 @@ inline namespace client
         virtual std::string receive() = 0;
     };
 
+    ///@brief Transforms a function call to a serial object
+    ///
+    ///@tparam Serial The type of serial object
+    ///@tparam R The type of the result for the function call
+    ///@tparam Args The list of parameter type(s) for the function call
+    ///@param func_name The name of the function to call (case-sensitive)
+    ///@param args The list of parameters for the function call
+    ///@return Serial The serial object representing the function call
     template<typename Serial, typename R = void, typename... Args>
     Serial serialize_call(const std::string& func_name, Args&&... args)
     {
@@ -548,6 +759,14 @@ inline namespace client
         return serial_adapter<Serial>::template from_packed_func<R, Args...>(packed);
     }
 
+    ///@brief Transforms a function call to a serial object (asynchronously)
+    ///
+    ///@tparam Serial The type of serial object
+    ///@tparam R The type of the result for the function call
+    ///@tparam Args The list of parameter type(s) for the function call
+    ///@param func_name The name of the function to call (case-sensitive)
+    ///@param args The list of parameters for the function call
+    ///@return std::future<Serial> Future of the serial object representing the function call
     template<typename Serial, typename R = void, typename... Args>
     std::future<Serial> async_serialize_call(const std::string& func_name, Args&&... args)
     {
@@ -555,20 +774,39 @@ inline namespace client
         return std::async(serial_adapter<Serial>::template from_packed_func<R, Args...>, packed);
     }
 
+    ///@brief Sends a serialized function call to the server
+    ///
+    ///@tparam Serial The type of serial object
+    ///@param serial_obj The serial object representing the function call
+    ///@param client The client object to send from
     template<typename Serial>
     void send_to_server(const Serial& serial_obj, client_base& client)
     {
         client.send(serial_adapter<Serial>::to_string(serial_obj));
     }
 
+    ///@brief Gets the server's response to the client call
+    ///
+    ///@tparam Serial The type of serial object
+    ///@param client The client object to receive from
+    ///@return Serial The received serial object representing the function call result
     template<typename Serial>
     Serial get_server_response(client_base& client)
     {
         return serial_adapter<Serial>::from_string(client.receive());
     }
 
-    template<typename Serial, typename Client, typename R, typename... Args>
-    packed_func<R, Args...> call(Client& client, const std::string& func_name, Args&&... args)
+    ///@brief Packages and sends/receives a serialized function call in one easy function
+    ///
+    ///@tparam Serial The type of serial object
+    ///@tparam R The type of the result for the function call
+    ///@tparam Args The list of parameter type(s) for the function call
+    ///@param client The client object to send/receive to/from
+    ///@param func_name The name of the function to call on the server (case-sensitive)
+    ///@param args The list of parameters for the function call
+    ///@return packed_func<R, Args...> A packaged function call with the result and updated parameters
+    template<typename Serial, typename R = void, typename... Args>
+    packed_func<R, Args...> call(client_base& client, const std::string& func_name, Args&&... args)
     {
         const auto serial_obj =
             serialize_call<Serial, R, Args...>(func_name, std::forward<Args>(args)...);
@@ -576,6 +814,22 @@ inline namespace client
         send_to_server(serial_obj, client);
         const auto resp_obj = get_server_response<Serial>(client);
         return serial_adapter<Serial>::template to_packed_func<R, Args...>(resp_obj);
+    }
+
+    ///@brief Packages and sends/receives a serialized function call in one easy function (asynchronously)
+    ///
+    ///@tparam Serial The type of serial object
+    ///@tparam R The type of the result for the function call
+    ///@tparam Args The list of parameter type(s) for the function call
+    ///@param client The client object to send/receive to/from
+    ///@param func_name The name of the function to call on the server (case-sensitive)
+    ///@param args The list of parameters for the function call
+    ///@return std::future<packed_func<R, Args...>> Future of the packaged function call with the result and updated parameters
+    template<typename Serial, typename R = void, typename... Args>
+    std::future<packed_func<R, Args...>> async_call(
+        client_base& client, const std::string& func_name, Args&&... args)
+    {
+        return std::async(call<Serial, R, Args...>, client, func_name, args...);
     }
 } // namespace client
 } // namespace rpc

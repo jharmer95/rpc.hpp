@@ -1,0 +1,13 @@
+<map id="include/rpc_adapters/rpc_rapidjson.hpp" name="include/rpc_adapters/rpc_rapidjson.hpp">
+<area shape="rect" id="node1" title="Implementation of adapting rapidjson (https://github.com/Tencent/rapidjson)" alt="" coords="379,5,522,47"/>
+<area shape="rect" id="node2" href="$rpc_8hpp.html" title="Header&#45;only library for serialized RPC usage." alt="" coords="189,95,267,121"/>
+<area shape="rect" id="node9" title=" " alt="" coords="291,95,437,121"/>
+<area shape="rect" id="node10" title=" " alt="" coords="461,95,613,121"/>
+<area shape="rect" id="node11" title=" " alt="" coords="637,95,757,121"/>
+<area shape="rect" id="node3" title=" " alt="" coords="5,169,48,196"/>
+<area shape="rect" id="node4" title=" " alt="" coords="73,169,127,196"/>
+<area shape="rect" id="node5" title=" " alt="" coords="152,169,219,196"/>
+<area shape="rect" id="node6" title=" " alt="" coords="243,169,298,196"/>
+<area shape="rect" id="node7" title=" " alt="" coords="323,169,373,196"/>
+<area shape="rect" id="node8" title=" " alt="" coords="397,169,451,196"/>
+</map>

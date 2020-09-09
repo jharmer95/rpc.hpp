@@ -1,5 +1,5 @@
 var searchData=
 [
-  ['function_5fargs_5ft_147',['function_args_t',['../namespacerpc_1_1details.html#a07d23690a3cd417de3a49ffb18b43b24',1,'rpc::details']]],
-  ['function_5fresult_5ft_148',['function_result_t',['../namespacerpc_1_1details.html#a5c0bd59085c7c9aa012f58b51e104ff1',1,'rpc::details']]]
+  ['function_5fargs_5ft_115',['function_args_t',['../rpc_8hpp.html#a4858e794af42a59254b14d6229b44415',1,'rpc']]],
+  ['function_5fresult_5ft_116',['function_result_t',['../rpc_8hpp.html#a06f85019f58fafb5c2c01c0ad6c8bf11',1,'rpc']]]
 ];

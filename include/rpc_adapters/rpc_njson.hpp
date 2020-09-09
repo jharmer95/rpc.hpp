@@ -1,8 +1,8 @@
 ///@file rpc_adapters/rpc_njson.hpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Implementation of adapting nlohmann/json (https://github.com/nlohmann/json)
-///@version 0.1.0.0
-///@date 08-25-2020
+///@version 0.2.0.0
+///@date 09-09-2020
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -155,7 +155,7 @@ inline std::string njson_adapter::extract_func_name(const njson& obj)
 }
 
 template<>
-inline njson njson_adapter::make_sub_object(const njson& obj, unsigned index)
+inline njson njson_adapter::make_sub_object(const njson& obj, const unsigned index)
 {
     return obj[index];
 }
@@ -344,7 +344,7 @@ inline std::string generic_serial_adapter::extract_func_name(const generic_seria
 
 template<>
 inline generic_serial_t generic_serial_adapter::make_sub_object(
-    const generic_serial_t& obj, unsigned index)
+    const generic_serial_t& obj, const unsigned index)
 {
     return to_func(from_func(obj)[index]);
 }

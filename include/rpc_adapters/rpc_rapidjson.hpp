@@ -1,8 +1,8 @@
 ///@file rpc_adapters/rpc_rapidjson.hpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Implementation of adapting rapidjson (https://github.com/Tencent/rapidjson)
-///@version 0.1.0.0
-///@date 08-25-2020
+///@version 0.2.0.0
+///@date 09-09-2020
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -63,7 +63,6 @@ rpc::packed_func<R, Args...> rpdjson_adapter::to_packed_func(const rpdjson_doc& 
     std::array<std::any, sizeof...(Args)> args{ details::args_from_serial<rpdjson_doc, Args>(
         serial_obj, i)... };
 
-    // TODO: Can reorganize these ifs to make more sense
     if constexpr (std::is_void_v<R>)
     {
         return packed_func<void, Args...>(serial_obj["func_name"].GetString(), args);
@@ -119,7 +118,6 @@ rpdjson_doc rpdjson_adapter::from_packed_func(const packed_func<R, Args...>& pac
 
     rpdjson_val result;
 
-    // TODO: Address cases where pointer, container, or custom type is used
     if constexpr (std::is_void_v<R>)
     {
         result.SetNull();
@@ -227,7 +225,7 @@ inline std::string rpdjson_adapter::extract_func_name(const rpdjson_doc& obj)
 }
 
 template<>
-inline rpdjson_doc rpdjson_adapter::make_sub_object(const rpdjson_doc& obj, unsigned index)
+inline rpdjson_doc rpdjson_adapter::make_sub_object(const rpdjson_doc& obj, const unsigned index)
 {
     rpdjson_doc d;
     const auto& val = obj[index];

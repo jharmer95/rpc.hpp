@@ -1,5 +1,4 @@
 var searchData=
 [
-  ['is_5farray_123',['is_array',['../classrpc_1_1serial__adapter.html#abd79324e89c83cd711e0d651e446ea1f',1,'rpc::serial_adapter']]],
-  ['is_5fempty_124',['is_empty',['../classrpc_1_1serial__adapter.html#ad988b5cba6dbe45cc3e9bf1c9b45f993',1,'rpc::serial_adapter']]]
+  ['make_5fsub_5fobject_98',['make_sub_object',['../classrpc_1_1serial__adapter.html#a5a8d6a8a14a6ce7d7a94fe73025a2c2a',1,'rpc::serial_adapter::make_sub_object(const Serial &amp;obj, unsigned index)'],['../classrpc_1_1serial__adapter.html#a9ed9908e3bd58ab9ab83bd374ac809fe',1,'rpc::serial_adapter::make_sub_object(const Serial &amp;obj, const std::string &amp;name)']]]
 ];

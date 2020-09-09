@@ -1,8 +1,8 @@
 ///@file rpc.test.cpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Unit test source file for rpc.hpp
-///@version 0.1.0.0
-///@date 06-05-2020
+///@version 0.2.0.0
+///@date 09-09-2020
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -60,7 +60,7 @@ template<typename Serial>
 void TestType()
 {
     auto& client = GetClient<Serial>();
-    auto pack = rpc::call<Serial, TestClient, int>(client, "SimpleSum", 1, 2);
+    auto pack = rpc::call<Serial, int>(client, "SimpleSum", 1, 2);
     REQUIRE(*pack.get_result() == 3);
 }
 
@@ -104,13 +104,13 @@ TEST_CASE("RAPIDJSON")
 }
 #endif
 
-using test_serial_t = rpdjson_doc;
+using test_serial_t = njson;
 
 TEST_CASE("StrLen")
 {
     auto& client = GetClient<test_serial_t>();
     auto pack =
-        rpc::call<test_serial_t, TestClient, int>(client, "StrLen", std::string("hello, world"));
+        rpc::call<test_serial_t, int>(client, "StrLen", std::string("hello, world"));
 
     REQUIRE(*pack.get_result() == 12);
 }
@@ -120,7 +120,7 @@ TEST_CASE("AddOneToEach")
     auto& client = GetClient<test_serial_t>();
     const std::vector<int> vec{ 2, 4, 6, 8 };
     const auto pack =
-        rpc::call<test_serial_t, TestClient, std::vector<int>>(client, "AddOneToEach", vec);
+        rpc::call<test_serial_t, std::vector<int>>(client, "AddOneToEach", vec);
 
     const auto retVec = *pack.get_result();
     REQUIRE(retVec.size() == vec.size());
@@ -135,7 +135,7 @@ TEST_CASE("AddOneToEachRef")
 {
     auto& client = GetClient<test_serial_t>();
     std::vector<int> vec{ 2, 4, 6, 8 };
-    const auto pack = rpc::call<test_serial_t, TestClient, void>(client, "AddOneToEachRef", vec);
+    const auto pack = rpc::call<test_serial_t>(client, "AddOneToEachRef", vec);
 
     const auto retVec = pack.get_arg<std::vector<int>>(0);
     REQUIRE(retVec.size() == vec.size());
@@ -155,7 +155,7 @@ TEST_CASE("ChangeNumber")
     obj.age = 42;
     obj.numbers = { 1, 4, 5, 6 };
 
-    const auto pack = rpc::call<test_serial_t, TestClient, void>(client, "ChangeNumber", obj, 1, 2);
+    const auto pack = rpc::call<test_serial_t>(client, "ChangeNumber", obj, 1, 2);
 
     const auto retObj = pack.get_arg<TestObject>(0);
     REQUIRE(retObj.numbers[1] == 2);
