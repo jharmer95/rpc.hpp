@@ -14,12 +14,6 @@ A simple header-only library for supporting remote procedure calls using a varie
     - Supports most built-in/STL types out of the box
     - Can add your own "extensions" to allow serialization and sending of any custom type
 - Easy to use
-    - Can be used on your server in 4 simple steps (see [EXAMPLES](EXAMPLES.md) for details):
-        1. `#include rpc.hpp`
-        2. Implement the `rpc::dispatch` function
-        3. Add `Serialize()` and `DeSerialize()` functions to your classes or provide template specializations for the `rpc::Serialize<T>()` and `rpc::DeSerialize<T>()` functions
-        4. Call `rpc::Run<T_Serial>()` from your code
-    - Does all of the parameter parsing for you
 
 ### Upcoming Features
 
