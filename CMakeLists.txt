@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.1...3.15)
 
-project("rpc.hpp" VERSION 0.1.0.0 DESCRIPTION "Simple RPC Header-Only Library" LANGUAGES CXX)
+project("rpc.hpp" VERSION 0.2.0.0 DESCRIPTION "Simple RPC Header-Only Library" LANGUAGES CXX)
 
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 

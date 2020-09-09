@@ -22,7 +22,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">rpc.hpp
-   &#160;<span id="projectnumber">0.1.0.0</span>
+   &#160;<span id="projectnumber">0.2.0.0</span>
    </div>
    <div id="projectbrief">Simple RPC Header-Only Library</div>
   </td>
@@ -67,7 +67,7 @@ $(function() {
 <div class="title">rpc.hpp Documentation</div>  </div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><p><a class="anchor" id="md_README"></a><img src="https://github.com/jharmer95/rpc.hpp/workflows/cmake/badge.svg?branch=master&amp;event=push" alt="cmake" style="pointer-events: none;" class="inline"/></p>
+<div class="textblock"><p><a class="anchor" id="md_README"></a><img src="https://github.com/jharmer95/rpc.hpp/workflows/cmake/badge.svg?branch=main&amp;event=push" alt="cmake" style="pointer-events: none;" class="inline"/></p>
 <h1><a class="anchor" id="autotoc_md0"></a>
 rpc.hpp</h1>
 <p>A simple header-only library for supporting remote procedure calls using a variety of extensible features</p>
@@ -87,17 +87,7 @@ Features</h2>
 <li>Can add your own "extensions" to allow serialization and sending of any custom type</li>
 </ul>
 </li>
-<li>Easy to use<ul>
-<li>Can be used on your server in 4 simple steps (see EXAMPLES for details):<ol type="1">
-<li><code>#include <a class="el" href="rpc_8hpp.html" title="Header-only library for serialized RPC usage.">rpc.hpp</a></code></li>
-<li>Implement the <code>rpc::dispatch</code> function</li>
-<li>Add <code>Serialize()</code> and <code>DeSerialize()</code> functions to your classes or provide template specializations for the <code>rpc::Serialize&lt;T&gt;()</code> and <code>rpc::DeSerialize&lt;T&gt;()</code> functions</li>
-<li>Call <code>rpc::Run&lt;T_Serial&gt;()</code> from your code</li>
-</ol>
-</li>
-<li>Does all of the parameter parsing for you</li>
-</ul>
-</li>
+<li>Easy to use</li>
 </ul>
 <h3><a class="anchor" id="autotoc_md2"></a>
 Upcoming Features</h3>
