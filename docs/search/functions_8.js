@@ -1,5 +1,4 @@
 var searchData=
 [
-  ['operator_20bool_126',['operator bool',['../classrpc_1_1func__call.html#a093692c3cb916356e7fdebac12d9e2a3',1,'rpc::func_call::operator bool()'],['../classrpc_1_1func__result.html#a93d79d6cf179f6c6de29bde3828c9295',1,'rpc::func_result::operator bool()']]],
-  ['operator_5b_5d_127',['operator[]',['../classrpc_1_1serial__adapter.html#a90040a86afe48318a911b34d6fdc0a8c',1,'rpc::serial_adapter::operator[](size_t n)'],['../classrpc_1_1serial__adapter.html#a5221c0fc0f49416629c3769ccf57975a',1,'rpc::serial_adapter::operator[](size_t n) const']]]
+  ['run_5fcallback_103',['run_callback',['../namespacerpc_1_1server.html#a9886cf779e8164ca16a94509c0b9481e',1,'rpc::server::run_callback(std::function&lt; R(Args...)&gt; func, packed_func&lt; R, Args... &gt; &amp;pack)'],['../namespacerpc_1_1server.html#aa8dfa6764d97f2af25cb30018e880d29',1,'rpc::server::run_callback(R(*func)(Args...), packed_func&lt; R, Args... &gt; &amp;pack)']]]
 ];

@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['njson_5fadapter_149',['njson_adapter',['../rpc__njson_8hpp.html#ac8f43d5e6e200943e3784d9995e178be',1,'rpc_njson.hpp']]]
+  ['result_5ftype_117',['result_type',['../classrpc_1_1packed__func.html#a9db63245cc0ef9f2077b709f9618b66c',1,'rpc::packed_func::result_type()'],['../classrpc_1_1packed__func_3_01void_00_01_args_8_8_8_01_4.html#ab0000e292e3f7caa60dce809a7167214',1,'rpc::packed_func&lt; void, Args... &gt;::result_type()']]]
 ];

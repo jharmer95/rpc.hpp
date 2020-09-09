@@ -50,10 +50,10 @@
 #define RPC_FOR_EACH(ACTION, ...) EXPAND(_RPC_GET_MACRO(_0, __VA_ARGS__, _FE_20, _FE_19, _FE_18, _FE_17, _FE_16, _FE_15, _FE_14, _FE_13, _FE_12, _FE_11, _FE_10, _FE_9, _FE_8, _FE_7, _FE_6, _FE_5, _FE_4, _FE_3, _FE_2, _FE_1, _FE_0)(ACTION, __VA_ARGS__))
 #define RPC_FOR_EACH2(ACTION, ...) EXPAND(_RPC_GET_MACRO(_0, __VA_ARGS__, _FE2_20, _FE2_19, _FE2_18, _FE2_17, _FE2_16, _FE2_15, _FE2_14, _FE2_13, _FE2_12, _FE2_11, _FE2_10, _FE2_9, _FE2_8, _FE2_7, _FE2_6, _FE2_5, _FE2_4, _FE2_3, _FE2_2, _FE2_1, _FE2_0)(ACTION, __VA_ARGS__))
 
-#define RPC_ATTACH_FUNC(FUNCNAME) if (func_name == #FUNCNAME) { return rpc::run_callback(FUNCNAME, fc); }
+#define RPC_ATTACH_FUNC(FUNCNAME) if (func_name == #FUNCNAME) { auto pack = create_func(FUNCNAME, serial_obj); run_callback(FUNCNAME, pack); serial_obj = serial_adapter<Serial>::from_packed_func(pack); return; }
 #define RPC_ATTACH_FUNCS(FUNCNAME, ...) EXPAND(RPC_FOR_EACH(RPC_ATTACH_FUNC, FUNCNAME, __VA_ARGS__))
 
-#define RPC_ALIAS_FUNC(FUNCNAME, FUNC_ALIAS) if (func_name == #FUNC_ALIAS) { return rpc::run_callback(FUNCNAME, fc); }
+#define RPC_ALIAS_FUNC(FUNCNAME, FUNC_ALIAS) if (func_name == #FUNC_ALIAS) { auto pack = create_func(FUNCNAME, serial_obj); run_callback(FUNCNAME, pack); serial_obj = serial_adapter<Serial>::from_packed_func(pack); return; }
 #define RPC_MULTI_ALIAS_FUNC(FUNCNAME, FUNC_ALIAS,...) EXPAND(RPC_FOR_EACH2(RPC_ALIAS_FUNC, FUNCNAME, FUNC_ALIAS, __VA_ARGS__))
 
-#define RPC_DEFAULT_DISPATCH(FUNCNAME, ...) EXPAND(template<typename Serial> rpc::func_result<Serial> rpc::dispatch(const func_call<Serial>& fc) { const auto func_name = fc.get_func_name(); RPC_ATTACH_FUNCS(FUNCNAME, __VA_ARGS__); throw std::runtime_error("RPC error: Called function: \"" + func_name + "\" not found!");})
+#define RPC_DEFAULT_DISPATCH(FUNCNAME, ...) EXPAND(template<typename Serial> void rpc::server::dispatch(Serial& serial_obj) { const auto func_name = serial_adapter<Serial>::extract_func_name(serial_obj); RPC_ATTACH_FUNCS(FUNCNAME, __VA_ARGS__) throw std::runtime_error("RPC error: Called function: \"" + func_name + "\" not found!");})
