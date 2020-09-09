@@ -138,9 +138,10 @@ rpdjson_doc rpdjson_adapter::from_packed_func(const packed_func<R, Args...>& pac
             }
             else if constexpr (is_container_v<R>)
             {
+                const R container = *pack.get_result();
                 result.SetArray();
 
-                for (const auto& val : *pack.get_result())
+                for (const auto& val : container)
                 {
                     result.PushBack(val, alloc);
                 }
@@ -191,7 +192,10 @@ rpdjson_doc rpdjson_adapter::from_packed_func(const packed_func<R, Args...>& pac
         }
         else
         {
-            args.PushBack(rpc::serialize<rpdjson_doc, x_t>(x), alloc);
+            rpdjson_doc serialized = rpc::serialize<rpdjson_doc, x_t>(x);
+            rpdjson_val arr_val;
+            arr_val.CopyFrom(serialized, alloc);
+            args.PushBack(arr_val, alloc);
         }
     });
 

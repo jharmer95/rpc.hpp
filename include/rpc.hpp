@@ -380,9 +380,6 @@ public:
     template<typename R, typename... Args>
     [[nodiscard]] static Serial from_packed_func(const packed_func<R, Args...>& pack);
 
-    template<typename T>
-    [[nodiscard]] static T pack_arg(const Serial& obj, unsigned& i);
-
     [[nodiscard]] static std::string to_string(const Serial& serial_obj);
     [[nodiscard]] static Serial from_string(const std::string& str);
     [[nodiscard]] static std::string extract_func_name(const Serial& obj);
@@ -397,10 +394,16 @@ public:
 };
 
 template<typename Serial, typename Value>
-[[nodiscard]] Serial serialize(const Value& val);
+[[nodiscard]] Serial serialize(const Value& val)
+{
+    static_assert(false, "template method 'serialize' not implemented for this type");
+}
 
 template<typename Serial, typename Value>
-[[nodiscard]] Value deserialize(const Serial& serial_obj);
+[[nodiscard]] Value deserialize(const Serial& serial_obj)
+{
+    static_assert(false, "template method 'deserialize' not implemented for this type");
+}
 
 namespace details
 {
@@ -529,6 +532,7 @@ namespace server
 
 inline namespace client
 {
+    // NOTE: client_base to be inherited by client-side class
     class client_base
     {
     public:

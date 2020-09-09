@@ -92,6 +92,7 @@ njson njson_adapter::from_packed_func(const packed_func<R, Args...>& pack)
     ret_j["func_name"] = pack.get_func_name();
     ret_j["result"] = nullptr;
 
+    // TODO: Address use of containers/custom types for result
     if constexpr (!std::is_void_v<R>)
     {
         if (pack)
