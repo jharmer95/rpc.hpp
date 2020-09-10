@@ -20,8 +20,18 @@ before_script:
   - sudo python3 -m pip install conan
   - mkdir build
   - cd build
-  - cmake .. -G Ninja -DUSE_CONAN=ON -DBUILD_NJSON_ADAPTER=ON -DBUILD_RAPIDJSON_ADAPTER=ON -DCMAKE_BUILD_TYPE=Release
+  - cmake .. -G Ninja -DCODE_COVERAGE=ON -DUSE_CONAN=ON -DBUILD_NJSON_ADAPTER=ON -DBUILD_RAPIDJSON_ADAPTER=ON -DCMAKE_BUILD_TYPE=Debug
 
 script:
   - ninja
   - tests/bin/rpc_server & ninja test
+
+after_success:
+  - lcov --directory . --capture --output-file coverage.info
+  # filter out system and extra files.
+  - lcov --remove coverage.info '/usr/*' "${HOME}"'/.cache/*' '*/tests/*' --output-file coverage.info
+  # output coverage data for debugging (optional)
+  - lcov --list coverage.info
+  # Uploading to CodeCov
+  # '-f' specifies file(s) to use and disables manual coverage gathering and file search which has already been done above
+  - bash <(curl -s https://codecov.io/bash) -f coverage.info || echo "Codecov did not collect coverage reports"

@@ -140,6 +140,18 @@ if(${USE_CONAN})
   include(cmake/Conan.cmake)
 endif()
 
+add_library(coverage_config INTERFACE)
+
+option(CODE_COVERAGE "Enable coverage reporting" OFF)
+if(CODE_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+  target_compile_options(coverage_config INTERFACE -O0 -g --coverage)
+  if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.13)
+    target_link_options(coverage_config INTERFACE --coverage)
+  else()
+    target_link_libraries(coverage_config INTERFACE --coverage)
+  endif()
+endif()
+
 find_package(Threads)
 
 add_library(rpc_hpp INTERFACE)
@@ -151,5 +163,10 @@ install(FILES "${PROJECT_SOURCE_DIR}/include/rpc.hpp"
 option(BUILD_NJSON_ADAPTER "Build the adapter for nlohmann/json" ON)
 option(BUILD_RAPIDJSON_ADAPTER "Build the adapter for rapidjson" ON)
 
-add_subdirectory(tests)
 add_subdirectory(include/rpc_adapters)
+
+option(BUILD_TESTING "Build the testing tree." ON)
+if(BUILD_TESTING AND (PROJECT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR))
+  enable_testing()
+  add_subdirectory(tests)
+endif()
