@@ -1,8 +1,12 @@
 os: linux
-dist: bionic
+dist:
+  - bionic
+  - focal
 
 language: cpp
-compiler: gcc
+compiler:
+  - gcc
+  - clang
 
 addons:
   apt:
