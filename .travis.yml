@@ -1,3 +1,4 @@
+os: linux
 dist: bionic
 
 language: cpp
@@ -14,6 +15,8 @@ addons:
       - python3-pip
 
 before_script:
+  - sudo python3 -m pip install setuptools
+  - sudo python3 -m pip install wheel
   - sudo python3 -m pip install conan
   - mkdir build
   - cd build
