@@ -1,7 +1,9 @@
+arch:
+  - amd64
+  - arm64
 os: linux
 dist:
   - bionic
-  - focal
 
 language: cpp
 compiler:
