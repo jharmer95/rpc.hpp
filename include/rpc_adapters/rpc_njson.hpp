@@ -132,9 +132,7 @@ njson njson_adapter::from_packed_func(const packed_func<R, Args...>& pack)
         details::args_from_packed<Args, R, Args...>(pack, i)...
     };
 
-    rpc::for_each_tuple(argTup, [&ret_j](auto x) {
-        push_arg(x, ret_j["args"]);
-    });
+    rpc::for_each_tuple(argTup, [&ret_j](auto x) { push_arg(x, ret_j["args"]); });
 
     return ret_j;
 }
@@ -299,9 +297,7 @@ generic_serial_t generic_serial_adapter::from_packed_func(const packed_func<R, A
         details::args_from_packed<Args, R, Args...>(pack, i)...
     };
 
-    rpc::for_each_tuple(argTup, [&ret_j](auto x) {
-        push_arg(x, ret_j["args"]);
-    });
+    rpc::for_each_tuple(argTup, [&ret_j](auto x) { push_arg(x, ret_j["args"]); });
 
     return generic_serial_t(to_func(ret_j));
 }

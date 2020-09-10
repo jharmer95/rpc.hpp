@@ -148,7 +148,7 @@ TEST_CASE("KillServer")
     {
         rpc::call<test_serial_t>(client, "KillServer");
     }
-    catch(...)
+    catch (...)
     {
     }
 
