@@ -1,8 +1,8 @@
 ///@file rpc.test.cpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Unit test source file for rpc.hpp
-///@version 0.2.0.0
-///@date 09-09-2020
+///@version 0.2.0
+///@date 09-10-2020
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -38,8 +38,6 @@
 
 #include <catch2/catch.hpp>
 
-#include "rpc.hpp"
-
 #if !defined(RPC_HPP_NJSON_ENABLED)
 static_assert(false, "Test requires nlohmann/json adapter to be enabled!");
 #endif
@@ -51,11 +49,24 @@ static_assert(false, "Test requires nlohmann/json adapter to be enabled!");
 #endif
 
 #include "rpc.client.hpp"
-#include "test_structs.hpp"
+
+#include <thread>
+
+inline std::thread server_thread;
 
 TEST_CASE("Start server")
 {
-    // TODO: Spawn rpc_server process
+    server_thread = std::thread{ []() {
+#if defined(_WIN32)
+        constexpr auto cmd = ".\\rpc_server.exe";
+#else
+        constexpr auto cmd = "./rpc_server";
+#endif
+
+        INFO("rpc_test must be run from the same directory containing rpc_server!");
+        const auto result = system(cmd);
+        REQUIRE(result == 0);
+    } };
 }
 
 template<typename Serial>
@@ -153,4 +164,5 @@ TEST_CASE("KillServer")
 {
     auto& client = GetClient<test_serial_t>();
     rpc::call<test_serial_t>(client, "KillServer");
+    server_thread.join();
 }

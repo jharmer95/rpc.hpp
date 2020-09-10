@@ -1,8 +1,8 @@
 ///@file rpc.server.cpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Example implementation of an RPC server
-///@version 0.2.0.0
-///@date 09-09-2020
+///@version 0.2.0
+///@date 09-10-2020
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -368,7 +368,7 @@ void SquareRootRef(double& n1, double& n2, double& n3, double& n4, double& n5, d
 template<typename T>
 double AverageContainer(const std::vector<T>& vec)
 {
-    double sum = std::accumulate(vec.begin(), vec.end(), 0.00);
+    const double sum = std::accumulate(vec.begin(), vec.end(), 0.00);
     return sum / static_cast<double>(vec.size());
 }
 
@@ -396,7 +396,7 @@ std::string HashComplex(ComplexObject cx)
 
     for (size_t i = 0; i < cx.name.size(); ++i)
     {
-        int acc = cx.flag2 ? (cx.name[i] + cx.vals[i % 12]) : (cx.name[i] - cx.vals[i % 12]);
+        const int acc = cx.flag2 ? (cx.name[i] + cx.vals[i % 12]) : (cx.name[i] - cx.vals[i % 12]);
         hash << std::hex << acc;
     }
 
@@ -414,7 +414,7 @@ void HashComplexRef(ComplexObject& cx, std::string& hashStr)
 
     for (size_t i = 0; i < cx.name.size(); ++i)
     {
-        int acc = cx.flag2 ? (cx.name[i] + cx.vals[i % 12]) : (cx.name[i] - cx.vals[i % 12]);
+        const int acc = cx.flag2 ? (cx.name[i] + cx.vals[i % 12]) : (cx.name[i] - cx.vals[i % 12]);
         hash << std::hex << acc;
     }
 
@@ -425,12 +425,12 @@ void HashComplexRef(ComplexObject& cx, std::string& hashStr)
 RPC_DEFAULT_DISPATCH(PtrSum, ReadMessagePtr, WriteMessagePtr, FibonacciPtr, SquareRootPtr,
     HashComplexPtr, KillServer, SimpleSum, StrLen, AddOneToEach, AddOneToEachRef, ReadMessageRef,
     WriteMessageRef, ReadMessageVec, WriteMessageVec, ClearBus, Fibonacci, FibonacciRef, Average,
-    StdDev, SquareRootRef, AverageContainer<int>, AverageContainer<unsigned>,
+    StdDev, SquareRootRef, AverageContainer<uint64_t>,
     AverageContainer<double>, RandInt, HashComplex, HashComplexRef)
 #else
 RPC_DEFAULT_DISPATCH(KillServer, SimpleSum, StrLen, AddOneToEach, AddOneToEachRef, ReadMessageRef,
     WriteMessageRef, ReadMessageVec, WriteMessageVec, ClearBus, Fibonacci, FibonacciRef, Average,
-    StdDev, SquareRootRef, AverageContainer<int>, AverageContainer<unsigned>,
+    StdDev, SquareRootRef, AverageContainer<uint64_t>,
     AverageContainer<double>, RandInt, HashComplex, HashComplexRef)
 #endif
 

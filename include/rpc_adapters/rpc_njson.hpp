@@ -1,8 +1,8 @@
 ///@file rpc_adapters/rpc_njson.hpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Implementation of adapting nlohmann/json (https://github.com/nlohmann/json)
-///@version 0.2.0.0
-///@date 09-09-2020
+///@version 0.2.0
+///@date 09-10-2020
 ///
 ///@copyright
 ///BSD 3-Clause License
