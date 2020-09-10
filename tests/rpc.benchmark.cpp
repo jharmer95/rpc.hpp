@@ -87,7 +87,7 @@ TEST_CASE("Start server")
     // TODO: Spawn rpc_server process
 }
 
-TEST_CASE("By Value (simple)")
+TEST_CASE("By Value (simple)", "[value][simple]")
 {
     constexpr uint64_t expected = 10946ULL;
     uint64_t test = 1;
@@ -104,8 +104,6 @@ TEST_CASE("By Value (simple)")
 
     test = 1;
 
-    // BUG: Benchmarking rapidjson seems to hang (server-side)
-
     BENCHMARK("rpc.hpp (indirect, rapidjson)")
     {
         auto pack = rpc::call<rpdjson_doc, uint64_t>(rpdjson_client, "Fibonacci", 20);
@@ -115,7 +113,7 @@ TEST_CASE("By Value (simple)")
     REQUIRE(expected == test);
 }
 
-TEST_CASE("By Value (complex)")
+TEST_CASE("By Value (complex)", "[value][complex]")
 {
     const std::string expected = "467365747274747d315a473a527073796c7e707b85";
     std::string test;
@@ -153,6 +151,64 @@ TEST_CASE("By Value (complex)")
     };
 
     REQUIRE_THAT(expected, Catch::Matchers::Equals(test));
+}
+
+TEST_CASE("By Value (many)", "[value][many]")
+{
+    constexpr double expected = 3313.695594785;
+    double test = 1.0;
+    auto& njson_client = GetClient<njson>();
+    auto& rpdjson_client = GetClient<rpdjson_doc>();
+
+    BENCHMARK("rpc.hpp (indirect, njson)")
+    {
+        auto pack = rpc::call<njson, double>(njson_client, "StdDev", 55.65, 125.325, 552.125,
+            12.767, 2599.6, 1245.125663, 9783.49, 125.12, 553.3333333333, 2266.1);
+
+        test = *pack.get_result();
+    };
+
+    REQUIRE_THAT(test, Catch::Matchers::WithinRel(expected));
+
+    test = 1.0;
+
+    BENCHMARK("rpc.hpp (indirect, rapidjson)")
+    {
+        auto pack = rpc::call<rpdjson_doc, double>(rpdjson_client, "StdDev", 55.65, 125.325, 552.125,
+            12.767, 2599.6, 1245.125663, 9783.49, 125.12, 553.3333333333, 2266.1);
+
+        test = *pack.get_result();
+    };
+
+    REQUIRE_THAT(test, Catch::Matchers::WithinRel(expected));
+}
+
+TEST_CASE("By Reference (simple)", "[ref][simple]")
+{
+    constexpr uint64_t expected = 10946ULL;
+    uint64_t test = 1;
+    auto& njson_client = GetClient<njson>();
+    auto& rpdjson_client = GetClient<rpdjson_doc>();
+
+    BENCHMARK("rpc.hpp (indirect, njson)")
+    {
+        uint64_t num = 20;
+        auto pack = rpc::call<njson>(njson_client, "FibonacciRef", num);
+        test = pack.get_arg<uint64_t>(0);
+    };
+
+    REQUIRE(expected == test);
+
+    test = 1;
+
+    BENCHMARK("rpc.hpp (indirect, rapidjson)")
+    {
+        uint64_t num = 20;
+        auto pack = rpc::call<rpdjson_doc>(rpdjson_client, "FibonacciRef", num);
+        test = pack.get_arg<uint64_t>(0);
+    };
+
+    REQUIRE(expected == test);
 }
 
 TEST_CASE("KillServer")
