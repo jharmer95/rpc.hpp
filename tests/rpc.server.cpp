@@ -72,6 +72,12 @@ constexpr void PtrSum(int* const n1, const int n2)
 int ReadMessagePtr(TestMessage* const mesg_arr, int* const num_mesgs)
 {
     std::ifstream file_in("bus.txt");
+
+    if (!file_in.is_open())
+    {
+        return 2;
+    }
+
     std::stringstream ss;
     std::string s;
     int i = 0;
@@ -82,7 +88,7 @@ int ReadMessagePtr(TestMessage* const mesg_arr, int* const num_mesgs)
         {
             if (i < *num_mesgs)
             {
-                mesg_arr[i++] = rpc::deserialize<njson::parse(s));
+                mesg_arr[i++] = rpc::deserialize<njson, TestMessage>(njson::parse(s));
             }
             else
             {
@@ -211,6 +217,12 @@ void AddOneToEachRef(std::vector<int>& vec)
 int ReadMessageRef(TestMessage& mesg)
 {
     std::ifstream file_in("bus.txt");
+
+    if (!file_in.is_open())
+    {
+        return 2;
+    }
+
     std::stringstream ss;
     std::string s;
 
@@ -234,6 +246,11 @@ int ReadMessageRef(TestMessage& mesg)
 
     std::ofstream file_out("bus.txt");
 
+    if (!file_out.is_open())
+    {
+        return 3;
+    }
+
     file_out << ss.str();
     return 0;
 }
@@ -241,6 +258,11 @@ int ReadMessageRef(TestMessage& mesg)
 int WriteMessageRef(const TestMessage& mesg)
 {
     std::ofstream file_out("bus.txt", std::fstream::out | std::fstream::app);
+
+    if (!file_out.is_open())
+    {
+        return 3;
+    }
 
     try
     {
@@ -257,6 +279,12 @@ int WriteMessageRef(const TestMessage& mesg)
 int ReadMessageVec(std::vector<TestMessage>& vec, int& num_mesgs)
 {
     std::ifstream file_in("bus.txt");
+
+    if (!file_in.is_open())
+    {
+        return 2;
+    }
+
     std::stringstream ss;
 
     std::string s;
@@ -286,6 +314,11 @@ int ReadMessageVec(std::vector<TestMessage>& vec, int& num_mesgs)
 
     std::ofstream file_out("bus.txt");
 
+    if (!file_out.is_open())
+    {
+        return 3;
+    }
+
     file_out << ss.str();
     return 0;
 }
@@ -293,6 +326,11 @@ int ReadMessageVec(std::vector<TestMessage>& vec, int& num_mesgs)
 int WriteMessageVec(const std::vector<TestMessage>& vec)
 {
     std::ofstream file_out("bus.txt", std::fstream::out | std::fstream::app);
+
+    if (!file_out.is_open())
+    {
+        return 3;
+    }
 
     for (const auto& mesg : vec)
     {
