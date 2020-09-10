@@ -89,5 +89,8 @@ target_include_directories(rpc_hpp INTERFACE "${PROJECT_SOURCE_DIR}/include")
 target_link_libraries(rpc_hpp INTERFACE ${CMAKE_THREAD_LIBS_INIT})
 install(FILES "${PROJECT_SOURCE_DIR}/include/rpc.hpp" DESTINATION "${CMAKE_INSTALL_PREFIX}/include")
 
+option(BUILD_NJSON_ADAPTER "Build the adapter for nlohmann/json" ON)
+option(BUILD_RAPIDJSON_ADAPTER "Build the adapter for rapidjson" ON)
+
 add_subdirectory(tests)
 add_subdirectory(include/rpc_adapters)

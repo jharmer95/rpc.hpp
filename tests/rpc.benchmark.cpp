@@ -96,7 +96,7 @@ TEST_CASE("By Value (simple)", "[value][simple]")
 
     BENCHMARK("rpc.hpp (indirect, njson)")
     {
-        auto pack = rpc::call<njson, uint64_t>(njson_client, "Fibonacci", 20);
+        const auto pack = rpc::call<njson, uint64_t>(njson_client, "Fibonacci", 20);
         test = *pack.get_result();
     };
 
@@ -106,7 +106,7 @@ TEST_CASE("By Value (simple)", "[value][simple]")
 
     BENCHMARK("rpc.hpp (indirect, rapidjson)")
     {
-        auto pack = rpc::call<rpdjson_doc, uint64_t>(rpdjson_client, "Fibonacci", 20);
+        const auto pack = rpc::call<rpdjson_doc, uint64_t>(rpdjson_client, "Fibonacci", 20);
         test = *pack.get_result();
     };
 
@@ -129,7 +129,7 @@ TEST_CASE("By Value (complex)", "[value][complex]")
         cx.name = "Franklin D. Roosevelt";
         cx.vals = { 0, 1, 4, 6, 7, 8, 11, 15, 17, 22, 25, 26 };
 
-        auto pack = rpc::call<njson, std::string>(njson_client, "HashComplex", cx);
+        const auto pack = rpc::call<njson, std::string>(njson_client, "HashComplex", cx);
         test = *pack.get_result();
     };
 
@@ -146,7 +146,7 @@ TEST_CASE("By Value (complex)", "[value][complex]")
         cx.name = "Franklin D. Roosevelt";
         cx.vals = { 0, 1, 4, 6, 7, 8, 11, 15, 17, 22, 25, 26 };
 
-        auto pack = rpc::call<rpdjson_doc, std::string>(rpdjson_client, "HashComplex", cx);
+        const auto pack = rpc::call<rpdjson_doc, std::string>(rpdjson_client, "HashComplex", cx);
         test = *pack.get_result();
     };
 
@@ -162,7 +162,7 @@ TEST_CASE("By Value (many)", "[value][many]")
 
     BENCHMARK("rpc.hpp (indirect, njson)")
     {
-        auto pack = rpc::call<njson, double>(njson_client, "StdDev", 55.65, 125.325, 552.125,
+        const auto pack = rpc::call<njson, double>(njson_client, "StdDev", 55.65, 125.325, 552.125,
             12.767, 2599.6, 1245.125663, 9783.49, 125.12, 553.3333333333, 2266.1);
 
         test = *pack.get_result();
@@ -174,7 +174,7 @@ TEST_CASE("By Value (many)", "[value][many]")
 
     BENCHMARK("rpc.hpp (indirect, rapidjson)")
     {
-        auto pack = rpc::call<rpdjson_doc, double>(rpdjson_client, "StdDev", 55.65, 125.325, 552.125,
+        const auto pack = rpc::call<rpdjson_doc, double>(rpdjson_client, "StdDev", 55.65, 125.325, 552.125,
             12.767, 2599.6, 1245.125663, 9783.49, 125.12, 553.3333333333, 2266.1);
 
         test = *pack.get_result();
@@ -192,8 +192,7 @@ TEST_CASE("By Reference (simple)", "[ref][simple]")
 
     BENCHMARK("rpc.hpp (indirect, njson)")
     {
-        uint64_t num = 20;
-        auto pack = rpc::call<njson>(njson_client, "FibonacciRef", num);
+        const auto pack = rpc::call<njson>(njson_client, "FibonacciRef", test);
         test = pack.get_arg<uint64_t>(0);
     };
 
@@ -203,12 +202,51 @@ TEST_CASE("By Reference (simple)", "[ref][simple]")
 
     BENCHMARK("rpc.hpp (indirect, rapidjson)")
     {
-        uint64_t num = 20;
-        auto pack = rpc::call<rpdjson_doc>(rpdjson_client, "FibonacciRef", num);
+        const auto pack = rpc::call<rpdjson_doc>(rpdjson_client, "FibonacciRef", test);
         test = pack.get_arg<uint64_t>(0);
     };
 
     REQUIRE(expected == test);
+}
+
+TEST_CASE("By Reference (complex)", "[ref][complex]")
+{
+    const std::string expected = "467365747274747d315a473a527073796c7e707b85";
+    std::string test;
+    auto& njson_client = GetClient<njson>();
+    auto& rpdjson_client = GetClient<rpdjson_doc>();
+
+    BENCHMARK("rpc.hpp (indirect, njson)")
+    {
+        ComplexObject cx;
+        cx.flag1 = false;
+        cx.flag2 = true;
+        cx.id = 24;
+        cx.name = "Franklin D. Roosevelt";
+        cx.vals = { 0, 1, 4, 6, 7, 8, 11, 15, 17, 22, 25, 26 };
+
+        const auto pack = rpc::call<njson>(njson_client, "HashComplexRef", cx, test);
+        test = pack.get_arg<std::string>(1);
+    };
+
+    REQUIRE_THAT(expected, Catch::Matchers::Equals(test));
+
+    test = "";
+
+    BENCHMARK("rpc.hpp (indirect, rapidjson)")
+    {
+        ComplexObject cx;
+        cx.flag1 = false;
+        cx.flag2 = true;
+        cx.id = 24;
+        cx.name = "Franklin D. Roosevelt";
+        cx.vals = { 0, 1, 4, 6, 7, 8, 11, 15, 17, 22, 25, 26 };
+
+        const auto pack = rpc::call<rpdjson_doc>(rpdjson_client, "HashComplexRef", cx, test);
+        test = pack.get_arg<std::string>(1);
+    };
+
+    REQUIRE_THAT(expected, Catch::Matchers::Equals(test)); 
 }
 
 TEST_CASE("KillServer")

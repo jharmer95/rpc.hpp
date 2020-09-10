@@ -1,6 +1,3 @@
-option(BUILD_NJSON_ADAPTER "Build the adapter for nlohmann/json" ON)
-option(BUILD_RAPIDJSON_ADAPTER "Build the adapter for rapidjson" ON)
-
 if(${BUILD_NJSON_ADAPTER})
   if(${USE_CONAN})
     set(CONAN_EXTRA_REQUIRES nlohmann_json/[>=3.9.0])
