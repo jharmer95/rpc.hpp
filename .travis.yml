@@ -13,6 +13,7 @@ addons:
       - cmake
       - ninja-build
       - python3-pip
+      - lcov
 
 before_script:
   - sudo python3 -m pip install setuptools
