@@ -104,6 +104,38 @@ rpc::packed_func<R, Args...> rpdjson_adapter::to_packed_func(const rpdjson_doc& 
     }
 }
 
+template<typename T>
+void push_arg(T arg, rpdjson_val& arg_list, rapidjson::MemoryPoolAllocator<>& alloc)
+{
+    if constexpr (std::is_arithmetic_v<T>)
+    {
+        arg_list.PushBack(rpdjson_val().Set<T>(arg), alloc);
+    }
+    else if constexpr (std::is_same_v<T, std::string>)
+    {
+        arg_list.PushBack(rpdjson_val().SetString(arg.c_str(), alloc), alloc);
+    }
+    else if constexpr (rpc::is_container_v<T>)
+    {
+        rpdjson_val sub_arr;
+        sub_arr.SetArray();
+
+        for (auto it = arg.begin(); it != arg.end(); ++it)
+        {
+            push_arg(*it, sub_arr, alloc);
+        }
+
+        arg_list.PushBack(sub_arr, alloc);
+    }
+    else
+    {
+        rpdjson_doc serialized = rpc::serialize<rpdjson_doc, T>(arg);
+        rpdjson_val arr_val;
+        arr_val.CopyFrom(serialized, alloc);
+        arg_list.PushBack(arr_val, alloc);
+    }
+}
+
 template<>
 template<typename R, typename... Args>
 rpdjson_doc rpdjson_adapter::from_packed_func(const packed_func<R, Args...>& pack)
@@ -132,7 +164,7 @@ rpdjson_doc rpdjson_adapter::from_packed_func(const packed_func<R, Args...>& pac
             }
             else if constexpr (std::is_same_v<R, std::string>)
             {
-                result.SetString(*pack.get_result().c_str(), alloc);
+                result.SetString(pack.get_result()->c_str(), alloc);
             }
             else if constexpr (is_container_v<R>)
             {
@@ -166,35 +198,7 @@ rpdjson_doc rpdjson_adapter::from_packed_func(const packed_func<R, Args...>& pac
     };
 
     rpc::for_each_tuple(argTup, [&args, &alloc](auto x) {
-        using x_t = decltype(x);
-
-        if constexpr (std::is_arithmetic_v<x_t>)
-        {
-            args.PushBack(rpdjson_val().Set<x_t>(x), alloc);
-        }
-        else if constexpr (std::is_same_v<x_t, std::string>)
-        {
-            args.PushBack(rpdjson_val().SetString(x.c_str(), alloc), alloc);
-        }
-        else if constexpr (is_container_v<x_t>)
-        {
-            rpdjson_val sub_arr;
-            sub_arr.SetArray();
-
-            for (const auto& val : x)
-            {
-                sub_arr.PushBack(val, alloc);
-            }
-
-            args.PushBack(sub_arr, alloc);
-        }
-        else
-        {
-            rpdjson_doc serialized = rpc::serialize<rpdjson_doc, x_t>(x);
-            rpdjson_val arr_val;
-            arr_val.CopyFrom(serialized, alloc);
-            args.PushBack(arr_val, alloc);
-        }
+        push_arg(x, args, alloc);
     });
 
     d.AddMember("args", args, alloc);

@@ -1,6 +1,6 @@
-///@file rpc.test.cpp
+///@file rpc.benchmark.cpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
-///@brief Unit test source file for rpc.hpp
+///@brief Benchmarking source file for rpc.hpp
 ///@version 0.2.0.0
 ///@date 09-09-2020
 ///
@@ -36,6 +36,7 @@
 ///OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ///
 
+#define CATCH_CONFIG_ENABLE_BENCHMARKING
 #include <catch2/catch.hpp>
 
 #include "rpc.hpp"
@@ -53,21 +54,8 @@ static_assert(false, "Test requires nlohmann/json adapter to be enabled!");
 #include "rpc.client.hpp"
 #include "test_structs.hpp"
 
-TEST_CASE("Start server")
-{
-    // TODO: Spawn rpc_server process
-}
-
 template<typename Serial>
 TestClient& GetClient();
-
-template<typename Serial>
-void TestType()
-{
-    auto& client = GetClient<Serial>();
-    auto pack = rpc::call<Serial, int>(client, "SimpleSum", 1, 2);
-    REQUIRE(*pack.get_result() == 3);
-}
 
 template<>
 TestClient& GetClient<njson>()
@@ -76,22 +64,12 @@ TestClient& GetClient<njson>()
     return client;
 }
 
-TEST_CASE("NJSON")
-{
-    TestType<njson>();
-}
-
 #if defined(RPC_HPP_NLOHMANN_SERIAL_TYPE)
 template<>
 TestClient& GetClient<generic_serial_t>()
 {
     static TestClient client("127.0.0.1", "5001");
     return client;
-}
-
-TEST_CASE("GENERIC_SERIAL_T")
-{
-    TestType<generic_serial_t>();
 }
 #endif
 
@@ -102,55 +80,83 @@ TestClient& GetClient<rpdjson_doc>()
     static TestClient client("127.0.0.1", "5002");
     return client;
 }
-
-TEST_CASE("RAPIDJSON")
-{
-    TestType<rpdjson_doc>();
-}
 #endif
 
-using test_serial_t = njson;
-
-TEST_CASE("StrLen")
+TEST_CASE("Start server")
 {
-    auto& client = GetClient<test_serial_t>();
-    auto pack = rpc::call<test_serial_t, int>(client, "StrLen", std::string("hello, world"));
-
-    REQUIRE(*pack.get_result() == 12);
+    // TODO: Spawn rpc_server process
 }
 
-TEST_CASE("AddOneToEach")
+TEST_CASE("By Value (simple)")
 {
-    auto& client = GetClient<test_serial_t>();
-    const std::vector<int> vec{ 2, 4, 6, 8 };
-    const auto pack = rpc::call<test_serial_t, std::vector<int>>(client, "AddOneToEach", vec);
+    constexpr uint64_t expected = 10946ULL;
+    uint64_t test = 1;
+    auto& njson_client = GetClient<njson>();
+    auto& rpdjson_client = GetClient<rpdjson_doc>();
 
-    const auto retVec = *pack.get_result();
-    REQUIRE(retVec.size() == vec.size());
-
-    for (size_t i = 0; i < retVec.size(); ++i)
+    BENCHMARK("rpc.hpp (indirect, njson)")
     {
-        REQUIRE(retVec[i] == vec[i] + 1);
-    }
+        auto pack = rpc::call<njson, uint64_t>(njson_client, "Fibonacci", 20);
+        test = *pack.get_result();
+    };
+
+    REQUIRE(expected == test);
+
+    test = 1;
+
+    // BUG: Benchmarking rapidjson seems to hang (server-side)
+
+    BENCHMARK("rpc.hpp (indirect, rapidjson)")
+    {
+        auto pack = rpc::call<rpdjson_doc, uint64_t>(rpdjson_client, "Fibonacci", 20);
+        test = *pack.get_result();
+    };
+
+    REQUIRE(expected == test);
 }
 
-TEST_CASE("AddOneToEachRef")
+TEST_CASE("By Value (complex)")
 {
-    auto& client = GetClient<test_serial_t>();
-    std::vector<int> vec{ 2, 4, 6, 8 };
-    const auto pack = rpc::call<test_serial_t>(client, "AddOneToEachRef", vec);
+    const std::string expected = "467365747274747d315a473a527073796c7e707b85";
+    std::string test;
+    auto& njson_client = GetClient<njson>();
+    auto& rpdjson_client = GetClient<rpdjson_doc>();
 
-    const auto retVec = pack.get_arg<std::vector<int>>(0);
-    REQUIRE(retVec.size() == vec.size());
-
-    for (size_t i = 0; i < retVec.size(); ++i)
+    BENCHMARK("rpc.hpp (indirect, njson)")
     {
-        REQUIRE(retVec[i] == vec[i] + 1);
-    }
+        ComplexObject cx;
+        cx.flag1 = false;
+        cx.flag2 = true;
+        cx.id = 24;
+        cx.name = "Franklin D. Roosevelt";
+        cx.vals = { 0, 1, 4, 6, 7, 8, 11, 15, 17, 22, 25, 26 };
+
+        auto pack = rpc::call<njson, std::string>(njson_client, "HashComplex", cx);
+        test = *pack.get_result();
+    };
+
+    REQUIRE_THAT(expected, Catch::Matchers::Equals(test));
+
+    test = "";
+
+    BENCHMARK("rpc.hpp (indirect, rapidjson)")
+    {
+        ComplexObject cx;
+        cx.flag1 = false;
+        cx.flag2 = true;
+        cx.id = 24;
+        cx.name = "Franklin D. Roosevelt";
+        cx.vals = { 0, 1, 4, 6, 7, 8, 11, 15, 17, 22, 25, 26 };
+
+        auto pack = rpc::call<rpdjson_doc, std::string>(rpdjson_client, "HashComplex", cx);
+        test = *pack.get_result();
+    };
+
+    REQUIRE_THAT(expected, Catch::Matchers::Equals(test));
 }
 
 TEST_CASE("KillServer")
 {
-    auto& client = GetClient<test_serial_t>();
-    rpc::call<test_serial_t>(client, "KillServer");
+    auto& client = GetClient<njson>();
+    rpc::call<njson>(client, "KillServer");
 }

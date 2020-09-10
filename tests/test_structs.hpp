@@ -40,102 +40,253 @@
 
 #include <algorithm>
 #include <array>
+#include <cstdint>
+#include <cstring>
 #include <string>
 
-struct TestObject
+struct TestMessage
 {
+    bool flag1{};
+    bool flag2{};
+    int id{};
+    int data[256]{};
+    uint8_t data_sz{};
+
+    [[nodiscard]] bool operator==(const TestMessage& other) const noexcept
+    {
+        if (flag1 != other.flag1 || flag2 != other.flag2 || id != other.id
+            || data_sz != other.data_sz)
+        {
+            return false;
+        }
+
+        return std::memcmp(data, other.data, data_sz) == 0;
+    }
+};
+
+struct ComplexObject
+{
+    int id{};
     std::string name{};
-    int age{};
-    std::array<int, 4> numbers{};
+    bool flag1{};
+    bool flag2{};
+    std::array<uint8_t, 12> vals{};
 };
 
 #if defined(RPC_HPP_NJSON_ENABLED)
 template<>
-inline njson rpc::serialize(const TestObject& val)
+inline njson rpc::serialize(const TestMessage& val)
 {
     njson obj_j;
-    obj_j["name"] = val.name;
-    obj_j["age"] = val.age;
-    obj_j["numbers"] = njson::array();
+    obj_j["flag1"] = val.flag1;
+    obj_j["flag2"] = val.flag2;
+    obj_j["id"] = val.id;
+    obj_j["data"] = njson::array();
+    obj_j["data_sz"] = val.data_sz;
 
-    for (const auto& n : val.numbers)
+    for (uint8_t i = 0; i < val.data_sz; ++i)
     {
-        obj_j["numbers"].push_back(n);
+        obj_j["data"].push_back(val.data[i]);
     }
 
     return obj_j;
 }
 
+template<>
+inline TestMessage rpc::deserialize(const njson& serial_obj)
+{
+    TestMessage mesg;
+    mesg.flag1 = serial_obj["flag1"].get<bool>();
+    mesg.flag2 = serial_obj["flag2"].get<bool>();
+    mesg.id = serial_obj["id"].get<int>();
+    mesg.data_sz = serial_obj["data_sz"].get<uint8_t>();
+    std::copy(serial_obj["data"].begin(), serial_obj["data"].begin() + mesg.data_sz, mesg.data);
+    return mesg;
+}
+
+template<>
+inline njson rpc::serialize(const ComplexObject& val)
+{
+    njson obj_j;
+    obj_j["id"] = val.id;
+    obj_j["name"] = val.name;
+    obj_j["flag1"] = val.flag1;
+    obj_j["flag2"] = val.flag2;
+    obj_j["vals"] = val.vals;
+
+    return obj_j;
+}
+
+template<>
+inline ComplexObject rpc::deserialize(const njson& serial_obj)
+{
+    ComplexObject cx;
+    cx.id = serial_obj["id"].get<int>();
+    cx.name = serial_obj["name"].get<std::string>();
+    cx.flag1 = serial_obj["flag1"].get<bool>();
+    cx.flag2 = serial_obj["flag2"].get<bool>();
+    const auto& vals = serial_obj["vals"];
+
+    if (vals.size() > 12)
+    {
+        std::copy(vals.begin(), vals.begin() + 12, cx.vals.begin());
+    }
+    else
+    {
+        std::copy(vals.begin(), vals.end(), cx.vals.begin());
+    }
+
+    return cx;
+}
+
 #    if defined(RPC_HPP_NLOHMANN_SERIAL_TYPE)
 template<>
-inline TestObject rpc::deserialize(const njson& serial_obj)
+inline generic_serial_t rpc::serialize(const TestMessage& val)
 {
-    TestObject obj;
-    obj.name = serial_obj["name"].get<std::string>();
-    obj.age = serial_obj["age"].get<int>();
-
-    std::copy(serial_obj["numbers"].begin(), serial_obj["numbers"].end(), obj.numbers.begin());
-    return obj;
+    return to_func(rpc::serialize<njson, TestMessage>(val));
 }
 
 template<>
-inline generic_serial_t rpc::serialize(const TestObject& val)
+inline TestMessage rpc::deserialize(const generic_serial_t& serial_obj)
 {
-    return to_func(rpc::serialize<njson, TestObject>(val));
+    return rpc::deserialize<njson, TestMessage>(from_func(serial_obj));
 }
 
 template<>
-inline TestObject rpc::deserialize(const generic_serial_t& serial_obj)
+inline generic_serial_t rpc::serialize(const ComplexObject& val)
 {
-    return rpc::deserialize<njson, TestObject>(from_func(serial_obj));
+    return to_func(rpc::serialize<njson, ComplexObject>(val));
+}
+
+template<>
+inline ComplexObject rpc::deserialize(const generic_serial_t& serial_obj)
+{
+    return rpc::deserialize<njson, ComplexObject>(from_func(serial_obj));
 }
 #    endif
 #endif
 
 #if defined(RPC_HPP_RAPIDJSON_ENABLED)
 template<>
-inline rpdjson_doc rpc::serialize(const TestObject& val)
+inline rpdjson_doc rpc::serialize(const TestMessage& val)
 {
     rpdjson_doc d;
     d.SetObject();
     auto& alloc = d.GetAllocator();
 
-    rpdjson_val name_v;
-    name_v.SetString(val.name.c_str(), alloc);
-    d.AddMember("name", name_v, alloc);
+    rpdjson_val flag1_v;
+    flag1_v.Set<bool>(val.flag1);
+    d.AddMember("flag1", flag1_v, alloc);
 
-    rpdjson_val age_v;
-    age_v.SetInt(val.age);
-    d.AddMember("age", age_v, alloc);
+    rpdjson_val flag2_v;
+    flag2_v.Set<bool>(val.flag2);
+    d.AddMember("flag2", flag2_v, alloc);
 
-    rpdjson_val numbers_v;
-    numbers_v.SetArray();
+    rpdjson_val id_v;
+    id_v.Set<int>(val.id);
+    d.AddMember("id", id_v, alloc);
 
-    for (const auto& n : val.numbers)
+    rpdjson_val data_sz_v;
+    data_sz_v.Set<unsigned>(val.data_sz);
+    d.AddMember("data_sz", data_sz_v, alloc);
+
+    rpdjson_val data_v;
+    data_v.SetArray();
+
+    for (uint8_t i = 0; i < val.data_sz; ++i)
     {
-        numbers_v.PushBack(n, alloc);
+        data_v.PushBack(val.data[i], alloc);
     }
 
-    d.AddMember("numbers", numbers_v, alloc);
+    d.AddMember("data", data_v, alloc);
     return d;
 }
 
 template<>
-inline TestObject rpc::deserialize(const rpdjson_doc& serial_obj)
+inline TestMessage rpc::deserialize(const rpdjson_doc& serial_obj)
 {
-    TestObject obj;
+    TestMessage obj;
+    const auto flag1_v = serial_obj.FindMember("flag1");
+    obj.flag1 = flag1_v->value.Get<bool>();
+
+    const auto flag2_v = serial_obj.FindMember("flag2");
+    obj.flag2 = flag2_v->value.Get<bool>();
+
+    const auto id_v = serial_obj.FindMember("id");
+    obj.id = id_v->value.Get<int>();
+
+    const auto data_sz_v = serial_obj.FindMember("data_sz");
+    obj.data_sz = data_sz_v->value.Get<unsigned>();
+
+    const auto data_v = serial_obj.FindMember("data");
+    const auto& arr = data_v->value.GetArray();
+
+    for (unsigned i = 0; i < obj.data_sz; ++i)
+    {
+        obj.data[i] = arr[i].Get<int>();
+    }
+
+    return obj;
+}
+
+template<>
+inline rpdjson_doc rpc::serialize(const ComplexObject& val)
+{
+    rpdjson_doc d;
+    d.SetObject();
+    auto& alloc = d.GetAllocator();
+
+    rpdjson_val id_v;
+    id_v.Set<int>(val.id);
+    d.AddMember("id", id_v, alloc);
+
+    rpdjson_val name_v;
+    name_v.SetString(val.name.c_str(), alloc);
+    d.AddMember("name", name_v, alloc);
+
+    rpdjson_val flag1_v;
+    flag1_v.Set<bool>(val.flag1);
+    d.AddMember("flag1", flag1_v, alloc);
+
+    rpdjson_val flag2_v;
+    flag2_v.Set<bool>(val.flag2);
+    d.AddMember("flag2", flag2_v, alloc);
+
+    rpdjson_val vals_v;
+    vals_v.SetArray();
+
+    for (uint8_t i = 0; i < 12; ++i)
+    {
+        vals_v.PushBack(val.vals[i], alloc);
+    }
+
+    d.AddMember("vals", vals_v, alloc);
+    return d;
+}
+
+template<>
+inline ComplexObject rpc::deserialize(const rpdjson_doc& serial_obj)
+{
+    ComplexObject obj;
+
+    const auto id_v = serial_obj.FindMember("id");
+    obj.id = id_v->value.Get<int>();
+
     const auto name_v = serial_obj.FindMember("name");
     obj.name = std::string(name_v->value.GetString(), name_v->value.GetStringLength());
 
-    const auto age_v = serial_obj.FindMember("age");
-    obj.age = age_v->value.GetInt();
+    const auto flag1_v = serial_obj.FindMember("flag1");
+    obj.flag1 = flag1_v->value.Get<bool>();
 
-    const auto numbers_v = serial_obj.FindMember("numbers");
-    const auto& arr = numbers_v->value.GetArray();
+    const auto flag2_v = serial_obj.FindMember("flag2");
+    obj.flag2 = flag2_v->value.Get<bool>();
 
-    for (unsigned i = 0; i < 4; ++i)
+    const auto vals_v = serial_obj.FindMember("vals");
+    const auto& arr = vals_v->value.GetArray();
+
+    for (unsigned i = 0; i < 12; ++i)
     {
-        obj.numbers[i] = arr[i].GetInt();
+        obj.vals[i] = arr[i].Get<unsigned>();
     }
 
     return obj;
