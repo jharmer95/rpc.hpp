@@ -1,8 +1,8 @@
 ///@file rpc.server.cpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Example implementation of an RPC server
-///@version 0.2.0.0
-///@date 09-09-2020
+///@version 0.2.0
+///@date 09-10-2020
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -40,7 +40,11 @@
 
 #include <asio.hpp>
 
+#include <atomic>
+#include <cmath>
+#include <fstream>
 #include <iostream>
+#include <sstream>
 #include <thread>
 
 #if defined(RPC_HPP_NJSON_ENABLED)
@@ -57,17 +61,142 @@
 
 using asio::ip::tcp;
 
+static std::atomic_bool RUNNING = false;
+
+#if defined(RPC_HPP_ENABLE_POINTERS)
+constexpr void PtrSum(int* const n1, const int n2)
+{
+    *n1 += n2;
+}
+
+int ReadMessagePtr(TestMessage* const mesg_arr, int* const num_mesgs)
+{
+    std::ifstream file_in("bus.txt");
+
+    if (!file_in.is_open())
+    {
+        return 2;
+    }
+
+    std::stringstream ss;
+    std::string s;
+    int i = 0;
+
+    try
+    {
+        while (file_in >> s)
+        {
+            if (i < *num_mesgs)
+            {
+                mesg_arr[i++] = rpc::deserialize<njson, TestMessage>(njson::parse(s));
+            }
+            else
+            {
+                ss << s << '\n';
+            }
+        }
+    }
+    catch (...)
+    {
+        *num_mesgs = i;
+        return 1;
+    }
+
+    file_in.close();
+    std::ofstream file_out("bus.txt");
+
+    file_out << ss.str();
+    return 0;
+}
+
+int WriteMessagePtr(const TestMessage* const mesg_arr, int* const num_mesgs)
+{
+    std::ofstream file_out("bus.txt", std::fstream::out | std::fstream::app);
+
+    for (int i = 0; i < *num_mesgs; ++i)
+    {
+        try
+        {
+            file_out << rpc::serialize<njson, TestMessage>(mesg_arr[i]).dump() << '\n';
+        }
+        catch (...)
+        {
+            *num_mesgs = i;
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+void FibonacciPtr(uint64_t* number)
+{
+    if (*number < 2)
+    {
+        *number = 1;
+    }
+    else
+    {
+        uint64_t n1 = *number - 1;
+        uint64_t n2 = *number - 2;
+        FibonacciPtr(&n1);
+        FibonacciPtr(&n2);
+        *number = n1 + n2;
+    }
+}
+
+void SquareRootPtr(double* n1, double* n2, double* n3, double* n4, double* n5, double* n6,
+    double* n7, double* n8, double* n9, double* n10)
+{
+    *n1 = std::sqrt(*n1);
+    *n2 = std::sqrt(*n2);
+    *n3 = std::sqrt(*n3);
+    *n4 = std::sqrt(*n4);
+    *n5 = std::sqrt(*n5);
+    *n6 = std::sqrt(*n6);
+    *n7 = std::sqrt(*n7);
+    *n8 = std::sqrt(*n8);
+    *n9 = std::sqrt(*n9);
+    *n10 = std::sqrt(*n10);
+}
+
+void HashComplexPtr(const ComplexObject* const cx, char* const hashStr)
+{
+    std::stringstream hash;
+    std::array<uint8_t, 12> valsCpy = cx->vals;
+
+    if (cx->flag1)
+    {
+        std::reverse(valsCpy.begin(), valsCpy.end());
+    }
+
+    for (size_t i = 0; i < cx->name.size(); ++i)
+    {
+        int acc = cx->flag2 ? (cx->name[i] + valsCpy[i % 12]) : (cx->name[i] - valsCpy[i % 12]);
+        hash << std::hex << acc;
+    }
+
+    auto str = hash.str();
+    std::copy(str.begin(), str.end(), hashStr);
+}
+#endif
+
+void KillServer()
+{
+    RUNNING = false;
+}
+
 constexpr int SimpleSum(const int n1, const int n2)
 {
     return n1 + n2;
 }
 
-inline size_t StrLen(const std::string& str)
+size_t StrLen(const std::string& str)
 {
     return str.size();
 }
 
-inline std::vector<int> AddOneToEach(std::vector<int> vec)
+std::vector<int> AddOneToEach(std::vector<int> vec)
 {
     for (auto& n : vec)
     {
@@ -77,7 +206,7 @@ inline std::vector<int> AddOneToEach(std::vector<int> vec)
     return vec;
 }
 
-inline void AddOneToEachRef(std::vector<int>& vec)
+void AddOneToEachRef(std::vector<int>& vec)
 {
     for (auto& n : vec)
     {
@@ -85,17 +214,263 @@ inline void AddOneToEachRef(std::vector<int>& vec)
     }
 }
 
-inline void ChangeNumber(TestObject& obj, const size_t index, const int value)
+int ReadMessageRef(TestMessage& mesg)
 {
-    obj.numbers[index] = value;
+    std::ifstream file_in("bus.txt");
+
+    if (!file_in.is_open())
+    {
+        return 2;
+    }
+
+    std::stringstream ss;
+    std::string s;
+
+    try
+    {
+        if (file_in >> s)
+        {
+            mesg = rpc::deserialize<njson, TestMessage>(njson::parse(s));
+        }
+        while (file_in >> s)
+        {
+            ss << s << '\n';
+        }
+    }
+    catch (...)
+    {
+        return 1;
+    }
+
+    file_in.close();
+
+    std::ofstream file_out("bus.txt");
+
+    if (!file_out.is_open())
+    {
+        return 3;
+    }
+
+    file_out << ss.str();
+    return 0;
 }
 
-constexpr void PtrSum(int* const n1, const int n2)
+int WriteMessageRef(const TestMessage& mesg)
 {
-    *n1 += n2;
+    std::ofstream file_out("bus.txt", std::fstream::out | std::fstream::app);
+
+    if (!file_out.is_open())
+    {
+        return 3;
+    }
+
+    try
+    {
+        file_out << rpc::serialize<njson, TestMessage>(mesg).dump() << '\n';
+    }
+    catch (...)
+    {
+        return 1;
+    }
+
+    return 0;
 }
 
-RPC_DEFAULT_DISPATCH(SimpleSum, StrLen, AddOneToEach, AddOneToEachRef, ChangeNumber)
+int ReadMessageVec(std::vector<TestMessage>& vec, int& num_mesgs)
+{
+    std::ifstream file_in("bus.txt");
+
+    if (!file_in.is_open())
+    {
+        return 2;
+    }
+
+    std::stringstream ss;
+
+    std::string s;
+    int i = 0;
+
+    try
+    {
+        while (file_in >> s)
+        {
+            if (i < num_mesgs)
+            {
+                vec.push_back(rpc::deserialize<njson, TestMessage>(njson::parse(s)));
+            }
+            else
+            {
+                ss << s << '\n';
+            }
+        }
+    }
+    catch (...)
+    {
+        num_mesgs = i;
+        return 1;
+    }
+
+    file_in.close();
+
+    std::ofstream file_out("bus.txt");
+
+    if (!file_out.is_open())
+    {
+        return 3;
+    }
+
+    file_out << ss.str();
+    return 0;
+}
+
+int WriteMessageVec(const std::vector<TestMessage>& vec)
+{
+    std::ofstream file_out("bus.txt", std::fstream::out | std::fstream::app);
+
+    if (!file_out.is_open())
+    {
+        return 3;
+    }
+
+    for (const auto& mesg : vec)
+    {
+        try
+        {
+            file_out << rpc::serialize<njson, TestMessage>(mesg).dump() << '\n';
+        }
+        catch (...)
+        {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+void ClearBus()
+{
+    std::ofstream("bus.txt");
+}
+
+uint64_t Fibonacci(uint64_t number)
+{
+    return number < 2 ? 1 : Fibonacci(number - 1) + Fibonacci(number - 2);
+}
+
+void FibonacciRef(uint64_t& number)
+{
+    if (number < 2)
+    {
+        number = 1;
+    }
+    else
+    {
+        uint64_t n1 = number - 1;
+        uint64_t n2 = number - 2;
+        FibonacciRef(n1);
+        FibonacciRef(n2);
+        number = n1 + n2;
+    }
+}
+
+double Average(double n1, double n2, double n3, double n4, double n5, double n6, double n7,
+    double n8, double n9, double n10)
+{
+    return (n1 + n2 + n3 + n4 + n5 + n6 + n7 + n8 + n9 + n10) / 10.00;
+}
+
+double StdDev(double n1, double n2, double n3, double n4, double n5, double n6, double n7,
+    double n8, double n9, double n10)
+{
+    const auto avg = Average(
+        n1 * n1, n2 * n2, n3 * n3, n4 * n4, n5 * n5, n6 * n6, n7 * n7, n8 * n8, n9 * n9, n10 * n10);
+
+    return std::sqrt(avg);
+}
+
+void SquareRootRef(double& n1, double& n2, double& n3, double& n4, double& n5, double& n6,
+    double& n7, double& n8, double& n9, double& n10)
+{
+    n1 = std::sqrt(n1);
+    n2 = std::sqrt(n2);
+    n3 = std::sqrt(n3);
+    n4 = std::sqrt(n4);
+    n5 = std::sqrt(n5);
+    n6 = std::sqrt(n6);
+    n7 = std::sqrt(n7);
+    n8 = std::sqrt(n8);
+    n9 = std::sqrt(n9);
+    n10 = std::sqrt(n10);
+}
+
+template<typename T>
+double AverageContainer(const std::vector<T>& vec)
+{
+    const double sum = std::accumulate(vec.begin(), vec.end(), 0.00);
+    return sum / static_cast<double>(vec.size());
+}
+
+std::vector<uint64_t> RandInt(uint64_t min, uint64_t max, size_t sz = 1000)
+{
+    std::vector<uint64_t> vec;
+    vec.reserve(sz);
+
+    for (size_t i = 0; i < sz; ++i)
+    {
+        vec.push_back(static_cast<uint64_t>(std::rand()) % (max - min + 1) + min);
+    }
+
+    return vec;
+}
+
+std::string HashComplex(ComplexObject cx)
+{
+    std::stringstream hash;
+
+    if (cx.flag1)
+    {
+        std::reverse(cx.vals.begin(), cx.vals.end());
+    }
+
+    for (size_t i = 0; i < cx.name.size(); ++i)
+    {
+        const int acc = cx.flag2 ? (cx.name[i] + cx.vals[i % 12]) : (cx.name[i] - cx.vals[i % 12]);
+        hash << std::hex << acc;
+    }
+
+    return hash.str();
+}
+
+void HashComplexRef(ComplexObject& cx, std::string& hashStr)
+{
+    std::stringstream hash;
+
+    if (cx.flag1)
+    {
+        std::reverse(cx.vals.begin(), cx.vals.end());
+    }
+
+    for (size_t i = 0; i < cx.name.size(); ++i)
+    {
+        const int acc = cx.flag2 ? (cx.name[i] + cx.vals[i % 12]) : (cx.name[i] - cx.vals[i % 12]);
+        hash << std::hex << acc;
+    }
+
+    hashStr = hash.str();
+}
+
+#if defined(RPC_HPP_ENABLE_POINTERS)
+RPC_DEFAULT_DISPATCH(PtrSum, ReadMessagePtr, WriteMessagePtr, FibonacciPtr, SquareRootPtr,
+    HashComplexPtr, KillServer, SimpleSum, StrLen, AddOneToEach, AddOneToEachRef, ReadMessageRef,
+    WriteMessageRef, ReadMessageVec, WriteMessageVec, ClearBus, Fibonacci, FibonacciRef, Average,
+    StdDev, SquareRootRef, AverageContainer<uint64_t>,
+    AverageContainer<double>, RandInt, HashComplex, HashComplexRef)
+#else
+RPC_DEFAULT_DISPATCH(KillServer, SimpleSum, StrLen, AddOneToEach, AddOneToEachRef, ReadMessageRef,
+    WriteMessageRef, ReadMessageVec, WriteMessageVec, ClearBus, Fibonacci, FibonacciRef, Average,
+    StdDev, SquareRootRef, AverageContainer<uint64_t>,
+    AverageContainer<double>, RandInt, HashComplex, HashComplexRef)
+#endif
 
 template<typename Serial>
 void session(tcp::socket sock)
@@ -132,39 +507,40 @@ void session(tcp::socket sock)
     }
 }
 
-constexpr uint16_t PORT_NJSON = 5000;
-constexpr uint16_t PORT_N_SERIAL = 5001;
-constexpr uint16_t PORT_RAPIDJSON = 5002;
+constexpr uint16_t PORT_NJSON = 5000U;
+constexpr uint16_t PORT_N_SERIAL = 5001U;
+constexpr uint16_t PORT_RAPIDJSON = 5002U;
 
+
+
+template<typename Serial>
+constexpr uint16_t get_port();
+
+template<>
+constexpr uint16_t get_port<njson>()
+{
+    return PORT_NJSON;
+}
+
+template<>
+constexpr uint16_t get_port<generic_serial_t>()
+{
+    return PORT_N_SERIAL;
+}
+
+template<>
+constexpr uint16_t get_port<rpdjson_doc>()
+{
+    return PORT_RAPIDJSON;
+}
+
+template<typename Serial>
 [[noreturn]] void server(asio::io_context& io_context)
 {
-#if defined(RPC_HPP_NJSON_ENABLED)
-    tcp::acceptor a(io_context, tcp::endpoint(tcp::v4(), PORT_NJSON));
-    std::cout << "Running njson server on port " << PORT_NJSON << "...\n";
-
-#    if defined(RPC_HPP_NLOHMANN_SERIAL_TYPE)
-    tcp::acceptor b(io_context, tcp::endpoint(tcp::v4(), PORT_N_SERIAL));
-    std::cout << "Running nlohmann/serial_type server on port " << PORT_N_SERIAL << "...\n";
-#    endif
-#endif
-
-#if defined(RPC_HPP_RAPIDJSON_ENABLED)
-    tcp::acceptor c(io_context, tcp::endpoint(tcp::v4(), PORT_RAPIDJSON));
-    std::cout << "Running rapidjson server on port " << PORT_RAPIDJSON << "...\n";
-#endif
-
     while (true)
     {
-#if defined(RPC_HPP_NJSON_ENABLED)
-        std::thread(session<njson>, a.accept()).detach();
-#    if defined(RPC_HPP_NLOHMANN_SERIAL_TYPE)
-        std::thread(session<generic_serial_t>, b.accept()).detach();
-#    endif
-#endif
-
-#if defined(RPC_HPP_RAPIDJSON_ENABLED)
-        std::thread(session<rpdjson_doc>, c.accept()).detach();
-#endif
+        tcp::acceptor acc(io_context, tcp::endpoint(tcp::v4(), get_port<Serial>()));
+        session<Serial>(acc.accept());
     }
 }
 
@@ -173,7 +549,22 @@ int main()
     try
     {
         asio::io_context io_context;
-        server(io_context);
+        RUNNING = true;
+
+#if defined(RPC_HPP_NJSON_ENABLED)
+        std::thread(server<njson>, std::ref(io_context)).detach();
+        std::cout << "Running njson server on port " << PORT_NJSON << "...\n";
+#    if defined(RPC_HPP_NLOHMANN_SERIAL_TYPE)
+        std::thread(server<generic_serial_t>, std::ref(io_context)).detach();
+        std::cout << "Running nlohmann/serial_type server on port " << PORT_N_SERIAL << "...\n";
+#    endif
+#endif
+
+#if defined(RPC_HPP_RAPIDJSON_ENABLED)
+        std::thread(server<rpdjson_doc>, std::ref(io_context)).detach();
+        std::cout << "Running rapidjson server on port " << PORT_RAPIDJSON << "...\n";
+#endif
+        while(RUNNING) {}
     }
     catch (const std::exception& ex)
     {

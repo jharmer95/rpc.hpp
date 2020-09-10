@@ -1,8 +1,8 @@
 ///@file rpc.test.cpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Unit test source file for rpc.hpp
-///@version 0.2.0.0
-///@date 09-09-2020
+///@version 0.2.0
+///@date 09-10-2020
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -38,8 +38,6 @@
 
 #include <catch2/catch.hpp>
 
-#include "rpc.hpp"
-
 #if !defined(RPC_HPP_NJSON_ENABLED)
 static_assert(false, "Test requires nlohmann/json adapter to be enabled!");
 #endif
@@ -51,7 +49,25 @@ static_assert(false, "Test requires nlohmann/json adapter to be enabled!");
 #endif
 
 #include "rpc.client.hpp"
-#include "test_structs.hpp"
+
+#include <thread>
+
+inline std::thread server_thread;
+
+TEST_CASE("Start server")
+{
+    server_thread = std::thread{ []() {
+#if defined(_WIN32)
+        constexpr auto cmd = ".\\rpc_server.exe";
+#else
+        constexpr auto cmd = "./rpc_server";
+#endif
+
+        INFO("rpc_test must be run from the same directory containing rpc_server!");
+        const auto result = system(cmd);
+        REQUIRE(result == 0);
+    } };
+}
 
 template<typename Serial>
 TestClient& GetClient();
@@ -109,8 +125,7 @@ using test_serial_t = njson;
 TEST_CASE("StrLen")
 {
     auto& client = GetClient<test_serial_t>();
-    auto pack =
-        rpc::call<test_serial_t, int>(client, "StrLen", std::string("hello, world"));
+    auto pack = rpc::call<test_serial_t, int>(client, "StrLen", std::string("hello, world"));
 
     REQUIRE(*pack.get_result() == 12);
 }
@@ -119,8 +134,7 @@ TEST_CASE("AddOneToEach")
 {
     auto& client = GetClient<test_serial_t>();
     const std::vector<int> vec{ 2, 4, 6, 8 };
-    const auto pack =
-        rpc::call<test_serial_t, std::vector<int>>(client, "AddOneToEach", vec);
+    const auto pack = rpc::call<test_serial_t, std::vector<int>>(client, "AddOneToEach", vec);
 
     const auto retVec = *pack.get_result();
     REQUIRE(retVec.size() == vec.size());
@@ -146,17 +160,9 @@ TEST_CASE("AddOneToEachRef")
     }
 }
 
-TEST_CASE("ChangeNumber")
+TEST_CASE("KillServer")
 {
     auto& client = GetClient<test_serial_t>();
-
-    TestObject obj;
-    obj.name = "Franklin";
-    obj.age = 42;
-    obj.numbers = { 1, 4, 5, 6 };
-
-    const auto pack = rpc::call<test_serial_t>(client, "ChangeNumber", obj, 1, 2);
-
-    const auto retObj = pack.get_arg<TestObject>(0);
-    REQUIRE(retObj.numbers[1] == 2);
+    rpc::call<test_serial_t>(client, "KillServer");
+    server_thread.join();
 }

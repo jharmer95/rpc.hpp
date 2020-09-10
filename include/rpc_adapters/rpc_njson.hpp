@@ -1,8 +1,8 @@
 ///@file rpc_adapters/rpc_njson.hpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Implementation of adapting nlohmann/json (https://github.com/nlohmann/json)
-///@version 0.2.0.0
-///@date 09-09-2020
+///@version 0.2.0
+///@date 09-10-2020
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -83,6 +83,30 @@ rpc::packed_func<R, Args...> njson_adapter::to_packed_func(const njson& serial_o
     }
 }
 
+template<typename T>
+void push_arg(T arg, njson& arg_list)
+{
+    if constexpr (std::is_arithmetic_v<T> || std::is_same_v<T, std::string>)
+    {
+        arg_list.push_back(arg);
+    }
+    else if constexpr (rpc::is_container_v<T>)
+    {
+        njson arr = njson::array();
+
+        for (const auto& val : arg)
+        {
+            push_arg(val, arr);
+        }
+
+        arg_list.push_back(arr);
+    }
+    else
+    {
+        arg_list.push_back(rpc::serialize<njson, T>(arg));
+    }
+}
+
 template<>
 template<typename R, typename... Args>
 njson njson_adapter::from_packed_func(const packed_func<R, Args...>& pack)
@@ -109,28 +133,7 @@ njson njson_adapter::from_packed_func(const packed_func<R, Args...>& pack)
     };
 
     rpc::for_each_tuple(argTup, [&ret_j](auto x) {
-        using x_t = decltype(x);
-
-        if constexpr (std::is_arithmetic_v<x_t> || std::is_same_v<x_t, std::string>)
-        {
-            ret_j["args"].push_back(x);
-        }
-        else if constexpr (rpc::is_container_v<x_t>)
-        {
-            njson arr = njson::array();
-
-            for (const auto& val : x)
-            {
-                // TODO: Make this into function and call recursively
-                arr.push_back(val);
-            }
-
-            ret_j["args"].push_back(arr);
-        }
-        else
-        {
-            ret_j["args"].push_back(rpc::serialize<njson, x_t>(x));
-        }
+        push_arg(x, ret_j["args"]);
     });
 
     return ret_j;
@@ -297,28 +300,7 @@ generic_serial_t generic_serial_adapter::from_packed_func(const packed_func<R, A
     };
 
     rpc::for_each_tuple(argTup, [&ret_j](auto x) {
-        using x_t = decltype(x);
-
-        if constexpr (std::is_arithmetic_v<x_t> || std::is_same_v<x_t, std::string>)
-        {
-            ret_j["args"].push_back(x);
-        }
-        else if constexpr (rpc::is_container_v<x_t>)
-        {
-            njson arr = njson::array();
-
-            for (const auto& val : x)
-            {
-                // TODO: Make this into function and call recursively
-                arr.push_back(val);
-            }
-
-            ret_j["args"].push_back(arr);
-        }
-        else
-        {
-            ret_j["args"].push_back(rpc::serialize<njson, x_t>(x));
-        }
+        push_arg(x, ret_j["args"]);
     });
 
     return generic_serial_t(to_func(ret_j));

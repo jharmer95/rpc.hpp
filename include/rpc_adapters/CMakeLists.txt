@@ -1,6 +1,3 @@
-option(BUILD_NJSON_ADAPTER "Build the adapter for nlohmann/json" ON)
-option(BUILD_RAPIDJSON_ADAPTER "Build the adapter for rapidjson" ON)
-
 if(${BUILD_NJSON_ADAPTER})
   if(${USE_CONAN})
     set(CONAN_EXTRA_REQUIRES nlohmann_json/[>=3.9.0])
@@ -15,7 +12,7 @@ if(${BUILD_NJSON_ADAPTER})
 
   add_library(njson_adapter INTERFACE)
   target_include_directories(njson_adapter INTERFACE "${PROJECT_SOURCE_DIR}/include")
-  target_compile_definitions(njson_adapter INTERFACE RPC_HPP_NJSON_ENABLED RPC_HPP_NLOHMANN_SERIAL_TYPE)
+  target_compile_definitions(njson_adapter INTERFACE RPC_HPP_NJSON_ENABLED RPC_HPP_NLOHMANN_SERIAL_TYPE=1)
   target_link_libraries(njson_adapter INTERFACE ${CMAKE_THREAD_LIBS_INIT} njson_lib)
   install(FILES "rpc_njson.hpp" DESTINATION "${CMAKE_INSTALL_PREFIX}/include/rpc_adapters")
 endif()
