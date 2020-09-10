@@ -463,13 +463,13 @@ void HashComplexRef(ComplexObject& cx, std::string& hashStr)
 RPC_DEFAULT_DISPATCH(PtrSum, ReadMessagePtr, WriteMessagePtr, FibonacciPtr, SquareRootPtr,
     HashComplexPtr, KillServer, SimpleSum, StrLen, AddOneToEach, AddOneToEachRef, ReadMessageRef,
     WriteMessageRef, ReadMessageVec, WriteMessageVec, ClearBus, Fibonacci, FibonacciRef, Average,
-    StdDev, SquareRootRef, AverageContainer<uint64_t>,
-    AverageContainer<double>, RandInt, HashComplex, HashComplexRef)
+    StdDev, SquareRootRef, AverageContainer<uint64_t>, AverageContainer<double>, RandInt,
+    HashComplex, HashComplexRef)
 #else
 RPC_DEFAULT_DISPATCH(KillServer, SimpleSum, StrLen, AddOneToEach, AddOneToEachRef, ReadMessageRef,
     WriteMessageRef, ReadMessageVec, WriteMessageVec, ClearBus, Fibonacci, FibonacciRef, Average,
-    StdDev, SquareRootRef, AverageContainer<uint64_t>,
-    AverageContainer<double>, RandInt, HashComplex, HashComplexRef)
+    StdDev, SquareRootRef, AverageContainer<uint64_t>, AverageContainer<double>, RandInt,
+    HashComplex, HashComplexRef)
 #endif
 
 template<typename Serial>
@@ -510,8 +510,6 @@ void session(tcp::socket sock)
 constexpr uint16_t PORT_NJSON = 5000U;
 constexpr uint16_t PORT_N_SERIAL = 5001U;
 constexpr uint16_t PORT_RAPIDJSON = 5002U;
-
-
 
 template<typename Serial>
 constexpr uint16_t get_port();
@@ -564,7 +562,9 @@ int main()
         std::thread(server<rpdjson_doc>, std::ref(io_context)).detach();
         std::cout << "Running rapidjson server on port " << PORT_RAPIDJSON << "...\n";
 #endif
-        while(RUNNING) {}
+        while (RUNNING)
+        {
+        }
     }
     catch (const std::exception& ex)
     {

@@ -50,25 +50,6 @@ static_assert(false, "Test requires nlohmann/json adapter to be enabled!");
 
 #include "rpc.client.hpp"
 
-#include <thread>
-
-inline std::thread server_thread;
-
-TEST_CASE("Start server")
-{
-    server_thread = std::thread{ []() {
-#if defined(_WIN32)
-        constexpr auto cmd = ".\\rpc_server.exe";
-#else
-        constexpr auto cmd = "./rpc_server";
-#endif
-
-        INFO("rpc_test must be run from the same directory containing rpc_server!");
-        const auto result = system(cmd);
-        REQUIRE(result == 0);
-    } };
-}
-
 template<typename Serial>
 TestClient& GetClient();
 
@@ -163,6 +144,13 @@ TEST_CASE("AddOneToEachRef")
 TEST_CASE("KillServer")
 {
     auto& client = GetClient<test_serial_t>();
-    rpc::call<test_serial_t>(client, "KillServer");
-    server_thread.join();
+    try
+    {
+        rpc::call<test_serial_t>(client, "KillServer");
+    }
+    catch (...)
+    {
+    }
+
+    REQUIRE_THROWS(TestType<njson>());
 }
