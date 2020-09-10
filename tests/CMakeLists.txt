@@ -36,7 +36,6 @@ if(${BUILD_RAPIDJSON_ADAPTER})
   target_link_libraries(rpc_benchmark PRIVATE rpdjson_adapter)
 endif()
 target_compile_options(rpc_benchmark PRIVATE ${FULL_WARNING})
-catch_discover_tests(rpc_benchmark)
 
 add_executable(rpc_server "rpc.server.cpp")
 target_link_libraries(rpc_server PRIVATE rpc_hpp asio_lib)

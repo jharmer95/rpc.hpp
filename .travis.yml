@@ -1,0 +1,24 @@
+dist: bionic
+
+language: cpp
+compiler: gcc
+
+addons:
+  apt:
+    packages:
+      - gcc
+      - g++
+      - cmake-data
+      - cmake
+      - ninja-build
+      - python3-pip
+
+before_script:
+  - sudo pip3 install wheel setuptools conan
+  - mkdir build
+  - cd build
+  - cmake .. -G Ninja -DUSE_CONAN=ON -DBUILD_NJSON_ADAPTER=ON -DBUILD_RAPIDJSON_ADAPTER=ON -DCMAKE_BUILD_TYPE=Release
+
+script:
+  - ninja
+  - tests/bin/rpc_server & ninja test
