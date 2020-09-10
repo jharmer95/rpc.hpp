@@ -1,4 +1,4 @@
-![cmake](https://github.com/jharmer95/rpc.hpp/workflows/cmake/badge.svg?branch=main&event=push) ![Travis (.com)](https://img.shields.io/travis/com/jharmer95/rpc.hpp?logo=travis)
+![cmake](https://github.com/jharmer95/rpc.hpp/workflows/cmake/badge.svg?branch=main&event=push) ![Travis (.org) branch](https://img.shields.io/travis/jharmer95/rpc.hpp/main?label=build&logo=travis)
 
 # rpc.hpp
 
