@@ -1,4 +1,4 @@
-![cmake](https://github.com/jharmer95/rpc.hpp/workflows/cmake/badge.svg?branch=main&event=push) ![Travis (.org) branch](https://img.shields.io/travis/jharmer95/rpc.hpp/main?label=build&logo=travis) [![codecov](https://codecov.io/gh/jharmer95/rpc.hpp/branch/main/graph/badge.svg)](https://codecov.io/gh/jharmer95/rpc.hpp)
+![cmake](https://github.com/jharmer95/rpc.hpp/workflows/cmake/badge.svg?branch=main&event=push) ![Travis (.com) branch](https://img.shields.io/travis/com/jharmer95/rpc.hpp/main?logo=travis) [![codecov](https://codecov.io/gh/jharmer95/rpc.hpp/branch/main/graph/badge.svg)](https://codecov.io/gh/jharmer95/rpc.hpp)
 
 # rpc.hpp
 
