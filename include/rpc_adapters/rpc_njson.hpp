@@ -2,7 +2,7 @@
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Implementation of adapting nlohmann/json (https://github.com/nlohmann/json)
 ///@version 0.2.0
-///@date 09-10-2020
+///@date 10-02-2020
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -90,7 +90,7 @@ void push_arg(T arg, njson& arg_list)
     {
         arg_list.push_back(arg);
     }
-    else if constexpr (rpc::is_container_v<T>)
+    else if constexpr (rpc::details::is_container_v<T>)
     {
         njson arr = njson::array();
 
@@ -132,7 +132,7 @@ njson njson_adapter::from_packed_func(const packed_func<R, Args...>& pack)
         details::args_from_packed<Args, R, Args...>(pack, i)...
     };
 
-    rpc::for_each_tuple(argTup, [&ret_j](auto x) { push_arg(x, ret_j["args"]); });
+    details::for_each_tuple(argTup, [&ret_j](auto x) { push_arg(x, ret_j["args"]); });
 
     return ret_j;
 }
@@ -178,8 +178,11 @@ template<>
 template<typename Container>
 void njson_adapter::populate_array(const njson& obj, Container& container)
 {
-    static_assert(is_container_v<Container>, "Container type must have begin and end iterators");
-    static_assert(is_container_v<Container>, "Type is not a container!");
+    static_assert(
+        details::is_container_v<Container>, "Container type must have begin and end iterators");
+
+    static_assert(details::is_container_v<Container>, "Type is not a container!");
+
     using value_t = typename Container::value_type;
 
     for (const auto& val : obj)
@@ -191,6 +194,7 @@ void njson_adapter::populate_array(const njson& obj, Container& container)
 #    if defined(RPC_HPP_NLOHMANN_SERIAL_TYPE)
 njson from_func(const std::vector<uint8_t>& serial_obj);
 std::vector<uint8_t> to_func(const njson& serial_obj);
+
 #        if RPC_HPP_NLOHMANN_SERIAL_TYPE == RPC_HPP_NLOHMANN_SERIAL_CBOR
 using ncbor = std::vector<uint8_t>;
 
@@ -297,7 +301,7 @@ generic_serial_t generic_serial_adapter::from_packed_func(const packed_func<R, A
         details::args_from_packed<Args, R, Args...>(pack, i)...
     };
 
-    rpc::for_each_tuple(argTup, [&ret_j](auto x) { push_arg(x, ret_j["args"]); });
+    details::for_each_tuple(argTup, [&ret_j](auto x) { push_arg(x, ret_j["args"]); });
 
     return generic_serial_t(to_func(ret_j));
 }
@@ -345,7 +349,9 @@ template<>
 template<typename Container>
 void generic_serial_adapter::populate_array(const generic_serial_t& obj, Container& container)
 {
-    static_assert(is_container_v<Container>, "Container type must have begin and end iterators");
+    static_assert(
+        details::is_container_v<Container>, "Container type must have begin and end iterators");
+
     using value_t = typename Container::value_type;
     njson j_obj = from_func(obj);
 

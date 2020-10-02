@@ -2,7 +2,7 @@
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Benchmarking source file for rpc.hpp
 ///@version 0.2.0
-///@date 09-10-2020
+///@date 10-02-2020
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -93,7 +93,7 @@ TEST_CASE("Start server")
         constexpr auto cmd = "./rpc_server";
 #endif
 
-        INFO("rpc_benchmark must be run from the same directory containing rpc_server!");
+        INFO("rpc_benchmark must be run from the same directory containing rpc_server!")
         const auto result = system(cmd);
         REQUIRE(result == 0);
     } };

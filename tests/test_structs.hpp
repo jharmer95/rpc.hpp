@@ -2,7 +2,7 @@
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Structures/classes for use with rpc.hpp unit tests
 ///@version 0.2.0
-///@date 09-10-2020
+///@date 10-02-2020
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -175,19 +175,19 @@ inline rpdjson_doc rpc::serialize(const TestMessage& val)
     auto& alloc = d.GetAllocator();
 
     rpdjson_val flag1_v;
-    flag1_v.Set<bool>(val.flag1);
+    flag1_v.SetBool(val.flag1);
     d.AddMember("flag1", flag1_v, alloc);
 
     rpdjson_val flag2_v;
-    flag2_v.Set<bool>(val.flag2);
+    flag2_v.SetBool(val.flag2);
     d.AddMember("flag2", flag2_v, alloc);
 
     rpdjson_val id_v;
-    id_v.Set<int>(val.id);
+    id_v.SetInt(val.id);
     d.AddMember("id", id_v, alloc);
 
     rpdjson_val data_sz_v;
-    data_sz_v.Set<unsigned>(val.data_sz);
+    data_sz_v.SetUint(val.data_sz);
     d.AddMember("data_sz", data_sz_v, alloc);
 
     rpdjson_val data_v;
@@ -207,23 +207,23 @@ inline TestMessage rpc::deserialize(const rpdjson_doc& serial_obj)
 {
     TestMessage obj;
     const auto flag1_v = serial_obj.FindMember("flag1");
-    obj.flag1 = flag1_v->value.Get<bool>();
+    obj.flag1 = flag1_v->value.GetBool();
 
     const auto flag2_v = serial_obj.FindMember("flag2");
-    obj.flag2 = flag2_v->value.Get<bool>();
+    obj.flag2 = flag2_v->value.GetBool();
 
     const auto id_v = serial_obj.FindMember("id");
-    obj.id = id_v->value.Get<int>();
+    obj.id = id_v->value.GetInt();
 
     const auto data_sz_v = serial_obj.FindMember("data_sz");
-    obj.data_sz = data_sz_v->value.Get<unsigned>();
+    obj.data_sz = static_cast<uint8_t>(data_sz_v->value.GetUint());
 
     const auto data_v = serial_obj.FindMember("data");
     const auto& arr = data_v->value.GetArray();
 
     for (unsigned i = 0; i < obj.data_sz; ++i)
     {
-        obj.data[i] = arr[i].Get<int>();
+        obj.data[i] = arr[i].GetInt();
     }
 
     return obj;
@@ -237,7 +237,7 @@ inline rpdjson_doc rpc::serialize(const ComplexObject& val)
     auto& alloc = d.GetAllocator();
 
     rpdjson_val id_v;
-    id_v.Set<int>(val.id);
+    id_v.SetInt(val.id);
     d.AddMember("id", id_v, alloc);
 
     rpdjson_val name_v;
@@ -245,11 +245,11 @@ inline rpdjson_doc rpc::serialize(const ComplexObject& val)
     d.AddMember("name", name_v, alloc);
 
     rpdjson_val flag1_v;
-    flag1_v.Set<bool>(val.flag1);
+    flag1_v.SetBool(val.flag1);
     d.AddMember("flag1", flag1_v, alloc);
 
     rpdjson_val flag2_v;
-    flag2_v.Set<bool>(val.flag2);
+    flag2_v.SetBool(val.flag2);
     d.AddMember("flag2", flag2_v, alloc);
 
     rpdjson_val vals_v;
@@ -270,23 +270,23 @@ inline ComplexObject rpc::deserialize(const rpdjson_doc& serial_obj)
     ComplexObject obj;
 
     const auto id_v = serial_obj.FindMember("id");
-    obj.id = id_v->value.Get<int>();
+    obj.id = id_v->value.GetInt();
 
     const auto name_v = serial_obj.FindMember("name");
     obj.name = std::string(name_v->value.GetString(), name_v->value.GetStringLength());
 
     const auto flag1_v = serial_obj.FindMember("flag1");
-    obj.flag1 = flag1_v->value.Get<bool>();
+    obj.flag1 = flag1_v->value.GetBool();
 
     const auto flag2_v = serial_obj.FindMember("flag2");
-    obj.flag2 = flag2_v->value.Get<bool>();
+    obj.flag2 = flag2_v->value.GetBool();
 
     const auto vals_v = serial_obj.FindMember("vals");
     const auto& arr = vals_v->value.GetArray();
 
     for (unsigned i = 0; i < 12; ++i)
     {
-        obj.vals[i] = arr[i].Get<unsigned>();
+        obj.vals[i] = static_cast<uint8_t>(arr[i].GetUint());
     }
 
     return obj;

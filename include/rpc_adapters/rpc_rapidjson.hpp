@@ -2,7 +2,7 @@
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Implementation of adapting rapidjson (https://github.com/Tencent/rapidjson)
 ///@version 0.2.0
-///@date 09-10-2020
+///@date 10-02-2020
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -84,7 +84,7 @@ rpc::packed_func<R, Args...> rpdjson_adapter::to_packed_func(const rpdjson_doc& 
                 return packed_func<R, Args...>(
                     serial_obj["func_name"].GetString(), result.GetString(), args);
             }
-            else if constexpr (is_container_v<R>)
+            else if constexpr (details::is_container_v<R>)
             {
                 R container;
                 rpdjson_doc d;
@@ -115,7 +115,7 @@ void push_arg(T arg, rpdjson_val& arg_list, rapidjson::MemoryPoolAllocator<>& al
     {
         arg_list.PushBack(rpdjson_val().SetString(arg.c_str(), alloc), alloc);
     }
-    else if constexpr (rpc::is_container_v<T>)
+    else if constexpr (rpc::details::is_container_v<T>)
     {
         rpdjson_val sub_arr;
         sub_arr.SetArray();
@@ -166,7 +166,7 @@ rpdjson_doc rpdjson_adapter::from_packed_func(const packed_func<R, Args...>& pac
             {
                 result.SetString(pack.get_result()->c_str(), alloc);
             }
-            else if constexpr (is_container_v<R>)
+            else if constexpr (details::is_container_v<R>)
             {
                 const R container = *pack.get_result();
                 result.SetArray();
@@ -178,7 +178,7 @@ rpdjson_doc rpdjson_adapter::from_packed_func(const packed_func<R, Args...>& pac
             }
             else
             {
-                result = rpc::serialize<rpdjson_doc, R>(*pack.get_result());
+                result = serialize<rpdjson_doc, R>(*pack.get_result());
             }
         }
         else
@@ -197,9 +197,7 @@ rpdjson_doc rpdjson_adapter::from_packed_func(const packed_func<R, Args...>& pac
         details::args_from_packed<Args, R, Args...>(pack, i)...
     };
 
-    rpc::for_each_tuple(argTup, [&args, &alloc](auto x) {
-        push_arg(x, args, alloc);
-    });
+    details::for_each_tuple(argTup, [&args, &alloc](auto x) { push_arg(x, args, alloc); });
 
     d.AddMember("args", args, alloc);
     return d;
@@ -254,7 +252,7 @@ T rpdjson_adapter::get_value(const rpdjson_doc& obj)
     {
         return obj.GetString();
     }
-    else if constexpr (is_container_v<T>)
+    else if constexpr (details::is_container_v<T>)
     {
         T container;
         populate_array(obj, container);
@@ -270,7 +268,7 @@ template<>
 template<typename Container>
 void rpdjson_adapter::populate_array(const rpdjson_doc& obj, Container& container)
 {
-    static_assert(is_container_v<Container>, "Type is not a container!");
+    static_assert(details::is_container_v<Container>, "Type is not a container!");
     using value_t = typename Container::value_type;
 
     const auto& arr = obj.GetArray();
