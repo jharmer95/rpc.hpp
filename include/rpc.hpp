@@ -2,7 +2,7 @@
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Header-only library for serialized RPC usage
 ///@version 0.2.0
-///@date 09-10-2020
+///@date 10-02-2020
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -47,176 +47,117 @@
 
 namespace rpc
 {
-/// @brief Default implementation for SFINAE struct
-template<typename T>
-struct function_traits;
-
-/// @brief SFINAE struct to extract information from a function object
-///
-/// Can be used to get return and parameter types, as well as the count of parameters
-/// @tparam R The return type of the function
-/// @tparam Args The argument types of the function
-template<typename R, typename... Args>
-struct function_traits<std::function<R(Args...)>>
+///@brief Namespace for functions/variables that should be used only from within the library.
+/// Using anything in this namespace in your project is discouraged
+namespace details
 {
-    static constexpr size_t nargs = sizeof...(Args);
-    using result_type = R;
-    using args_type = std::tuple<Args...>;
-
-    template<size_t i>
-    struct arg
+    /// @brief SFINAE struct for checking a type for a 'begin' member function
+    ///
+    /// Checks whether the given type \c C has a function 'begin' that returns an iterator type
+    /// @tparam C Type to check for 'begin'
+    template<typename C>
+    struct has_begin
     {
-        using type = typename std::tuple_element<i, args_type>::type;
+    private:
+        template<typename T>
+        static constexpr auto check(T*) noexcept ->
+            typename std::is_same<decltype(std::declval<T>().begin()), typename T::iterator>::type;
+
+        template<typename>
+        static constexpr std::false_type check(...) noexcept;
+
+        using type = decltype(check<C>(nullptr));
+
+    public:
+        static constexpr bool value = type::value;
     };
-};
 
-///@brief SFINAE struct to extract information from a function pointer
-///
-/// Can be used to get return and parameter types, as well as the count of parameters
-///@tparam R The return type of the function
-///@tparam Args The argument types of the function
-template<typename R, typename... Args>
-struct function_traits<R (*)(Args...)>
-{
-    static constexpr size_t nargs = sizeof...(Args);
-    using result_type = R;
-    using args_type = std::tuple<Args...>;
-
-    template<size_t i>
-    struct arg
+    /// @brief SFINAE struct for checking a type for a 'end' member function
+    ///
+    /// Checks whether the given type \c C has a function 'end' that returns an iterator type
+    /// @tparam C Type to check for 'end'
+    template<typename C>
+    struct has_end
     {
-        using type = typename std::tuple_element<i, args_type>::type;
+    private:
+        template<typename T>
+        static constexpr auto check(T*) noexcept ->
+            typename std::is_same<decltype(std::declval<T>().end()), typename T::iterator>::type;
+
+        template<typename>
+        static constexpr std::false_type check(...) noexcept;
+
+        using type = decltype(check<C>(nullptr));
+
+    public:
+        static constexpr bool value = type::value;
     };
-};
 
-/// @brief Helper variable for getting parameter count from @ref function_traits
-///
-/// @tparam R The return type of the function
-/// @tparam Args The argument types of the function
-template<typename R, typename... Args>
-inline constexpr size_t function_param_count_v = function_traits<std::function<R(Args...)>>::nargs;
+    /// @brief SFINAE struct for checking a type for a 'size' member function
+    ///
+    /// Checks whether the given type \c C has a function 'size' that returns a size type
+    /// @tparam C Type to check for 'size'
+    template<typename C>
+    struct has_size
+    {
+    private:
+        template<typename T>
+        static constexpr auto check(T*) noexcept ->
+            typename std::is_same<decltype(std::declval<T>().size()), size_t>::type;
 
-/// @brief Helper variable for getting the return type from @ref function_traits
-///
-/// @tparam R The return type of the function
-/// @tparam Args The argument types of the function
-template<typename R, typename... Args>
-using function_result_t = typename function_traits<std::function<R(Args...)>>::type;
+        template<typename>
+        static constexpr std::false_type check(...) noexcept;
 
-/// @brief Helper variable for getting the argument types from @ref function_traits
-///
-/// @tparam i The index of the argument to get the type of
-/// @tparam R The return type of the function
-/// @tparam Args The argument types of the function
-template<size_t i, typename R, typename... Args>
-using function_args_t = typename function_traits<std::function<R(Args...)>>::template arg<i>::type;
+        using type = decltype(check<C>(nullptr));
 
-/// @brief SFINAE struct for checking a type for a 'begin' member function
-///
-/// Checks whether the given type \c C has a function 'begin' that returns an iterator type
-/// @tparam C Type to check for 'begin'
-template<typename C>
-struct has_begin
-{
-private:
-    template<typename T>
-    static constexpr auto check(T*) noexcept ->
-        typename std::is_same<decltype(std::declval<T>().begin()), typename T::iterator>::type;
+    public:
+        static constexpr bool value = type::value;
+    };
 
-    template<typename>
-    static constexpr std::false_type check(...) noexcept;
+    /// @brief SFINAE struct to determine if a type is a container
+    ///
+    /// Combines the logic of @ref has_size, @ref has_begin, and @ref has_end to determine if a given type \c C
+    /// is compatible with STL containers
+    /// @tparam C Type to check
+    template<typename C>
+    struct is_container : std::integral_constant<bool,
+                              has_size<C>::value && has_begin<C>::value && has_end<C>::value>
+    {
+    };
 
-    using type = decltype(check<C>(nullptr));
+    /// @brief Helper variable for @ref is_container
+    ///
+    /// @tparam C Type to check
+    template<typename C>
+    inline constexpr bool is_container_v = is_container<C>::value;
 
-public:
-    static constexpr bool value = type::value;
-};
+    /// @brief Default implementation of meta-programming function
+    ///
+    /// @tparam F Function type
+    /// @tparam Ts Tuple types (generic)
+    /// @tparam Is Index sequence to iterate over
+    /// @param tuple Tuple to iterate over
+    /// @param func Function to apply to each value
+    template<typename F, typename... Ts, size_t... Is>
+    void for_each_tuple(
+        const std::tuple<Ts...>& tuple, const F& func, std::index_sequence<Is...> /*unused*/)
+    {
+        using expander = int[];
+        (void)expander{ 0, ((void)func(std::get<Is>(tuple)), 0)... };
+    }
 
-/// @brief SFINAE struct for checking a type for a 'end' member function
-///
-/// Checks whether the given type \c C has a function 'end' that returns an iterator type
-/// @tparam C Type to check for 'end'
-template<typename C>
-struct has_end
-{
-private:
-    template<typename T>
-    static constexpr auto check(T*) noexcept ->
-        typename std::is_same<decltype(std::declval<T>().end()), typename T::iterator>::type;
-
-    template<typename>
-    static constexpr std::false_type check(...) noexcept;
-
-    using type = decltype(check<C>(nullptr));
-
-public:
-    static constexpr bool value = type::value;
-};
-
-/// @brief SFINAE struct for checking a type for a 'size' member function
-///
-/// Checks whether the given type \c C has a function 'size' that returns a size type
-/// @tparam C Type to check for 'size'
-template<typename C>
-struct has_size
-{
-private:
-    template<typename T>
-    static constexpr auto check(T*) noexcept ->
-        typename std::is_same<decltype(std::declval<T>().size()), size_t>::type;
-
-    template<typename>
-    static constexpr std::false_type check(...) noexcept;
-
-    using type = decltype(check<C>(nullptr));
-
-public:
-    static constexpr bool value = type::value;
-};
-
-/// @brief SFINAE struct to determine if a type is a container
-///
-/// Combines the logic of @ref has_size, @ref has_begin, and @ref has_end to determine if a given type \c C
-/// is compatible with STL containers
-/// @tparam C Type to check
-template<typename C>
-struct is_container
-    : std::integral_constant<bool, has_size<C>::value && has_begin<C>::value && has_end<C>::value>
-{
-};
-
-/// @brief Helper variable for @ref is_container
-///
-/// @tparam C Type to check
-template<typename C>
-inline constexpr bool is_container_v = is_container<C>::value;
-
-/// @brief Default implementation of meta-programming function
-///
-/// @tparam F Function type
-/// @tparam Ts Tuple types (generic)
-/// @tparam Is Index sequence to iterate over
-/// @param tuple Tuple to iterate over
-/// @param func Function to apply to each value
-template<typename F, typename... Ts, size_t... Is>
-void for_each_tuple(
-    const std::tuple<Ts...>& tuple, const F& func, std::index_sequence<Is...> /*unused*/)
-{
-    using expander = int[];
-    (void)expander{ 0, ((void)func(std::get<Is>(tuple)), 0)... };
-}
-
-/// @brief Meta-programming function to apply a function over each member of a tuple
-///
-/// @tparam F Function type
-/// @tparam Ts Tuple types (generic)
-/// @param tuple Tuple to iterate over
-/// @param func Function to apply to each value
-template<typename F, typename... Ts>
-void for_each_tuple(const std::tuple<Ts...>& tuple, const F& func)
-{
-    for_each_tuple(tuple, func, std::make_index_sequence<sizeof...(Ts)>());
-}
+    /// @brief Meta-programming function to apply a function over each member of a tuple
+    ///
+    /// @tparam F Function type
+    /// @tparam Ts Tuple types (generic)
+    /// @param tuple Tuple to iterate over
+    /// @param func Function to apply to each value
+    template<typename F, typename... Ts>
+    void for_each_tuple(const std::tuple<Ts...>& tuple, const F& func)
+    {
+        for_each_tuple(tuple, func, std::make_index_sequence<sizeof...(Ts)>());
+    }
+} // namespace rpc::details
 
 ///@brief Polymorphic base class for \ref packed_func
 class packed_func_base
@@ -326,8 +267,7 @@ public:
     void set_args(const std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...>& args)
     {
         size_t i = 0;
-
-        for_each_tuple(args, [&i, this](auto x) { m_args[i++] = x; });
+        details::for_each_tuple(args, [&i, this](auto x) { m_args[i++] = x; });
     }
 
     ///@brief Get the arg object
@@ -398,8 +338,7 @@ public:
     void set_args(const std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...>& args)
     {
         size_t i = 0;
-
-        for_each_tuple(args, [&i, this](auto x) { m_args[i++] = x; });
+        details::for_each_tuple(args, [&i, this](auto x) { m_args[i++] = x; });
     }
 
     ///@brief Get the arg object
@@ -417,33 +356,6 @@ public:
 private:
     std::array<std::any, sizeof...(Args)> m_args;
 };
-
-///@brief Converts a \ref packed_func_base to a specific templated \ref packed_func
-///
-///@tparam R Return type for the \ref packed_func
-///@tparam Args List of parameter type(s) for the \ref packed_func
-///@param unused Function object to derive R and Args from
-///@param pack packed_func_base reference to be converted
-///@return packed_func<R, Args...>& A casted reference to a specific \ref packed_func
-template<typename R, typename... Args>
-packed_func<R, Args...>& convert_func(
-    std::function<R(Args...)> /*unused*/, const packed_func_base& pack)
-{
-    return dynamic_cast<packed_func<R, Args...>&>(pack);
-}
-
-///@brief Converts a \ref packed_func_base to a specific templated \ref packed_func
-///
-///@tparam R Return type for the \ref packed_func
-///@tparam Args List of parameter type(s) for the \ref packed_func
-///@param unused Function pointer to derive R and Args from
-///@param pack packed_func_base reference to be converted
-///@return packed_func<R, Args...>& A casted reference to a specific \ref packed_func
-template<typename R, typename... Args>
-packed_func<R, Args...>& convert_func(R (*/*unused*/)(Args...), const packed_func_base& pack)
-{
-    return dynamic_cast<packed_func<R, Args...>&>(pack);
-}
 
 ///@brief Template class that provides an interface for going to and from a \ref packed_func and a serial object
 ///
@@ -543,38 +455,8 @@ template<typename Serial, typename Value>
 template<typename Serial, typename Value>
 [[nodiscard]] Value deserialize(const Serial& serial_obj);
 
-///@brief Namespace for functions/variables that should be used only from within the library
-/// Using anything in this namespace in your project is discouraged
 namespace details
 {
-    ///@brief Unpacks the argument values from a \ref packed_func
-    ///
-    ///@tparam Value The type of the argument to be unpacked
-    ///@tparam R The type of the result for the \ref packed_func
-    ///@tparam Args The list of parameter type(s) for the \ref packed_func
-    ///@param pack The packaged function call to unpack
-    ///@param arg_index The index of the argument to be unpacked (is iterated in a parameter pack when called from a tuple)
-    ///@return std::remove_cv_t<std::remove_reference_t<Value>> The unpacked argument value
-    template<typename Value, typename R, typename... Args>
-    std::remove_cv_t<std::remove_reference_t<Value>> args_from_packed(
-        const packed_func<R, Args...>& pack, unsigned& arg_index)
-    {
-        using no_ref_t = std::remove_cv_t<std::remove_reference_t<Value>>;
-
-#if defined(RPC_HPP_ENABLE_POINTERS)
-        if constexpr (std::is_pointer_v<no_ref_t>)
-        {
-            // TODO: Implement pointer
-        }
-#else
-        static_assert(!std::is_pointer_v<no_ref_t>,
-            "Passing pointers across the RPC interface is not recommended. Please consider "
-            "refactoring your RPC calls or define RPC_HPP_ENABLE_POINTERS to ignore this "
-            "error.");
-#endif
-        return pack.template get_arg<no_ref_t>(arg_index++);
-    }
-
     ///@brief Retrieves a single argument value from a serial object
     ///
     ///@tparam Serial The type of serial object
@@ -602,7 +484,7 @@ namespace details
         {
             return serial_adapter<Serial>::template get_value<no_ref_t>(obj);
         }
-        else if constexpr (rpc::is_container_v<no_ref_t>)
+        else if constexpr (is_container_v<no_ref_t>)
         {
             no_ref_t container;
             serial_adapter<Serial>::populate_array(obj, container);
@@ -631,33 +513,68 @@ namespace details
         return arg_from_serial<Serial, Value>(sub_obj);
     }
 
-    ///@brief Packages a function call into a \ref packed_func
+    ///@brief Unpacks the argument values from a \ref packed_func
     ///
+    ///@tparam Value The type of the argument to be unpacked
     ///@tparam R The type of the result for the \ref packed_func
     ///@tparam Args The list of parameter type(s) for the \ref packed_func
-    ///@param func_name The name of the function to call (case-sensitive)
-    ///@param args List of arguments to be packaged
-    ///@return packed_func<R, Args...> The packaged function call
-    template<typename R, typename... Args>
-    packed_func<R, Args...> pack_call(const std::string& func_name, Args&&... args)
+    ///@param pack The packaged function call to unpack
+    ///@param arg_index The index of the argument to be unpacked (is iterated in a parameter pack when called from a tuple)
+    ///@return std::remove_cv_t<std::remove_reference_t<Value>> The unpacked argument value
+    template<typename Value, typename R, typename... Args>
+    std::remove_cv_t<std::remove_reference_t<Value>> args_from_packed(
+        const packed_func<R, Args...>& pack, unsigned& arg_index)
     {
-        std::array<std::any, sizeof...(Args)> argArray{ std::forward<Args>(args)... };
+        using no_ref_t = std::remove_cv_t<std::remove_reference_t<Value>>;
 
-        if constexpr (std::is_void_v<R>)
+#if defined(RPC_HPP_ENABLE_POINTERS)
+        if constexpr (std::is_pointer_v<no_ref_t>)
         {
-            return packed_func<void, Args...>(func_name, argArray);
+            // TODO: Implement pointer
         }
-        else
-        {
-            return packed_func<R, Args...>(func_name, std::nullopt, argArray);
-        }
+#else
+        static_assert(!std::is_pointer_v<no_ref_t>,
+            "Passing pointers across the RPC interface is not recommended. Please consider "
+            "refactoring your RPC calls or define RPC_HPP_ENABLE_POINTERS to ignore this "
+            "error.");
+#endif
+
+        return pack.template get_arg<no_ref_t>(arg_index++);
     }
-} // namespace details
+} // namespace rpc::details
 
 ///@brief Namespace for server-specific functions and variables
 /// Client-side code should not need to use anything in this namespace
 namespace server
 {
+    ///@brief Converts a \ref packed_func_base to a specific templated \ref packed_func
+    ///
+    ///@tparam R Return type for the \ref packed_func
+    ///@tparam Args List of parameter type(s) for the \ref packed_func
+    ///@param unused Function object to derive R and Args from
+    ///@param pack packed_func_base reference to be converted
+    ///@return packed_func<R, Args...>& A casted reference to a specific \ref packed_func
+    template<typename R, typename... Args>
+    packed_func<R, Args...>& convert_func(
+        [[maybe_unused]] std::function<R(Args...)> unused, const packed_func_base& pack)
+    {
+        return dynamic_cast<packed_func<R, Args...>&>(pack);
+    }
+
+    ///@brief Converts a \ref packed_func_base to a specific templated \ref packed_func
+    ///
+    ///@tparam R Return type for the \ref packed_func
+    ///@tparam Args List of parameter type(s) for the \ref packed_func
+    ///@param unused Function pointer to derive R and Args from
+    ///@param pack packed_func_base reference to be converted
+    ///@return packed_func<R, Args...>& A casted reference to a specific \ref packed_func
+    template<typename R, typename... Args>
+    packed_func<R, Args...>& convert_func(
+        [[maybe_unused]] R (*unused)(Args...), const packed_func_base& pack)
+    {
+        return dynamic_cast<packed_func<R, Args...>&>(pack);
+    }
+
     // TODO: Server-side asynchronous functions (will probably have to return vs. reference)
 
     ///@brief Create a \ref packed_func object from a serial object
@@ -669,7 +586,7 @@ namespace server
     ///@param obj The serial object to be converted
     ///@return packed_func<R, Args...> The packaged function call
     template<typename Serial, typename R, typename... Args>
-    packed_func<R, Args...> create_func(R (*/*unused*/)(Args...), const Serial& obj)
+    packed_func<R, Args...> create_func([[maybe_unused]] R (*unused)(Args...), const Serial& obj)
     {
         return serial_adapter<Serial>::template to_packed_func<R, Args...>(obj);
     }
@@ -714,15 +631,14 @@ namespace server
         return run_callback(std::function<R(Args...)>(func), pack);
     }
 
-    // NOTE: dispatch is to be implemented server-side
     ///@brief Dispatches the function call based on the received serial object
     ///
-    ///@note This function must be implemented in ther server-side code (or by using the macros found in \file rpc_dispatch_helper.hpp)
+    ///@note This function must be implemented in the server-side code (or by using the macros found in rpc_dispatch_helper.hpp)
     ///@tparam Serial The type of serial object
     ///@param serial_obj The serial object to be used by the function call, will (potentially) be modified by calling the function
     template<typename Serial>
-    extern void dispatch(Serial& serial_obj);
-}
+    void dispatch(Serial& serial_obj);
+} // namespace rpc::server
 
 ///@brief Namespace containing client-specific functions and classes
 /// Server-side code should not need anything from this namespace
@@ -738,6 +654,28 @@ inline namespace client
         virtual std::string receive() = 0;
     };
 
+    ///@brief Packages a function call into a \ref packed_func
+    ///
+    ///@tparam R The type of the result for the \ref packed_func
+    ///@tparam Args The list of parameter type(s) for the \ref packed_func
+    ///@param func_name The name of the function to call (case-sensitive)
+    ///@param args List of arguments to be packaged
+    ///@return packed_func<R, Args...> The packaged function call
+    template<typename R, typename... Args>
+    packed_func<R, Args...> pack_call(const std::string& func_name, Args&&... args)
+    {
+        std::array<std::any, sizeof...(Args)> argArray{ std::forward<Args>(args)... };
+
+        if constexpr (std::is_void_v<R>)
+        {
+            return packed_func<void, Args...>(func_name, argArray);
+        }
+        else
+        {
+            return packed_func<R, Args...>(func_name, std::nullopt, argArray);
+        }
+    }
+
     ///@brief Transforms a function call to a serial object
     ///
     ///@tparam Serial The type of serial object
@@ -749,7 +687,7 @@ inline namespace client
     template<typename Serial, typename R = void, typename... Args>
     Serial serialize_call(const std::string& func_name, Args&&... args)
     {
-        auto packed = details::pack_call<R, Args...>(func_name, std::forward<Args>(args)...);
+        auto packed = pack_call<R, Args...>(func_name, std::forward<Args>(args)...);
         return serial_adapter<Serial>::template from_packed_func<R, Args...>(packed);
     }
 
@@ -764,7 +702,7 @@ inline namespace client
     template<typename Serial, typename R = void, typename... Args>
     std::future<Serial> async_serialize_call(const std::string& func_name, Args&&... args)
     {
-        auto packed = details::pack_call<R, Args...>(func_name, std::forward<Args>(args)...);
+        auto packed = pack_call<R, Args...>(func_name, std::forward<Args>(args)...);
         return std::async(serial_adapter<Serial>::template from_packed_func<R, Args...>, packed);
     }
 
@@ -825,5 +763,5 @@ inline namespace client
     {
         return std::async(call<Serial, R, Args...>, client, func_name, args...);
     }
-} // namespace client
+} // namespace rpc::client
 } // namespace rpc
