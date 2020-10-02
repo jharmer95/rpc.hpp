@@ -178,9 +178,11 @@ template<>
 template<typename Container>
 void njson_adapter::populate_array(const njson& obj, Container& container)
 {
-    static_assert(rpc::details::is_container_v<Container>,
-        "Container type must have begin and end iterators");
-    static_assert(rpc::details::is_container_v<Container>, "Type is not a container!");
+    static_assert(
+        details::is_container_v<Container>, "Container type must have begin and end iterators");
+
+    static_assert(details::is_container_v<Container>, "Type is not a container!");
+
     using value_t = typename Container::value_type;
 
     for (const auto& val : obj)
@@ -192,6 +194,7 @@ void njson_adapter::populate_array(const njson& obj, Container& container)
 #    if defined(RPC_HPP_NLOHMANN_SERIAL_TYPE)
 njson from_func(const std::vector<uint8_t>& serial_obj);
 std::vector<uint8_t> to_func(const njson& serial_obj);
+
 #        if RPC_HPP_NLOHMANN_SERIAL_TYPE == RPC_HPP_NLOHMANN_SERIAL_CBOR
 using ncbor = std::vector<uint8_t>;
 
@@ -346,8 +349,9 @@ template<>
 template<typename Container>
 void generic_serial_adapter::populate_array(const generic_serial_t& obj, Container& container)
 {
-    static_assert(rpc::details::is_container_v<Container>,
-        "Container type must have begin and end iterators");
+    static_assert(
+        details::is_container_v<Container>, "Container type must have begin and end iterators");
+
     using value_t = typename Container::value_type;
     njson j_obj = from_func(obj);
 
