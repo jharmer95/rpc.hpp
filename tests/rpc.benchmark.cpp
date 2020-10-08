@@ -1,8 +1,8 @@
 ///@file rpc.benchmark.cpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Benchmarking source file for rpc.hpp
-///@version 0.2.0
-///@date 10-02-2020
+///@version 0.2.1
+///@date 10-08-2020
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -81,23 +81,6 @@ TestClient& GetClient<rpdjson_doc>()
     return client;
 }
 #endif
-
-inline std::thread server_thread;
-
-TEST_CASE("Start server")
-{
-    server_thread = std::thread{ []() {
-#if defined(_WIN32)
-        constexpr auto cmd = ".\\rpc_server.exe";
-#else
-        constexpr auto cmd = "./rpc_server";
-#endif
-
-        INFO("rpc_benchmark must be run from the same directory containing rpc_server!")
-        const auto result = system(cmd);
-        REQUIRE(result == 0);
-    } };
-}
 
 TEST_CASE("By Value (simple)", "[value][simple]")
 {
@@ -538,6 +521,12 @@ TEST_CASE("By Pointer (many)", "[pointer][many]")
 TEST_CASE("KillServer")
 {
     auto& client = GetClient<njson>();
-    rpc::call<njson>(client, "KillServer");
-    server_thread.join();
+
+    try
+    {
+        rpc::call<njson>(client, "KillServer");
+    }
+    catch (...)
+    {
+    }
 }

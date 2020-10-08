@@ -1,8 +1,8 @@
 ///@file rpc.server.cpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Example implementation of an RPC server
-///@version 0.2.0
-///@date 09-10-2020
+///@version 0.2.1
+///@date 10-08-2020
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -67,6 +67,18 @@ static std::atomic_bool RUNNING = false;
 constexpr void PtrSum(int* const n1, const int n2)
 {
     *n1 += n2;
+}
+
+constexpr int AddAllPtr(const int* const vals, const int num_vals)
+{
+    int sum = 0;
+
+    for (int i = 0; i < num_vals; ++i)
+    {
+        sum += vals[i];
+    }
+
+    return sum;
 }
 
 int ReadMessagePtr(TestMessage* const mesg_arr, int* const num_mesgs)
@@ -180,18 +192,6 @@ void HashComplexPtr(const ComplexObject* const cx, char* const hashStr)
     std::copy(str.begin(), str.end(), hashStr);
 }
 #endif
-
-constexpr int AddAllPtr(const int* const vals, const int num_vals)
-{
-    int sum = 0;
-
-    for (int i = 0; i < num_vals; ++i)
-    {
-        sum += vals[i];
-    }
-
-    return sum;
-}
 
 void KillServer()
 {
@@ -478,219 +478,10 @@ RPC_DEFAULT_DISPATCH(PtrSum, AddAllPtr, ReadMessagePtr, WriteMessagePtr, Fibonac
     FibonacciRef, Average, StdDev, SquareRootRef, AverageContainer<uint64_t>,
     AverageContainer<double>, RandInt, HashComplex, HashComplexRef)
 #else
-
-template<typename Serial, typename R, typename... Args>
-void get_vec(
-    [[maybe_unused]] R (*unused)(Args...), std::vector<std::any>& any_vec, const Serial& serial_obj)
-{
-    const std::tuple<Args...> tup;
-    const auto& arg_list = rpc::serial_adapter<Serial>::make_sub_object(serial_obj, "args");
-    unsigned count = 0;
-
-    rpc::details::for_each_tuple(tup, [&any_vec, &arg_list, &count](auto x) {
-        if constexpr (std::is_pointer_v<decltype(x)>)
-        {
-            const auto arg = rpc::serial_adapter<Serial>::make_sub_object(arg_list, count);
-
-            std::vector<std::remove_cv_t<std::remove_pointer_t<decltype(x)>>> vec;
-
-            rpc::serial_adapter<Serial>::populate_array(arg, vec);
-            any_vec.emplace_back(vec);
-        }
-        else
-        {
-            any_vec.emplace_back(std::nullopt);
-        }
-
-        ++count;
-    });
-}
-
-template<typename Serial>
-void rpc::server::dispatch(Serial& serial_obj)
-{
-    const auto func_name = serial_adapter<Serial>::extract_func_name(serial_obj);
-
-    if (func_name == "AddAllPtr")
-    {
-        // Serial Object: { "func_name": "AddAllPtr", "result": null, "args": [ [1, 2, 3], 3 ] }
-        const auto arg_sz = serial_adapter<Serial>::get_num_args(serial_obj); // 2
-
-        std::vector<std::any> any_vec;
-        any_vec.reserve(arg_sz);
-
-        get_vec(
-            AddAllPtr, any_vec, serial_obj); // any_vec: { std::vector<int>{ 1, 2, 3 }, nullopt }
-
-        auto pack = create_func_w_ptr(AddAllPtr, any_vec, serial_obj);
-
-        run_callback(AddAllPtr, pack);
-        serial_obj = serial_adapter<Serial>::from_packed_func(pack);
-        return;
-    }
-
-    if (func_name == "KillServer")
-    {
-        auto pack = create_func(KillServer, serial_obj);
-        run_callback(KillServer, pack);
-        serial_obj = serial_adapter<Serial>::from_packed_func(pack);
-        return;
-    }
-
-    if (func_name == "SimpleSum")
-    {
-        auto pack = create_func(SimpleSum, serial_obj);
-        run_callback(SimpleSum, pack);
-        serial_obj = serial_adapter<Serial>::from_packed_func(pack);
-        return;
-    }
-
-    if (func_name == "StrLen")
-    {
-        auto pack = create_func(StrLen, serial_obj);
-        run_callback(StrLen, pack);
-        serial_obj = serial_adapter<Serial>::from_packed_func(pack);
-        return;
-    }
-
-    if (func_name == "AddOneToEach")
-    {
-        auto pack = create_func(AddOneToEach, serial_obj);
-        run_callback(AddOneToEach, pack);
-        serial_obj = serial_adapter<Serial>::from_packed_func(pack);
-        return;
-    }
-
-    if (func_name == "AddOneToEachRef")
-    {
-        auto pack = create_func(AddOneToEachRef, serial_obj);
-        run_callback(AddOneToEachRef, pack);
-        serial_obj = serial_adapter<Serial>::from_packed_func(pack);
-        return;
-    }
-
-    if (func_name == "ReadMessageRef")
-    {
-        auto pack = create_func(ReadMessageRef, serial_obj);
-        run_callback(ReadMessageRef, pack);
-        serial_obj = serial_adapter<Serial>::from_packed_func(pack);
-        return;
-    }
-
-    if (func_name == "WriteMessageRef")
-    {
-        auto pack = create_func(WriteMessageRef, serial_obj);
-        run_callback(WriteMessageRef, pack);
-        serial_obj = serial_adapter<Serial>::from_packed_func(pack);
-        return;
-    }
-
-    if (func_name == "ReadMessageVec")
-    {
-        auto pack = create_func(ReadMessageVec, serial_obj);
-        run_callback(ReadMessageVec, pack);
-        serial_obj = serial_adapter<Serial>::from_packed_func(pack);
-        return;
-    }
-
-    if (func_name == "WriteMessageVec")
-    {
-        auto pack = create_func(WriteMessageVec, serial_obj);
-        run_callback(WriteMessageVec, pack);
-        serial_obj = serial_adapter<Serial>::from_packed_func(pack);
-        return;
-    }
-
-    if (func_name == "ClearBus")
-    {
-        auto pack = create_func(ClearBus, serial_obj);
-        run_callback(ClearBus, pack);
-        serial_obj = serial_adapter<Serial>::from_packed_func(pack);
-        return;
-    }
-
-    if (func_name == "Fibonacci")
-    {
-        auto pack = create_func(Fibonacci, serial_obj);
-        run_callback(Fibonacci, pack);
-        serial_obj = serial_adapter<Serial>::from_packed_func(pack);
-        return;
-    }
-
-    if (func_name == "FibonacciRef")
-    {
-        auto pack = create_func(FibonacciRef, serial_obj);
-        run_callback(FibonacciRef, pack);
-        serial_obj = serial_adapter<Serial>::from_packed_func(pack);
-        return;
-    }
-
-    if (func_name == "Average")
-    {
-        auto pack = create_func(Average, serial_obj);
-        run_callback(Average, pack);
-        serial_obj = serial_adapter<Serial>::from_packed_func(pack);
-        return;
-    }
-
-    if (func_name == "StdDev")
-    {
-        auto pack = create_func(StdDev, serial_obj);
-        run_callback(StdDev, pack);
-        serial_obj = serial_adapter<Serial>::from_packed_func(pack);
-        return;
-    }
-
-    if (func_name == "SquareRootRef")
-    {
-        auto pack = create_func(SquareRootRef, serial_obj);
-        run_callback(SquareRootRef, pack);
-        serial_obj = serial_adapter<Serial>::from_packed_func(pack);
-        return;
-    }
-
-    if (func_name == "AverageContainer<uint64_t>")
-    {
-        auto pack = create_func(AverageContainer<uint64_t>, serial_obj);
-        run_callback(AverageContainer<uint64_t>, pack);
-        serial_obj = serial_adapter<Serial>::from_packed_func(pack);
-        return;
-    }
-
-    if (func_name == "AverageContainer<double>")
-    {
-        auto pack = create_func(AverageContainer<double>, serial_obj);
-        run_callback(AverageContainer<double>, pack);
-        serial_obj = serial_adapter<Serial>::from_packed_func(pack);
-        return;
-    }
-
-    if (func_name == "RandInt")
-    {
-        auto pack = create_func(RandInt, serial_obj);
-        run_callback(RandInt, pack);
-        serial_obj = serial_adapter<Serial>::from_packed_func(pack);
-        return;
-    }
-
-    if (func_name == "HashComplex")
-    {
-        auto pack = create_func(HashComplex, serial_obj);
-        run_callback(HashComplex, pack);
-        serial_obj = serial_adapter<Serial>::from_packed_func(pack);
-        return;
-    }
-
-    if (func_name == "HashComplexRef")
-    {
-        auto pack = create_func(HashComplexRef, serial_obj);
-        run_callback(HashComplexRef, pack);
-        serial_obj = serial_adapter<Serial>::from_packed_func(pack);
-        return;
-    }
-
-    throw std::runtime_error("RPC error: Called function: \"" + func_name + "\" not found!");
-}
+RPC_DEFAULT_DISPATCH(KillServer, SimpleSum, StrLen, AddOneToEach, AddOneToEachRef, ReadMessageRef,
+    WriteMessageRef, ReadMessageVec, WriteMessageVec, ClearBus, Fibonacci, FibonacciRef, Average,
+    StdDev, SquareRootRef, AverageContainer<uint64_t>, AverageContainer<double>, RandInt,
+    HashComplex, HashComplexRef)
 #endif
 
 template<typename Serial>

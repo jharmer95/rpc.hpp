@@ -1,8 +1,8 @@
 ///@file rpc.test.cpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Unit test source file for rpc.hpp
-///@version 0.2.0
-///@date 09-10-2020
+///@version 0.2.1
+///@date 10-08-2020
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -103,6 +103,7 @@ TEST_CASE("RAPIDJSON")
 
 using test_serial_t = njson;
 
+#if defined(RPC_HPP_ENABLE_POINTERS)
 TEST_CASE("AddAllPtr")
 {
     auto& client = GetClient<test_serial_t>();
@@ -112,6 +113,7 @@ TEST_CASE("AddAllPtr")
 
     REQUIRE(*pack.get_result() == 17);
 }
+#endif
 
 TEST_CASE("StrLen")
 {

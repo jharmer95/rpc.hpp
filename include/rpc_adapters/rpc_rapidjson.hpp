@@ -1,8 +1,8 @@
 ///@file rpc_adapters/rpc_rapidjson.hpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Implementation of adapting rapidjson (https://github.com/Tencent/rapidjson)
-///@version 0.2.0
-///@date 10-02-2020
+///@version 0.2.1
+///@date 10-08-2020
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -104,80 +104,37 @@ rpc::packed_func<R, Args...> rpdjson_adapter::to_packed_func(const rpdjson_doc& 
     }
 }
 
-template<>
-template<typename R, typename... Args>
-rpc::packed_func<R, Args...> rpdjson_adapter::to_packed_func_w_ptr(
-    const rpdjson_doc& serial_obj, const std::vector<std::any>& any_vec)
-{
-    unsigned i = 0;
-
-    std::array<std::any, sizeof...(Args)> args{ details::args_from_serial_w_ptr<rpdjson_doc, Args>(
-        serial_obj, any_vec, i)... };
-
-    if constexpr (std::is_void_v<R>)
-    {
-        return packed_func<void, Args...>(serial_obj["func_name"].GetString(), args);
-    }
-    else
-    {
-        if (serial_obj.HasMember("result"))
-        {
-            const rpdjson_val& result = serial_obj["result"];
-
-            if (result.IsNull())
-            {
-                return packed_func<R, Args...>(
-                    serial_obj["func_name"].GetString(), std::nullopt, args);
-            }
-
-            if constexpr (std::is_same_v<R, std::string>)
-            {
-                return packed_func<R, Args...>(
-                    serial_obj["func_name"].GetString(), result.GetString(), args);
-            }
-            else if constexpr (details::is_container_v<R>)
-            {
-                R container;
-                rpdjson_doc d;
-                d.CopyFrom(result, d.GetAllocator());
-                populate_array(d, container);
-                return packed_func<R, Args...>(
-                    serial_obj["func_name"].GetString(), container, args);
-            }
-            else
-            {
-                return packed_func<R, Args...>(
-                    serial_obj["func_name"].GetString(), result.Get<R>(), args);
-            }
-        }
-
-        return packed_func<R, Args...>(serial_obj["func_name"].GetString(), std::nullopt, args);
-    }
-}
-
 template<typename T>
 void push_arg(
     T arg, rpdjson_val& arg_list, const size_t arg_sz, rapidjson::MemoryPoolAllocator<>& alloc)
 {
-    if constexpr (std::is_pointer_v<T>)
+    if constexpr (std::is_same_v<T, std::string>)
     {
-        rpdjson_val sub_arr;
-        sub_arr.SetArray();
+        arg_list.PushBack(rpdjson_val().SetString(arg.c_str(), alloc), alloc);
+    }
+    else if constexpr (std::is_pointer_v<T>)
+    {
 
-        for (size_t i = 0; i < arg_sz; ++i)
+        if constexpr (std::is_same_v<char, std::remove_cv_t<std::remove_pointer_t<T>>>)
         {
-            push_arg(arg[i], sub_arr, 0, alloc);
+            arg_list.PushBack(rpdjson_val().SetString(arg, alloc), alloc);
         }
+        else
+        {
+            rpdjson_val sub_arr;
+            sub_arr.SetArray();
 
-        arg_list.PushBack(sub_arr, alloc);
+            for (size_t i = 0; i < arg_sz; ++i)
+            {
+                push_arg(arg[i], sub_arr, 0, alloc);
+            }
+
+            arg_list.PushBack(sub_arr, alloc);
+        }
     }
     else if constexpr (std::is_arithmetic_v<T>)
     {
         arg_list.PushBack(rpdjson_val().Set<T>(arg), alloc);
-    }
-    else if constexpr (std::is_same_v<T, std::string>)
-    {
-        arg_list.PushBack(rpdjson_val().SetString(arg.c_str(), alloc), alloc);
     }
     else if constexpr (rpc::details::is_container_v<T>)
     {
@@ -261,12 +218,16 @@ rpdjson_doc rpdjson_adapter::from_packed_func(const packed_func<R, Args...>& pac
         details::args_from_packed<Args, R, Args...>(pack, i)...
     };
 
+#    if defined(RPC_HPP_ENABLE_POINTERS)
     i = 0;
 
     details::for_each_tuple(argTup, [&args, &alloc, &pack, &i](auto x) {
         const auto arg_sz = pack.get_arg_arr_sz(i++);
         push_arg(x, args, arg_sz, alloc);
     });
+#    else
+    details::for_each_tuple(argTup, [&args, &alloc](auto x) { push_arg(x, args, 0, alloc); });
+#    endif
 
     d.AddMember("args", args, alloc);
     return d;
@@ -321,6 +282,10 @@ T rpdjson_adapter::get_value(const rpdjson_doc& obj)
     {
         return obj.GetString();
     }
+    else if constexpr (std::is_pointer_v<T> && std::is_same_v<char, std::remove_cv_t<std::remove_pointer_t<T>>>)
+    {
+        return obj.GetString();
+    }
     else if constexpr (details::is_container_v<T>)
     {
         T container;
@@ -355,4 +320,57 @@ inline size_t rpdjson_adapter::get_num_args(const rpdjson_doc& obj)
 {
     return obj["args"].GetArray().Size();
 }
+
+#    if defined(RPC_HPP_ENABLE_POINTERS)
+template<>
+template<typename R, typename... Args>
+rpc::packed_func<R, Args...> rpdjson_adapter::to_packed_func_w_ptr(
+    const rpdjson_doc& serial_obj, const std::vector<std::any>& any_vec)
+{
+    unsigned i = 0;
+
+    std::array<std::any, sizeof...(Args)> args{ details::args_from_serial_w_ptr<rpdjson_doc, Args>(
+        serial_obj, any_vec, i)... };
+
+    if constexpr (std::is_void_v<R>)
+    {
+        return packed_func<void, Args...>(serial_obj["func_name"].GetString(), args);
+    }
+    else
+    {
+        if (serial_obj.HasMember("result"))
+        {
+            const rpdjson_val& result = serial_obj["result"];
+
+            if (result.IsNull())
+            {
+                return packed_func<R, Args...>(
+                    serial_obj["func_name"].GetString(), std::nullopt, args);
+            }
+
+            if constexpr (std::is_same_v<R, std::string>)
+            {
+                return packed_func<R, Args...>(
+                    serial_obj["func_name"].GetString(), result.GetString(), args);
+            }
+            else if constexpr (details::is_container_v<R>)
+            {
+                R container;
+                rpdjson_doc d;
+                d.CopyFrom(result, d.GetAllocator());
+                populate_array(d, container);
+                return packed_func<R, Args...>(
+                    serial_obj["func_name"].GetString(), container, args);
+            }
+            else
+            {
+                return packed_func<R, Args...>(
+                    serial_obj["func_name"].GetString(), result.Get<R>(), args);
+            }
+        }
+
+        return packed_func<R, Args...>(serial_obj["func_name"].GetString(), std::nullopt, args);
+    }
+}
+#    endif
 #endif
