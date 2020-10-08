@@ -104,10 +104,74 @@ rpc::packed_func<R, Args...> rpdjson_adapter::to_packed_func(const rpdjson_doc& 
     }
 }
 
-template<typename T>
-void push_arg(T arg, rpdjson_val& arg_list, rapidjson::MemoryPoolAllocator<>& alloc)
+template<>
+template<typename R, typename... Args>
+rpc::packed_func<R, Args...> rpdjson_adapter::to_packed_func_w_ptr(
+    const rpdjson_doc& serial_obj, const std::vector<std::any>& any_vec)
 {
-    if constexpr (std::is_arithmetic_v<T>)
+    unsigned i = 0;
+
+    std::array<std::any, sizeof...(Args)> args{ details::args_from_serial_w_ptr<rpdjson_doc, Args>(
+        serial_obj, any_vec, i)... };
+
+    if constexpr (std::is_void_v<R>)
+    {
+        return packed_func<void, Args...>(serial_obj["func_name"].GetString(), args);
+    }
+    else
+    {
+        if (serial_obj.HasMember("result"))
+        {
+            const rpdjson_val& result = serial_obj["result"];
+
+            if (result.IsNull())
+            {
+                return packed_func<R, Args...>(
+                    serial_obj["func_name"].GetString(), std::nullopt, args);
+            }
+
+            if constexpr (std::is_same_v<R, std::string>)
+            {
+                return packed_func<R, Args...>(
+                    serial_obj["func_name"].GetString(), result.GetString(), args);
+            }
+            else if constexpr (details::is_container_v<R>)
+            {
+                R container;
+                rpdjson_doc d;
+                d.CopyFrom(result, d.GetAllocator());
+                populate_array(d, container);
+                return packed_func<R, Args...>(
+                    serial_obj["func_name"].GetString(), container, args);
+            }
+            else
+            {
+                return packed_func<R, Args...>(
+                    serial_obj["func_name"].GetString(), result.Get<R>(), args);
+            }
+        }
+
+        return packed_func<R, Args...>(serial_obj["func_name"].GetString(), std::nullopt, args);
+    }
+}
+
+template<typename T>
+void push_arg(
+    T arg, rpdjson_val& arg_list, const size_t arg_sz, rapidjson::MemoryPoolAllocator<>& alloc)
+{
+    if constexpr (std::is_pointer_v<T>)
+    {
+        rpdjson_val sub_arr;
+        sub_arr.SetArray();
+
+        for (size_t i = 0; i < arg_sz; ++i)
+        {
+            push_arg(arg[i], sub_arr, 0, alloc);
+        }
+
+        arg_list.PushBack(sub_arr, alloc);
+    }
+    else if constexpr (std::is_arithmetic_v<T>)
     {
         arg_list.PushBack(rpdjson_val().Set<T>(arg), alloc);
     }
@@ -122,7 +186,7 @@ void push_arg(T arg, rpdjson_val& arg_list, rapidjson::MemoryPoolAllocator<>& al
 
         for (auto it = arg.begin(); it != arg.end(); ++it)
         {
-            push_arg(*it, sub_arr, alloc);
+            push_arg(*it, sub_arr, 0, alloc);
         }
 
         arg_list.PushBack(sub_arr, alloc);
@@ -197,7 +261,12 @@ rpdjson_doc rpdjson_adapter::from_packed_func(const packed_func<R, Args...>& pac
         details::args_from_packed<Args, R, Args...>(pack, i)...
     };
 
-    details::for_each_tuple(argTup, [&args, &alloc](auto x) { push_arg(x, args, alloc); });
+    i = 0;
+
+    details::for_each_tuple(argTup, [&args, &alloc, &pack, &i](auto x) {
+        const auto arg_sz = pack.get_arg_arr_sz(i++);
+        push_arg(x, args, arg_sz, alloc);
+    });
 
     d.AddMember("args", args, alloc);
     return d;
@@ -279,5 +348,11 @@ void rpdjson_adapter::populate_array(const rpdjson_doc& obj, Container& containe
         d.CopyFrom(val, d.GetAllocator());
         container.push_back(details::arg_from_serial<rpdjson_doc, value_t>(d));
     }
+}
+
+template<>
+inline size_t rpdjson_adapter::get_num_args(const rpdjson_doc& obj)
+{
+    return obj["args"].GetArray().Size();
 }
 #endif

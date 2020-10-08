@@ -44,6 +44,7 @@
 #include <string>
 #include <tuple>
 #include <utility>
+#include <vector>
 
 namespace rpc
 {
@@ -282,9 +283,31 @@ public:
         return std::any_cast<std::remove_cv_t<std::remove_reference_t<T>>>(m_args[arg_index]);
     }
 
+    [[nodiscard]] size_t get_arg_arr_sz(const size_t index) const { return m_arg_sz_arr[index]; }
+
+    void update_arg_arr(const std::vector<std::any>& any_vec)
+    {
+        const std::tuple<Args...> tup;
+
+        size_t count = 0;
+
+        details::for_each_tuple(tup, [&count, &any_vec, this](auto x) {
+            if constexpr (std::is_pointer_v<decltype(x)>)
+            {
+                const auto& vec = std::any_cast<
+                    std::vector<std::remove_cv_t<std::remove_pointer_t<decltype(x)>>>>(
+                    any_vec[count]);
+                m_arg_sz_arr[count] = vec.size();
+            }
+
+            ++count;
+        });
+    }
+
 private:
     std::optional<result_type> m_result{ std::nullopt };
     std::array<std::any, sizeof...(Args)> m_args;
+    std::array<size_t, sizeof...(Args)> m_arg_sz_arr{};
 };
 
 ///@brief Class reprensenting a function call (with void result) including its name and parameters
@@ -353,8 +376,30 @@ public:
         return std::any_cast<std::remove_cv_t<std::remove_reference_t<T>>>(m_args[arg_index]);
     }
 
+    [[nodiscard]] size_t get_arg_arr_sz(const size_t index) const { return m_arg_sz_arr[index]; }
+
+    void update_arg_arr(const std::vector<std::any>& any_vec)
+    {
+        const std::tuple<Args...> tup;
+
+        size_t count = 0;
+
+        details::for_each_tuple(tup, [&count, &any_vec, this](auto x) {
+            if constexpr (std::is_pointer_v<decltype(x)>)
+            {
+                const auto& vec =
+                    std::any_cast<std::remove_cv_t<std::remove_pointer_t<decltype(x)>>>(
+                        any_vec[count]);
+                m_arg_sz_arr[count] = vec.size();
+            }
+
+            ++count;
+        });
+    }
+
 private:
     std::array<std::any, sizeof...(Args)> m_args;
+    std::array<size_t, sizeof...(Args)> m_arg_sz_arr{};
 };
 
 ///@brief Template class that provides an interface for going to and from a \ref packed_func and a serial object
@@ -373,6 +418,10 @@ public:
     ///@return packed_func<R, Args...> The packaged function call
     template<typename R, typename... Args>
     [[nodiscard]] static packed_func<R, Args...> to_packed_func(const Serial& serial_obj);
+
+    template<typename R, typename... Args>
+    [[nodiscard]] static packed_func<R, Args...> to_packed_func_w_ptr(
+        const Serial& serial_obj, const std::vector<std::any>& any_vec);
 
     ///@brief Converts a \ref packed_func into a serial object
     ///
@@ -432,6 +481,8 @@ public:
     ///@param container Reference to the container to populate
     template<typename Container>
     static void populate_array(const Serial& obj, Container& container);
+
+    [[nodiscard]] static size_t get_num_args(const Serial& obj);
 };
 
 ///@brief Serializes a generic object to a serial object
@@ -468,17 +519,7 @@ namespace details
     {
         using no_ref_t = std::remove_cv_t<std::remove_reference_t<Value>>;
 
-#if defined(RPC_HPP_ENABLE_POINTERS)
-        if constexpr (std::is_pointer_v<no_ref_t>)
-        {
-            // TODO: Implement pointer
-        }
-#else
-        static_assert(!std::is_pointer_v<no_ref_t>,
-            "Passing pointers across the RPC interface is not recommended. Please consider "
-            "refactoring your RPC calls or define RPC_HPP_ENABLE_POINTERS to ignore this "
-            "error.");
-#endif
+        static_assert(!std::is_pointer_v<no_ref_t>, "Pointers should not reach this function");
 
         if constexpr (std::is_arithmetic_v<no_ref_t> || std::is_same_v<no_ref_t, std::string>)
         {
@@ -513,6 +554,25 @@ namespace details
         return arg_from_serial<Serial, Value>(sub_obj);
     }
 
+    template<typename Serial, typename Value>
+    std::remove_cv_t<std::remove_reference_t<Value>> args_from_serial_w_ptr(
+        const Serial& obj, const std::vector<std::any>& any_vec, unsigned& arg_index)
+    {
+        if constexpr (std::is_pointer_v<Value>)
+        {
+            const auto& vec =
+                std::any_cast<const std::vector<std::remove_cv_t<std::remove_pointer_t<Value>>>&>(
+                    any_vec[arg_index++]);
+
+            // WARNING: If a function needs to append to a pointer/array, it will not work (suggest passing a capacity from the client)
+            return vec.data();
+        }
+        else
+        {
+            return args_from_serial<Serial, Value>(obj, arg_index);
+        }
+    }
+
     ///@brief Unpacks the argument values from a \ref packed_func
     ///
     ///@tparam Value The type of the argument to be unpacked
@@ -525,21 +585,7 @@ namespace details
     std::remove_cv_t<std::remove_reference_t<Value>> args_from_packed(
         const packed_func<R, Args...>& pack, unsigned& arg_index)
     {
-        using no_ref_t = std::remove_cv_t<std::remove_reference_t<Value>>;
-
-#if defined(RPC_HPP_ENABLE_POINTERS)
-        if constexpr (std::is_pointer_v<no_ref_t>)
-        {
-            // TODO: Implement pointer
-        }
-#else
-        static_assert(!std::is_pointer_v<no_ref_t>,
-            "Passing pointers across the RPC interface is not recommended. Please consider "
-            "refactoring your RPC calls or define RPC_HPP_ENABLE_POINTERS to ignore this "
-            "error.");
-#endif
-
-        return pack.template get_arg<no_ref_t>(arg_index++);
+        return pack.template get_arg<std::remove_cv_t<std::remove_reference_t<Value>>>(arg_index++);
     }
 } // namespace rpc::details
 
@@ -589,6 +635,13 @@ namespace server
     packed_func<R, Args...> create_func([[maybe_unused]] R (*unused)(Args...), const Serial& obj)
     {
         return serial_adapter<Serial>::template to_packed_func<R, Args...>(obj);
+    }
+
+    template<typename Serial, typename R, typename... Args>
+    packed_func<R, Args...> create_func_w_ptr([[maybe_unused]] R (*unused)(Args...),
+        const std::vector<std::any>& any_vec, const Serial& obj)
+    {
+        return serial_adapter<Serial>::template to_packed_func_w_ptr<R, Args...>(obj, any_vec);
     }
 
     ///@brief Runs the callback function and populates the \ref packed_func with the result and/or updated arguments
@@ -687,6 +740,7 @@ inline namespace client
     template<typename Serial, typename R = void, typename... Args>
     Serial serialize_call(const std::string& func_name, Args&&... args)
     {
+        // TODO: Can we elminate creating a packed_func JUST to serialize it back?
         auto packed = pack_call<R, Args...>(func_name, std::forward<Args>(args)...);
         return serial_adapter<Serial>::template from_packed_func<R, Args...>(packed);
     }

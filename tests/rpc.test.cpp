@@ -103,6 +103,16 @@ TEST_CASE("RAPIDJSON")
 
 using test_serial_t = njson;
 
+TEST_CASE("AddAllPtr")
+{
+    auto& client = GetClient<test_serial_t>();
+
+    int myArr[] = { 2, 5, 7, 3 };
+    auto pack = rpc::call<test_serial_t, int>(client, "AddAllPtr", myArr, 4);
+
+    REQUIRE(*pack.get_result() == 17);
+}
+
 TEST_CASE("StrLen")
 {
     auto& client = GetClient<test_serial_t>();
