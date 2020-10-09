@@ -2,7 +2,7 @@ add_library(catch2_lib STATIC catch2_main.cpp)
 add_library(asio_lib INTERFACE)
 
 if(${USE_CONAN})
-  set(CONAN_EXTRA_REQUIRES catch2/[>2.10.0 <3.0.0] asio/[>=1.14.0])
+  set(CONAN_EXTRA_REQUIRES "catch2/[>2.10.0 <3.0.0]" "asio/[>=1.14.0]")
   run_conan()
   target_link_libraries(catch2_lib PUBLIC CONAN_PKG::catch2)
   target_link_libraries(asio_lib INTERFACE CONAN_PKG::asio)
