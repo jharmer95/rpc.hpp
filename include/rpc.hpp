@@ -826,6 +826,20 @@ inline namespace client
     };
 
 #if defined(RPC_HPP_ENABLE_POINTERS)
+    template<typename T>
+    details::ptr_decay_t<T> pack_arg(T& val, size_t* arg_sz_arr, unsigned& index)
+    {
+        if constexpr (std::is_array_v<std::remove_reference_t<T>>)
+        {
+            arg_sz_arr[index++] = sizeof(val) / sizeof(val[0]);
+            return &val[0];
+        }
+        else
+        {
+            return val;
+        }
+    }
+
     ///@brief Packages a function call into a \ref packed_func
     ///
     ///@tparam R The type of the result for the \ref packed_func
@@ -840,17 +854,7 @@ inline namespace client
         std::array<size_t, sizeof...(Args)> arg_sz_arr{};
         unsigned i = 0;
 
-        std::array<std::any, sizeof...(Args)> argArray{ [&arg_sz_arr, &i](auto& x) {
-            if constexpr (std::is_array_v<std::remove_reference_t<decltype(x)>>)
-            {
-                arg_sz_arr[i] = sizeof(x) / sizeof(x[0]);
-                return &x[0];
-            }
-            else
-            {
-                return x;
-            }
-        }(args)... };
+        std::array<std::any, sizeof...(Args)> argArray{ pack_arg(args, arg_sz_arr.data(), i)... };
 
         if constexpr (std::is_void_v<R>)
         {
