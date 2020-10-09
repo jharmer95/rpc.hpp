@@ -103,22 +103,10 @@ TEST_CASE("RAPIDJSON")
 
 using test_serial_t = njson;
 
-#if defined(RPC_HPP_ENABLE_POINTERS)
-TEST_CASE("AddAllPtr")
-{
-    auto& client = GetClient<test_serial_t>();
-
-    int myArr[] = { 2, 5, 7, 3 };
-    auto pack = rpc::call<test_serial_t, int>(client, "AddAllPtr", myArr, 4);
-
-    REQUIRE(*pack.get_result() == 17);
-}
-#endif
-
 TEST_CASE("StrLen")
 {
     auto& client = GetClient<test_serial_t>();
-    auto pack = rpc::call<test_serial_t, int>(client, "StrLen", std::string("hello, world"));
+    const auto pack = rpc::call<test_serial_t, int>(client, "StrLen", std::string("hello, world"));
 
     REQUIRE(*pack.get_result() == 12);
 }
@@ -153,9 +141,75 @@ TEST_CASE("AddOneToEachRef")
     }
 }
 
+#if defined(RPC_HPP_ENABLE_POINTERS)
+TEST_CASE("PtrSum")
+{
+    auto& client = GetClient<test_serial_t>();
+
+    int n = 12;
+    const auto pack = rpc::call<test_serial_t>(client, "PtrSum", &n, -3);
+
+    REQUIRE(*pack.get_arg<int*>(0) == 9);
+}
+
+TEST_CASE("AddAllPtr")
+{
+    auto& client = GetClient<test_serial_t>();
+
+    int myArr[] = { 2, 5, 7, 3 };
+    const auto pack = rpc::call<test_serial_t, int>(client, "AddAllPtr", myArr, 4);
+
+    REQUIRE(*pack.get_result() == 17);
+}
+
+TEST_CASE("FibonacciPtr")
+{
+    auto& client = GetClient<test_serial_t>();
+
+    uint64_t n = 20;
+    const auto pack = rpc::call<test_serial_t>(client, "FibonacciPtr", &n);
+
+    REQUIRE(*pack.get_arg<uint64_t*>(0) == 10946ULL);
+}
+
+TEST_CASE("SquareRootPtr")
+{
+    auto& client = GetClient<test_serial_t>();
+
+    double n1 = 55.65;
+    double n2 = 125.325;
+    double n3 = 552.125;
+    double n4 = 12.767;
+    double n5 = 2599.6;
+    double n6 = 1245.125663;
+    double n7 = 9783.49;
+    double n8 = 125.12;
+    double n9 = 553.3333333333;
+    double n10 = 2266.1;
+
+    const auto pack = rpc::call<test_serial_t>(
+        client, "SquareRootPtr", &n1, &n2, &n3, &n4, &n5, &n6, &n7, &n8, &n9, &n10);
+
+    n1 = *pack.get_arg<double*>(0);
+    n2 = *pack.get_arg<double*>(1);
+    n3 = *pack.get_arg<double*>(2);
+    n4 = *pack.get_arg<double*>(3);
+    n5 = *pack.get_arg<double*>(4);
+    n6 = *pack.get_arg<double*>(5);
+    n7 = *pack.get_arg<double*>(6);
+    n8 = *pack.get_arg<double*>(7);
+    n9 = *pack.get_arg<double*>(8);
+    n10 = *pack.get_arg<double*>(9);
+    const auto test = n1 + n2 + n3 + n4 + n5 + n6 + n7 + n8 + n9 + n10;
+
+    REQUIRE_THAT(test, Catch::Matchers::WithinAbs(313.2216436152, 0.001));
+}
+#endif
+
 TEST_CASE("KillServer")
 {
     auto& client = GetClient<test_serial_t>();
+
     try
     {
         rpc::call<test_serial_t>(client, "KillServer");

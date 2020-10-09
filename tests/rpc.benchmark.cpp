@@ -2,7 +2,7 @@
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Benchmarking source file for rpc.hpp
 ///@version 0.2.1
-///@date 10-08-2020
+///@date 10-09-2020
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -51,8 +51,6 @@ static_assert(false, "Test requires nlohmann/json adapter to be enabled!");
 
 #include "rpc.client.hpp"
 #include "test_structs.hpp"
-
-#include <thread>
 
 template<typename Serial>
 TestClient& GetClient();

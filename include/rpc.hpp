@@ -607,7 +607,7 @@ namespace details
 #if defined(RPC_HPP_ENABLE_POINTERS)
     template<typename Serial, typename Value>
     std::remove_cv_t<std::remove_reference_t<Value>> args_from_serial_w_ptr(
-        const Serial& obj, const std::vector<std::any>& any_vec, unsigned& arg_index)
+        const Serial& serial_obj, const std::vector<std::any>& any_vec, unsigned& arg_index)
     {
         if constexpr (std::is_pointer_v<Value>)
         {
@@ -622,12 +622,13 @@ namespace details
                     const std::vector<std::remove_cv_t<std::remove_pointer_t<Value>>>&>(
                     any_vec[arg_index++]);
 
-                return const_cast<Value>(vec.data());
+                auto* x = const_cast<Value>(vec.data());
+                return x;
             }
         }
         else
         {
-            return args_from_serial<Serial, Value>(obj, arg_index);
+            return args_from_serial<Serial, Value>(serial_obj, arg_index);
         }
     }
 
@@ -652,7 +653,6 @@ namespace details
                 else
                 {
                     std::vector<std::remove_cv_t<std::remove_pointer_t<decltype(x)>>> vec;
-
                     serial_adapter<Serial>::populate_array(arg, vec);
                     any_vec.emplace_back(vec);
                 }
@@ -785,28 +785,28 @@ namespace server
     {
 #if defined(RPC_HPP_ENABLE_POINTERS)
         if constexpr (
-            rpc::details::all_true_v<!(
+            details::all_true_v<!(
                 std::is_pointer_v<std::remove_cv_t<std::remove_reference_t<
                     Args>>> || std::is_array_v<std::remove_cv_t<std::remove_reference_t<Args>>>)...>)
         {
             auto pack = create_func(func, serial_obj);
             run_callback(func, pack);
-            serial_obj = rpc::serial_adapter<Serial>::from_packed_func(pack);
+            serial_obj = serial_adapter<Serial>::from_packed_func(pack);
         }
         else
         {
-            const auto arg_sz = rpc::serial_adapter<Serial>::get_num_args(serial_obj);
+            const auto arg_sz = serial_adapter<Serial>::get_num_args(serial_obj);
             std::vector<std::any> any_vec;
             any_vec.reserve(arg_sz);
             get_vec(func, any_vec, serial_obj);
             auto pack = create_func_w_ptr(func, any_vec, serial_obj);
             run_callback(func, pack);
-            serial_obj = rpc::serial_adapter<Serial>::from_packed_func(pack);
+            serial_obj = serial_adapter<Serial>::from_packed_func(pack);
         }
 #else
         auto pack = create_func(func, serial_obj);
         run_callback(func, pack);
-        serial_obj = rpc::serial_adapter<Serial>::from_packed_func(pack);
+        serial_obj = serial_adapter<Serial>::from_packed_func(pack);
 #endif
     }
 } // namespace rpc::server
@@ -833,6 +833,11 @@ inline namespace client
         {
             arg_sz_arr[index++] = sizeof(val) / sizeof(val[0]);
             return &val[0];
+        }
+        else if constexpr (std::is_pointer_v<std::remove_reference_t<T>>)
+        {
+            arg_sz_arr[index++] = val == nullptr ? 0 : 1;
+            return val;
         }
         else
         {
@@ -988,9 +993,11 @@ inline namespace client
         }
         else
         {
-            std::vector<std::any> any_vec;
+            thread_local std::vector<std::any> any_vec;
+
+            any_vec.clear();
             any_vec.reserve(sizeof...(Args));
-            details::get_vec<Serial, details::ptr_decay_t<Args>...>(any_vec, serial_obj);
+            details::get_vec<Serial, details::ptr_decay_t<Args>...>(any_vec, resp_obj);
 
             return serial_adapter<Serial>::template to_packed_func_w_ptr<R,
                 details::ptr_decay_t<Args>...>(resp_obj, any_vec);

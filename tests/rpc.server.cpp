@@ -2,7 +2,7 @@
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Example implementation of an RPC server
 ///@version 0.2.1
-///@date 10-08-2020
+///@date 10-09-2020
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -157,8 +157,9 @@ void FibonacciPtr(uint64_t* number)
     }
 }
 
-void SquareRootPtr(double* n1, double* n2, double* n3, double* n4, double* n5, double* n6,
-    double* n7, double* n8, double* n9, double* n10)
+void SquareRootPtr(double* const n1, double* const n2, double* const n3, double* const n4,
+    double* const n5, double* const n6, double* const n7, double* const n8, double* const n9,
+    double* const n10)
 {
     *n1 = std::sqrt(*n1);
     *n2 = std::sqrt(*n2);
@@ -184,7 +185,8 @@ void HashComplexPtr(const ComplexObject* const cx, char* const hashStr)
 
     for (size_t i = 0; i < cx->name.size(); ++i)
     {
-        int acc = cx->flag2 ? (cx->name[i] + valsCpy[i % 12]) : (cx->name[i] - valsCpy[i % 12]);
+        const int acc =
+            cx->flag2 ? (cx->name[i] + valsCpy[i % 12]) : (cx->name[i] - valsCpy[i % 12]);
         hash << std::hex << acc;
     }
 
@@ -526,7 +528,10 @@ constexpr uint16_t PORT_N_SERIAL = 5001U;
 constexpr uint16_t PORT_RAPIDJSON = 5002U;
 
 template<typename Serial>
-constexpr uint16_t get_port();
+constexpr uint16_t get_port()
+{
+    throw;
+}
 
 template<>
 constexpr uint16_t get_port<njson>()
