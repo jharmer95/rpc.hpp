@@ -2,7 +2,7 @@
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Implementation of adapting rapidjson (https://github.com/Tencent/rapidjson)
 ///@version 0.2.1
-///@date 10-08-2020
+///@date 10-20-2020
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -114,7 +114,6 @@ void push_arg(
     }
     else if constexpr (std::is_pointer_v<T>)
     {
-
         if constexpr (std::is_same_v<char, std::remove_cv_t<std::remove_pointer_t<T>>>)
         {
             arg_list.PushBack(rpdjson_val().SetString(arg, alloc), alloc);
@@ -280,9 +279,10 @@ T rpdjson_adapter::get_value(const rpdjson_doc& obj)
 {
     if constexpr (std::is_same_v<T, std::string>)
     {
-        return obj.GetString();
+        return std::string(obj.GetString());
     }
-    else if constexpr (std::is_pointer_v<T> && std::is_same_v<char, std::remove_cv_t<std::remove_pointer_t<T>>>)
+    else if constexpr (std::is_pointer_v<
+                           T> && std::is_same_v<char, std::remove_cv_t<std::remove_pointer_t<T>>>)
     {
         return obj.GetString();
     }
@@ -332,25 +332,22 @@ rpc::packed_func<R, Args...> rpdjson_adapter::to_packed_func_w_ptr(
     std::array<std::any, sizeof...(Args)> args{ details::args_from_serial_w_ptr<rpdjson_doc, Args>(
         serial_obj, any_vec, i)... };
 
+    std::unique_ptr<packed_func<R, Args...>> pack_ptr;
+
     if constexpr (std::is_void_v<R>)
     {
-        return packed_func<void, Args...>(serial_obj["func_name"].GetString(), args);
+        pack_ptr =
+            std::make_unique<packed_func<void, Args...>>(serial_obj["func_name"].GetString(), args);
     }
     else
     {
-        if (serial_obj.HasMember("result"))
+        if (serial_obj.HasMember("result") && !serial_obj["result"].IsNull())
         {
             const rpdjson_val& result = serial_obj["result"];
 
-            if (result.IsNull())
-            {
-                return packed_func<R, Args...>(
-                    serial_obj["func_name"].GetString(), std::nullopt, args);
-            }
-
             if constexpr (std::is_same_v<R, std::string>)
             {
-                return packed_func<R, Args...>(
+                pack_ptr = std::make_unique<packed_func<R, Args...>>(
                     serial_obj["func_name"].GetString(), result.GetString(), args);
             }
             else if constexpr (details::is_container_v<R>)
@@ -359,18 +356,24 @@ rpc::packed_func<R, Args...> rpdjson_adapter::to_packed_func_w_ptr(
                 rpdjson_doc d;
                 d.CopyFrom(result, d.GetAllocator());
                 populate_array(d, container);
-                return packed_func<R, Args...>(
+                pack_ptr = std::make_unique<packed_func<R, Args...>>(
                     serial_obj["func_name"].GetString(), container, args);
             }
             else
             {
-                return packed_func<R, Args...>(
+                pack_ptr = std::make_unique<packed_func<R, Args...>>(
                     serial_obj["func_name"].GetString(), result.Get<R>(), args);
             }
         }
-
-        return packed_func<R, Args...>(serial_obj["func_name"].GetString(), std::nullopt, args);
+        else
+        {
+            pack_ptr = std::make_unique<packed_func<R, Args...>>(
+                serial_obj["func_name"].GetString(), std::nullopt, args);
+        }
     }
+
+    pack_ptr->update_arg_arr(any_vec);
+    return *pack_ptr;
 }
 #    endif
 #endif

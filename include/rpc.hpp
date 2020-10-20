@@ -2,7 +2,7 @@
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Header-only library for serialized RPC usage
 ///@version 0.2.1
-///@date 10-08-2020
+///@date 10-20-2020
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -251,7 +251,7 @@ public:
 
     ///@brief Get the result of the function call (if it exists)
     ///
-    ///@return std::optional<R> If the function has not been called, or resulted in an error: std::nullopt, else: the result of the function call
+    ///@return std::optional<R> If the function has not been called, or resulted in a err0r: std::nullopt, else: the result of the function call
     [[nodiscard]] std::optional<R> get_result() const noexcept { return m_result; }
 
     ///@brief Set the result
@@ -423,10 +423,20 @@ public:
         details::for_each_tuple(tup, [&count, &any_vec, this](auto x) {
             if constexpr (std::is_pointer_v<decltype(x)>)
             {
-                const auto& vec = std::any_cast<
-                    const std::vector<std::remove_cv_t<std::remove_pointer_t<decltype(x)>>>&>(
-                    any_vec[count]);
-                m_arg_sz_arr[count] = vec.size();
+                if constexpr (std::is_same_v<char,
+                                  std::remove_cv_t<std::remove_pointer_t<decltype(x)>>>)
+                {
+                    const auto& str = std::any_cast<const std::string&>(any_vec[count]);
+                    m_arg_sz_arr[count] = str.size();
+                }
+                else
+                {
+                    const auto& vec = std::any_cast<
+                        const std::vector<std::remove_cv_t<std::remove_pointer_t<decltype(x)>>>&>(
+                        any_vec[count]);
+
+                    m_arg_sz_arr[count] = vec.size();
+                }
             }
 
             ++count;

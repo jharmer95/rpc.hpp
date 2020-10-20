@@ -2,7 +2,7 @@
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Example implementation of an RPC server
 ///@version 0.2.1
-///@date 10-09-2020
+///@date 10-20-2020
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -192,6 +192,7 @@ void HashComplexPtr(const ComplexObject* const cx, char* const hashStr)
 
     auto str = hash.str();
     std::copy(str.begin(), str.end(), hashStr);
+    hashStr[str.size()] = '\0';
 }
 #endif
 
