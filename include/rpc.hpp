@@ -423,20 +423,11 @@ public:
         details::for_each_tuple(tup, [&count, &any_vec, this](auto x) {
             if constexpr (std::is_pointer_v<decltype(x)>)
             {
-                if constexpr (std::is_same_v<char,
-                                  std::remove_cv_t<std::remove_pointer_t<decltype(x)>>>)
-                {
-                    const auto& str = std::any_cast<const std::string&>(any_vec[count]);
-                    m_arg_sz_arr[count] = str.size();
-                }
-                else
-                {
-                    const auto& vec = std::any_cast<
-                        const std::vector<std::remove_cv_t<std::remove_pointer_t<decltype(x)>>>&>(
-                        any_vec[count]);
+                const auto& vec = std::any_cast<
+                    const std::vector<std::remove_cv_t<std::remove_pointer_t<decltype(x)>>>&>(
+                    any_vec[count]);
 
-                    m_arg_sz_arr[count] = vec.size();
-                }
+                m_arg_sz_arr[count] = vec.size();
             }
 
             ++count;
@@ -621,20 +612,12 @@ namespace details
     {
         if constexpr (std::is_pointer_v<Value>)
         {
-            if constexpr (std::is_same_v<char, std::remove_cv_t<std::remove_pointer_t<Value>>>)
-            {
-                const auto& str = std::any_cast<const std::string&>(any_vec[arg_index++]);
-                return const_cast<Value>(str.c_str());
-            }
-            else
-            {
-                const auto& vec = std::any_cast<
-                    const std::vector<std::remove_cv_t<std::remove_pointer_t<Value>>>&>(
+            const auto& vec =
+                std::any_cast<const std::vector<std::remove_cv_t<std::remove_pointer_t<Value>>>&>(
                     any_vec[arg_index++]);
 
-                auto* x = const_cast<Value>(vec.data());
-                return x;
-            }
+            auto* x = const_cast<Value>(vec.data());
+            return x;
         }
         else
         {
@@ -654,18 +637,9 @@ namespace details
             {
                 const auto arg = serial_adapter<Serial>::make_sub_object(arg_list, count);
 
-                if constexpr (std::is_same_v<char,
-                                  std::remove_cv_t<std::remove_pointer_t<decltype(x)>>>)
-                {
-                    any_vec.emplace_back(
-                        serial_adapter<Serial>::template get_value<std::string>(arg));
-                }
-                else
-                {
-                    std::vector<std::remove_cv_t<std::remove_pointer_t<decltype(x)>>> vec;
-                    serial_adapter<Serial>::populate_array(arg, vec);
-                    any_vec.emplace_back(vec);
-                }
+                std::vector<std::remove_cv_t<std::remove_pointer_t<decltype(x)>>> vec;
+                serial_adapter<Serial>::populate_array(arg, vec);
+                any_vec.emplace_back(vec);
             }
             else
             {

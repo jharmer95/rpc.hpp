@@ -172,26 +172,25 @@ TEST_CASE("SquareRootPtr")
     REQUIRE_THAT(test, Catch::Matchers::WithinAbs(313.2216436152, 0.001));
 }
 
-// BUG: This test will fail because the string grows from 0 to 43, causing an access violation on cleanup of the any_vec
-//TEST_CASE("HashComplexPtr")
-//{
-//    const std::string expected = "467365747274747d315a473a527073796c7e707b85";
-//    auto& client = GetClient<test_serial_t>();
-//
-//    ComplexObject cx;
-//    cx.flag1 = false;
-//    cx.flag2 = true;
-//    cx.id = 24;
-//    cx.name = "Franklin D. Roosevelt";
-//    cx.vals = { 0, 1, 4, 6, 7, 8, 11, 15, 17, 22, 25, 26 };
-//
-//    char hash[256]{};
-//
-//    const std::string test(
-//        rpc::call<test_serial_t>(client, "HashComplexPtr", &cx, hash).get_arg<char*>(1));
-//
-//    REQUIRE_THAT(expected, Catch::Matchers::Equals(test));
-//}
+TEST_CASE("HashComplexPtr")
+{
+    const std::string expected = "467365747274747d315a473a527073796c7e707b85";
+    auto& client = GetClient<test_serial_t>();
+
+    ComplexObject cx;
+    cx.flag1 = false;
+    cx.flag2 = true;
+    cx.id = 24;
+    cx.name = "Franklin D. Roosevelt";
+    cx.vals = { 0, 1, 4, 6, 7, 8, 11, 15, 17, 22, 25, 26 };
+
+    char hash[256]{};
+
+    const std::string test(
+        rpc::call<test_serial_t>(client, "HashComplexPtr", &cx, hash).get_arg<char*>(1));
+
+    REQUIRE_THAT(expected, Catch::Matchers::Equals(test));
+}
 #endif
 
 TEST_CASE("StrLen")

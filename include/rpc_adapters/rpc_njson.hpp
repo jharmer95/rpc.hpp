@@ -2,7 +2,7 @@
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Implementation of adapting nlohmann/json (https://github.com/nlohmann/json)
 ///@version 0.2.1
-///@date 10-08-2020
+///@date 10-20-2020
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -88,22 +88,14 @@ void push_arg(T arg, njson& arg_list, const size_t arg_sz)
 {
     if constexpr (std::is_pointer_v<T>)
     {
-        if constexpr (std::is_same_v<char, std::remove_cv_t<std::remove_pointer_t<T>>>)
-        {
-            const std::string s(arg);
-            arg_list.push_back(s);
-        }
-        else
-        {
-            njson arr = njson::array();
+        njson arr = njson::array();
 
-            for (size_t i = 0; i < arg_sz; ++i)
-            {
-                push_arg(arg[i], arr, 0);
-            }
-
-            arg_list.push_back(arr);
+        for (size_t i = 0; i < arg_sz; ++i)
+        {
+            push_arg(arg[i], arr, 0);
         }
+
+        arg_list.push_back(arr);
     }
     else if constexpr (std::is_arithmetic_v<T> || std::is_same_v<T, std::string>)
     {

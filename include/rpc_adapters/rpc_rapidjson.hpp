@@ -114,26 +114,32 @@ void push_arg(
     }
     else if constexpr (std::is_pointer_v<T>)
     {
-        if constexpr (std::is_same_v<char, std::remove_cv_t<std::remove_pointer_t<T>>>)
-        {
-            arg_list.PushBack(rpdjson_val().SetString(arg, alloc), alloc);
-        }
-        else
-        {
-            rpdjson_val sub_arr;
-            sub_arr.SetArray();
+        rpdjson_val sub_arr;
+        sub_arr.SetArray();
 
-            for (size_t i = 0; i < arg_sz; ++i)
-            {
-                push_arg(arg[i], sub_arr, 0, alloc);
-            }
-
-            arg_list.PushBack(sub_arr, alloc);
+        for (size_t i = 0; i < arg_sz; ++i)
+        {
+            push_arg(arg[i], sub_arr, 0, alloc);
         }
+
+        arg_list.PushBack(sub_arr, alloc);
     }
     else if constexpr (std::is_arithmetic_v<T>)
     {
-        arg_list.PushBack(rpdjson_val().Set<T>(arg), alloc);
+        // Rapidjson is silly and does not have generic support for 8/16 bit numbers, so upgrade to 32-bit
+        if constexpr (std::is_same_v<T,
+                          char> || std::is_same_v<T, int8_t> || std::is_same_v<T, int16_t>)
+        {
+            arg_list.PushBack(rpdjson_val().SetInt(arg), alloc);
+        }
+        else if constexpr (std::is_same_v<T, uint8_t> || std::is_same_v<T, uint16_t>)
+        {
+            arg_list.PushBack(rpdjson_val().SetUint(arg), alloc);
+        }
+        else
+        {
+            arg_list.PushBack(rpdjson_val().Set<T>(arg), alloc);
+        }
     }
     else if constexpr (rpc::details::is_container_v<T>)
     {
@@ -281,16 +287,28 @@ T rpdjson_adapter::get_value(const rpdjson_doc& obj)
     {
         return std::string(obj.GetString());
     }
-    else if constexpr (std::is_pointer_v<
-                           T> && std::is_same_v<char, std::remove_cv_t<std::remove_pointer_t<T>>>)
-    {
-        return obj.GetString();
-    }
     else if constexpr (details::is_container_v<T>)
     {
         T container;
         populate_array(obj, container);
         return container;
+    }
+    else if constexpr (std::is_arithmetic_v<T>)
+    {
+        // Rapidjson is silly and does not have generic support for 8/16 bit numbers, so upgrade to 32-bit
+        if constexpr (std::is_same_v<T,
+                          char> || std::is_same_v<T, int8_t> || std::is_same_v<T, int16_t>)
+        {
+            return obj.GetInt();
+        }
+        else if constexpr (std::is_same_v<T, uint8_t> || std::is_same_v<T, uint16_t>)
+        {
+            return obj.GetUint();
+        }
+        else
+        {
+            return obj.Get<T>();
+        }
     }
     else
     {
