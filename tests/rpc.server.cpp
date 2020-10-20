@@ -524,40 +524,38 @@ void session(tcp::socket sock)
     }
 }
 
-constexpr uint16_t PORT_NJSON = 5000U;
-constexpr uint16_t PORT_N_SERIAL = 5001U;
-constexpr uint16_t PORT_RAPIDJSON = 5002U;
+template<typename Serial>
+struct port
+{
+};
+
+template<>
+struct port<njson>
+{
+    constexpr static uint16_t value = 5000U;
+};
+
+template<>
+struct port<generic_serial_t>
+{
+    constexpr static uint16_t value = 5001U;
+};
+
+template<>
+struct port<rpdjson_doc>
+{
+    constexpr static uint16_t value = 5002U;
+};
 
 template<typename Serial>
-constexpr uint16_t get_port()
-{
-    throw;
-}
-
-template<>
-constexpr uint16_t get_port<njson>()
-{
-    return PORT_NJSON;
-}
-
-template<>
-constexpr uint16_t get_port<generic_serial_t>()
-{
-    return PORT_N_SERIAL;
-}
-
-template<>
-constexpr uint16_t get_port<rpdjson_doc>()
-{
-    return PORT_RAPIDJSON;
-}
+inline constexpr uint16_t port_v = port<Serial>::value;
 
 template<typename Serial>
 [[noreturn]] void server(asio::io_context& io_context)
 {
     while (true)
     {
-        tcp::acceptor acc(io_context, tcp::endpoint(tcp::v4(), get_port<Serial>()));
+        tcp::acceptor acc(io_context, tcp::endpoint(tcp::v4(), port_v<Serial>));
         session<Serial>(acc.accept());
     }
 }
@@ -571,16 +569,17 @@ int main()
 
 #if defined(RPC_HPP_NJSON_ENABLED)
         std::thread(server<njson>, std::ref(io_context)).detach();
-        std::cout << "Running njson server on port " << PORT_NJSON << "...\n";
+        std::cout << "Running njson server on port " << port_v<njson> << "...\n";
 #    if defined(RPC_HPP_NLOHMANN_SERIAL_TYPE)
         std::thread(server<generic_serial_t>, std::ref(io_context)).detach();
-        std::cout << "Running nlohmann/serial_type server on port " << PORT_N_SERIAL << "...\n";
+        std::cout << "Running nlohmann/serial_type server on port "
+                  << port_v<generic_serial_t> << "...\n";
 #    endif
 #endif
 
 #if defined(RPC_HPP_RAPIDJSON_ENABLED)
         std::thread(server<rpdjson_doc>, std::ref(io_context)).detach();
-        std::cout << "Running rapidjson server on port " << PORT_RAPIDJSON << "...\n";
+        std::cout << "Running rapidjson server on port " << port_v<rpdjson_doc> << "...\n";
 #endif
 
         while (RUNNING)

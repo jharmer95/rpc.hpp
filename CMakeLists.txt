@@ -108,7 +108,8 @@ elseif(CXX_CLANG)
       -Wno-missing-prototypes
       -Wno-documentation
       -Wno-documentation-unknown-command
-      -Wno-weak-vtables)
+      -Wno-weak-vtables
+      -Wno-reserved-id-macro)
   set(MIN_WARNING -Wall)
 endif()
 
