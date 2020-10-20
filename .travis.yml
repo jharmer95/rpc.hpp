@@ -13,8 +13,6 @@ compiler:
 addons:
   apt:
     packages:
-      - gcc
-      - g++
       - cmake-data
       - cmake
       - ninja-build

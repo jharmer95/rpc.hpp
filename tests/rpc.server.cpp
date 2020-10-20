@@ -1,8 +1,8 @@
 ///@file rpc.server.cpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Example implementation of an RPC server
-///@version 0.2.0
-///@date 09-10-2020
+///@version 0.2.1
+///@date 10-20-2020
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -67,6 +67,18 @@ static std::atomic_bool RUNNING = false;
 constexpr void PtrSum(int* const n1, const int n2)
 {
     *n1 += n2;
+}
+
+constexpr int AddAllPtr(const int* const vals, const int num_vals)
+{
+    int sum = 0;
+
+    for (int i = 0; i < num_vals; ++i)
+    {
+        sum += vals[i];
+    }
+
+    return sum;
 }
 
 int ReadMessagePtr(TestMessage* const mesg_arr, int* const num_mesgs)
@@ -145,8 +157,9 @@ void FibonacciPtr(uint64_t* number)
     }
 }
 
-void SquareRootPtr(double* n1, double* n2, double* n3, double* n4, double* n5, double* n6,
-    double* n7, double* n8, double* n9, double* n10)
+void SquareRootPtr(double* const n1, double* const n2, double* const n3, double* const n4,
+    double* const n5, double* const n6, double* const n7, double* const n8, double* const n9,
+    double* const n10)
 {
     *n1 = std::sqrt(*n1);
     *n2 = std::sqrt(*n2);
@@ -172,12 +185,14 @@ void HashComplexPtr(const ComplexObject* const cx, char* const hashStr)
 
     for (size_t i = 0; i < cx->name.size(); ++i)
     {
-        int acc = cx->flag2 ? (cx->name[i] + valsCpy[i % 12]) : (cx->name[i] - valsCpy[i % 12]);
+        const int acc =
+            cx->flag2 ? (cx->name[i] + valsCpy[i % 12]) : (cx->name[i] - valsCpy[i % 12]);
         hash << std::hex << acc;
     }
 
     auto str = hash.str();
     std::copy(str.begin(), str.end(), hashStr);
+    hashStr[str.size()] = '\0';
 }
 #endif
 
@@ -373,14 +388,14 @@ void FibonacciRef(uint64_t& number)
     }
 }
 
-double Average(const double n1, const double n2, const double n3, const double n4, const double n5, const double n6, const double n7,
-    const double n8, const double n9, const double n10)
+double Average(const double n1, const double n2, const double n3, const double n4, const double n5,
+    const double n6, const double n7, const double n8, const double n9, const double n10)
 {
     return (n1 + n2 + n3 + n4 + n5 + n6 + n7 + n8 + n9 + n10) / 10.00;
 }
 
-double StdDev(const double n1, const double n2, const double n3, const double n4, const double n5, const double n6, const double n7,
-    const double n8, const double n9, const double n10)
+double StdDev(const double n1, const double n2, const double n3, const double n4, const double n5,
+    const double n6, const double n7, const double n8, const double n9, const double n10)
 {
     const auto avg = Average(
         n1 * n1, n2 * n2, n3 * n3, n4 * n4, n5 * n5, n6 * n6, n7 * n7, n8 * n8, n9 * n9, n10 * n10);
@@ -460,11 +475,11 @@ void HashComplexRef(ComplexObject& cx, std::string& hashStr)
 }
 
 #if defined(RPC_HPP_ENABLE_POINTERS)
-RPC_DEFAULT_DISPATCH(PtrSum, ReadMessagePtr, WriteMessagePtr, FibonacciPtr, SquareRootPtr,
-    HashComplexPtr, KillServer, SimpleSum, StrLen, AddOneToEach, AddOneToEachRef, ReadMessageRef,
-    WriteMessageRef, ReadMessageVec, WriteMessageVec, ClearBus, Fibonacci, FibonacciRef, Average,
-    StdDev, SquareRootRef, AverageContainer<uint64_t>, AverageContainer<double>, RandInt,
-    HashComplex, HashComplexRef)
+RPC_DEFAULT_DISPATCH(PtrSum, AddAllPtr, ReadMessagePtr, WriteMessagePtr, FibonacciPtr,
+    SquareRootPtr, HashComplexPtr, KillServer, SimpleSum, StrLen, AddOneToEach, AddOneToEachRef,
+    ReadMessageRef, WriteMessageRef, ReadMessageVec, WriteMessageVec, ClearBus, Fibonacci,
+    FibonacciRef, Average, StdDev, SquareRootRef, AverageContainer<uint64_t>,
+    AverageContainer<double>, RandInt, HashComplex, HashComplexRef)
 #else
 RPC_DEFAULT_DISPATCH(KillServer, SimpleSum, StrLen, AddOneToEach, AddOneToEachRef, ReadMessageRef,
     WriteMessageRef, ReadMessageVec, WriteMessageVec, ClearBus, Fibonacci, FibonacciRef, Average,
@@ -509,37 +524,38 @@ void session(tcp::socket sock)
     }
 }
 
-constexpr uint16_t PORT_NJSON = 5000U;
-constexpr uint16_t PORT_N_SERIAL = 5001U;
-constexpr uint16_t PORT_RAPIDJSON = 5002U;
+template<typename Serial>
+struct port
+{
+};
+
+template<>
+struct port<njson>
+{
+    constexpr static uint16_t value = 5000U;
+};
+
+template<>
+struct port<generic_serial_t>
+{
+    constexpr static uint16_t value = 5001U;
+};
+
+template<>
+struct port<rpdjson_doc>
+{
+    constexpr static uint16_t value = 5002U;
+};
 
 template<typename Serial>
-constexpr uint16_t get_port();
-
-template<>
-constexpr uint16_t get_port<njson>()
-{
-    return PORT_NJSON;
-}
-
-template<>
-constexpr uint16_t get_port<generic_serial_t>()
-{
-    return PORT_N_SERIAL;
-}
-
-template<>
-constexpr uint16_t get_port<rpdjson_doc>()
-{
-    return PORT_RAPIDJSON;
-}
+inline constexpr uint16_t port_v = port<Serial>::value;
 
 template<typename Serial>
 [[noreturn]] void server(asio::io_context& io_context)
 {
     while (true)
     {
-        tcp::acceptor acc(io_context, tcp::endpoint(tcp::v4(), get_port<Serial>()));
+        tcp::acceptor acc(io_context, tcp::endpoint(tcp::v4(), port_v<Serial>));
         session<Serial>(acc.accept());
     }
 }
@@ -553,17 +569,19 @@ int main()
 
 #if defined(RPC_HPP_NJSON_ENABLED)
         std::thread(server<njson>, std::ref(io_context)).detach();
-        std::cout << "Running njson server on port " << PORT_NJSON << "...\n";
+        std::cout << "Running njson server on port " << port_v<njson> << "...\n";
 #    if defined(RPC_HPP_NLOHMANN_SERIAL_TYPE)
         std::thread(server<generic_serial_t>, std::ref(io_context)).detach();
-        std::cout << "Running nlohmann/serial_type server on port " << PORT_N_SERIAL << "...\n";
+        std::cout << "Running nlohmann/serial_type server on port "
+                  << port_v<generic_serial_t> << "...\n";
 #    endif
 #endif
 
 #if defined(RPC_HPP_RAPIDJSON_ENABLED)
         std::thread(server<rpdjson_doc>, std::ref(io_context)).detach();
-        std::cout << "Running rapidjson server on port " << PORT_RAPIDJSON << "...\n";
+        std::cout << "Running rapidjson server on port " << port_v<rpdjson_doc> << "...\n";
 #endif
+
         while (RUNNING)
         {
         }

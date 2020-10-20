@@ -1,8 +1,8 @@
 ///@file rpc.client.hpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Example implementation of an RPC client class
-///@version 0.2.0
-///@date 09-10-2020
+///@version 0.2.1
+///@date 10-08-2020
 ///
 ///@copyright
 ///BSD 3-Clause License

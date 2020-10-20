@@ -1,8 +1,8 @@
 ///@file rpc_adapters/rpc_njson.hpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Implementation of adapting nlohmann/json (https://github.com/nlohmann/json)
-///@version 0.2.0
-///@date 10-02-2020
+///@version 0.2.1
+///@date 10-20-2020
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -84,9 +84,20 @@ rpc::packed_func<R, Args...> njson_adapter::to_packed_func(const njson& serial_o
 }
 
 template<typename T>
-void push_arg(T arg, njson& arg_list)
+void push_arg(T arg, njson& arg_list, const size_t arg_sz)
 {
-    if constexpr (std::is_arithmetic_v<T> || std::is_same_v<T, std::string>)
+    if constexpr (std::is_pointer_v<T>)
+    {
+        njson arr = njson::array();
+
+        for (size_t i = 0; i < arg_sz; ++i)
+        {
+            push_arg(arg[i], arr, 0);
+        }
+
+        arg_list.push_back(arr);
+    }
+    else if constexpr (std::is_arithmetic_v<T> || std::is_same_v<T, std::string>)
     {
         arg_list.push_back(arg);
     }
@@ -96,7 +107,7 @@ void push_arg(T arg, njson& arg_list)
 
         for (const auto& val : arg)
         {
-            push_arg(val, arr);
+            push_arg(val, arr, 0);
         }
 
         arg_list.push_back(arr);
@@ -132,7 +143,16 @@ njson njson_adapter::from_packed_func(const packed_func<R, Args...>& pack)
         details::args_from_packed<Args, R, Args...>(pack, i)...
     };
 
-    details::for_each_tuple(argTup, [&ret_j](auto x) { push_arg(x, ret_j["args"]); });
+#    if defined(RPC_HPP_ENABLE_POINTERS)
+    i = 0;
+
+    details::for_each_tuple(argTup, [&ret_j, &pack, &i](auto x) {
+        const auto arg_sz = pack.get_arg_arr_sz(i++);
+        push_arg(x, ret_j["args"], arg_sz);
+    });
+#    else
+    details::for_each_tuple(argTup, [&ret_j](auto x) { push_arg(x, ret_j["args"], 0); });
+#    endif
 
     return ret_j;
 }
@@ -190,6 +210,48 @@ void njson_adapter::populate_array(const njson& obj, Container& container)
         container.push_back(details::arg_from_serial<njson, value_t>(val));
     }
 }
+
+template<>
+inline size_t njson_adapter::get_num_args(const njson& obj)
+{
+    return obj["args"].size();
+}
+
+#    if defined(RPC_HPP_ENABLE_POINTERS)
+template<>
+template<typename R, typename... Args>
+rpc::packed_func<R, Args...> njson_adapter::to_packed_func_w_ptr(
+    const njson& serial_obj, const std::vector<std::any>& any_vec)
+{
+    unsigned i = 0;
+
+    std::array<std::any, sizeof...(Args)> args{ details::args_from_serial_w_ptr<njson, Args>(
+        serial_obj, any_vec, i)... };
+
+    std::unique_ptr<packed_func<R, Args...>> pack_ptr;
+
+    if constexpr (!std::is_void_v<R>)
+    {
+        if (serial_obj.contains("result") && !serial_obj["result"].is_null())
+        {
+            pack_ptr = std::make_unique<packed_func<R, Args...>>(
+                serial_obj["func_name"], serial_obj["result"].get<R>(), args);
+        }
+        else
+        {
+            pack_ptr = std::make_unique<packed_func<R, Args...>>(
+                serial_obj["func_name"], std::nullopt, args);
+        }
+    }
+    else
+    {
+        pack_ptr = std::make_unique<packed_func<R, Args...>>(serial_obj["func_name"], args);
+    }
+
+    pack_ptr->update_arg_arr(any_vec);
+    return *pack_ptr;
+}
+#    endif
 
 #    if defined(RPC_HPP_NLOHMANN_SERIAL_TYPE)
 njson from_func(const std::vector<uint8_t>& serial_obj);
@@ -301,7 +363,16 @@ generic_serial_t generic_serial_adapter::from_packed_func(const packed_func<R, A
         details::args_from_packed<Args, R, Args...>(pack, i)...
     };
 
-    details::for_each_tuple(argTup, [&ret_j](auto x) { push_arg(x, ret_j["args"]); });
+#        if defined(RPC_HPP_ENABLE_POINTERS)
+    i = 0;
+
+    details::for_each_tuple(argTup, [&ret_j, &pack, &i](auto x) {
+        const auto arg_sz = pack.get_arg_arr_sz(i++);
+        push_arg(x, ret_j["args"], arg_sz);
+    });
+#        else
+    details::for_each_tuple(argTup, [&ret_j](auto x) { push_arg(x, ret_j["args"], 0); });
+#        endif
 
     return generic_serial_t(to_func(ret_j));
 }
@@ -360,5 +431,40 @@ void generic_serial_adapter::populate_array(const generic_serial_t& obj, Contain
         container.push_back(details::arg_from_serial<njson, value_t>(val));
     }
 }
+
+template<>
+inline size_t generic_serial_adapter::get_num_args(const generic_serial_t& obj)
+{
+    return from_func(obj)["args"].size();
+}
+
+#        if defined(RPC_HPP_ENABLE_POINTERS)
+template<>
+template<typename R, typename... Args>
+rpc::packed_func<R, Args...> generic_serial_adapter::to_packed_func_w_ptr(
+    const generic_serial_t& serial_obj, const std::vector<std::any>& any_vec)
+{
+    unsigned i = 0;
+    const njson j_obj = from_func(serial_obj);
+
+    std::array<std::any, sizeof...(Args)> args{
+        details::args_from_serial_w_ptr<generic_serial_t, Args>(serial_obj, any_vec, i)...
+    };
+
+    if constexpr (!std::is_void_v<R>)
+    {
+        if (j_obj.contains("result") && !j_obj["result"].is_null())
+        {
+            return packed_func<R, Args...>(j_obj["func_name"], j_obj["result"].get<R>(), args);
+        }
+
+        return packed_func<R, Args...>(j_obj["func_name"], std::nullopt, args);
+    }
+    else
+    {
+        return packed_func<void, Args...>(j_obj["func_name"], args);
+    }
+}
+#        endif
 #    endif
 #endif
