@@ -196,7 +196,7 @@ public:
     explicit packed_func_base(std::string&& func_name) : m_func_name(std::move(func_name)) {}
 
     packed_func_base(const packed_func_base&) = default;
-    packed_func_base(packed_func_base&&) = default;
+    packed_func_base(packed_func_base&&) noexcept = default;
 
     ///@brief Get the function name
     ///
@@ -243,7 +243,7 @@ public:
     }
 
     packed_func(const packed_func&) = default;
-    packed_func(packed_func&&) = default;
+    packed_func(packed_func&&) noexcept = default;
     packed_func& operator=(const packed_func&) = default;
     packed_func& operator=(packed_func&&) = default;
 
