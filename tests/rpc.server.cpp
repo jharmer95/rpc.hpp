@@ -36,8 +36,6 @@
 ///OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ///
 
-#include "rpc.hpp"
-
 #include <asio.hpp>
 
 #include <atomic>
@@ -56,7 +54,6 @@
 #endif
 
 #include "rpc_dispatch_helper.hpp"
-
 #include "test_structs.hpp"
 
 using asio::ip::tcp;
@@ -511,9 +508,16 @@ void session(tcp::socket sock)
             }
 
             const std::string str(data.get(), data.get() + len);
+#if !defined(NDEBUG)
+            std::cout << "Received: " << str << '\n';
+#endif
             auto serial_obj = rpc::serial_adapter<Serial>::from_string(str);
             rpc::server::dispatch(serial_obj);
             const auto ret_str = rpc::serial_adapter<Serial>::to_string(serial_obj);
+
+#if !defined(NDEBUG)
+            std::cout << "Sending: " << ret_str << '\n';
+#endif
 
             write(sock, asio::buffer(ret_str, ret_str.size()));
         }

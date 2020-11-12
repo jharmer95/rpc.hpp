@@ -1,8 +1,8 @@
 ///@file rpc_adapters/rpc_njson.hpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Implementation of adapting nlohmann/json (https://github.com/nlohmann/json)
-///@version 0.2.1
-///@date 10-20-2020
+///@version 0.2.2
+///@date 11-12-2020
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -88,14 +88,28 @@ void push_arg(T arg, njson& arg_list, const size_t arg_sz)
 {
     if constexpr (std::is_pointer_v<T>)
     {
-        njson arr = njson::array();
+        // Arrays have a capacity: "c" and the current data: "d"
+        njson obj_j;
+        obj_j["c"] = arg_sz;
 
-        for (size_t i = 0; i < arg_sz; ++i)
+        if constexpr (std::is_same_v<std::remove_cv_t<std::remove_pointer_t<T>>, char>)
         {
-            push_arg(arg[i], arr, 0);
+            // special case for char*
+            const std::string str(arg);
+            obj_j["d"] = str;
+        }
+        else
+        {
+            obj_j["d"] = njson::array();
+            auto& data = obj_j["d"];
+
+            for (size_t i = 0; i < arg_sz; ++i)
+            {
+                push_arg(arg[i], data, 0);
+            }
         }
 
-        arg_list.push_back(arr);
+        arg_list.push_back(obj_j);
     }
     else if constexpr (std::is_arithmetic_v<T> || std::is_same_v<T, std::string>)
     {
@@ -221,12 +235,12 @@ inline size_t njson_adapter::get_num_args(const njson& obj)
 template<>
 template<typename R, typename... Args>
 rpc::packed_func<R, Args...> njson_adapter::to_packed_func_w_ptr(
-    const njson& serial_obj, const std::vector<std::any>& any_vec)
+    const njson& serial_obj, const std::array<std::any, sizeof...(Args)>& arg_arr)
 {
     unsigned i = 0;
 
     std::array<std::any, sizeof...(Args)> args{ details::args_from_serial_w_ptr<njson, Args>(
-        serial_obj, any_vec, i)... };
+        serial_obj, arg_arr, i)... };
 
     std::unique_ptr<packed_func<R, Args...>> pack_ptr;
 
@@ -248,8 +262,39 @@ rpc::packed_func<R, Args...> njson_adapter::to_packed_func_w_ptr(
         pack_ptr = std::make_unique<packed_func<R, Args...>>(serial_obj["func_name"], args);
     }
 
-    pack_ptr->update_arg_arr(any_vec);
+    pack_ptr->update_arg_arr(arg_arr);
     return *pack_ptr;
+}
+
+template<>
+template<typename Value>
+rpc::details::dyn_array<Value> njson_adapter::parse_arg_arr(const njson& arg_obj)
+{
+    const auto cap = arg_obj["c"].get<size_t>();
+    details::dyn_array<Value> arg_arr(cap);
+
+    if constexpr (std::is_same_v<Value, char>)
+    {
+        const auto data = arg_obj["d"].get<std::string>();
+
+        for (const auto c : data)
+        {
+            arg_arr.push_back(c);
+        }
+
+        arg_arr.push_back('\0');
+    }
+    else
+    {
+        const auto& data = arg_obj["d"];
+
+        for (const auto& obj : data)
+        {
+            arg_arr.push_back(details::arg_from_serial<njson, Value>(obj));
+        }
+    }
+
+    return arg_arr;
 }
 #    endif
 
@@ -442,28 +487,68 @@ inline size_t generic_serial_adapter::get_num_args(const generic_serial_t& obj)
 template<>
 template<typename R, typename... Args>
 rpc::packed_func<R, Args...> generic_serial_adapter::to_packed_func_w_ptr(
-    const generic_serial_t& serial_obj, const std::vector<std::any>& any_vec)
+    const generic_serial_t& serial_obj, const std::array<std::any, sizeof...(Args)>& arg_arr)
 {
     unsigned i = 0;
     const njson j_obj = from_func(serial_obj);
 
     std::array<std::any, sizeof...(Args)> args{
-        details::args_from_serial_w_ptr<generic_serial_t, Args>(serial_obj, any_vec, i)...
+        details::args_from_serial_w_ptr<generic_serial_t, Args>(serial_obj, arg_arr, i)...
     };
+
+    std::unique_ptr<packed_func<R, Args...>> pack_ptr;
 
     if constexpr (!std::is_void_v<R>)
     {
         if (j_obj.contains("result") && !j_obj["result"].is_null())
         {
-            return packed_func<R, Args...>(j_obj["func_name"], j_obj["result"].get<R>(), args);
+            pack_ptr = std::make_unique<packed_func<R, Args...>>(
+                j_obj["func_name"], j_obj["result"].get<R>(), args);
         }
 
-        return packed_func<R, Args...>(j_obj["func_name"], std::nullopt, args);
+        pack_ptr =
+            std::make_unique<packed_func<R, Args...>>(j_obj["func_name"], std::nullopt, args);
     }
     else
     {
-        return packed_func<void, Args...>(j_obj["func_name"], args);
+        pack_ptr = std::make_unique<packed_func<void, Args...>>(j_obj["func_name"], args);
     }
+
+    pack_ptr->update_arg_arr(arg_arr);
+    return *pack_ptr;
+}
+
+template<>
+template<typename Value>
+rpc::details::dyn_array<Value> generic_serial_adapter::parse_arg_arr(
+    const generic_serial_t& arg_obj)
+{
+    const njson j_obj = from_func(arg_obj);
+    const auto cap = j_obj["c"].get<size_t>();
+    details::dyn_array<Value> arg_arr(cap);
+
+    if constexpr (std::is_same_v<Value, char>)
+    {
+        const auto data = j_obj["d"].get<std::string>();
+
+        for (const auto c : data)
+        {
+            arg_arr.push_back(c);
+        }
+
+        arg_arr.push_back('\0');
+    }
+    else
+    {
+        const auto& data = j_obj["d"];
+
+        for (const auto& obj : data)
+        {
+            arg_arr.push_back(details::arg_from_serial<njson, Value>(obj));
+        }
+    }
+
+    return arg_arr;
 }
 #        endif
 #    endif

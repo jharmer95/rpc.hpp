@@ -1,8 +1,8 @@
 ///@file rpc.hpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Header-only library for serialized RPC usage
-///@version 0.2.1
-///@date 10-20-2020
+///@version 0.2.2
+///@date 11-12-2020
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -44,7 +44,6 @@
 #include <string>
 #include <tuple>
 #include <utility>
-#include <vector>
 
 namespace rpc
 {
@@ -132,6 +131,9 @@ namespace details
     template<typename C>
     inline constexpr bool is_container_v = is_container<C>::value;
 
+    ///@brief Structure to decay arrays to pointers
+    ///
+    ///@tparam T Type to decay
     template<typename T>
     struct ptr_decay
     {
@@ -143,15 +145,25 @@ namespace details
             std::conditional_t<std::is_array_v<U>, typename std::remove_extent<U>::type*, T>;
     };
 
+    ///@brief Helper for ptr_decay struct
+    ///
+    ///@tparam T Type to decay
     template<typename T>
     using ptr_decay_t = typename ptr_decay<T>::type;
 
+    ///@brief Dummy struct for all_true
     template<bool...>
     struct bool_pack;
 
+    ///@brief SFINAE struct for checking if all packed bool parameters are true
+    ///
+    ///@tparam bs Packed bools to check
     template<bool... bs>
     using all_true = std::is_same<bool_pack<bs..., true>, bool_pack<true, bs...>>;
 
+    ///@brief Helper for all_true
+    ///
+    ///@tparam bs Packed bools to check
     template<bool... bs>
     inline constexpr bool all_true_v = all_true<bs...>::value;
 
@@ -181,6 +193,230 @@ namespace details
     {
         for_each_tuple(tuple, func, std::make_index_sequence<sizeof...(Ts)>());
     }
+
+    ///@brief Dynamically sized generic array class. Has a fixed max capacity and a dynamic size
+    ///
+    ///@tparam T Type to hold in array
+    template<typename T>
+    class dyn_array
+    {
+    public:
+        virtual ~dyn_array() { delete[] m_ptr; }
+
+        ///@brief Construct a new dyn_array object
+        ///
+        ///@param capacity The maximum possible size for the array, cannot be changed by the user
+        explicit dyn_array(const size_t capacity) noexcept
+            : m_capacity(capacity), m_ptr(new T[m_capacity])
+        {
+        }
+
+        dyn_array(const dyn_array& other) noexcept
+            : m_capacity(other.m_capacity), m_size(other.m_size), m_ptr(new T[m_capacity])
+        {
+            std::copy(other.m_ptr, other.m_ptr + m_size, m_ptr);
+        }
+
+        dyn_array(dyn_array&& other) noexcept
+            : m_capacity(other.m_capacity), m_size(other.m_size), m_ptr(std::move(other.m_ptr))
+        {
+            other.m_capacity = 0;
+            other.m_size = 0;
+            other.m_ptr = nullptr;
+        }
+
+        dyn_array& operator=(const dyn_array& other) noexcept
+        {
+            if (&other != this)
+            {
+                m_capacity = other.m_capacity;
+                m_size = other.m_size;
+                std::copy(other.m_ptr, other.m_ptr + m_size, m_ptr);
+            }
+
+            return *this;
+        }
+
+        dyn_array& operator=(dyn_array&& other) noexcept
+        {
+            if (&other != this)
+            {
+                m_capacity = other.m_capacity;
+                m_size = other.m_size;
+                m_ptr = std::move(other.m_ptr);
+                other.m_capacity = 0;
+                other.m_size = 0;
+                other.m_ptr = nullptr;
+            }
+
+            return *this;
+        }
+
+        ///@brief Get the max capacity of the array
+        ///
+        ///@return size_t The max capacity
+        [[nodiscard]] size_t capacity() const noexcept { return m_capacity; }
+
+        ///@brief Get the current size of the array
+        ///
+        ///@return size_t The current size
+        [[nodiscard]] size_t size() const noexcept { return m_size; }
+
+        ///@brief Pushes an item to the end of the array via a copy
+        ///
+        ///@param val Value to push
+        void push_back(const T& val)
+        {
+            if (m_size == m_capacity)
+            {
+                throw std::runtime_error("Cannot push_back, array is full!");
+            }
+
+            m_ptr[m_size++] = val;
+        }
+
+        ///@brief Pushes an item to the end of the array via a move
+        ///
+        ///@param val Value to push
+        void push_back(T&& val)
+        {
+            if (m_size == m_capacity)
+            {
+                throw std::runtime_error("Cannot push_back, array is full!");
+            }
+
+            m_ptr[m_size++] = std::move(val);
+        }
+
+        ///@brief Pushes an item to the beginning of the array via a copy
+        ///
+        ///@param val Value to push
+        void push_front(const T& val)
+        {
+            if (m_size == m_capacity)
+            {
+                throw std::runtime_error("Cannot push_front, array is full!");
+            }
+
+            for (size_t i = m_size; i > 0; --i)
+            {
+                m_ptr[i] = std::move(m_ptr[i - 1]);
+            }
+
+            m_ptr[0] = val;
+            ++m_size;
+        }
+
+        ///@brief Pushes an item to the beginning of the array via a move
+        ///
+        ///@param val Value to push
+        void push_front(T&& val)
+        {
+            if (m_size == m_capacity)
+            {
+                throw std::runtime_error("Cannot push_front, array is full!");
+            }
+
+            for (size_t i = m_size; i > 0; --i)
+            {
+                m_ptr[i] = std::move(m_ptr[i - 1]);
+            }
+
+            m_ptr[0] = std::move(val);
+            ++m_size;
+        }
+
+        ///@brief Returns the pointer to the data in the array
+        ///
+        ///@return T* Pointer held by array
+        [[nodiscard]] T* data() noexcept { return m_ptr; }
+
+        ///@brief Returns the pointer to the data in the array
+        ///
+        ///@return const T* Pointer held by array
+        [[nodiscard]] const T* data() const noexcept { return m_ptr; }
+
+        ///@brief Returns the pointer to the beginning of the array
+        ///
+        ///@return T* Pointer to beginning of array
+        [[nodiscard]] T* begin() noexcept { return m_ptr; }
+
+        ///@brief Returns the pointer to the beginning of the array
+        ///
+        ///@return const T* Pointer to beginning of array
+        [[nodiscard]] const T* begin() const noexcept { return m_ptr; }
+
+        ///@brief Returns the pointer to one past the end of the array
+        ///
+        ///@return T* Pointer to one past end of array
+        [[nodiscard]] T* end() noexcept { return &m_ptr[m_size]; }
+
+        ///@brief Returns the pointer to one past the end of the array
+        ///
+        ///@return const T* Pointer to one past end of array
+        [[nodiscard]] const T* end() const noexcept { return &m_ptr[m_size]; }
+
+        ///@brief Returns a reference to the first element in the array
+        ///
+        ///@exception std::runtime_error Thrown if array is empty
+        ///@return T& Reference to first element of array
+        [[nodiscard]] T& front()
+        {
+            if (m_size == 0)
+            {
+                throw std::runtime_error("Array is empty!");
+            }
+
+            return m_ptr[0];
+        }
+
+        ///@brief Returns a reference to the first element in the array
+        ///
+        ///@exception std::runtime_error Thrown if array is empty
+        ///@return const T& Reference to first element of array
+        [[nodiscard]] const T& front() const
+        {
+            if (m_size == 0)
+            {
+                throw std::runtime_error("Array is empty!");
+            }
+
+            return m_ptr[0];
+        }
+
+        ///@brief Returns a reference to the last element in the array
+        ///
+        ///@exception std::runtime_error Thrown if array is empty
+        ///@return T& Reference to last element of array
+        [[nodiscard]] T& back()
+        {
+            if (m_size == 0)
+            {
+                throw std::runtime_error("Array is empty!");
+            }
+
+            return m_ptr[m_size - 1];
+        }
+
+        ///@brief Returns a reference to the last element in the array
+        ///
+        ///@exception std::runtime_error Thrown if array is empty
+        ///@return const T& Reference to last element of array
+        [[nodiscard]] const T& back() const
+        {
+            if (m_size == 0)
+            {
+                throw std::runtime_error("Array is empty!");
+            }
+
+            return m_ptr[m_size - 1];
+        }
+
+    private:
+        size_t m_capacity;
+        size_t m_size{ 0 };
+        T* m_ptr;
+    };
 } // namespace rpc::details
 
 ///@brief Polymorphic base class for \ref packed_func
@@ -314,22 +550,33 @@ private:
     std::array<size_t, sizeof...(Args)> m_arg_sz_arr{};
 
 public:
+    ///@brief Get the indexed argument size
+    ///
+    ///@param index The index to get the arg size for
+    ///@return size_t The size (number of elements) for the given argument
     [[nodiscard]] size_t get_arg_arr_sz(const size_t index) const { return m_arg_sz_arr[index]; }
+
+    ///@brief Set the size for the indexed argument
+    ///
+    ///@param index The index to set the arg size for
+    ///@param sz The size (number of elements) for the given argument
     void set_arg_arr_sz(const size_t index, const size_t sz) { m_arg_sz_arr[index] = sz; }
 
-    void update_arg_arr(const std::vector<std::any>& any_vec)
+    ///@brief Update the argument size array
+    ///
+    ///@param arg_arr Array of arguments to reference
+    void update_arg_arr(const std::array<std::any, sizeof...(Args)>& arg_arr)
     {
         const std::tuple<Args...> tup;
 
         size_t count = 0;
 
-        details::for_each_tuple(tup, [&count, &any_vec, this](auto x) {
+        details::for_each_tuple(tup, [&count, &arg_arr, this](auto x) {
             if constexpr (std::is_pointer_v<decltype(x)>)
             {
-                const auto& vec = std::any_cast<
-                    const std::vector<std::remove_cv_t<std::remove_pointer_t<decltype(x)>>>&>(
-                    any_vec[count]);
-                m_arg_sz_arr[count] = vec.size();
+                const auto& arr = std::any_cast<const details::dyn_array<
+                    std::remove_cv_t<std::remove_pointer_t<decltype(x)>>>&>(arg_arr[count]);
+                m_arg_sz_arr[count] = arr.capacity();
             }
 
             ++count;
@@ -411,23 +658,33 @@ private:
     std::array<size_t, sizeof...(Args)> m_arg_sz_arr{};
 
 public:
+    ///@brief Get the indexed argument size
+    ///
+    ///@param index The index to get the arg size for
+    ///@return size_t The size (number of elements) for the given argument
     [[nodiscard]] size_t get_arg_arr_sz(const size_t index) const { return m_arg_sz_arr[index]; }
+
+    ///@brief Set the size for the indexed argument
+    ///
+    ///@param index The index to set the arg size for
+    ///@param sz The size (number of elements) for the given argument
     void set_arg_arr_sz(const size_t index, const size_t sz) { m_arg_sz_arr[index] = sz; }
 
-    void update_arg_arr(const std::vector<std::any>& any_vec)
+    ///@brief Update the argument size array
+    ///
+    ///@param arg_arr Array of arguments to reference
+    void update_arg_arr(const std::array<std::any, sizeof...(Args)>& arg_arr)
     {
         const std::tuple<Args...> tup;
 
         size_t count = 0;
 
-        details::for_each_tuple(tup, [&count, &any_vec, this](auto x) {
+        details::for_each_tuple(tup, [&count, &arg_arr, this](auto x) {
             if constexpr (std::is_pointer_v<decltype(x)>)
             {
-                const auto& vec = std::any_cast<
-                    const std::vector<std::remove_cv_t<std::remove_pointer_t<decltype(x)>>>&>(
-                    any_vec[count]);
-
-                m_arg_sz_arr[count] = vec.size();
+                const auto& arr = std::any_cast<const details::dyn_array<
+                    std::remove_cv_t<std::remove_pointer_t<decltype(x)>>>&>(arg_arr[count]);
+                m_arg_sz_arr[count] = arr.capacity();
             }
 
             ++count;
@@ -515,9 +772,27 @@ public:
     [[nodiscard]] static size_t get_num_args(const Serial& obj);
 
 #if defined(RPC_HPP_ENABLE_POINTERS)
+    ///@brief Converts a serial object into a specific \ref packed_func (accepts pointers)
+    ///
+    ///@tparam R The result type for the \ref packed_func
+    ///@tparam Args The list of paramter type(s) for the \ref packed_func
+    ///@param serial_obj The serial object to be converted
+    ///@param arg_arr Array containing the pointer arguments
+    ///@return packed_func<R, Args...> The packaged function call
     template<typename R, typename... Args>
     [[nodiscard]] static packed_func<R, Args...> to_packed_func_w_ptr(
-        const Serial& serial_obj, const std::vector<std::any>& any_vec);
+        const Serial& serial_obj, const std::array<std::any, sizeof...(Args)>& arg_arr);
+
+    ///@brief Parse a serial object to create a \ref dyn_array of objects
+    ///
+    ///@tparam Value The type of object held in the array
+    ///@param arg_obj Serial object representing an arg array.
+    /// Arg arrays have two data members:
+    /// "c" containing a uint64 indicating the max capacity of the array,
+    /// and "d" containing an array of the actual data held
+    ///@return details::dyn_array<Value> The dynamic array containing the values held in the serial object
+    template<typename Value>
+    [[nodiscard]] static details::dyn_array<Value> parse_arg_arr(const Serial& arg_obj);
 #endif
 };
 
@@ -606,17 +881,25 @@ namespace details
     }
 
 #if defined(RPC_HPP_ENABLE_POINTERS)
-    template<typename Serial, typename Value>
+    ///@brief Retrieves the argument values from a serial object (accepts pointers)
+    ///
+    ///@tparam Serial The type of serial object
+    ///@tparam Value The type of the argument to be retrieved
+    ///@tparam N Size of array (auto deduced)
+    ///@param serial_obj The serial object containing the value
+    ///@param arg_arr The array containing pointer arguments
+    ///@param arg_index The index of the argument to be retrieved (is iterated in a parameter pack when called from a tuple)
+    ///@return std::remove_cv_t<std::remove_reference_t<Value>> The retrieved argument value
+    template<typename Serial, typename Value, size_t N>
     std::remove_cv_t<std::remove_reference_t<Value>> args_from_serial_w_ptr(
-        const Serial& serial_obj, const std::vector<std::any>& any_vec, unsigned& arg_index)
+        const Serial& serial_obj, const std::array<std::any, N>& arg_arr, unsigned& arg_index)
     {
         if constexpr (std::is_pointer_v<Value>)
         {
-            const auto& vec =
-                std::any_cast<const std::vector<std::remove_cv_t<std::remove_pointer_t<Value>>>&>(
-                    any_vec[arg_index++]);
-
-            auto* x = const_cast<Value>(vec.data());
+            const auto& arr =
+                std::any_cast<const dyn_array<std::remove_cv_t<std::remove_pointer_t<Value>>>&>(
+                    arg_arr[arg_index++]);
+            auto* x = const_cast<Value>(arr.data());
             return x;
         }
         else
@@ -625,29 +908,47 @@ namespace details
         }
     }
 
-    template<typename Serial, typename... Args>
-    void get_vec(std::vector<std::any>& any_vec, const Serial& serial_obj)
+    ///@brief Helper function to be used by unpacking the parameters from \ref populate_arg_arr
+    ///
+    ///@tparam T The type of argument to look for
+    ///@tparam Serial The serial object type
+    ///@tparam N Size of the array (auto deduced)
+    ///@param arg_list The serial object representing the argument list
+    ///@param arg_arr The argument array
+    ///@param count The index of the argument
+    template<typename T, typename Serial, size_t N>
+    void populate_arg_arr_helper(
+        const Serial& arg_list, std::array<std::any, N>& arg_arr, unsigned& count)
     {
-        const std::tuple<Args...> tup;
+        if constexpr (std::is_pointer_v<T>)
+        {
+            const auto arg = serial_adapter<Serial>::make_sub_object(arg_list, count);
+            auto arr = serial_adapter<Serial>::template parse_arg_arr<
+                std::remove_cv_t<std::remove_pointer_t<T>>>(arg);
+            arg_arr[count--] = std::move(arr);
+        }
+        else
+        {
+            arg_arr[count--] = std::nullopt;
+        }
+    }
+
+    ///@brief Creates an array containing dynamic arrays for each pointer argument (and nullopt for non-pointer args)
+    ///
+    ///@tparam Serial The serial object type to parse
+    ///@tparam Args The list of argument types
+    ///@param serial_obj The serial object to parse
+    ///@return std::array<std::any, sizeof...(Args)> Array containing pointer arguments as \ref dyn_array
+    template<typename Serial, typename... Args>
+    std::array<std::any, sizeof...(Args)> populate_arg_arr(const Serial& serial_obj)
+    {
         const auto& arg_list = serial_adapter<Serial>::make_sub_object(serial_obj, "args");
-        unsigned count = 0;
+        unsigned count = sizeof...(Args) - 1;
+        std::array<std::any, sizeof...(Args)> arg_arr;
 
-        details::for_each_tuple(tup, [&any_vec, &arg_list, &count](auto x) {
-            if constexpr (std::is_pointer_v<decltype(x)>)
-            {
-                const auto arg = serial_adapter<Serial>::make_sub_object(arg_list, count);
+        [](...) {}((populate_arg_arr_helper<Args>(arg_list, arg_arr, count), 0)...);
 
-                std::vector<std::remove_cv_t<std::remove_pointer_t<decltype(x)>>> vec;
-                serial_adapter<Serial>::populate_array(arg, vec);
-                any_vec.emplace_back(vec);
-            }
-            else
-            {
-                any_vec.emplace_back(std::nullopt);
-            }
-
-            ++count;
-        });
+        return arg_arr;
     }
 #endif
 } // namespace rpc::details
@@ -741,18 +1042,20 @@ namespace server
     }
 
 #if defined(RPC_HPP_ENABLE_POINTERS)
+    ///@brief Create a \ref packed_func object from a serial object (accepts pointers)
+    ///
+    ///@tparam Serial The type of serial object
+    ///@tparam R The type of the result for the \ref packed_func
+    ///@tparam Args The list of parameter type(s) for the \ref packed_func
+    ///@param unused Function pointer to the function to extract R and Args from
+    ///@param arg_arr The argument array containing the pointer arguments
+    ///@param obj The serial object to be converted
+    ///@return packed_func<R, Args...> The packaged function call
     template<typename Serial, typename R, typename... Args>
     packed_func<R, Args...> create_func_w_ptr([[maybe_unused]] R (*unused)(Args...),
-        const std::vector<std::any>& any_vec, const Serial& obj)
+        const std::array<std::any, sizeof...(Args)>& arg_arr, const Serial& obj)
     {
-        return serial_adapter<Serial>::template to_packed_func_w_ptr<R, Args...>(obj, any_vec);
-    }
-
-    template<typename Serial, typename R, typename... Args>
-    void get_vec([[maybe_unused]] R (*unused)(Args...), std::vector<std::any>& any_vec,
-        const Serial& serial_obj)
-    {
-        return details::get_vec<Serial, Args...>(any_vec, serial_obj);
+        return serial_adapter<Serial>::template to_packed_func_w_ptr<R, Args...>(obj, arg_arr);
     }
 #endif
 
@@ -764,6 +1067,13 @@ namespace server
     template<typename Serial>
     void dispatch(Serial& serial_obj);
 
+    ///@brief Dispatches an individual function (to be called from \ref dispatch)
+    ///
+    ///@tparam Serial The type of serial object
+    ///@tparam R The return type of the function
+    ///@tparam Args The argument list of the function
+    ///@param func Pointer to the function
+    ///@param serial_obj Serial object to be used by the function call, will (potentially) be modified by calling the function
     template<typename Serial, typename R, typename... Args>
     void dispatch_func(R (*func)(Args...), Serial& serial_obj)
     {
@@ -779,11 +1089,8 @@ namespace server
         }
         else
         {
-            const auto arg_sz = serial_adapter<Serial>::get_num_args(serial_obj);
-            std::vector<std::any> any_vec;
-            any_vec.reserve(arg_sz);
-            get_vec(func, any_vec, serial_obj);
-            auto pack = create_func_w_ptr(func, any_vec, serial_obj);
+            const auto arg_arr = details::populate_arg_arr<Serial, Args...>(serial_obj);
+            auto pack = create_func_w_ptr(func, arg_arr, serial_obj);
             run_callback(func, pack);
             serial_obj = serial_adapter<Serial>::from_packed_func(pack);
         }
@@ -810,6 +1117,16 @@ inline namespace client
     };
 
 #if defined(RPC_HPP_ENABLE_POINTERS)
+    ///@brief Packs an argument based on whether it is a pointer, array, or other
+    ///
+    /// If the argument is an array, it will record the size of the array and then decay to a pointer for return.
+    /// If it is a pointer (not array), it will set a size of 1 and then return.
+    /// Otherwise it will simply return
+    ///@tparam T The type of argument to pack
+    ///@param val The value to pack
+    ///@param arg_sz_arr Pointer to an array containing the size of each argument
+    ///@param index The index of the argument to pack
+    ///@return details::ptr_decay_t<T> The decayed value of val
     template<typename T>
     details::ptr_decay_t<T> pack_arg(T& val, size_t* arg_sz_arr, unsigned& index)
     {
@@ -904,7 +1221,7 @@ inline namespace client
     Serial serialize_call(const std::string& func_name, Args&&... args)
     {
         // TODO: Can we elminate creating a packed_func JUST to serialize it back?
-        auto packed = pack_call<R, Args...>(func_name, std::forward<Args>(args)...);
+        const auto packed = pack_call<R, Args...>(func_name, std::forward<Args>(args)...);
         return serial_adapter<Serial>::template from_packed_func<R, details::ptr_decay_t<Args>...>(
             packed);
     }
@@ -920,7 +1237,7 @@ inline namespace client
     template<typename Serial, typename R = void, typename... Args>
     std::future<Serial> async_serialize_call(const std::string& func_name, Args&&... args)
     {
-        auto packed = pack_call<R, Args...>(func_name, std::forward<Args>(args)...);
+        const auto packed = pack_call<R, Args...>(func_name, std::forward<Args>(args)...);
         return std::async(serial_adapter<Serial>::template from_packed_func<R, Args...>, packed);
     }
 
@@ -977,14 +1294,13 @@ inline namespace client
         }
         else
         {
-            thread_local std::vector<std::any> any_vec;
+            //thread_local std::vector<std::any> any_vec;
+            thread_local std::array<std::any, sizeof...(Args)> arg_arr;
 
-            any_vec.clear();
-            any_vec.reserve(sizeof...(Args));
-            details::get_vec<Serial, details::ptr_decay_t<Args>...>(any_vec, resp_obj);
+            arg_arr = details::populate_arg_arr<Serial, details::ptr_decay_t<Args>...>(resp_obj);
 
             return serial_adapter<Serial>::template to_packed_func_w_ptr<R,
-                details::ptr_decay_t<Args>...>(resp_obj, any_vec);
+                details::ptr_decay_t<Args>...>(resp_obj, arg_arr);
         }
     }
 
