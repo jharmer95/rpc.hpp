@@ -22,7 +22,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">rpc.hpp
-   &#160;<span id="projectnumber">0.2.0.0</span>
+   &#160;<span id="projectnumber">0.2.1</span>
    </div>
    <div id="projectbrief">Simple RPC Header-Only Library</div>
   </td>
@@ -71,7 +71,7 @@ $(function() {
 <div class="title">rpc_dispatch_helper.hpp</div>  </div>
 </div><!--header-->
 <div class="contents">
-<a href="rpc__dispatch__helper_8hpp.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="preprocessor">#pragma once</span></div>
+<div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="preprocessor">#pragma once</span></div>
 <div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160; </div>
 <div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="preprocessor">#define EXPAND(x) x</span></div>
 <div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160; </div>
@@ -96,40 +96,60 @@ $(function() {
 <div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#define _FE_18(WHAT, X, ...) EXPAND(WHAT(X)_FE_17(WHAT, __VA_ARGS__))</span></div>
 <div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#define _FE_19(WHAT, X, ...) EXPAND(WHAT(X)_FE_18(WHAT, __VA_ARGS__))</span></div>
 <div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#define _FE_20(WHAT, X, ...) EXPAND(WHAT(X)_FE_19(WHAT, __VA_ARGS__))</span></div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160; </div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="preprocessor">#define _FE2_0(WHAT)</span></div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="preprocessor">#define _FE2_1(WHAT, X)</span></div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="preprocessor">#define _FE2_2(WHAT, X, Y) WHAT(X, Y)</span></div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;<span class="preprocessor">#define _FE2_3(WHAT, X, Y, ...) EXPAND(WHAT(X, Y)_FE2_2(WHAT, X, __VA_ARGS__))</span></div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<span class="preprocessor">#define _FE2_4(WHAT, X, Y, ...) EXPAND(WHAT(X, Y)_FE2_3(WHAT, X, __VA_ARGS__))</span></div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;<span class="preprocessor">#define _FE2_5(WHAT, X, Y, ...) EXPAND(WHAT(X, Y)_FE2_4(WHAT, X, __VA_ARGS__))</span></div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;<span class="preprocessor">#define _FE2_6(WHAT, X, Y, ...) EXPAND(WHAT(X, Y)_FE2_5(WHAT, X, __VA_ARGS__))</span></div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;<span class="preprocessor">#define _FE2_7(WHAT, X, Y, ...) EXPAND(WHAT(X, Y)_FE2_6(WHAT, X, __VA_ARGS__))</span></div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;<span class="preprocessor">#define _FE2_8(WHAT, X, Y, ...) EXPAND(WHAT(X, Y)_FE2_7(WHAT, X, __VA_ARGS__))</span></div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;<span class="preprocessor">#define _FE2_9(WHAT, X, Y, ...) EXPAND(WHAT(X, Y)_FE2_8(WHAT, X, __VA_ARGS__))</span></div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;<span class="preprocessor">#define _FE2_10(WHAT, X, Y, ...) EXPAND(WHAT(X, Y)_FE2_9(WHAT, X, __VA_ARGS__))</span></div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;<span class="preprocessor">#define _FE2_11(WHAT, X, Y, ...) EXPAND(WHAT(X, Y)_FE2_10(WHAT, X, __VA_ARGS__))</span></div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;<span class="preprocessor">#define _FE2_12(WHAT, X, Y, ...) EXPAND(WHAT(X, Y)_FE2_11(WHAT, X, __VA_ARGS__))</span></div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;<span class="preprocessor">#define _FE2_13(WHAT, X, Y, ...) EXPAND(WHAT(X, Y)_FE2_12(WHAT, X, __VA_ARGS__))</span></div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;<span class="preprocessor">#define _FE2_14(WHAT, X, Y, ...) EXPAND(WHAT(X, Y)_FE2_13(WHAT, X, __VA_ARGS__))</span></div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;<span class="preprocessor">#define _FE2_15(WHAT, X, Y, ...) EXPAND(WHAT(X, Y)_FE2_14(WHAT, X, __VA_ARGS__))</span></div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;<span class="preprocessor">#define _FE2_16(WHAT, X, Y, ...) EXPAND(WHAT(X, Y)_FE2_15(WHAT, X, __VA_ARGS__))</span></div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;<span class="preprocessor">#define _FE2_17(WHAT, X, Y, ...) EXPAND(WHAT(X, Y)_FE2_16(WHAT, X, __VA_ARGS__))</span></div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;<span class="preprocessor">#define _FE2_18(WHAT, X, Y, ...) EXPAND(WHAT(X, Y)_FE2_17(WHAT, X, __VA_ARGS__))</span></div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;<span class="preprocessor">#define _FE2_19(WHAT, X, Y, ...) EXPAND(WHAT(X, Y)_FE2_18(WHAT, X, __VA_ARGS__))</span></div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;<span class="preprocessor">#define _FE2_20(WHAT, X, Y, ...) EXPAND(WHAT(X, Y)_FE2_19(WHAT, X, __VA_ARGS__))</span></div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160; </div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;<span class="preprocessor">#define _RPC_GET_MACRO(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, NAME, ...) NAME</span></div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;<span class="preprocessor">#define RPC_FOR_EACH(ACTION, ...) EXPAND(_RPC_GET_MACRO(_0, __VA_ARGS__, _FE_20, _FE_19, _FE_18, _FE_17, _FE_16, _FE_15, _FE_14, _FE_13, _FE_12, _FE_11, _FE_10, _FE_9, _FE_8, _FE_7, _FE_6, _FE_5, _FE_4, _FE_3, _FE_2, _FE_1, _FE_0)(ACTION, __VA_ARGS__))</span></div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;<span class="preprocessor">#define RPC_FOR_EACH2(ACTION, ...) EXPAND(_RPC_GET_MACRO(_0, __VA_ARGS__, _FE2_20, _FE2_19, _FE2_18, _FE2_17, _FE2_16, _FE2_15, _FE2_14, _FE2_13, _FE2_12, _FE2_11, _FE2_10, _FE2_9, _FE2_8, _FE2_7, _FE2_6, _FE2_5, _FE2_4, _FE2_3, _FE2_2, _FE2_1, _FE2_0)(ACTION, __VA_ARGS__))</span></div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160; </div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;<span class="preprocessor">#define RPC_ATTACH_FUNC(FUNCNAME) if (func_name == #FUNCNAME) { auto pack = create_func(FUNCNAME, serial_obj); run_callback(FUNCNAME, pack); serial_obj = serial_adapter&lt;Serial&gt;::from_packed_func(pack); return; }</span></div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;<span class="preprocessor">#define RPC_ATTACH_FUNCS(FUNCNAME, ...) EXPAND(RPC_FOR_EACH(RPC_ATTACH_FUNC, FUNCNAME, __VA_ARGS__))</span></div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160; </div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;<span class="preprocessor">#define RPC_ALIAS_FUNC(FUNCNAME, FUNC_ALIAS) if (func_name == #FUNC_ALIAS) { auto pack = create_func(FUNCNAME, serial_obj); run_callback(FUNCNAME, pack); serial_obj = serial_adapter&lt;Serial&gt;::from_packed_func(pack); return; }</span></div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;<span class="preprocessor">#define RPC_MULTI_ALIAS_FUNC(FUNCNAME, FUNC_ALIAS,...) EXPAND(RPC_FOR_EACH2(RPC_ALIAS_FUNC, FUNCNAME, FUNC_ALIAS, __VA_ARGS__))</span></div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160; </div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;<span class="preprocessor">#define RPC_DEFAULT_DISPATCH(FUNCNAME, ...) EXPAND(template&lt;typename Serial&gt; void rpc::server::dispatch(Serial&amp; serial_obj) { const auto func_name = serial_adapter&lt;Serial&gt;::extract_func_name(serial_obj); RPC_ATTACH_FUNCS(FUNCNAME, __VA_ARGS__) throw std::runtime_error(&quot;RPC error: Called function: \&quot;&quot; + func_name + &quot;\&quot; not found!&quot;);})</span></div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="preprocessor">#define _FE_21(WHAT, X, ...) EXPAND(WHAT(X)_FE_20(WHAT, __VA_ARGS__))</span></div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="preprocessor">#define _FE_22(WHAT, X, ...) EXPAND(WHAT(X)_FE_21(WHAT, __VA_ARGS__))</span></div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="preprocessor">#define _FE_23(WHAT, X, ...) EXPAND(WHAT(X)_FE_22(WHAT, __VA_ARGS__))</span></div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="preprocessor">#define _FE_24(WHAT, X, ...) EXPAND(WHAT(X)_FE_23(WHAT, __VA_ARGS__))</span></div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;<span class="preprocessor">#define _FE_25(WHAT, X, ...) EXPAND(WHAT(X)_FE_24(WHAT, __VA_ARGS__))</span></div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<span class="preprocessor">#define _FE_26(WHAT, X, ...) EXPAND(WHAT(X)_FE_25(WHAT, __VA_ARGS__))</span></div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;<span class="preprocessor">#define _FE_27(WHAT, X, ...) EXPAND(WHAT(X)_FE_26(WHAT, __VA_ARGS__))</span></div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;<span class="preprocessor">#define _FE_28(WHAT, X, ...) EXPAND(WHAT(X)_FE_27(WHAT, __VA_ARGS__))</span></div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;<span class="preprocessor">#define _FE_29(WHAT, X, ...) EXPAND(WHAT(X)_FE_28(WHAT, __VA_ARGS__))</span></div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;<span class="preprocessor">#define _FE_30(WHAT, X, ...) EXPAND(WHAT(X)_FE_29(WHAT, __VA_ARGS__))</span></div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160; </div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;<span class="preprocessor">#define _FE2_0(WHAT)</span></div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;<span class="preprocessor">#define _FE2_1(WHAT, X)</span></div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;<span class="preprocessor">#define _FE2_2(WHAT, X, Y) WHAT(X, Y)</span></div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;<span class="preprocessor">#define _FE2_3(WHAT, X, Y, ...) EXPAND(WHAT(X, Y)_FE2_2(WHAT, X, __VA_ARGS__))</span></div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;<span class="preprocessor">#define _FE2_4(WHAT, X, Y, ...) EXPAND(WHAT(X, Y)_FE2_3(WHAT, X, __VA_ARGS__))</span></div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;<span class="preprocessor">#define _FE2_5(WHAT, X, Y, ...) EXPAND(WHAT(X, Y)_FE2_4(WHAT, X, __VA_ARGS__))</span></div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;<span class="preprocessor">#define _FE2_6(WHAT, X, Y, ...) EXPAND(WHAT(X, Y)_FE2_5(WHAT, X, __VA_ARGS__))</span></div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;<span class="preprocessor">#define _FE2_7(WHAT, X, Y, ...) EXPAND(WHAT(X, Y)_FE2_6(WHAT, X, __VA_ARGS__))</span></div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;<span class="preprocessor">#define _FE2_8(WHAT, X, Y, ...) EXPAND(WHAT(X, Y)_FE2_7(WHAT, X, __VA_ARGS__))</span></div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;<span class="preprocessor">#define _FE2_9(WHAT, X, Y, ...) EXPAND(WHAT(X, Y)_FE2_8(WHAT, X, __VA_ARGS__))</span></div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;<span class="preprocessor">#define _FE2_10(WHAT, X, Y, ...) EXPAND(WHAT(X, Y)_FE2_9(WHAT, X, __VA_ARGS__))</span></div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;<span class="preprocessor">#define _FE2_11(WHAT, X, Y, ...) EXPAND(WHAT(X, Y)_FE2_10(WHAT, X, __VA_ARGS__))</span></div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;<span class="preprocessor">#define _FE2_12(WHAT, X, Y, ...) EXPAND(WHAT(X, Y)_FE2_11(WHAT, X, __VA_ARGS__))</span></div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;<span class="preprocessor">#define _FE2_13(WHAT, X, Y, ...) EXPAND(WHAT(X, Y)_FE2_12(WHAT, X, __VA_ARGS__))</span></div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;<span class="preprocessor">#define _FE2_14(WHAT, X, Y, ...) EXPAND(WHAT(X, Y)_FE2_13(WHAT, X, __VA_ARGS__))</span></div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;<span class="preprocessor">#define _FE2_15(WHAT, X, Y, ...) EXPAND(WHAT(X, Y)_FE2_14(WHAT, X, __VA_ARGS__))</span></div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;<span class="preprocessor">#define _FE2_16(WHAT, X, Y, ...) EXPAND(WHAT(X, Y)_FE2_15(WHAT, X, __VA_ARGS__))</span></div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;<span class="preprocessor">#define _FE2_17(WHAT, X, Y, ...) EXPAND(WHAT(X, Y)_FE2_16(WHAT, X, __VA_ARGS__))</span></div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;<span class="preprocessor">#define _FE2_18(WHAT, X, Y, ...) EXPAND(WHAT(X, Y)_FE2_17(WHAT, X, __VA_ARGS__))</span></div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;<span class="preprocessor">#define _FE2_19(WHAT, X, Y, ...) EXPAND(WHAT(X, Y)_FE2_18(WHAT, X, __VA_ARGS__))</span></div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;<span class="preprocessor">#define _FE2_20(WHAT, X, Y, ...) EXPAND(WHAT(X, Y)_FE2_19(WHAT, X, __VA_ARGS__))</span></div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;<span class="preprocessor">#define _FE2_21(WHAT, X, Y, ...) EXPAND(WHAT(X, Y)_FE2_20(WHAT, X, __VA_ARGS__))</span></div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;<span class="preprocessor">#define _FE2_22(WHAT, X, Y, ...) EXPAND(WHAT(X, Y)_FE2_21(WHAT, X, __VA_ARGS__))</span></div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;<span class="preprocessor">#define _FE2_23(WHAT, X, Y, ...) EXPAND(WHAT(X, Y)_FE2_22(WHAT, X, __VA_ARGS__))</span></div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;<span class="preprocessor">#define _FE2_24(WHAT, X, Y, ...) EXPAND(WHAT(X, Y)_FE2_23(WHAT, X, __VA_ARGS__))</span></div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;<span class="preprocessor">#define _FE2_25(WHAT, X, Y, ...) EXPAND(WHAT(X, Y)_FE2_24(WHAT, X, __VA_ARGS__))</span></div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;<span class="preprocessor">#define _FE2_26(WHAT, X, Y, ...) EXPAND(WHAT(X, Y)_FE2_25(WHAT, X, __VA_ARGS__))</span></div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;<span class="preprocessor">#define _FE2_27(WHAT, X, Y, ...) EXPAND(WHAT(X, Y)_FE2_26(WHAT, X, __VA_ARGS__))</span></div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;<span class="preprocessor">#define _FE2_28(WHAT, X, Y, ...) EXPAND(WHAT(X, Y)_FE2_27(WHAT, X, __VA_ARGS__))</span></div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;<span class="preprocessor">#define _FE2_29(WHAT, X, Y, ...) EXPAND(WHAT(X, Y)_FE2_28(WHAT, X, __VA_ARGS__))</span></div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;<span class="preprocessor">#define _FE2_30(WHAT, X, Y, ...) EXPAND(WHAT(X, Y)_FE2_29(WHAT, X, __VA_ARGS__))</span></div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160; </div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;<span class="preprocessor">#define _RPC_GET_MACRO(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, NAME, ...) NAME</span></div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;<span class="preprocessor">#define RPC_FOR_EACH(ACTION, ...) EXPAND(_RPC_GET_MACRO(_0, __VA_ARGS__, _FE_30, _FE_29, _FE_28, _FE_27, _FE_26, _FE_25, _FE_24, _FE_23, _FE_22, _FE_21, _FE_20, _FE_19, _FE_18, _FE_17, _FE_16, _FE_15, _FE_14, _FE_13, _FE_12, _FE_11, _FE_10, _FE_9, _FE_8, _FE_7, _FE_6, _FE_5, _FE_4, _FE_3, _FE_2, _FE_1, _FE_0)(ACTION, __VA_ARGS__))</span></div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;<span class="preprocessor">#define RPC_FOR_EACH2(ACTION, ...) EXPAND(_RPC_GET_MACRO(_0, __VA_ARGS__, _FE2_30, _FE2_29, _FE2_28, _FE2_27, _FE2_26, _FE2_25, _FE2_24, _FE2_23, _FE2_22, _FE2_21, _FE2_20, _FE2_19, _FE2_18, _FE2_17, _FE2_16, _FE2_15, _FE2_14, _FE2_13, _FE2_12, _FE2_11, _FE2_10, _FE2_9, _FE2_8, _FE2_7, _FE2_6, _FE2_5, _FE2_4, _FE2_3, _FE2_2, _FE2_1, _FE2_0)(ACTION, __VA_ARGS__))</span></div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160; </div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;<span class="preprocessor">#define RPC_ATTACH_FUNC(FUNCNAME) if (func_name == #FUNCNAME) { return dispatch_func&lt;Serial&gt;(FUNCNAME, serial_obj); }</span></div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;<span class="preprocessor">#define RPC_ATTACH_FUNCS(FUNCNAME, ...) EXPAND(RPC_FOR_EACH(RPC_ATTACH_FUNC, FUNCNAME, __VA_ARGS__))</span></div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160; </div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;<span class="preprocessor">#define RPC_ALIAS_FUNC(FUNCNAME, FUNC_ALIAS) if (func_name == #FUNC_ALIAS) { return dispatch_func&lt;Serial&gt;(FUNCNAME, serial_obj); }</span></div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;<span class="preprocessor">#define RPC_MULTI_ALIAS_FUNC(FUNCNAME, FUNC_ALIAS,...) EXPAND(RPC_FOR_EACH2(RPC_ALIAS_FUNC, FUNCNAME, FUNC_ALIAS, __VA_ARGS__))</span></div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160; </div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;<span class="preprocessor">#define RPC_DEFAULT_DISPATCH(FUNCNAME, ...) EXPAND(template&lt;typename Serial&gt; void rpc::server::dispatch(Serial&amp; serial_obj) { const auto func_name = serial_adapter&lt;Serial&gt;::extract_func_name(serial_obj); RPC_ATTACH_FUNCS(FUNCNAME, __VA_ARGS__) throw std::runtime_error(&quot;RPC error: Called function: \&quot;&quot; + func_name + &quot;\&quot; not found!&quot;);})</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

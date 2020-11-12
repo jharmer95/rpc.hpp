@@ -22,7 +22,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">rpc.hpp
-   &#160;<span id="projectnumber">0.2.0.0</span>
+   &#160;<span id="projectnumber">0.2.1</span>
    </div>
    <div id="projectbrief">Simple RPC Header-Only Library</div>
   </td>
@@ -115,30 +115,26 @@ This graph shows which files directly or indirectly include this file:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
 Classes</h2></td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structrpc_1_1function__traits.html">rpc::function_traits&lt; T &gt;</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default implementation for SFINAE struct.  <a href="structrpc_1_1function__traits.html#details">More...</a><br /></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structrpc_1_1details_1_1has__begin.html">rpc::details::has_begin&lt; C &gt;</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">SFINAE struct for checking a type for a 'begin' member function.  <a href="structrpc_1_1details_1_1has__begin.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structrpc_1_1function__traits_3_01std_1_1function_3_01_r_07_args_8_8_8_08_4_01_4.html">rpc::function_traits&lt; std::function&lt; R(Args...)&gt; &gt;</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">SFINAE struct to extract information from a function object.  <a href="structrpc_1_1function__traits_3_01std_1_1function_3_01_r_07_args_8_8_8_08_4_01_4.html#details">More...</a><br /></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structrpc_1_1details_1_1has__end.html">rpc::details::has_end&lt; C &gt;</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">SFINAE struct for checking a type for a 'end' member function.  <a href="structrpc_1_1details_1_1has__end.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structrpc_1_1function__traits_3_01std_1_1function_3_01_r_07_args_8_8_8_08_4_01_4_1_1arg.html">rpc::function_traits&lt; std::function&lt; R(Args...)&gt; &gt;::arg&lt; i &gt;</a></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structrpc_1_1details_1_1has__size.html">rpc::details::has_size&lt; C &gt;</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">SFINAE struct for checking a type for a 'size' member function.  <a href="structrpc_1_1details_1_1has__size.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structrpc_1_1function__traits_3_01_r_07_5_08_07_args_8_8_8_08_4.html">rpc::function_traits&lt; R(*)(Args...)&gt;</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">SFINAE struct to extract information from a function pointer.  <a href="structrpc_1_1function__traits_3_01_r_07_5_08_07_args_8_8_8_08_4.html#details">More...</a><br /></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structrpc_1_1details_1_1is__container.html">rpc::details::is_container&lt; C &gt;</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">SFINAE struct to determine if a type is a container.  <a href="structrpc_1_1details_1_1is__container.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structrpc_1_1function__traits_3_01_r_07_5_08_07_args_8_8_8_08_4_1_1arg.html">rpc::function_traits&lt; R(*)(Args...)&gt;::arg&lt; i &gt;</a></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structrpc_1_1details_1_1ptr__decay.html">rpc::details::ptr_decay&lt; T &gt;</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Structure to decay arrays to pointers.  <a href="structrpc_1_1details_1_1ptr__decay.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structrpc_1_1has__begin.html">rpc::has_begin&lt; C &gt;</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">SFINAE struct for checking a type for a 'begin' member function.  <a href="structrpc_1_1has__begin.html#details">More...</a><br /></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structrpc_1_1details_1_1bool__pack.html">rpc::details::bool_pack&lt;... &gt;</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Dummy struct for all_true.  <a href="structrpc_1_1details_1_1bool__pack.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structrpc_1_1has__end.html">rpc::has_end&lt; C &gt;</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">SFINAE struct for checking a type for a 'end' member function.  <a href="structrpc_1_1has__end.html#details">More...</a><br /></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structrpc_1_1has__size.html">rpc::has_size&lt; C &gt;</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">SFINAE struct for checking a type for a 'size' member function.  <a href="structrpc_1_1has__size.html#details">More...</a><br /></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structrpc_1_1is__container.html">rpc::is_container&lt; C &gt;</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">SFINAE struct to determine if a type is a container.  <a href="structrpc_1_1is__container.html#details">More...</a><br /></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrpc_1_1details_1_1dyn__array.html">rpc::details::dyn_array&lt; T &gt;</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Dynamically sized generic array class. Has a fixed max capacity and a dynamic size.  <a href="classrpc_1_1details_1_1dyn__array.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrpc_1_1packed__func__base.html">rpc::packed_func_base</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Polymorphic base class for <a class="el" href="classrpc_1_1packed__func.html">packed_func</a>.  <a href="classrpc_1_1packed__func__base.html#details">More...</a><br /></td></tr>
@@ -159,7 +155,7 @@ Classes</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="namespaces"></a>
 Namespaces</h2></td></tr>
 <tr class="memitem:namespacerpc_1_1details"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacerpc_1_1details.html">rpc::details</a></td></tr>
-<tr class="memdesc:namespacerpc_1_1details"><td class="mdescLeft">&#160;</td><td class="mdescRight">Namespace for functions/variables that should be used only from within the library Using anything in this namespace in your project is discouraged. <br /></td></tr>
+<tr class="memdesc:namespacerpc_1_1details"><td class="mdescLeft">&#160;</td><td class="mdescRight">Namespace for functions/variables that should be used only from within the library. Using anything in this namespace in your project is discouraged. <br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:namespacerpc_1_1server"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacerpc_1_1server.html">rpc::server</a></td></tr>
 <tr class="memdesc:namespacerpc_1_1server"><td class="mdescLeft">&#160;</td><td class="mdescRight">Namespace for server-specific functions and variables Client-side code should not need to use anything in this namespace. <br /></td></tr>
@@ -170,33 +166,25 @@ Namespaces</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="typedef-members"></a>
 Typedefs</h2></td></tr>
-<tr class="memitem:a06f85019f58fafb5c2c01c0ad6c8bf11"><td class="memTemplParams" colspan="2">template&lt;typename R , typename... Args&gt; </td></tr>
-<tr class="memitem:a06f85019f58fafb5c2c01c0ad6c8bf11"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="rpc_8hpp.html#a06f85019f58fafb5c2c01c0ad6c8bf11">rpc::function_result_t</a> = typename function_traits&lt; std::function&lt; R(Args...)&gt; &gt;::type</td></tr>
-<tr class="memdesc:a06f85019f58fafb5c2c01c0ad6c8bf11"><td class="mdescLeft">&#160;</td><td class="mdescRight">Helper variable for getting the return type from <a class="el" href="structrpc_1_1function__traits.html">function_traits</a>.  <a href="rpc_8hpp.html#a06f85019f58fafb5c2c01c0ad6c8bf11">More...</a><br /></td></tr>
-<tr class="separator:a06f85019f58fafb5c2c01c0ad6c8bf11"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4858e794af42a59254b14d6229b44415"><td class="memTemplParams" colspan="2">template&lt;size_t i, typename R , typename... Args&gt; </td></tr>
-<tr class="memitem:a4858e794af42a59254b14d6229b44415"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="rpc_8hpp.html#a4858e794af42a59254b14d6229b44415">rpc::function_args_t</a> = typename function_traits&lt; std::function&lt; R(Args...)&gt; &gt;::template arg&lt; i &gt;::type</td></tr>
-<tr class="memdesc:a4858e794af42a59254b14d6229b44415"><td class="mdescLeft">&#160;</td><td class="mdescRight">Helper variable for getting the argument types from <a class="el" href="structrpc_1_1function__traits.html">function_traits</a>.  <a href="rpc_8hpp.html#a4858e794af42a59254b14d6229b44415">More...</a><br /></td></tr>
-<tr class="separator:a4858e794af42a59254b14d6229b44415"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1caea5a41c2e1e503fd088efcdef0cd6"><td class="memTemplParams" colspan="2">template&lt;typename T &gt; </td></tr>
+<tr class="memitem:a1caea5a41c2e1e503fd088efcdef0cd6"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacerpc_1_1details.html#a1caea5a41c2e1e503fd088efcdef0cd6">rpc::details::ptr_decay_t</a> = typename ptr_decay&lt; T &gt;::type</td></tr>
+<tr class="memdesc:a1caea5a41c2e1e503fd088efcdef0cd6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Helper for <a class="el" href="structrpc_1_1details_1_1ptr__decay.html" title="Structure to decay arrays to pointers.">ptr_decay</a> struct.  <a href="namespacerpc_1_1details.html#a1caea5a41c2e1e503fd088efcdef0cd6">More...</a><br /></td></tr>
+<tr class="separator:a1caea5a41c2e1e503fd088efcdef0cd6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab3136deccde141f3c5c14e434a81d578"><td class="memTemplParams" colspan="2">template&lt;bool... bs&gt; </td></tr>
+<tr class="memitem:ab3136deccde141f3c5c14e434a81d578"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacerpc_1_1details.html#ab3136deccde141f3c5c14e434a81d578">rpc::details::all_true</a> = std::is_same&lt; bool_pack&lt; bs..., true &gt;, bool_pack&lt; true, bs... &gt; &gt;</td></tr>
+<tr class="memdesc:ab3136deccde141f3c5c14e434a81d578"><td class="mdescLeft">&#160;</td><td class="mdescRight">SFINAE struct for checking if all packed bool parameters are true.  <a href="namespacerpc_1_1details.html#ab3136deccde141f3c5c14e434a81d578">More...</a><br /></td></tr>
+<tr class="separator:ab3136deccde141f3c5c14e434a81d578"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:afb62e721246b3061496c1754c3d4ee0e"><td class="memTemplParams" colspan="2">template&lt;typename F , typename... Ts, size_t... Is&gt; </td></tr>
-<tr class="memitem:afb62e721246b3061496c1754c3d4ee0e"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="rpc_8hpp.html#afb62e721246b3061496c1754c3d4ee0e">rpc::for_each_tuple</a> (const std::tuple&lt; Ts... &gt; &amp;tuple, const F &amp;func, std::index_sequence&lt; Is... &gt;)</td></tr>
-<tr class="memdesc:afb62e721246b3061496c1754c3d4ee0e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default implementation of meta-programming function.  <a href="rpc_8hpp.html#afb62e721246b3061496c1754c3d4ee0e">More...</a><br /></td></tr>
-<tr class="separator:afb62e721246b3061496c1754c3d4ee0e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a94b4adbfd76012cb59d77c7cbce60f4a"><td class="memTemplParams" colspan="2">template&lt;typename F , typename... Ts&gt; </td></tr>
-<tr class="memitem:a94b4adbfd76012cb59d77c7cbce60f4a"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="rpc_8hpp.html#a94b4adbfd76012cb59d77c7cbce60f4a">rpc::for_each_tuple</a> (const std::tuple&lt; Ts... &gt; &amp;tuple, const F &amp;func)</td></tr>
-<tr class="memdesc:a94b4adbfd76012cb59d77c7cbce60f4a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Meta-programming function to apply a function over each member of a tuple.  <a href="rpc_8hpp.html#a94b4adbfd76012cb59d77c7cbce60f4a">More...</a><br /></td></tr>
-<tr class="separator:a94b4adbfd76012cb59d77c7cbce60f4a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a196fc08d9d1f72dc02d0448b2960c334"><td class="memTemplParams" colspan="2">template&lt;typename R , typename... Args&gt; </td></tr>
-<tr class="memitem:a196fc08d9d1f72dc02d0448b2960c334"><td class="memTemplItemLeft" align="right" valign="top">packed_func&lt; R, Args... &gt; &amp;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="rpc_8hpp.html#a196fc08d9d1f72dc02d0448b2960c334">rpc::convert_func</a> (std::function&lt; R(Args...)&gt;, const packed_func_base &amp;pack)</td></tr>
-<tr class="memdesc:a196fc08d9d1f72dc02d0448b2960c334"><td class="mdescLeft">&#160;</td><td class="mdescRight">Converts a <a class="el" href="classrpc_1_1packed__func__base.html">packed_func_base</a> to a specific templated <a class="el" href="classrpc_1_1packed__func.html">packed_func</a>.  <a href="rpc_8hpp.html#a196fc08d9d1f72dc02d0448b2960c334">More...</a><br /></td></tr>
-<tr class="separator:a196fc08d9d1f72dc02d0448b2960c334"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:add1b70d43203c9f4a468bd62c8385d66"><td class="memTemplParams" colspan="2">template&lt;typename R , typename... Args&gt; </td></tr>
-<tr class="memitem:add1b70d43203c9f4a468bd62c8385d66"><td class="memTemplItemLeft" align="right" valign="top">packed_func&lt; R, Args... &gt; &amp;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="rpc_8hpp.html#add1b70d43203c9f4a468bd62c8385d66">rpc::convert_func</a> (R(*)(Args...), const packed_func_base &amp;pack)</td></tr>
-<tr class="memdesc:add1b70d43203c9f4a468bd62c8385d66"><td class="mdescLeft">&#160;</td><td class="mdescRight">Converts a <a class="el" href="classrpc_1_1packed__func__base.html">packed_func_base</a> to a specific templated <a class="el" href="classrpc_1_1packed__func.html">packed_func</a>.  <a href="rpc_8hpp.html#add1b70d43203c9f4a468bd62c8385d66">More...</a><br /></td></tr>
-<tr class="separator:add1b70d43203c9f4a468bd62c8385d66"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae8d1b65246a88c23eb066636f9ca89e1"><td class="memTemplParams" colspan="2">template&lt;typename F , typename... Ts, size_t... Is&gt; </td></tr>
+<tr class="memitem:ae8d1b65246a88c23eb066636f9ca89e1"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacerpc_1_1details.html#ae8d1b65246a88c23eb066636f9ca89e1">rpc::details::for_each_tuple</a> (const std::tuple&lt; Ts... &gt; &amp;tuple, const F &amp;func, std::index_sequence&lt; Is... &gt;)</td></tr>
+<tr class="memdesc:ae8d1b65246a88c23eb066636f9ca89e1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default implementation of meta-programming function.  <a href="namespacerpc_1_1details.html#ae8d1b65246a88c23eb066636f9ca89e1">More...</a><br /></td></tr>
+<tr class="separator:ae8d1b65246a88c23eb066636f9ca89e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a58ae7b31c81651d6979286f5f30cf46b"><td class="memTemplParams" colspan="2">template&lt;typename F , typename... Ts&gt; </td></tr>
+<tr class="memitem:a58ae7b31c81651d6979286f5f30cf46b"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacerpc_1_1details.html#a58ae7b31c81651d6979286f5f30cf46b">rpc::details::for_each_tuple</a> (const std::tuple&lt; Ts... &gt; &amp;tuple, const F &amp;func)</td></tr>
+<tr class="memdesc:a58ae7b31c81651d6979286f5f30cf46b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Meta-programming function to apply a function over each member of a tuple.  <a href="namespacerpc_1_1details.html#a58ae7b31c81651d6979286f5f30cf46b">More...</a><br /></td></tr>
+<tr class="separator:a58ae7b31c81651d6979286f5f30cf46b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aca9aac69687b613761b8c9f30598ae21"><td class="memTemplParams" colspan="2">template&lt;typename Serial , typename Value &gt; </td></tr>
 <tr class="memitem:aca9aac69687b613761b8c9f30598ae21"><td class="memTemplItemLeft" align="right" valign="top">Serial&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="rpc_8hpp.html#aca9aac69687b613761b8c9f30598ae21">rpc::serialize</a> (const Value &amp;val)</td></tr>
 <tr class="memdesc:aca9aac69687b613761b8c9f30598ae21"><td class="mdescLeft">&#160;</td><td class="mdescRight">Serializes a generic object to a serial object.  <a href="rpc_8hpp.html#aca9aac69687b613761b8c9f30598ae21">More...</a><br /></td></tr>
@@ -205,10 +193,6 @@ Functions</h2></td></tr>
 <tr class="memitem:a90caf447061a735645909db98d294b8c"><td class="memTemplItemLeft" align="right" valign="top">Value&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="rpc_8hpp.html#a90caf447061a735645909db98d294b8c">rpc::deserialize</a> (const Serial &amp;serial_obj)</td></tr>
 <tr class="memdesc:a90caf447061a735645909db98d294b8c"><td class="mdescLeft">&#160;</td><td class="mdescRight">De-serializes a serial object to a generic object.  <a href="rpc_8hpp.html#a90caf447061a735645909db98d294b8c">More...</a><br /></td></tr>
 <tr class="separator:a90caf447061a735645909db98d294b8c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1e97882d2cf6f10593661e1094242b2a"><td class="memTemplParams" colspan="2">template&lt;typename Value , typename R , typename... Args&gt; </td></tr>
-<tr class="memitem:a1e97882d2cf6f10593661e1094242b2a"><td class="memTemplItemLeft" align="right" valign="top">std::remove_cv_t&lt; std::remove_reference_t&lt; Value &gt; &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacerpc_1_1details.html#a1e97882d2cf6f10593661e1094242b2a">rpc::details::args_from_packed</a> (const packed_func&lt; R, Args... &gt; &amp;pack, unsigned &amp;arg_index)</td></tr>
-<tr class="memdesc:a1e97882d2cf6f10593661e1094242b2a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Unpacks the argument values from a <a class="el" href="classrpc_1_1packed__func.html">packed_func</a>.  <a href="namespacerpc_1_1details.html#a1e97882d2cf6f10593661e1094242b2a">More...</a><br /></td></tr>
-<tr class="separator:a1e97882d2cf6f10593661e1094242b2a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a16bee9d6b42073cac75972e1357ab417"><td class="memTemplParams" colspan="2">template&lt;typename Serial , typename Value &gt; </td></tr>
 <tr class="memitem:a16bee9d6b42073cac75972e1357ab417"><td class="memTemplItemLeft" align="right" valign="top">std::remove_cv_t&lt; std::remove_reference_t&lt; Value &gt; &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacerpc_1_1details.html#a16bee9d6b42073cac75972e1357ab417">rpc::details::arg_from_serial</a> (const Serial &amp;obj)</td></tr>
 <tr class="memdesc:a16bee9d6b42073cac75972e1357ab417"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieves a single argument value from a serial object.  <a href="namespacerpc_1_1details.html#a16bee9d6b42073cac75972e1357ab417">More...</a><br /></td></tr>
@@ -217,14 +201,22 @@ Functions</h2></td></tr>
 <tr class="memitem:a429be958a0bfccbac4007a870945329d"><td class="memTemplItemLeft" align="right" valign="top">std::remove_cv_t&lt; std::remove_reference_t&lt; Value &gt; &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacerpc_1_1details.html#a429be958a0bfccbac4007a870945329d">rpc::details::args_from_serial</a> (const Serial &amp;obj, unsigned &amp;arg_index)</td></tr>
 <tr class="memdesc:a429be958a0bfccbac4007a870945329d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieves the argument values from a serial object.  <a href="namespacerpc_1_1details.html#a429be958a0bfccbac4007a870945329d">More...</a><br /></td></tr>
 <tr class="separator:a429be958a0bfccbac4007a870945329d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9f191c830b8f2a6affc03aafdd859ab7"><td class="memTemplParams" colspan="2">template&lt;typename R , typename... Args&gt; </td></tr>
-<tr class="memitem:a9f191c830b8f2a6affc03aafdd859ab7"><td class="memTemplItemLeft" align="right" valign="top">packed_func&lt; R, Args... &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacerpc_1_1details.html#a9f191c830b8f2a6affc03aafdd859ab7">rpc::details::pack_call</a> (const std::string &amp;func_name, Args &amp;&amp;... args)</td></tr>
-<tr class="memdesc:a9f191c830b8f2a6affc03aafdd859ab7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Packages a function call into a <a class="el" href="classrpc_1_1packed__func.html">packed_func</a>.  <a href="namespacerpc_1_1details.html#a9f191c830b8f2a6affc03aafdd859ab7">More...</a><br /></td></tr>
-<tr class="separator:a9f191c830b8f2a6affc03aafdd859ab7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3852c09f74b0a7bf752955a77cda28f5"><td class="memTemplParams" colspan="2">template&lt;typename Serial , typename R , typename... Args&gt; </td></tr>
-<tr class="memitem:a3852c09f74b0a7bf752955a77cda28f5"><td class="memTemplItemLeft" align="right" valign="top">packed_func&lt; R, Args... &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacerpc_1_1server.html#a3852c09f74b0a7bf752955a77cda28f5">rpc::server::create_func</a> (R(*)(Args...), const Serial &amp;obj)</td></tr>
-<tr class="memdesc:a3852c09f74b0a7bf752955a77cda28f5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a <a class="el" href="classrpc_1_1packed__func.html">packed_func</a> object from a serial object.  <a href="namespacerpc_1_1server.html#a3852c09f74b0a7bf752955a77cda28f5">More...</a><br /></td></tr>
-<tr class="separator:a3852c09f74b0a7bf752955a77cda28f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1e97882d2cf6f10593661e1094242b2a"><td class="memTemplParams" colspan="2">template&lt;typename Value , typename R , typename... Args&gt; </td></tr>
+<tr class="memitem:a1e97882d2cf6f10593661e1094242b2a"><td class="memTemplItemLeft" align="right" valign="top">std::remove_cv_t&lt; std::remove_reference_t&lt; Value &gt; &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacerpc_1_1details.html#a1e97882d2cf6f10593661e1094242b2a">rpc::details::args_from_packed</a> (const packed_func&lt; R, Args... &gt; &amp;pack, unsigned &amp;arg_index)</td></tr>
+<tr class="memdesc:a1e97882d2cf6f10593661e1094242b2a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Unpacks the argument values from a <a class="el" href="classrpc_1_1packed__func.html">packed_func</a>.  <a href="namespacerpc_1_1details.html#a1e97882d2cf6f10593661e1094242b2a">More...</a><br /></td></tr>
+<tr class="separator:a1e97882d2cf6f10593661e1094242b2a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acccb390ea6797f5451f75dd6dc5810d8"><td class="memTemplParams" colspan="2">template&lt;typename R , typename... Args&gt; </td></tr>
+<tr class="memitem:acccb390ea6797f5451f75dd6dc5810d8"><td class="memTemplItemLeft" align="right" valign="top">packed_func&lt; R, Args... &gt; &amp;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacerpc_1_1server.html#acccb390ea6797f5451f75dd6dc5810d8">rpc::server::convert_func</a> ([[maybe_unused]] std::function&lt; R(Args...)&gt; unused, const packed_func_base &amp;pack)</td></tr>
+<tr class="memdesc:acccb390ea6797f5451f75dd6dc5810d8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Converts a <a class="el" href="classrpc_1_1packed__func__base.html">packed_func_base</a> to a specific templated <a class="el" href="classrpc_1_1packed__func.html">packed_func</a>.  <a href="namespacerpc_1_1server.html#acccb390ea6797f5451f75dd6dc5810d8">More...</a><br /></td></tr>
+<tr class="separator:acccb390ea6797f5451f75dd6dc5810d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad989490205e8e52f38431baf497b8d18"><td class="memTemplParams" colspan="2">template&lt;typename R , typename... Args&gt; </td></tr>
+<tr class="memitem:ad989490205e8e52f38431baf497b8d18"><td class="memTemplItemLeft" align="right" valign="top">packed_func&lt; R, Args... &gt; &amp;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacerpc_1_1server.html#ad989490205e8e52f38431baf497b8d18">rpc::server::convert_func</a> ([[maybe_unused]] R(*unused)(Args...), const packed_func_base &amp;pack)</td></tr>
+<tr class="memdesc:ad989490205e8e52f38431baf497b8d18"><td class="mdescLeft">&#160;</td><td class="mdescRight">Converts a <a class="el" href="classrpc_1_1packed__func__base.html">packed_func_base</a> to a specific templated <a class="el" href="classrpc_1_1packed__func.html">packed_func</a>.  <a href="namespacerpc_1_1server.html#ad989490205e8e52f38431baf497b8d18">More...</a><br /></td></tr>
+<tr class="separator:ad989490205e8e52f38431baf497b8d18"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a467506ef5ec586fd10b16ddb5b1f683b"><td class="memTemplParams" colspan="2">template&lt;typename Serial , typename R , typename... Args&gt; </td></tr>
+<tr class="memitem:a467506ef5ec586fd10b16ddb5b1f683b"><td class="memTemplItemLeft" align="right" valign="top">packed_func&lt; R, Args... &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacerpc_1_1server.html#a467506ef5ec586fd10b16ddb5b1f683b">rpc::server::create_func</a> ([[maybe_unused]] R(*unused)(Args...), const Serial &amp;obj)</td></tr>
+<tr class="memdesc:a467506ef5ec586fd10b16ddb5b1f683b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a <a class="el" href="classrpc_1_1packed__func.html">packed_func</a> object from a serial object.  <a href="namespacerpc_1_1server.html#a467506ef5ec586fd10b16ddb5b1f683b">More...</a><br /></td></tr>
+<tr class="separator:a467506ef5ec586fd10b16ddb5b1f683b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9886cf779e8164ca16a94509c0b9481e"><td class="memTemplParams" colspan="2">template&lt;typename R , typename... Args&gt; </td></tr>
 <tr class="memitem:a9886cf779e8164ca16a94509c0b9481e"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacerpc_1_1server.html#a9886cf779e8164ca16a94509c0b9481e">rpc::server::run_callback</a> (std::function&lt; R(Args...)&gt; func, packed_func&lt; R, Args... &gt; &amp;pack)</td></tr>
 <tr class="memdesc:a9886cf779e8164ca16a94509c0b9481e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Runs the callback function and populates the <a class="el" href="classrpc_1_1packed__func.html">packed_func</a> with the result and/or updated arguments.  <a href="namespacerpc_1_1server.html#a9886cf779e8164ca16a94509c0b9481e">More...</a><br /></td></tr>
@@ -233,10 +225,18 @@ Functions</h2></td></tr>
 <tr class="memitem:aa8dfa6764d97f2af25cb30018e880d29"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacerpc_1_1server.html#aa8dfa6764d97f2af25cb30018e880d29">rpc::server::run_callback</a> (R(*func)(Args...), packed_func&lt; R, Args... &gt; &amp;pack)</td></tr>
 <tr class="memdesc:aa8dfa6764d97f2af25cb30018e880d29"><td class="mdescLeft">&#160;</td><td class="mdescRight">Runs the callback function and populates the <a class="el" href="classrpc_1_1packed__func.html">packed_func</a> with the result and/or updated arguments.  <a href="namespacerpc_1_1server.html#aa8dfa6764d97f2af25cb30018e880d29">More...</a><br /></td></tr>
 <tr class="separator:aa8dfa6764d97f2af25cb30018e880d29"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8a5b4053728de37db48eeff03adb726a"><td class="memTemplParams" colspan="2"><a id="a8a5b4053728de37db48eeff03adb726a"></a>
-template&lt;typename Serial &gt; </td></tr>
-<tr class="memitem:a8a5b4053728de37db48eeff03adb726a"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>rpc::server::dispatch</b> (Serial &amp;serial_obj)</td></tr>
+<tr class="memitem:a8a5b4053728de37db48eeff03adb726a"><td class="memTemplParams" colspan="2">template&lt;typename Serial &gt; </td></tr>
+<tr class="memitem:a8a5b4053728de37db48eeff03adb726a"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacerpc_1_1server.html#a8a5b4053728de37db48eeff03adb726a">rpc::server::dispatch</a> (Serial &amp;serial_obj)</td></tr>
+<tr class="memdesc:a8a5b4053728de37db48eeff03adb726a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Dispatches the function call based on the received serial object.  <a href="namespacerpc_1_1server.html#a8a5b4053728de37db48eeff03adb726a">More...</a><br /></td></tr>
 <tr class="separator:a8a5b4053728de37db48eeff03adb726a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a857940201b27225eb042bebe89d48d6c"><td class="memTemplParams" colspan="2">template&lt;typename Serial , typename R , typename... Args&gt; </td></tr>
+<tr class="memitem:a857940201b27225eb042bebe89d48d6c"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacerpc_1_1server.html#a857940201b27225eb042bebe89d48d6c">rpc::server::dispatch_func</a> (R(*func)(Args...), Serial &amp;serial_obj)</td></tr>
+<tr class="memdesc:a857940201b27225eb042bebe89d48d6c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Dispatches an individual function (to be called from <a class="el" href="namespacerpc_1_1server.html#a8a5b4053728de37db48eeff03adb726a">dispatch</a>)  <a href="namespacerpc_1_1server.html#a857940201b27225eb042bebe89d48d6c">More...</a><br /></td></tr>
+<tr class="separator:a857940201b27225eb042bebe89d48d6c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a47093157d082e708aafd4420fa5fbeca"><td class="memTemplParams" colspan="2">template&lt;typename R , typename... Args&gt; </td></tr>
+<tr class="memitem:a47093157d082e708aafd4420fa5fbeca"><td class="memTemplItemLeft" align="right" valign="top">packed_func&lt; R, Args... &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacerpc_1_1client.html#a47093157d082e708aafd4420fa5fbeca">rpc::client::pack_call</a> (const std::string &amp;func_name, Args &amp;&amp;... args)</td></tr>
+<tr class="memdesc:a47093157d082e708aafd4420fa5fbeca"><td class="mdescLeft">&#160;</td><td class="mdescRight">Packages a function call into a <a class="el" href="classrpc_1_1packed__func.html">packed_func</a>.  <a href="namespacerpc_1_1client.html#a47093157d082e708aafd4420fa5fbeca">More...</a><br /></td></tr>
+<tr class="separator:a47093157d082e708aafd4420fa5fbeca"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a97c4e44da971e7265bc4ffb348ceb39b"><td class="memTemplParams" colspan="2">template&lt;typename Serial , typename R  = void, typename... Args&gt; </td></tr>
 <tr class="memitem:a97c4e44da971e7265bc4ffb348ceb39b"><td class="memTemplItemLeft" align="right" valign="top">Serial&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacerpc_1_1client.html#a97c4e44da971e7265bc4ffb348ceb39b">rpc::client::serialize_call</a> (const std::string &amp;func_name, Args &amp;&amp;... args)</td></tr>
 <tr class="memdesc:a97c4e44da971e7265bc4ffb348ceb39b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Transforms a function call to a serial object.  <a href="namespacerpc_1_1client.html#a97c4e44da971e7265bc4ffb348ceb39b">More...</a><br /></td></tr>
@@ -264,20 +264,20 @@ template&lt;typename Serial &gt; </td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="var-members"></a>
 Variables</h2></td></tr>
-<tr class="memitem:a81da64e3d9aa6abb47956bc92591b98d"><td class="memTemplParams" colspan="2">template&lt;typename R , typename... Args&gt; </td></tr>
-<tr class="memitem:a81da64e3d9aa6abb47956bc92591b98d"><td class="memTemplItemLeft" align="right" valign="top">constexpr size_t&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="rpc_8hpp.html#a81da64e3d9aa6abb47956bc92591b98d">rpc::function_param_count_v</a> = function_traits&lt;std::function&lt;R(Args...)&gt;&gt;::nargs</td></tr>
-<tr class="memdesc:a81da64e3d9aa6abb47956bc92591b98d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Helper variable for getting parameter count from <a class="el" href="structrpc_1_1function__traits.html">function_traits</a>.  <a href="rpc_8hpp.html#a81da64e3d9aa6abb47956bc92591b98d">More...</a><br /></td></tr>
-<tr class="separator:a81da64e3d9aa6abb47956bc92591b98d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad1719e9e9f903eb4faf2337ef6102ae3"><td class="memTemplParams" colspan="2">template&lt;typename C &gt; </td></tr>
-<tr class="memitem:ad1719e9e9f903eb4faf2337ef6102ae3"><td class="memTemplItemLeft" align="right" valign="top">constexpr bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="rpc_8hpp.html#ad1719e9e9f903eb4faf2337ef6102ae3">rpc::is_container_v</a> = is_container&lt;C&gt;::value</td></tr>
-<tr class="memdesc:ad1719e9e9f903eb4faf2337ef6102ae3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Helper variable for <a class="el" href="structrpc_1_1is__container.html">is_container</a>.  <a href="rpc_8hpp.html#ad1719e9e9f903eb4faf2337ef6102ae3">More...</a><br /></td></tr>
-<tr class="separator:ad1719e9e9f903eb4faf2337ef6102ae3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a00979fb7b4af46c0f6325866c8ce4cf4"><td class="memTemplParams" colspan="2">template&lt;typename C &gt; </td></tr>
+<tr class="memitem:a00979fb7b4af46c0f6325866c8ce4cf4"><td class="memTemplItemLeft" align="right" valign="top">constexpr bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacerpc_1_1details.html#a00979fb7b4af46c0f6325866c8ce4cf4">rpc::details::is_container_v</a> = is_container&lt;C&gt;::value</td></tr>
+<tr class="memdesc:a00979fb7b4af46c0f6325866c8ce4cf4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Helper variable for <a class="el" href="structrpc_1_1details_1_1is__container.html">is_container</a>.  <a href="namespacerpc_1_1details.html#a00979fb7b4af46c0f6325866c8ce4cf4">More...</a><br /></td></tr>
+<tr class="separator:a00979fb7b4af46c0f6325866c8ce4cf4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac9815966e0094dec96d37bc25c9f28d5"><td class="memTemplParams" colspan="2">template&lt;bool... bs&gt; </td></tr>
+<tr class="memitem:ac9815966e0094dec96d37bc25c9f28d5"><td class="memTemplItemLeft" align="right" valign="top">constexpr bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacerpc_1_1details.html#ac9815966e0094dec96d37bc25c9f28d5">rpc::details::all_true_v</a> = all_true&lt;bs...&gt;::value</td></tr>
+<tr class="memdesc:ac9815966e0094dec96d37bc25c9f28d5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Helper for all_true.  <a href="namespacerpc_1_1details.html#ac9815966e0094dec96d37bc25c9f28d5">More...</a><br /></td></tr>
+<tr class="separator:ac9815966e0094dec96d37bc25c9f28d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Header-only library for serialized RPC usage. </p>
 <dl class="section author"><dt>Author</dt><dd>Jackson Harmer (<a href="#" onclick="location.href='mai'+'lto:'+'jha'+'rm'+'er9'+'5@'+'gma'+'il'+'.co'+'m'; return false;">jharm<span style="display: none;">.nosp@m.</span>er95<span style="display: none;">.nosp@m.</span>@gmai<span style="display: none;">.nosp@m.</span>l.co<span style="display: none;">.nosp@m.</span>m</a>) </dd></dl>
-<dl class="section version"><dt>Version</dt><dd>0.2.0.0 </dd></dl>
-<dl class="section date"><dt>Date</dt><dd>09-09-2020</dd></dl>
+<dl class="section version"><dt>Version</dt><dd>0.2.2 </dd></dl>
+<dl class="section date"><dt>Date</dt><dd>11-12-2020</dd></dl>
 <dl class="section copyright"><dt>Copyright</dt><dd>BSD 3-Clause License</dd></dl>
 <p>Copyright (c) 2020, Jackson Harmer All rights reserved.</p>
 <p>Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:</p>
@@ -287,153 +287,7 @@ Variables</h2></td></tr>
 <li>Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.</li>
 </ol>
 <p>THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. </p>
-</div><h2 class="groupheader">Typedef Documentation</h2>
-<a id="a4858e794af42a59254b14d6229b44415"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4858e794af42a59254b14d6229b44415">&#9670;&nbsp;</a></span>function_args_t</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;size_t i, typename R , typename... Args&gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">using <a class="el" href="rpc_8hpp.html#a4858e794af42a59254b14d6229b44415">rpc::function_args_t</a> = typedef typename function_traits&lt;std::function&lt;R(Args...)&gt; &gt;::template arg&lt;i&gt;::type</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Helper variable for getting the argument types from function_traits. </p>
-<dl class="tparams"><dt>Template Parameters</dt><dd>
-  <table class="tparams">
-    <tr><td class="paramname">i</td><td>The index of the argument to get the type of </td></tr>
-    <tr><td class="paramname">R</td><td>The return type of the function </td></tr>
-    <tr><td class="paramname">Args</td><td>The argument types of the function </td></tr>
-  </table>
-  </dd>
-</dl>
-
-</div>
-</div>
-<a id="a06f85019f58fafb5c2c01c0ad6c8bf11"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a06f85019f58fafb5c2c01c0ad6c8bf11">&#9670;&nbsp;</a></span>function_result_t</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename R , typename... Args&gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">using <a class="el" href="rpc_8hpp.html#a06f85019f58fafb5c2c01c0ad6c8bf11">rpc::function_result_t</a> = typedef typename function_traits&lt;std::function&lt;R(Args...)&gt; &gt;::type</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Helper variable for getting the return type from function_traits. </p>
-<dl class="tparams"><dt>Template Parameters</dt><dd>
-  <table class="tparams">
-    <tr><td class="paramname">R</td><td>The return type of the function </td></tr>
-    <tr><td class="paramname">Args</td><td>The argument types of the function </td></tr>
-  </table>
-  </dd>
-</dl>
-
-</div>
-</div>
-<h2 class="groupheader">Function Documentation</h2>
-<a id="add1b70d43203c9f4a468bd62c8385d66"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#add1b70d43203c9f4a468bd62c8385d66">&#9670;&nbsp;</a></span>convert_func() <span class="overload">[1/2]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename R , typename... Args&gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">packed_func&lt;R, Args...&gt;&amp; rpc::convert_func </td>
-          <td>(</td>
-          <td class="paramtype">R(*)(Args...)&#160;</td>
-          <td class="paramname">, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const <a class="el" href="classrpc_1_1packed__func__base.html">packed_func_base</a> &amp;&#160;</td>
-          <td class="paramname"><em>pack</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Converts a packed_func_base to a specific templated packed_func. </p>
-<dl class="tparams"><dt>Template Parameters</dt><dd>
-  <table class="tparams">
-    <tr><td class="paramname">R</td><td>Return type for the packed_func </td></tr>
-    <tr><td class="paramname">Args</td><td>List of parameter type(s) for the packed_func </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">unused</td><td>Function pointer to derive R and Args from </td></tr>
-    <tr><td class="paramname">pack</td><td>packed_func_base reference to be converted </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>packed_func&lt;R, Args...&gt;&amp; A casted reference to a specific packed_func </dd></dl>
-
-</div>
-</div>
-<a id="a196fc08d9d1f72dc02d0448b2960c334"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a196fc08d9d1f72dc02d0448b2960c334">&#9670;&nbsp;</a></span>convert_func() <span class="overload">[2/2]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename R , typename... Args&gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">packed_func&lt;R, Args...&gt;&amp; rpc::convert_func </td>
-          <td>(</td>
-          <td class="paramtype">std::function&lt; R(Args...)&gt;&#160;</td>
-          <td class="paramname">, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const <a class="el" href="classrpc_1_1packed__func__base.html">packed_func_base</a> &amp;&#160;</td>
-          <td class="paramname"><em>pack</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Converts a packed_func_base to a specific templated packed_func. </p>
-<dl class="tparams"><dt>Template Parameters</dt><dd>
-  <table class="tparams">
-    <tr><td class="paramname">R</td><td>Return type for the packed_func </td></tr>
-    <tr><td class="paramname">Args</td><td>List of parameter type(s) for the packed_func </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">unused</td><td>Function object to derive R and Args from </td></tr>
-    <tr><td class="paramname">pack</td><td>packed_func_base reference to be converted </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>packed_func&lt;R, Args...&gt;&amp; A casted reference to a specific packed_func </dd></dl>
-
-</div>
-</div>
+</div><h2 class="groupheader">Function Documentation</h2>
 <a id="a90caf447061a735645909db98d294b8c"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a90caf447061a735645909db98d294b8c">&#9670;&nbsp;</a></span>deserialize()</h2>
 
@@ -471,105 +325,6 @@ template&lt;typename Serial , typename Value &gt; </div>
 
 </div>
 </div>
-<a id="a94b4adbfd76012cb59d77c7cbce60f4a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a94b4adbfd76012cb59d77c7cbce60f4a">&#9670;&nbsp;</a></span>for_each_tuple() <span class="overload">[1/2]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename F , typename... Ts&gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">void rpc::for_each_tuple </td>
-          <td>(</td>
-          <td class="paramtype">const std::tuple&lt; Ts... &gt; &amp;&#160;</td>
-          <td class="paramname"><em>tuple</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const F &amp;&#160;</td>
-          <td class="paramname"><em>func</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Meta-programming function to apply a function over each member of a tuple. </p>
-<dl class="tparams"><dt>Template Parameters</dt><dd>
-  <table class="tparams">
-    <tr><td class="paramname">F</td><td>Function type </td></tr>
-    <tr><td class="paramname">Ts</td><td>Tuple types (generic) </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">tuple</td><td>Tuple to iterate over </td></tr>
-    <tr><td class="paramname">func</td><td>Function to apply to each value </td></tr>
-  </table>
-  </dd>
-</dl>
-
-</div>
-</div>
-<a id="afb62e721246b3061496c1754c3d4ee0e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afb62e721246b3061496c1754c3d4ee0e">&#9670;&nbsp;</a></span>for_each_tuple() <span class="overload">[2/2]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename F , typename... Ts, size_t... Is&gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">void rpc::for_each_tuple </td>
-          <td>(</td>
-          <td class="paramtype">const std::tuple&lt; Ts... &gt; &amp;&#160;</td>
-          <td class="paramname"><em>tuple</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const F &amp;&#160;</td>
-          <td class="paramname"><em>func</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">std::index_sequence&lt; Is... &gt;&#160;</td>
-          <td class="paramname">&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Default implementation of meta-programming function. </p>
-<dl class="tparams"><dt>Template Parameters</dt><dd>
-  <table class="tparams">
-    <tr><td class="paramname">F</td><td>Function type </td></tr>
-    <tr><td class="paramname">Ts</td><td>Tuple types (generic) </td></tr>
-    <tr><td class="paramname">Is</td><td>Index sequence to iterate over </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">tuple</td><td>Tuple to iterate over </td></tr>
-    <tr><td class="paramname">func</td><td>Function to apply to each value </td></tr>
-  </table>
-  </dd>
-</dl>
-
-</div>
-</div>
 <a id="aca9aac69687b613761b8c9f30598ae21"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aca9aac69687b613761b8c9f30598ae21">&#9670;&nbsp;</a></span>serialize()</h2>
 
@@ -604,72 +359,6 @@ template&lt;typename Serial , typename Value &gt; </div>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Serial The serialized value </dd></dl>
-
-</div>
-</div>
-<h2 class="groupheader">Variable Documentation</h2>
-<a id="a81da64e3d9aa6abb47956bc92591b98d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a81da64e3d9aa6abb47956bc92591b98d">&#9670;&nbsp;</a></span>function_param_count_v</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename R , typename... Args&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">constexpr size_t rpc::function_param_count_v = function_traits&lt;std::function&lt;R(Args...)&gt;&gt;::nargs</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">constexpr</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Helper variable for getting parameter count from function_traits. </p>
-<dl class="tparams"><dt>Template Parameters</dt><dd>
-  <table class="tparams">
-    <tr><td class="paramname">R</td><td>The return type of the function </td></tr>
-    <tr><td class="paramname">Args</td><td>The argument types of the function </td></tr>
-  </table>
-  </dd>
-</dl>
-
-</div>
-</div>
-<a id="ad1719e9e9f903eb4faf2337ef6102ae3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad1719e9e9f903eb4faf2337ef6102ae3">&#9670;&nbsp;</a></span>is_container_v</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename C &gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">constexpr bool rpc::is_container_v = is_container&lt;C&gt;::value</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">constexpr</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Helper variable for is_container. </p>
-<dl class="tparams"><dt>Template Parameters</dt><dd>
-  <table class="tparams">
-    <tr><td class="paramname">C</td><td>Type to check </td></tr>
-  </table>
-  </dd>
-</dl>
 
 </div>
 </div>

@@ -22,7 +22,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">rpc.hpp
-   &#160;<span id="projectnumber">0.2.0.0</span>
+   &#160;<span id="projectnumber">0.2.1</span>
    </div>
    <div id="projectbrief">Simple RPC Header-Only Library</div>
   </td>
@@ -86,6 +86,10 @@ Classes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
+<tr class="memitem:a47093157d082e708aafd4420fa5fbeca"><td class="memTemplParams" colspan="2">template&lt;typename R , typename... Args&gt; </td></tr>
+<tr class="memitem:a47093157d082e708aafd4420fa5fbeca"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classrpc_1_1packed__func.html">packed_func</a>&lt; R, Args... &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacerpc_1_1client.html#a47093157d082e708aafd4420fa5fbeca">pack_call</a> (const std::string &amp;func_name, Args &amp;&amp;... args)</td></tr>
+<tr class="memdesc:a47093157d082e708aafd4420fa5fbeca"><td class="mdescLeft">&#160;</td><td class="mdescRight">Packages a function call into a <a class="el" href="classrpc_1_1packed__func.html">packed_func</a>.  <a href="namespacerpc_1_1client.html#a47093157d082e708aafd4420fa5fbeca">More...</a><br /></td></tr>
+<tr class="separator:a47093157d082e708aafd4420fa5fbeca"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a97c4e44da971e7265bc4ffb348ceb39b"><td class="memTemplParams" colspan="2">template&lt;typename Serial , typename R  = void, typename... Args&gt; </td></tr>
 <tr class="memitem:a97c4e44da971e7265bc4ffb348ceb39b"><td class="memTemplItemLeft" align="right" valign="top">Serial&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacerpc_1_1client.html#a97c4e44da971e7265bc4ffb348ceb39b">serialize_call</a> (const std::string &amp;func_name, Args &amp;&amp;... args)</td></tr>
 <tr class="memdesc:a97c4e44da971e7265bc4ffb348ceb39b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Transforms a function call to a serial object.  <a href="namespacerpc_1_1client.html#a97c4e44da971e7265bc4ffb348ceb39b">More...</a><br /></td></tr>
@@ -304,6 +308,53 @@ template&lt;typename Serial &gt; </div>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Serial The received serial object representing the function call result </dd></dl>
+
+</div>
+</div>
+<a id="a47093157d082e708aafd4420fa5fbeca"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a47093157d082e708aafd4420fa5fbeca">&#9670;&nbsp;</a></span>pack_call()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename R , typename... Args&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classrpc_1_1packed__func.html">packed_func</a>&lt;R, Args...&gt; rpc::client::pack_call </td>
+          <td>(</td>
+          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramname"><em>func_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Args &amp;&amp;...&#160;</td>
+          <td class="paramname"><em>args</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Packages a function call into a <a class="el" href="classrpc_1_1packed__func.html">packed_func</a>. </p>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">R</td><td>The type of the result for the <a class="el" href="classrpc_1_1packed__func.html">packed_func</a> </td></tr>
+    <tr><td class="paramname">Args</td><td>The list of parameter type(s) for the <a class="el" href="classrpc_1_1packed__func.html">packed_func</a> </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">func_name</td><td>The name of the function to call (case-sensitive) </td></tr>
+    <tr><td class="paramname">args</td><td>List of arguments to be packaged </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>packed_func&lt;R, Args...&gt; The packaged function call </dd></dl>
 
 </div>
 </div>
