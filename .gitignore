@@ -49,3 +49,4 @@ _deps
 build/
 build-*/
 temp/
+/vs19/rpc_server/bus.txt

@@ -2,7 +2,7 @@
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Header-only library for serialized RPC usage
 ///@version 0.2.2
-///@date 11-12-2020
+///@date 11-13-2020
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -549,6 +549,21 @@ private:
 #if defined(RPC_HPP_ENABLE_POINTERS)
     std::array<size_t, sizeof...(Args)> m_arg_sz_arr{};
 
+    template<typename T>
+    void update_arg_arr_helper(const std::array<std::any, sizeof...(Args)>& arg_arr, size_t& count)
+    {
+        if constexpr (std::is_pointer_v<T>)
+        {
+            const auto& arr = std::any_cast<
+                const details::dyn_array<std::remove_cv_t<std::remove_pointer_t<T>>>&>(
+                arg_arr[count]);
+
+            m_arg_sz_arr[count] = arr.capacity();
+        }
+
+        ++count;
+    }
+
 public:
     ///@brief Get the indexed argument size
     ///
@@ -567,20 +582,9 @@ public:
     ///@param arg_arr Array of arguments to reference
     void update_arg_arr(const std::array<std::any, sizeof...(Args)>& arg_arr)
     {
-        const std::tuple<Args...> tup;
-
         size_t count = 0;
-
-        details::for_each_tuple(tup, [&count, &arg_arr, this](auto x) {
-            if constexpr (std::is_pointer_v<decltype(x)>)
-            {
-                const auto& arr = std::any_cast<const details::dyn_array<
-                    std::remove_cv_t<std::remove_pointer_t<decltype(x)>>>&>(arg_arr[count]);
-                m_arg_sz_arr[count] = arr.capacity();
-            }
-
-            ++count;
-        });
+        using expander = int[];
+        (void)expander{ 0, ((void)update_arg_arr_helper<Args>(arg_arr, count), 0)... };
     }
 #endif
 };
@@ -657,6 +661,21 @@ private:
 #if defined(RPC_HPP_ENABLE_POINTERS)
     std::array<size_t, sizeof...(Args)> m_arg_sz_arr{};
 
+    template<typename T>
+    void update_arg_arr_helper(const std::array<std::any, sizeof...(Args)>& arg_arr, size_t& count)
+    {
+        if constexpr (std::is_pointer_v<T>)
+        {
+            const auto& arr = std::any_cast<
+                const details::dyn_array<std::remove_cv_t<std::remove_pointer_t<T>>>&>(
+                arg_arr[count]);
+
+            m_arg_sz_arr[count] = arr.capacity();
+        }
+
+        ++count;
+    }
+
 public:
     ///@brief Get the indexed argument size
     ///
@@ -675,20 +694,9 @@ public:
     ///@param arg_arr Array of arguments to reference
     void update_arg_arr(const std::array<std::any, sizeof...(Args)>& arg_arr)
     {
-        const std::tuple<Args...> tup;
-
         size_t count = 0;
-
-        details::for_each_tuple(tup, [&count, &arg_arr, this](auto x) {
-            if constexpr (std::is_pointer_v<decltype(x)>)
-            {
-                const auto& arr = std::any_cast<const details::dyn_array<
-                    std::remove_cv_t<std::remove_pointer_t<decltype(x)>>>&>(arg_arr[count]);
-                m_arg_sz_arr[count] = arr.capacity();
-            }
-
-            ++count;
-        });
+        using expander = int[];
+        (void)expander{ 0, ((void)update_arg_arr_helper<Args>(arg_arr, count), 0)... };
     }
 #endif
 };
@@ -925,11 +933,11 @@ namespace details
             const auto arg = serial_adapter<Serial>::make_sub_object(arg_list, count);
             auto arr = serial_adapter<Serial>::template parse_arg_arr<
                 std::remove_cv_t<std::remove_pointer_t<T>>>(arg);
-            arg_arr[count--] = std::move(arr);
+            arg_arr[count++] = std::move(arr);
         }
         else
         {
-            arg_arr[count--] = std::nullopt;
+            arg_arr[count++] = std::nullopt;
         }
     }
 
@@ -943,10 +951,11 @@ namespace details
     std::array<std::any, sizeof...(Args)> populate_arg_arr(const Serial& serial_obj)
     {
         const auto& arg_list = serial_adapter<Serial>::make_sub_object(serial_obj, "args");
-        unsigned count = sizeof...(Args) - 1;
+        unsigned count = 0;
         std::array<std::any, sizeof...(Args)> arg_arr;
 
-        [](...) {}((populate_arg_arr_helper<Args>(arg_list, arg_arr, count), 0)...);
+        using expander = int[];
+        (void)expander{ 0, ((void)populate_arg_arr_helper<Args>(arg_list, arg_arr, count), 0)... };
 
         return arg_arr;
     }
