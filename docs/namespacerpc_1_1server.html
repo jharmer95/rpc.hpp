@@ -22,7 +22,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">rpc.hpp
-   &#160;<span id="projectnumber">0.2.0.0</span>
+   &#160;<span id="projectnumber">0.2.1</span>
    </div>
    <div id="projectbrief">Simple RPC Header-Only Library</div>
   </td>
@@ -79,10 +79,18 @@ $(function() {
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a3852c09f74b0a7bf752955a77cda28f5"><td class="memTemplParams" colspan="2">template&lt;typename Serial , typename R , typename... Args&gt; </td></tr>
-<tr class="memitem:a3852c09f74b0a7bf752955a77cda28f5"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classrpc_1_1packed__func.html">packed_func</a>&lt; R, Args... &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacerpc_1_1server.html#a3852c09f74b0a7bf752955a77cda28f5">create_func</a> (R(*)(Args...), const Serial &amp;obj)</td></tr>
-<tr class="memdesc:a3852c09f74b0a7bf752955a77cda28f5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a <a class="el" href="classrpc_1_1packed__func.html">packed_func</a> object from a serial object.  <a href="namespacerpc_1_1server.html#a3852c09f74b0a7bf752955a77cda28f5">More...</a><br /></td></tr>
-<tr class="separator:a3852c09f74b0a7bf752955a77cda28f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acccb390ea6797f5451f75dd6dc5810d8"><td class="memTemplParams" colspan="2">template&lt;typename R , typename... Args&gt; </td></tr>
+<tr class="memitem:acccb390ea6797f5451f75dd6dc5810d8"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classrpc_1_1packed__func.html">packed_func</a>&lt; R, Args... &gt; &amp;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacerpc_1_1server.html#acccb390ea6797f5451f75dd6dc5810d8">convert_func</a> ([[maybe_unused]] std::function&lt; R(Args...)&gt; unused, const <a class="el" href="classrpc_1_1packed__func__base.html">packed_func_base</a> &amp;pack)</td></tr>
+<tr class="memdesc:acccb390ea6797f5451f75dd6dc5810d8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Converts a <a class="el" href="classrpc_1_1packed__func__base.html">packed_func_base</a> to a specific templated <a class="el" href="classrpc_1_1packed__func.html">packed_func</a>.  <a href="namespacerpc_1_1server.html#acccb390ea6797f5451f75dd6dc5810d8">More...</a><br /></td></tr>
+<tr class="separator:acccb390ea6797f5451f75dd6dc5810d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad989490205e8e52f38431baf497b8d18"><td class="memTemplParams" colspan="2">template&lt;typename R , typename... Args&gt; </td></tr>
+<tr class="memitem:ad989490205e8e52f38431baf497b8d18"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classrpc_1_1packed__func.html">packed_func</a>&lt; R, Args... &gt; &amp;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacerpc_1_1server.html#ad989490205e8e52f38431baf497b8d18">convert_func</a> ([[maybe_unused]] R(*unused)(Args...), const <a class="el" href="classrpc_1_1packed__func__base.html">packed_func_base</a> &amp;pack)</td></tr>
+<tr class="memdesc:ad989490205e8e52f38431baf497b8d18"><td class="mdescLeft">&#160;</td><td class="mdescRight">Converts a <a class="el" href="classrpc_1_1packed__func__base.html">packed_func_base</a> to a specific templated <a class="el" href="classrpc_1_1packed__func.html">packed_func</a>.  <a href="namespacerpc_1_1server.html#ad989490205e8e52f38431baf497b8d18">More...</a><br /></td></tr>
+<tr class="separator:ad989490205e8e52f38431baf497b8d18"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a467506ef5ec586fd10b16ddb5b1f683b"><td class="memTemplParams" colspan="2">template&lt;typename Serial , typename R , typename... Args&gt; </td></tr>
+<tr class="memitem:a467506ef5ec586fd10b16ddb5b1f683b"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classrpc_1_1packed__func.html">packed_func</a>&lt; R, Args... &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacerpc_1_1server.html#a467506ef5ec586fd10b16ddb5b1f683b">create_func</a> ([[maybe_unused]] R(*unused)(Args...), const Serial &amp;obj)</td></tr>
+<tr class="memdesc:a467506ef5ec586fd10b16ddb5b1f683b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a <a class="el" href="classrpc_1_1packed__func.html">packed_func</a> object from a serial object.  <a href="namespacerpc_1_1server.html#a467506ef5ec586fd10b16ddb5b1f683b">More...</a><br /></td></tr>
+<tr class="separator:a467506ef5ec586fd10b16ddb5b1f683b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9886cf779e8164ca16a94509c0b9481e"><td class="memTemplParams" colspan="2">template&lt;typename R , typename... Args&gt; </td></tr>
 <tr class="memitem:a9886cf779e8164ca16a94509c0b9481e"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacerpc_1_1server.html#a9886cf779e8164ca16a94509c0b9481e">run_callback</a> (std::function&lt; R(Args...)&gt; func, <a class="el" href="classrpc_1_1packed__func.html">packed_func</a>&lt; R, Args... &gt; &amp;pack)</td></tr>
 <tr class="memdesc:a9886cf779e8164ca16a94509c0b9481e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Runs the callback function and populates the <a class="el" href="classrpc_1_1packed__func.html">packed_func</a> with the result and/or updated arguments.  <a href="namespacerpc_1_1server.html#a9886cf779e8164ca16a94509c0b9481e">More...</a><br /></td></tr>
@@ -91,16 +99,114 @@ Functions</h2></td></tr>
 <tr class="memitem:aa8dfa6764d97f2af25cb30018e880d29"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacerpc_1_1server.html#aa8dfa6764d97f2af25cb30018e880d29">run_callback</a> (R(*func)(Args...), <a class="el" href="classrpc_1_1packed__func.html">packed_func</a>&lt; R, Args... &gt; &amp;pack)</td></tr>
 <tr class="memdesc:aa8dfa6764d97f2af25cb30018e880d29"><td class="mdescLeft">&#160;</td><td class="mdescRight">Runs the callback function and populates the <a class="el" href="classrpc_1_1packed__func.html">packed_func</a> with the result and/or updated arguments.  <a href="namespacerpc_1_1server.html#aa8dfa6764d97f2af25cb30018e880d29">More...</a><br /></td></tr>
 <tr class="separator:aa8dfa6764d97f2af25cb30018e880d29"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8a5b4053728de37db48eeff03adb726a"><td class="memTemplParams" colspan="2"><a id="a8a5b4053728de37db48eeff03adb726a"></a>
-template&lt;typename Serial &gt; </td></tr>
-<tr class="memitem:a8a5b4053728de37db48eeff03adb726a"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>dispatch</b> (Serial &amp;serial_obj)</td></tr>
+<tr class="memitem:a8a5b4053728de37db48eeff03adb726a"><td class="memTemplParams" colspan="2">template&lt;typename Serial &gt; </td></tr>
+<tr class="memitem:a8a5b4053728de37db48eeff03adb726a"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacerpc_1_1server.html#a8a5b4053728de37db48eeff03adb726a">dispatch</a> (Serial &amp;serial_obj)</td></tr>
+<tr class="memdesc:a8a5b4053728de37db48eeff03adb726a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Dispatches the function call based on the received serial object.  <a href="namespacerpc_1_1server.html#a8a5b4053728de37db48eeff03adb726a">More...</a><br /></td></tr>
 <tr class="separator:a8a5b4053728de37db48eeff03adb726a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a857940201b27225eb042bebe89d48d6c"><td class="memTemplParams" colspan="2">template&lt;typename Serial , typename R , typename... Args&gt; </td></tr>
+<tr class="memitem:a857940201b27225eb042bebe89d48d6c"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacerpc_1_1server.html#a857940201b27225eb042bebe89d48d6c">dispatch_func</a> (R(*func)(Args...), Serial &amp;serial_obj)</td></tr>
+<tr class="memdesc:a857940201b27225eb042bebe89d48d6c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Dispatches an individual function (to be called from <a class="el" href="namespacerpc_1_1server.html#a8a5b4053728de37db48eeff03adb726a">dispatch</a>)  <a href="namespacerpc_1_1server.html#a857940201b27225eb042bebe89d48d6c">More...</a><br /></td></tr>
+<tr class="separator:a857940201b27225eb042bebe89d48d6c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Namespace for server-specific functions and variables Client-side code should not need to use anything in this namespace. </p>
 </div><h2 class="groupheader">Function Documentation</h2>
-<a id="a3852c09f74b0a7bf752955a77cda28f5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3852c09f74b0a7bf752955a77cda28f5">&#9670;&nbsp;</a></span>create_func()</h2>
+<a id="ad989490205e8e52f38431baf497b8d18"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad989490205e8e52f38431baf497b8d18">&#9670;&nbsp;</a></span>convert_func() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename R , typename... Args&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classrpc_1_1packed__func.html">packed_func</a>&lt;R, Args...&gt;&amp; rpc::server::convert_func </td>
+          <td>(</td>
+          <td class="paramtype">[[maybe_unused] ] R(*)(Args...)&#160;</td>
+          <td class="paramname"><em>unused</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classrpc_1_1packed__func__base.html">packed_func_base</a> &amp;&#160;</td>
+          <td class="paramname"><em>pack</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Converts a <a class="el" href="classrpc_1_1packed__func__base.html">packed_func_base</a> to a specific templated <a class="el" href="classrpc_1_1packed__func.html">packed_func</a>. </p>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">R</td><td>Return type for the <a class="el" href="classrpc_1_1packed__func.html">packed_func</a> </td></tr>
+    <tr><td class="paramname">Args</td><td>List of parameter type(s) for the <a class="el" href="classrpc_1_1packed__func.html">packed_func</a> </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">unused</td><td>Function pointer to derive R and Args from </td></tr>
+    <tr><td class="paramname">pack</td><td><a class="el" href="classrpc_1_1packed__func__base.html" title="Polymorphic base class for packed_func.">packed_func_base</a> reference to be converted </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>packed_func&lt;R, Args...&gt;&amp; A casted reference to a specific <a class="el" href="classrpc_1_1packed__func.html">packed_func</a> </dd></dl>
+
+</div>
+</div>
+<a id="acccb390ea6797f5451f75dd6dc5810d8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acccb390ea6797f5451f75dd6dc5810d8">&#9670;&nbsp;</a></span>convert_func() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename R , typename... Args&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classrpc_1_1packed__func.html">packed_func</a>&lt;R, Args...&gt;&amp; rpc::server::convert_func </td>
+          <td>(</td>
+          <td class="paramtype">[[maybe_unused] ] std::function&lt; R(Args...)&gt;&#160;</td>
+          <td class="paramname"><em>unused</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classrpc_1_1packed__func__base.html">packed_func_base</a> &amp;&#160;</td>
+          <td class="paramname"><em>pack</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Converts a <a class="el" href="classrpc_1_1packed__func__base.html">packed_func_base</a> to a specific templated <a class="el" href="classrpc_1_1packed__func.html">packed_func</a>. </p>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">R</td><td>Return type for the <a class="el" href="classrpc_1_1packed__func.html">packed_func</a> </td></tr>
+    <tr><td class="paramname">Args</td><td>List of parameter type(s) for the <a class="el" href="classrpc_1_1packed__func.html">packed_func</a> </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">unused</td><td>Function object to derive R and Args from </td></tr>
+    <tr><td class="paramname">pack</td><td><a class="el" href="classrpc_1_1packed__func__base.html" title="Polymorphic base class for packed_func.">packed_func_base</a> reference to be converted </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>packed_func&lt;R, Args...&gt;&amp; A casted reference to a specific <a class="el" href="classrpc_1_1packed__func.html">packed_func</a> </dd></dl>
+
+</div>
+</div>
+<a id="a467506ef5ec586fd10b16ddb5b1f683b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a467506ef5ec586fd10b16ddb5b1f683b">&#9670;&nbsp;</a></span>create_func()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -110,8 +216,8 @@ template&lt;typename Serial , typename R , typename... Args&gt; </div>
         <tr>
           <td class="memname"><a class="el" href="classrpc_1_1packed__func.html">packed_func</a>&lt;R, Args...&gt; rpc::server::create_func </td>
           <td>(</td>
-          <td class="paramtype">R(*)(Args...)&#160;</td>
-          <td class="paramname">, </td>
+          <td class="paramtype">[[maybe_unused] ] R(*)(Args...)&#160;</td>
+          <td class="paramname"><em>unused</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -144,6 +250,88 @@ template&lt;typename Serial , typename R , typename... Args&gt; </div>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>packed_func&lt;R, Args...&gt; The packaged function call </dd></dl>
+
+</div>
+</div>
+<a id="a8a5b4053728de37db48eeff03adb726a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8a5b4053728de37db48eeff03adb726a">&#9670;&nbsp;</a></span>dispatch()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename Serial &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">void rpc::server::dispatch </td>
+          <td>(</td>
+          <td class="paramtype">Serial &amp;&#160;</td>
+          <td class="paramname"><em>serial_obj</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Dispatches the function call based on the received serial object. </p>
+<dl class="section note"><dt>Note</dt><dd>This function must be implemented in the server-side code (or by using the macros found in <a class="el" href="rpc__dispatch__helper_8hpp_source.html">rpc_dispatch_helper.hpp</a>) </dd></dl>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">Serial</td><td>The type of serial object </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">serial_obj</td><td>The serial object to be used by the function call, will (potentially) be modified by calling the function </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a857940201b27225eb042bebe89d48d6c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a857940201b27225eb042bebe89d48d6c">&#9670;&nbsp;</a></span>dispatch_func()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename Serial , typename R , typename... Args&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">void rpc::server::dispatch_func </td>
+          <td>(</td>
+          <td class="paramtype">R(*)(Args...)&#160;</td>
+          <td class="paramname"><em>func</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Serial &amp;&#160;</td>
+          <td class="paramname"><em>serial_obj</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Dispatches an individual function (to be called from <a class="el" href="namespacerpc_1_1server.html#a8a5b4053728de37db48eeff03adb726a">dispatch</a>) </p>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">Serial</td><td>The type of serial object </td></tr>
+    <tr><td class="paramname">R</td><td>The return type of the function </td></tr>
+    <tr><td class="paramname">Args</td><td>The argument list of the function </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">func</td><td>Pointer to the function </td></tr>
+    <tr><td class="paramname">serial_obj</td><td>Serial object to be used by the function call, will (potentially) be modified by calling the function </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>

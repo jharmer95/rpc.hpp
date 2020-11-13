@@ -1,8 +1,8 @@
 ///@file rpc_adapters/rpc_rapidjson.hpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Implementation of adapting rapidjson (https://github.com/Tencent/rapidjson)
-///@version 0.2.1
-///@date 10-20-2020
+///@version 0.2.2
+///@date 11-12-2020
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -114,15 +114,31 @@ void push_arg(
     }
     else if constexpr (std::is_pointer_v<T>)
     {
-        rpdjson_val sub_arr;
-        sub_arr.SetArray();
+        // Arrays have a capacity: "c" and the current data: "d"
+        rpdjson_val val;
+        val.SetObject();
+        rpdjson_val val_c;
+        val_c.SetUint64(arg_sz);
+        rpdjson_val val_d;
 
-        for (size_t i = 0; i < arg_sz; ++i)
+        if constexpr (std::is_same_v<std::remove_cv_t<std::remove_pointer_t<T>>, char>)
         {
-            push_arg(arg[i], sub_arr, 0, alloc);
+            // special case for char*
+            val_d.SetString(arg, alloc);
+        }
+        else
+        {
+            val_d.SetArray();
+
+            for (size_t i = 0; i < arg_sz; ++i)
+            {
+                push_arg(arg[i], val_d, 0, alloc);
+            }
         }
 
-        arg_list.PushBack(sub_arr, alloc);
+        val.AddMember("c", val_c, alloc);
+        val.AddMember("d", val_d, alloc);
+        arg_list.PushBack(val, alloc);
     }
     else if constexpr (std::is_arithmetic_v<T>)
     {
@@ -343,12 +359,12 @@ inline size_t rpdjson_adapter::get_num_args(const rpdjson_doc& obj)
 template<>
 template<typename R, typename... Args>
 rpc::packed_func<R, Args...> rpdjson_adapter::to_packed_func_w_ptr(
-    const rpdjson_doc& serial_obj, const std::vector<std::any>& any_vec)
+    const rpdjson_doc& serial_obj, const std::array<std::any, sizeof...(Args)>& arg_arr)
 {
     unsigned i = 0;
 
     std::array<std::any, sizeof...(Args)> args{ details::args_from_serial_w_ptr<rpdjson_doc, Args>(
-        serial_obj, any_vec, i)... };
+        serial_obj, arg_arr, i)... };
 
     std::unique_ptr<packed_func<R, Args...>> pack_ptr;
 
@@ -390,8 +406,42 @@ rpc::packed_func<R, Args...> rpdjson_adapter::to_packed_func_w_ptr(
         }
     }
 
-    pack_ptr->update_arg_arr(any_vec);
+    pack_ptr->update_arg_arr(arg_arr);
     return *pack_ptr;
+}
+
+template<>
+template<typename Value>
+rpc::details::dyn_array<Value> rpdjson_adapter::parse_arg_arr(const rpdjson_doc& arg_obj)
+{
+    const auto cap = arg_obj["c"].GetUint64();
+    details::dyn_array<Value> arg_arr(cap);
+
+    if constexpr (std::is_same_v<Value, char>)
+    {
+        const auto* data = arg_obj["d"].GetString();
+        const auto sz = strlen(data);
+
+        for (size_t i = 0; i < sz; ++i)
+        {
+            arg_arr.push_back(data[i]);
+        }
+
+        arg_arr.push_back('\0');
+    }
+    else
+    {
+        const auto& data = arg_obj["d"].GetArray();
+
+        for (const auto& obj : data)
+        {
+            rpdjson_doc d;
+            d.CopyFrom(obj, d.GetAllocator());
+            arg_arr.push_back(details::arg_from_serial<rpdjson_doc, Value>(d));
+        }
+    }
+
+    return arg_arr;
 }
 #    endif
 #endif

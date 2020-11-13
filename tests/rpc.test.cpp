@@ -1,8 +1,8 @@
 ///@file rpc.test.cpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Unit test source file for rpc.hpp
-///@version 0.2.1
-///@date 10-20-2020
+///@version 0.2.2
+///@date 11-12-2020
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -102,7 +102,7 @@ TEST_CASE("RAPIDJSON")
 }
 #endif
 
-using test_serial_t = rpdjson_doc;
+using test_serial_t = njson;
 
 #if defined(RPC_HPP_ENABLE_POINTERS)
 TEST_CASE("PtrSum")
@@ -190,6 +190,57 @@ TEST_CASE("HashComplexPtr")
         rpc::call<test_serial_t>(client, "HashComplexPtr", &cx, hash).get_arg<char*>(1));
 
     REQUIRE_THAT(expected, Catch::Matchers::Equals(test));
+}
+
+TEST_CASE("WriteMessagePtr")
+{
+    auto& client = GetClient<test_serial_t>();
+
+    TestMessage msg[2];
+    msg[0].flag1 = true;
+    msg[0].flag2 = false;
+    msg[0].id = 14;
+    msg[0].data_sz = 22;
+
+    for (int i = 0; i < msg[0].data_sz; ++i)
+    {
+        msg[0].data[i] = i * 2;
+    }
+
+    msg[1].flag1 = false;
+    msg[1].flag2 = false;
+    msg[1].id = 15;
+    msg[1].data_sz = 12;
+
+    for (int i = 0; i < msg[1].data_sz; ++i)
+    {
+        msg[1].data[i] = i * 3;
+    }
+
+    int numMsg = 2;
+
+    const auto pack = rpc::call<test_serial_t, int>(client, "WriteMessagePtr", msg, &numMsg);
+    numMsg = *pack.get_arg<int*>(1);
+
+    REQUIRE(numMsg == 2);
+    REQUIRE(*pack.get_result() == 0);
+}
+
+TEST_CASE("ReadMessagePtr")
+{
+    auto& client = GetClient<test_serial_t>();
+
+    TestMessage msg[4];
+
+    int numMsg = 2;
+    const auto pack = rpc::call<test_serial_t, int>(client, "ReadMessagePtr", msg, &numMsg);
+    const auto* ptr = pack.get_arg<TestMessage*>(0);
+    numMsg = *pack.get_arg<int*>(1);
+
+    REQUIRE(numMsg == 2);
+    REQUIRE(*pack.get_result() == 0);
+    REQUIRE(ptr[0].id == 14);
+    REQUIRE(ptr[1].id == 15);
 }
 #endif
 

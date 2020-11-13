@@ -1,5 +1,6 @@
 var searchData=
 [
-  ['is_5fcontainer_31',['is_container',['../structrpc_1_1is__container.html',1,'rpc']]],
-  ['is_5fcontainer_5fv_32',['is_container_v',['../rpc_8hpp.html#ad1719e9e9f903eb4faf2337ef6102ae3',1,'rpc']]]
+  ['has_5fbegin_33',['has_begin',['../structrpc_1_1details_1_1has__begin.html',1,'rpc::details']]],
+  ['has_5fend_34',['has_end',['../structrpc_1_1details_1_1has__end.html',1,'rpc::details']]],
+  ['has_5fsize_35',['has_size',['../structrpc_1_1details_1_1has__size.html',1,'rpc::details']]]
 ];

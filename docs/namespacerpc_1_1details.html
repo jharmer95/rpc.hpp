@@ -22,7 +22,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">rpc.hpp
-   &#160;<span id="projectnumber">0.2.0.0</span>
+   &#160;<span id="projectnumber">0.2.1</span>
    </div>
    <div id="projectbrief">Simple RPC Header-Only Library</div>
   </td>
@@ -68,21 +68,63 @@ $(function() {
 </div><!-- top -->
 <div class="header">
   <div class="summary">
-<a href="#func-members">Functions</a>  </div>
+<a href="#nested-classes">Classes</a> &#124;
+<a href="#typedef-members">Typedefs</a> &#124;
+<a href="#func-members">Functions</a> &#124;
+<a href="#var-members">Variables</a>  </div>
   <div class="headertitle">
 <div class="title">rpc::details Namespace Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
 
-<p>Namespace for functions/variables that should be used only from within the library Using anything in this namespace in your project is discouraged.  
+<p>Namespace for functions/variables that should be used only from within the library. Using anything in this namespace in your project is discouraged.  
 <a href="namespacerpc_1_1details.html#details">More...</a></p>
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
+Classes</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structrpc_1_1details_1_1bool__pack.html">bool_pack</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Dummy struct for all_true.  <a href="structrpc_1_1details_1_1bool__pack.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrpc_1_1details_1_1dyn__array.html">dyn_array</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Dynamically sized generic array class. Has a fixed max capacity and a dynamic size.  <a href="classrpc_1_1details_1_1dyn__array.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structrpc_1_1details_1_1has__begin.html">has_begin</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">SFINAE struct for checking a type for a 'begin' member function.  <a href="structrpc_1_1details_1_1has__begin.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structrpc_1_1details_1_1has__end.html">has_end</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">SFINAE struct for checking a type for a 'end' member function.  <a href="structrpc_1_1details_1_1has__end.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structrpc_1_1details_1_1has__size.html">has_size</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">SFINAE struct for checking a type for a 'size' member function.  <a href="structrpc_1_1details_1_1has__size.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structrpc_1_1details_1_1is__container.html">is_container</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">SFINAE struct to determine if a type is a container.  <a href="structrpc_1_1details_1_1is__container.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structrpc_1_1details_1_1ptr__decay.html">ptr_decay</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Structure to decay arrays to pointers.  <a href="structrpc_1_1details_1_1ptr__decay.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="typedef-members"></a>
+Typedefs</h2></td></tr>
+<tr class="memitem:a1caea5a41c2e1e503fd088efcdef0cd6"><td class="memTemplParams" colspan="2">template&lt;typename T &gt; </td></tr>
+<tr class="memitem:a1caea5a41c2e1e503fd088efcdef0cd6"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacerpc_1_1details.html#a1caea5a41c2e1e503fd088efcdef0cd6">ptr_decay_t</a> = typename <a class="el" href="structrpc_1_1details_1_1ptr__decay.html">ptr_decay</a>&lt; T &gt;::type</td></tr>
+<tr class="memdesc:a1caea5a41c2e1e503fd088efcdef0cd6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Helper for <a class="el" href="structrpc_1_1details_1_1ptr__decay.html" title="Structure to decay arrays to pointers.">ptr_decay</a> struct.  <a href="namespacerpc_1_1details.html#a1caea5a41c2e1e503fd088efcdef0cd6">More...</a><br /></td></tr>
+<tr class="separator:a1caea5a41c2e1e503fd088efcdef0cd6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab3136deccde141f3c5c14e434a81d578"><td class="memTemplParams" colspan="2">template&lt;bool... bs&gt; </td></tr>
+<tr class="memitem:ab3136deccde141f3c5c14e434a81d578"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacerpc_1_1details.html#ab3136deccde141f3c5c14e434a81d578">all_true</a> = std::is_same&lt; <a class="el" href="structrpc_1_1details_1_1bool__pack.html">bool_pack</a>&lt; bs..., true &gt;, <a class="el" href="structrpc_1_1details_1_1bool__pack.html">bool_pack</a>&lt; true, bs... &gt; &gt;</td></tr>
+<tr class="memdesc:ab3136deccde141f3c5c14e434a81d578"><td class="mdescLeft">&#160;</td><td class="mdescRight">SFINAE struct for checking if all packed bool parameters are true.  <a href="namespacerpc_1_1details.html#ab3136deccde141f3c5c14e434a81d578">More...</a><br /></td></tr>
+<tr class="separator:ab3136deccde141f3c5c14e434a81d578"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a1e97882d2cf6f10593661e1094242b2a"><td class="memTemplParams" colspan="2">template&lt;typename Value , typename R , typename... Args&gt; </td></tr>
-<tr class="memitem:a1e97882d2cf6f10593661e1094242b2a"><td class="memTemplItemLeft" align="right" valign="top">std::remove_cv_t&lt; std::remove_reference_t&lt; Value &gt; &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacerpc_1_1details.html#a1e97882d2cf6f10593661e1094242b2a">args_from_packed</a> (const <a class="el" href="classrpc_1_1packed__func.html">packed_func</a>&lt; R, Args... &gt; &amp;pack, unsigned &amp;arg_index)</td></tr>
-<tr class="memdesc:a1e97882d2cf6f10593661e1094242b2a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Unpacks the argument values from a <a class="el" href="classrpc_1_1packed__func.html">packed_func</a>.  <a href="namespacerpc_1_1details.html#a1e97882d2cf6f10593661e1094242b2a">More...</a><br /></td></tr>
-<tr class="separator:a1e97882d2cf6f10593661e1094242b2a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae8d1b65246a88c23eb066636f9ca89e1"><td class="memTemplParams" colspan="2">template&lt;typename F , typename... Ts, size_t... Is&gt; </td></tr>
+<tr class="memitem:ae8d1b65246a88c23eb066636f9ca89e1"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacerpc_1_1details.html#ae8d1b65246a88c23eb066636f9ca89e1">for_each_tuple</a> (const std::tuple&lt; Ts... &gt; &amp;tuple, const F &amp;func, std::index_sequence&lt; Is... &gt;)</td></tr>
+<tr class="memdesc:ae8d1b65246a88c23eb066636f9ca89e1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default implementation of meta-programming function.  <a href="namespacerpc_1_1details.html#ae8d1b65246a88c23eb066636f9ca89e1">More...</a><br /></td></tr>
+<tr class="separator:ae8d1b65246a88c23eb066636f9ca89e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a58ae7b31c81651d6979286f5f30cf46b"><td class="memTemplParams" colspan="2">template&lt;typename F , typename... Ts&gt; </td></tr>
+<tr class="memitem:a58ae7b31c81651d6979286f5f30cf46b"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacerpc_1_1details.html#a58ae7b31c81651d6979286f5f30cf46b">for_each_tuple</a> (const std::tuple&lt; Ts... &gt; &amp;tuple, const F &amp;func)</td></tr>
+<tr class="memdesc:a58ae7b31c81651d6979286f5f30cf46b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Meta-programming function to apply a function over each member of a tuple.  <a href="namespacerpc_1_1details.html#a58ae7b31c81651d6979286f5f30cf46b">More...</a><br /></td></tr>
+<tr class="separator:a58ae7b31c81651d6979286f5f30cf46b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a16bee9d6b42073cac75972e1357ab417"><td class="memTemplParams" colspan="2">template&lt;typename Serial , typename Value &gt; </td></tr>
 <tr class="memitem:a16bee9d6b42073cac75972e1357ab417"><td class="memTemplItemLeft" align="right" valign="top">std::remove_cv_t&lt; std::remove_reference_t&lt; Value &gt; &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacerpc_1_1details.html#a16bee9d6b42073cac75972e1357ab417">arg_from_serial</a> (const Serial &amp;obj)</td></tr>
 <tr class="memdesc:a16bee9d6b42073cac75972e1357ab417"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieves a single argument value from a serial object.  <a href="namespacerpc_1_1details.html#a16bee9d6b42073cac75972e1357ab417">More...</a><br /></td></tr>
@@ -91,14 +133,74 @@ Functions</h2></td></tr>
 <tr class="memitem:a429be958a0bfccbac4007a870945329d"><td class="memTemplItemLeft" align="right" valign="top">std::remove_cv_t&lt; std::remove_reference_t&lt; Value &gt; &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacerpc_1_1details.html#a429be958a0bfccbac4007a870945329d">args_from_serial</a> (const Serial &amp;obj, unsigned &amp;arg_index)</td></tr>
 <tr class="memdesc:a429be958a0bfccbac4007a870945329d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieves the argument values from a serial object.  <a href="namespacerpc_1_1details.html#a429be958a0bfccbac4007a870945329d">More...</a><br /></td></tr>
 <tr class="separator:a429be958a0bfccbac4007a870945329d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9f191c830b8f2a6affc03aafdd859ab7"><td class="memTemplParams" colspan="2">template&lt;typename R , typename... Args&gt; </td></tr>
-<tr class="memitem:a9f191c830b8f2a6affc03aafdd859ab7"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classrpc_1_1packed__func.html">packed_func</a>&lt; R, Args... &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacerpc_1_1details.html#a9f191c830b8f2a6affc03aafdd859ab7">pack_call</a> (const std::string &amp;func_name, Args &amp;&amp;... args)</td></tr>
-<tr class="memdesc:a9f191c830b8f2a6affc03aafdd859ab7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Packages a function call into a <a class="el" href="classrpc_1_1packed__func.html">packed_func</a>.  <a href="namespacerpc_1_1details.html#a9f191c830b8f2a6affc03aafdd859ab7">More...</a><br /></td></tr>
-<tr class="separator:a9f191c830b8f2a6affc03aafdd859ab7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1e97882d2cf6f10593661e1094242b2a"><td class="memTemplParams" colspan="2">template&lt;typename Value , typename R , typename... Args&gt; </td></tr>
+<tr class="memitem:a1e97882d2cf6f10593661e1094242b2a"><td class="memTemplItemLeft" align="right" valign="top">std::remove_cv_t&lt; std::remove_reference_t&lt; Value &gt; &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacerpc_1_1details.html#a1e97882d2cf6f10593661e1094242b2a">args_from_packed</a> (const <a class="el" href="classrpc_1_1packed__func.html">packed_func</a>&lt; R, Args... &gt; &amp;pack, unsigned &amp;arg_index)</td></tr>
+<tr class="memdesc:a1e97882d2cf6f10593661e1094242b2a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Unpacks the argument values from a <a class="el" href="classrpc_1_1packed__func.html">packed_func</a>.  <a href="namespacerpc_1_1details.html#a1e97882d2cf6f10593661e1094242b2a">More...</a><br /></td></tr>
+<tr class="separator:a1e97882d2cf6f10593661e1094242b2a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="var-members"></a>
+Variables</h2></td></tr>
+<tr class="memitem:a00979fb7b4af46c0f6325866c8ce4cf4"><td class="memTemplParams" colspan="2">template&lt;typename C &gt; </td></tr>
+<tr class="memitem:a00979fb7b4af46c0f6325866c8ce4cf4"><td class="memTemplItemLeft" align="right" valign="top">constexpr bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacerpc_1_1details.html#a00979fb7b4af46c0f6325866c8ce4cf4">is_container_v</a> = <a class="el" href="structrpc_1_1details_1_1is__container.html">is_container</a>&lt;C&gt;::value</td></tr>
+<tr class="memdesc:a00979fb7b4af46c0f6325866c8ce4cf4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Helper variable for <a class="el" href="structrpc_1_1details_1_1is__container.html">is_container</a>.  <a href="namespacerpc_1_1details.html#a00979fb7b4af46c0f6325866c8ce4cf4">More...</a><br /></td></tr>
+<tr class="separator:a00979fb7b4af46c0f6325866c8ce4cf4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac9815966e0094dec96d37bc25c9f28d5"><td class="memTemplParams" colspan="2">template&lt;bool... bs&gt; </td></tr>
+<tr class="memitem:ac9815966e0094dec96d37bc25c9f28d5"><td class="memTemplItemLeft" align="right" valign="top">constexpr bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacerpc_1_1details.html#ac9815966e0094dec96d37bc25c9f28d5">all_true_v</a> = <a class="el" href="namespacerpc_1_1details.html#ab3136deccde141f3c5c14e434a81d578">all_true</a>&lt;bs...&gt;::value</td></tr>
+<tr class="memdesc:ac9815966e0094dec96d37bc25c9f28d5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Helper for all_true.  <a href="namespacerpc_1_1details.html#ac9815966e0094dec96d37bc25c9f28d5">More...</a><br /></td></tr>
+<tr class="separator:ac9815966e0094dec96d37bc25c9f28d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>Namespace for functions/variables that should be used only from within the library Using anything in this namespace in your project is discouraged. </p>
-</div><h2 class="groupheader">Function Documentation</h2>
+<div class="textblock"><p>Namespace for functions/variables that should be used only from within the library. Using anything in this namespace in your project is discouraged. </p>
+</div><h2 class="groupheader">Typedef Documentation</h2>
+<a id="ab3136deccde141f3c5c14e434a81d578"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab3136deccde141f3c5c14e434a81d578">&#9670;&nbsp;</a></span>all_true</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;bool... bs&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="namespacerpc_1_1details.html#ab3136deccde141f3c5c14e434a81d578">rpc::details::all_true</a> = typedef std::is_same&lt;<a class="el" href="structrpc_1_1details_1_1bool__pack.html">bool_pack</a>&lt;bs..., true&gt;, <a class="el" href="structrpc_1_1details_1_1bool__pack.html">bool_pack</a>&lt;true, bs...&gt; &gt;</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>SFINAE struct for checking if all packed bool parameters are true. </p>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">bs</td><td>Packed bools to check </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a1caea5a41c2e1e503fd088efcdef0cd6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1caea5a41c2e1e503fd088efcdef0cd6">&#9670;&nbsp;</a></span>ptr_decay_t</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="namespacerpc_1_1details.html#a1caea5a41c2e1e503fd088efcdef0cd6">rpc::details::ptr_decay_t</a> = typedef typename <a class="el" href="structrpc_1_1details_1_1ptr__decay.html">ptr_decay</a>&lt;T&gt;::type</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Helper for <a class="el" href="structrpc_1_1details_1_1ptr__decay.html" title="Structure to decay arrays to pointers.">ptr_decay</a> struct. </p>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">T</td><td>Type to decay </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<h2 class="groupheader">Function Documentation</h2>
 <a id="a16bee9d6b42073cac75972e1357ab417"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a16bee9d6b42073cac75972e1357ab417">&#9670;&nbsp;</a></span>arg_from_serial()</h2>
 
@@ -230,25 +332,25 @@ template&lt;typename Serial , typename Value &gt; </div>
 
 </div>
 </div>
-<a id="a9f191c830b8f2a6affc03aafdd859ab7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9f191c830b8f2a6affc03aafdd859ab7">&#9670;&nbsp;</a></span>pack_call()</h2>
+<a id="a58ae7b31c81651d6979286f5f30cf46b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a58ae7b31c81651d6979286f5f30cf46b">&#9670;&nbsp;</a></span>for_each_tuple() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename R , typename... Args&gt; </div>
+template&lt;typename F , typename... Ts&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classrpc_1_1packed__func.html">packed_func</a>&lt;R, Args...&gt; rpc::details::pack_call </td>
+          <td class="memname">void rpc::details::for_each_tuple </td>
           <td>(</td>
-          <td class="paramtype">const std::string &amp;&#160;</td>
-          <td class="paramname"><em>func_name</em>, </td>
+          <td class="paramtype">const std::tuple&lt; Ts... &gt; &amp;&#160;</td>
+          <td class="paramname"><em>tuple</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">Args &amp;&amp;...&#160;</td>
-          <td class="paramname"><em>args</em>&#160;</td>
+          <td class="paramtype">const F &amp;&#160;</td>
+          <td class="paramname"><em>func</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -258,22 +360,139 @@ template&lt;typename R , typename... Args&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p>Packages a function call into a <a class="el" href="classrpc_1_1packed__func.html">packed_func</a>. </p>
+<p>Meta-programming function to apply a function over each member of a tuple. </p>
 <dl class="tparams"><dt>Template Parameters</dt><dd>
   <table class="tparams">
-    <tr><td class="paramname">R</td><td>The type of the result for the <a class="el" href="classrpc_1_1packed__func.html">packed_func</a> </td></tr>
-    <tr><td class="paramname">Args</td><td>The list of parameter type(s) for the <a class="el" href="classrpc_1_1packed__func.html">packed_func</a> </td></tr>
+    <tr><td class="paramname">F</td><td>Function type </td></tr>
+    <tr><td class="paramname">Ts</td><td>Tuple types (generic) </td></tr>
   </table>
   </dd>
 </dl>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">func_name</td><td>The name of the function to call (case-sensitive) </td></tr>
-    <tr><td class="paramname">args</td><td>List of arguments to be packaged </td></tr>
+    <tr><td class="paramname">tuple</td><td>Tuple to iterate over </td></tr>
+    <tr><td class="paramname">func</td><td>Function to apply to each value </td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>packed_func&lt;R, Args...&gt; The packaged function call </dd></dl>
+
+</div>
+</div>
+<a id="ae8d1b65246a88c23eb066636f9ca89e1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae8d1b65246a88c23eb066636f9ca89e1">&#9670;&nbsp;</a></span>for_each_tuple() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename F , typename... Ts, size_t... Is&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">void rpc::details::for_each_tuple </td>
+          <td>(</td>
+          <td class="paramtype">const std::tuple&lt; Ts... &gt; &amp;&#160;</td>
+          <td class="paramname"><em>tuple</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const F &amp;&#160;</td>
+          <td class="paramname"><em>func</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::index_sequence&lt; Is... &gt;&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Default implementation of meta-programming function. </p>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">F</td><td>Function type </td></tr>
+    <tr><td class="paramname">Ts</td><td>Tuple types (generic) </td></tr>
+    <tr><td class="paramname">Is</td><td>Index sequence to iterate over </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">tuple</td><td>Tuple to iterate over </td></tr>
+    <tr><td class="paramname">func</td><td>Function to apply to each value </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<h2 class="groupheader">Variable Documentation</h2>
+<a id="ac9815966e0094dec96d37bc25c9f28d5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac9815966e0094dec96d37bc25c9f28d5">&#9670;&nbsp;</a></span>all_true_v</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;bool... bs&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr bool rpc::details::all_true_v = <a class="el" href="namespacerpc_1_1details.html#ab3136deccde141f3c5c14e434a81d578">all_true</a>&lt;bs...&gt;::value</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Helper for all_true. </p>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">bs</td><td>Packed bools to check </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a00979fb7b4af46c0f6325866c8ce4cf4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a00979fb7b4af46c0f6325866c8ce4cf4">&#9670;&nbsp;</a></span>is_container_v</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename C &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr bool rpc::details::is_container_v = <a class="el" href="structrpc_1_1details_1_1is__container.html">is_container</a>&lt;C&gt;::value</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Helper variable for <a class="el" href="structrpc_1_1details_1_1is__container.html">is_container</a>. </p>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">C</td><td>Type to check </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
