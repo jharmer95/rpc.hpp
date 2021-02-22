@@ -33,20 +33,22 @@ jobs:
           sudo apt update
           sudo apt install cmake ninja-build g++-10 clang-10
           cmake --version
-          gcc --version
-          clang --version
+          gcc-10 --version
+          clang-10 --version
           pwd
+          ls
   build:
     name: Build w/ CMake
     runs-on: ubuntu-latest
     needs: setup
     strategy:
       matrix:
-        compiler: [gcc, clang]
+        compiler: [g++-10, clang++-10]
     steps:
       - name: Configure and build in CMake
         run: |
           pwd
+          ls
           mkdir build-${{ matrix.compiler }}
           cd build-${{ matrix.compiler }}
           cmake .. -G Ninja -DUSE_CONAN=ON -DBUILD_NJSON_ADAPTER=ON -DBUILD_RAPIDJSON_ADAPTER=ON -DCMAKE_CXX_COMPILER=${{ matrix.compiler }} -DCMAKE_BUILD_TYPE=Release
