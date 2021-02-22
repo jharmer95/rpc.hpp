@@ -9,12 +9,9 @@ on:
         - main
 
 jobs:
-  build:
-    name: Build w/ CMake
+  setup:
+    name: Prepare dependencies
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        compiler: [gcc, clang]
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -36,7 +33,18 @@ jobs:
           sudo apt update
           sudo apt install cmake ninja-build gcc clang
           cmake --version
-          ${{ matrix.compiler }} --version
+          gcc --version
+          clang --version
+  build:
+    name: Build w/ CMake
+    runs-on: ubuntu-latest
+    needs: setup
+    strategy:
+      matrix:
+        compiler: [gcc, clang]
+    steps:
+      - name: Configure and build in CMake
+        run: |
           mkdir build-${{ matrix.compiler }}
           cd build-${{ matrix.compiler }}
           cmake .. -G Ninja -DUSE_CONAN=ON -DBUILD_NJSON_ADAPTER=ON -DBUILD_RAPIDJSON_ADAPTER=ON -DCMAKE_CXX_COMPILER=${{ matrix.compiler }} -DCMAKE_BUILD_TYPE=Release
