@@ -31,7 +31,7 @@ jobs:
       - name: Install CMake, clang, and gcc
         run: |
           sudo apt update
-          sudo apt install cmake ninja-build g++ clang++
+          sudo apt install cmake ninja-build g++-10 clang-11
           cmake --version
           gcc --version
           clang --version
