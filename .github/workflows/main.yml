@@ -39,6 +39,7 @@ jobs:
           ninja
       - name: Run unit tests
         run: |
+          cd build-gcc
           tests/bin/rpc_server & ninja test
   build-clang:
     name: Build w/ clang
@@ -71,4 +72,5 @@ jobs:
           ninja
       - name: Run unit tests
         run: |
+          cd build-clang
           tests/bin/rpc_server & ninja test
