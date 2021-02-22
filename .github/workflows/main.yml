@@ -31,10 +31,11 @@ jobs:
       - name: Install CMake, clang, and gcc
         run: |
           sudo apt update
-          sudo apt install cmake ninja-build gcc clang
+          sudo apt install cmake ninja-build g++ clang++
           cmake --version
           gcc --version
           clang --version
+          pwd
   build:
     name: Build w/ CMake
     runs-on: ubuntu-latest
@@ -45,6 +46,7 @@ jobs:
     steps:
       - name: Configure and build in CMake
         run: |
+          pwd
           mkdir build-${{ matrix.compiler }}
           cd build-${{ matrix.compiler }}
           cmake .. -G Ninja -DUSE_CONAN=ON -DBUILD_NJSON_ADAPTER=ON -DBUILD_RAPIDJSON_ADAPTER=ON -DCMAKE_CXX_COMPILER=${{ matrix.compiler }} -DCMAKE_BUILD_TYPE=Release
