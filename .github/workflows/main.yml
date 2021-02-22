@@ -18,6 +18,10 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: 3.8
+      - name: Install CMake and compilers
+        run: |
+          sudo apt update
+          sudo apt install cmake ninja-build gcc
       - name: Install Conan
         run: |
           python -m pip install --upgrade pip
@@ -29,15 +33,13 @@ jobs:
           sudo ln -s ~/.local/bin/conan /usr/local/bin/conan
       - name: Build with CMake (gcc)
         run: |
-          sudo apt update
-          sudo apt install cmake ninja-build gcc
-          cmake --version
-          gcc --version
-          ls
           mkdir build-gcc
           cd build-gcc
-          cmake .. -G Ninja -DUSE_CONAN=ON -DBUILD_NJSON_ADAPTER=ON -DBUILD_RAPIDJSON_ADAPTER=ON -DCMAKE_CXX_COMPILER=g++ -DCMAKE_C_COMPILER=gcc -DCMAKE_BUILD_TYPE=Release
+          cmake .. -G Ninja -DUSE_CONAN=ON -DBUILD_NJSON_ADAPTER=ON -DBUILD_RAPIDJSON_ADAPTER=ON -DCMAKE_CXX_COMPILER=g++ -DCMAKE_C_COMPILER=gcc -DCMAKE_BUILD_TYPE=RelWithDebInfo
           ninja
+      - name: Run unit tests
+        run: |
+          tests/bin/rpc_server & ninja test
   build-clang:
     name: Build w/ clang
     runs-on: ubuntu-latest
@@ -48,6 +50,10 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: 3.8
+      - name: Install CMake and compilers
+        run: |
+          sudo apt update
+          sudo apt install cmake ninja-build clang
       - name: Install Conan
         run: |
           python -m pip install --upgrade pip
@@ -59,12 +65,10 @@ jobs:
           sudo ln -s ~/.local/bin/conan /usr/local/bin/conan
       - name: Build with CMake (clang)
         run: |
-          sudo apt update
-          sudo apt install cmake ninja-build clang
-          cmake --version
-          clang --version
-          ls
           mkdir build-clang
           cd build-clang
-          cmake .. -G Ninja -DUSE_CONAN=ON -DBUILD_NJSON_ADAPTER=ON -DBUILD_RAPIDJSON_ADAPTER=ON -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang -DCMAKE_BUILD_TYPE=Release
+          cmake .. -G Ninja -DUSE_CONAN=ON -DBUILD_NJSON_ADAPTER=ON -DBUILD_RAPIDJSON_ADAPTER=ON -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang -DCMAKE_BUILD_TYPE=RelWithDebInfo
           ninja
+      - name: Run unit tests
+        run: |
+          tests/bin/rpc_server & ninja test
