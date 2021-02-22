@@ -41,7 +41,7 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake .. -G Ninja -DUSE_CONAN=ON -DBUILD_NJSON_ADAPTER=ON -DBUILD_RAPIDJSON_ADAPTER=ON -DCMAKE_CXX_COMPILER=${{ matrix.compiler }} -DCMAKE_BUILD_TYPE=Release
+          cmake .. -G Ninja -DUSE_CONAN=ON -DBUILD_NJSON_ADAPTER=ON -DBUILD_RAPIDJSON_ADAPTER=ON -DCMAKE_CXX_COMPILER=${{ matrix.compiler }} -DCMAKE_BUILD_TYPE=Debug
           ninja
       - name: Run tests
         run: |
