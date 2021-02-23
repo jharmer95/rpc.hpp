@@ -38,11 +38,23 @@
 
 #pragma once
 
+#if defined(RPC_HPP_NJSON_ENABLED)
+#    include "rpc_adapters/rpc_njson.hpp"
+#endif
+
+#if defined(RPC_HPP_RAPIDJSON_ENABLED)
+#    include "rpc_adapters/rpc_rapidjson.hpp"
+#endif
+
 #include <algorithm>
 #include <array>
 #include <cstdint>
 #include <cstring>
 #include <string>
+
+#if defined(_MSC_VER)
+#    undef GetObject
+#endif
 
 struct TestMessage
 {
@@ -75,7 +87,7 @@ struct ComplexObject
 
 #if defined(RPC_HPP_NJSON_ENABLED)
 template<>
-inline njson rpc::serialize(const TestMessage& val)
+inline njson rpc::serialize<njson_serial_t>(const TestMessage& val)
 {
     njson obj_j;
     obj_j["flag1"] = val.flag1;
@@ -93,7 +105,7 @@ inline njson rpc::serialize(const TestMessage& val)
 }
 
 template<>
-inline TestMessage rpc::deserialize(const njson& serial_obj)
+inline TestMessage rpc::deserialize<njson_serial_t>(const njson& serial_obj)
 {
     TestMessage mesg;
     mesg.flag1 = serial_obj["flag1"].get<bool>();
@@ -105,7 +117,7 @@ inline TestMessage rpc::deserialize(const njson& serial_obj)
 }
 
 template<>
-inline njson rpc::serialize(const ComplexObject& val)
+inline njson rpc::serialize<njson_serial_t>(const ComplexObject& val)
 {
     njson obj_j;
     obj_j["id"] = val.id;
@@ -118,7 +130,7 @@ inline njson rpc::serialize(const ComplexObject& val)
 }
 
 template<>
-inline ComplexObject rpc::deserialize(const njson& serial_obj)
+inline ComplexObject rpc::deserialize<njson_serial_t>(const njson& serial_obj)
 {
     ComplexObject cx;
     cx.id = serial_obj["id"].get<int>();
@@ -141,34 +153,34 @@ inline ComplexObject rpc::deserialize(const njson& serial_obj)
 
 #    if defined(RPC_HPP_NLOHMANN_SERIAL_TYPE)
 template<>
-inline generic_serial_t rpc::serialize(const TestMessage& val)
+inline byte_vec rpc::serialize<generic_serial_t>(const TestMessage& val)
 {
-    return to_func(rpc::serialize<njson, TestMessage>(val));
+    return to_func(rpc::serialize<njson_serial_t, TestMessage>(val));
 }
 
 template<>
-inline TestMessage rpc::deserialize(const generic_serial_t& serial_obj)
+inline TestMessage rpc::deserialize<generic_serial_t>(const byte_vec& serial_obj)
 {
-    return rpc::deserialize<njson, TestMessage>(from_func(serial_obj));
+    return rpc::deserialize<njson_serial_t, TestMessage>(from_func(serial_obj));
 }
 
 template<>
-inline generic_serial_t rpc::serialize(const ComplexObject& val)
+inline byte_vec rpc::serialize<generic_serial_t>(const ComplexObject& val)
 {
-    return to_func(rpc::serialize<njson, ComplexObject>(val));
+    return to_func(rpc::serialize<njson_serial_t, ComplexObject>(val));
 }
 
 template<>
-inline ComplexObject rpc::deserialize(const generic_serial_t& serial_obj)
+inline ComplexObject rpc::deserialize<generic_serial_t>(const byte_vec& serial_obj)
 {
-    return rpc::deserialize<njson, ComplexObject>(from_func(serial_obj));
+    return rpc::deserialize<njson_serial_t, ComplexObject>(from_func(serial_obj));
 }
 #    endif
 #endif
 
 #if defined(RPC_HPP_RAPIDJSON_ENABLED)
 template<>
-inline rpdjson_doc rpc::serialize(const TestMessage& val)
+inline rpdjson_doc rpc::serialize<rpdjson_serial_t>(const TestMessage& val)
 {
     rpdjson_doc d;
     d.SetObject();
@@ -203,7 +215,7 @@ inline rpdjson_doc rpc::serialize(const TestMessage& val)
 }
 
 template<>
-inline TestMessage rpc::deserialize(const rpdjson_doc& serial_obj)
+inline TestMessage rpc::deserialize<rpdjson_serial_t>(const rpdjson_val& serial_obj)
 {
     TestMessage obj;
     const auto flag1_v = serial_obj.FindMember("flag1");
@@ -230,7 +242,7 @@ inline TestMessage rpc::deserialize(const rpdjson_doc& serial_obj)
 }
 
 template<>
-inline rpdjson_doc rpc::serialize(const ComplexObject& val)
+inline rpdjson_doc rpc::serialize<rpdjson_serial_t>(const ComplexObject& val)
 {
     rpdjson_doc d;
     d.SetObject();
@@ -265,7 +277,7 @@ inline rpdjson_doc rpc::serialize(const ComplexObject& val)
 }
 
 template<>
-inline ComplexObject rpc::deserialize(const rpdjson_doc& serial_obj)
+inline ComplexObject rpc::deserialize<rpdjson_serial_t>(const rpdjson_val& serial_obj)
 {
     ComplexObject obj;
 

@@ -63,7 +63,7 @@ void TestType()
 }
 
 template<>
-TestClient& GetClient<njson>()
+TestClient& GetClient<njson_serial_t>()
 {
     static TestClient client("127.0.0.1", "5000");
     return client;
@@ -71,7 +71,7 @@ TestClient& GetClient<njson>()
 
 TEST_CASE("NJSON")
 {
-    TestType<njson>();
+    TestType<njson_serial_t>();
 }
 
 #if defined(RPC_HPP_NLOHMANN_SERIAL_TYPE)
@@ -90,7 +90,7 @@ TEST_CASE("GENERIC_SERIAL_T")
 
 #if defined(RPC_HPP_RAPIDJSON_ENABLED)
 template<>
-TestClient& GetClient<rpdjson_doc>()
+TestClient& GetClient<rpdjson_serial_t>()
 {
     static TestClient client("127.0.0.1", "5002");
     return client;
@@ -98,11 +98,11 @@ TestClient& GetClient<rpdjson_doc>()
 
 TEST_CASE("RAPIDJSON")
 {
-    TestType<rpdjson_doc>();
+    TestType<rpdjson_serial_t>();
 }
 #endif
 
-using test_serial_t = njson;
+using test_serial_t = rpdjson_serial_t;
 
 #if defined(RPC_HPP_ENABLE_POINTERS)
 TEST_CASE("PtrSum")
@@ -415,5 +415,5 @@ TEST_CASE("KillServer")
     {
     }
 
-    REQUIRE_THROWS(TestType<njson>());
+    REQUIRE_THROWS(TestType<njson_serial_t>());
 }

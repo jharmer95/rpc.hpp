@@ -97,7 +97,7 @@ int ReadMessagePtr(TestMessage* const mesg_arr, int* const num_mesgs)
         {
             if (i < *num_mesgs)
             {
-                mesg_arr[i++] = rpc::deserialize<njson, TestMessage>(njson::parse(s));
+                mesg_arr[i++] = rpc::deserialize<njson_serial_t, TestMessage>(njson::parse(s));
             }
             else
             {
@@ -126,7 +126,7 @@ int WriteMessagePtr(const TestMessage* const mesg_arr, int* const num_mesgs)
     {
         try
         {
-            file_out << rpc::serialize<njson, TestMessage>(mesg_arr[i]).dump() << '\n';
+            file_out << rpc::serialize<njson_serial_t, TestMessage>(mesg_arr[i]).dump() << '\n';
         }
         catch (...)
         {
@@ -242,7 +242,7 @@ int ReadMessageRef(TestMessage& mesg)
     {
         if (file_in >> s)
         {
-            mesg = rpc::deserialize<njson, TestMessage>(njson::parse(s));
+            mesg = rpc::deserialize<njson_serial_t, TestMessage>(njson::parse(s));
         }
         while (file_in >> s)
         {
@@ -278,7 +278,7 @@ int WriteMessageRef(const TestMessage& mesg)
 
     try
     {
-        file_out << rpc::serialize<njson, TestMessage>(mesg).dump() << '\n';
+        file_out << rpc::serialize<njson_serial_t, TestMessage>(mesg).dump() << '\n';
     }
     catch (...)
     {
@@ -308,7 +308,7 @@ int ReadMessageVec(std::vector<TestMessage>& vec, int& num_mesgs)
         {
             if (i < num_mesgs)
             {
-                vec.push_back(rpc::deserialize<njson, TestMessage>(njson::parse(s)));
+                vec.push_back(rpc::deserialize<njson_serial_t, TestMessage>(njson::parse(s)));
             }
             else
             {
@@ -348,7 +348,7 @@ int WriteMessageVec(const std::vector<TestMessage>& vec)
     {
         try
         {
-            file_out << rpc::serialize<njson, TestMessage>(mesg).dump() << '\n';
+            file_out << rpc::serialize<njson_serial_t, TestMessage>(mesg).dump() << '\n';
         }
         catch (...)
         {
@@ -512,7 +512,7 @@ void session(tcp::socket sock)
             std::cout << "Received: " << str << '\n';
 #endif
             auto serial_obj = rpc::serial_adapter<Serial>::from_string(str);
-            rpc::server::dispatch(serial_obj);
+            rpc::server::dispatch<Serial>(serial_obj);
             const auto ret_str = rpc::serial_adapter<Serial>::to_string(serial_obj);
 
 #if !defined(NDEBUG)
@@ -534,7 +534,7 @@ struct port
 };
 
 template<>
-struct port<njson>
+struct port<njson_serial_t>
 {
     constexpr static uint16_t value = 5000U;
 };
@@ -546,7 +546,7 @@ struct port<generic_serial_t>
 };
 
 template<>
-struct port<rpdjson_doc>
+struct port<rpdjson_serial_t>
 {
     constexpr static uint16_t value = 5002U;
 };
@@ -572,8 +572,8 @@ int main()
         RUNNING = true;
 
 #if defined(RPC_HPP_NJSON_ENABLED)
-        std::thread(server<njson>, std::ref(io_context)).detach();
-        std::cout << "Running njson server on port " << port_v<njson> << "...\n";
+        std::thread(server<njson_serial_t>, std::ref(io_context)).detach();
+        std::cout << "Running njson server on port " << port_v<njson_serial_t> << "...\n";
 #    if defined(RPC_HPP_NLOHMANN_SERIAL_TYPE)
         std::thread(server<generic_serial_t>, std::ref(io_context)).detach();
         std::cout << "Running nlohmann/serial_type server on port "
@@ -582,8 +582,8 @@ int main()
 #endif
 
 #if defined(RPC_HPP_RAPIDJSON_ENABLED)
-        std::thread(server<rpdjson_doc>, std::ref(io_context)).detach();
-        std::cout << "Running rapidjson server on port " << port_v<rpdjson_doc> << "...\n";
+        std::thread(server<rpdjson_serial_t>, std::ref(io_context)).detach();
+        std::cout << "Running rapidjson server on port " << port_v<rpdjson_serial_t> << "...\n";
 #endif
 
         while (RUNNING)

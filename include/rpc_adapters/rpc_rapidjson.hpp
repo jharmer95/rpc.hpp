@@ -40,6 +40,10 @@
 
 #include "../rpc.hpp"
 
+#if defined(_MSC_VER)
+#    undef GetObject
+#endif
+
 #include <rapidjson/document.h>
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
@@ -52,7 +56,8 @@ Please define this macro or do not include this header!)")
 
 using rpdjson_doc = rapidjson::Document;
 using rpdjson_val = rapidjson::Value;
-using rpdjson_adapter = rpc::serial_adapter<rpdjson_doc>;
+using rpdjson_serial_t = typename rpc::serial_t<rpdjson_val, rpdjson_doc>;
+using rpdjson_adapter = rpc::serial_adapter<rpdjson_serial_t>;
 
 template<>
 template<typename R, typename... Args>
@@ -60,7 +65,7 @@ rpc::packed_func<R, Args...> rpdjson_adapter::to_packed_func(const rpdjson_doc& 
 {
     unsigned i = 0;
 
-    std::array<std::any, sizeof...(Args)> args{ details::args_from_serial<rpdjson_doc, Args>(
+    std::array<std::any, sizeof...(Args)> args{ details::args_from_serial<rpdjson_serial_t, Args>(
         serial_obj, i)... };
 
     if constexpr (std::is_void_v<R>)
@@ -87,9 +92,7 @@ rpc::packed_func<R, Args...> rpdjson_adapter::to_packed_func(const rpdjson_doc& 
             else if constexpr (details::is_container_v<R>)
             {
                 R container;
-                rpdjson_doc d;
-                d.CopyFrom(result, d.GetAllocator());
-                populate_array(d, container);
+                populate_array(result, container);
                 return packed_func<R, Args...>(
                     serial_obj["func_name"].GetString(), container, args);
             }
@@ -110,7 +113,7 @@ void push_arg(
 {
     if constexpr (std::is_same_v<T, std::string>)
     {
-        arg_list.PushBack(rpdjson_val().SetString(arg.c_str(), alloc), alloc);
+        arg_list.PushBack(rpdjson_val{}.SetString(arg.c_str(), alloc), alloc);
     }
     else if constexpr (std::is_pointer_v<T>)
     {
@@ -171,7 +174,7 @@ void push_arg(
     }
     else
     {
-        rpdjson_doc serialized = rpc::serialize<rpdjson_doc, T>(arg);
+        rpdjson_doc serialized = rpc::serialize<rpdjson_serial_t, T>(arg);
         rpdjson_val arr_val;
         arr_val.CopyFrom(serialized, alloc);
         arg_list.PushBack(arr_val, alloc);
@@ -183,8 +186,8 @@ template<typename R, typename... Args>
 rpdjson_doc rpdjson_adapter::from_packed_func(const packed_func<R, Args...>& pack)
 {
     rpdjson_doc d;
-    d.SetObject();
     auto& alloc = d.GetAllocator();
+    d.SetObject();
 
     rpdjson_val func_name;
     func_name.SetString(pack.get_func_name().c_str(), alloc);
@@ -220,7 +223,7 @@ rpdjson_doc rpdjson_adapter::from_packed_func(const packed_func<R, Args...>& pac
             }
             else
             {
-                result = serialize<rpdjson_doc, R>(*pack.get_result());
+                result = serialize<rpdjson_serial_t, R>(*pack.get_result());
             }
         }
         else
@@ -267,29 +270,32 @@ template<>
 inline rpdjson_doc rpdjson_adapter::from_string(const std::string& str)
 {
     rpdjson_doc d;
+    d.SetObject();
     d.Parse(str.c_str());
     return d;
 }
 
 template<>
-inline std::string rpdjson_adapter::extract_func_name(const rpdjson_doc& obj)
+inline std::string rpdjson_adapter::extract_func_name(const rpdjson_val& obj)
 {
     return obj["func_name"].GetString();
 }
 
 template<>
-inline rpdjson_doc rpdjson_adapter::make_sub_object(const rpdjson_doc& obj, const unsigned index)
+inline rpdjson_doc rpdjson_adapter::make_sub_object(const rpdjson_val& obj, const unsigned index)
 {
     rpdjson_doc d;
+    d.SetObject();
     const auto& val = obj[index];
     d.CopyFrom(val, d.GetAllocator());
     return d;
 }
 
 template<>
-inline rpdjson_doc rpdjson_adapter::make_sub_object(const rpdjson_doc& obj, const std::string& name)
+inline rpdjson_doc rpdjson_adapter::make_sub_object(const rpdjson_val& obj, const std::string& name)
 {
     rpdjson_doc d;
+    d.SetObject();
     const auto& val = obj[name.c_str()];
     d.CopyFrom(val, d.GetAllocator());
     return d;
@@ -297,7 +303,7 @@ inline rpdjson_doc rpdjson_adapter::make_sub_object(const rpdjson_doc& obj, cons
 
 template<>
 template<typename T>
-T rpdjson_adapter::get_value(const rpdjson_doc& obj)
+T rpdjson_adapter::get_value(const rpdjson_val& obj)
 {
     if constexpr (std::is_same_v<T, std::string>)
     {
@@ -328,13 +334,13 @@ T rpdjson_adapter::get_value(const rpdjson_doc& obj)
     }
     else
     {
-        return obj.Get<T>();
+        return rpc::deserialize<rpdjson_serial_t, T>(obj);
     }
 }
 
 template<>
 template<typename Container>
-void rpdjson_adapter::populate_array(const rpdjson_doc& obj, Container& container)
+void rpdjson_adapter::populate_array(const rpdjson_val& obj, Container& container)
 {
     static_assert(details::is_container_v<Container>, "Type is not a container!");
     using value_t = typename Container::value_type;
@@ -343,14 +349,12 @@ void rpdjson_adapter::populate_array(const rpdjson_doc& obj, Container& containe
 
     for (const auto& val : arr)
     {
-        rpdjson_doc d;
-        d.CopyFrom(val, d.GetAllocator());
-        container.push_back(details::arg_from_serial<rpdjson_doc, value_t>(d));
+        container.push_back(details::arg_from_serial<rpdjson_serial_t, value_t>(val));
     }
 }
 
 template<>
-inline size_t rpdjson_adapter::get_num_args(const rpdjson_doc& obj)
+inline size_t rpdjson_adapter::get_num_args(const rpdjson_val& obj)
 {
     return obj["args"].GetArray().Size();
 }
@@ -359,12 +363,13 @@ inline size_t rpdjson_adapter::get_num_args(const rpdjson_doc& obj)
 template<>
 template<typename R, typename... Args>
 rpc::packed_func<R, Args...> rpdjson_adapter::to_packed_func_w_ptr(
-    const rpdjson_doc& serial_obj, const std::array<std::any, sizeof...(Args)>& arg_arr)
+    const rpdjson_val& serial_obj, const std::array<std::any, sizeof...(Args)>& arg_arr)
 {
     unsigned i = 0;
 
-    std::array<std::any, sizeof...(Args)> args{ details::args_from_serial_w_ptr<rpdjson_doc, Args>(
-        serial_obj, arg_arr, i)... };
+    std::array<std::any, sizeof...(Args)> args{
+        details::args_from_serial_w_ptr<rpdjson_serial_t, Args>(serial_obj, arg_arr, i)...
+    };
 
     std::unique_ptr<packed_func<R, Args...>> pack_ptr;
 
@@ -387,9 +392,7 @@ rpc::packed_func<R, Args...> rpdjson_adapter::to_packed_func_w_ptr(
             else if constexpr (details::is_container_v<R>)
             {
                 R container;
-                rpdjson_doc d;
-                d.CopyFrom(result, d.GetAllocator());
-                populate_array(d, container);
+                populate_array(result, container);
                 pack_ptr = std::make_unique<packed_func<R, Args...>>(
                     serial_obj["func_name"].GetString(), container, args);
             }
@@ -412,7 +415,7 @@ rpc::packed_func<R, Args...> rpdjson_adapter::to_packed_func_w_ptr(
 
 template<>
 template<typename Value>
-rpc::details::dyn_array<Value> rpdjson_adapter::parse_arg_arr(const rpdjson_doc& arg_obj)
+rpc::details::dyn_array<Value> rpdjson_adapter::parse_arg_arr(const rpdjson_val& arg_obj)
 {
     const auto cap = arg_obj["c"].GetUint64();
     details::dyn_array<Value> arg_arr(cap);
@@ -435,9 +438,7 @@ rpc::details::dyn_array<Value> rpdjson_adapter::parse_arg_arr(const rpdjson_doc&
 
         for (const auto& obj : data)
         {
-            rpdjson_doc d;
-            d.CopyFrom(obj, d.GetAllocator());
-            arg_arr.push_back(details::arg_from_serial<rpdjson_doc, Value>(d));
+            arg_arr.push_back(details::arg_from_serial<rpdjson_serial_t, Value>(obj));
         }
     }
 
