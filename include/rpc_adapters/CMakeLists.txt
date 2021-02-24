@@ -1,46 +1,50 @@
 if(${BUILD_NJSON_ADAPTER})
-  if(${USE_CONAN})
-    set(CONAN_EXTRA_REQUIRES nlohmann_json/[>=3.9.0])
-    run_conan()
-    add_library(njson_lib INTERFACE)
-    target_link_libraries(njson_lib INTERFACE CONAN_PKG::nlohmann_json)
-  else()
-    add_library(njson_lib INTERFACE)
-    find_path(njson_path nlohmann/json.hpp)
-    target_include_directories(njson_lib INTERFACE njson_path)
-  endif()
-
   add_library(njson_adapter INTERFACE)
   target_include_directories(njson_adapter
                              INTERFACE "${PROJECT_SOURCE_DIR}/include")
   target_compile_definitions(
     njson_adapter INTERFACE RPC_HPP_NJSON_ENABLED
                             RPC_HPP_NLOHMANN_SERIAL_TYPE=1)
-  target_link_libraries(njson_adapter INTERFACE ${CMAKE_THREAD_LIBS_INIT}
-                                                njson_lib)
+  target_link_libraries(njson_adapter INTERFACE ${CMAKE_THREAD_LIBS_INIT})
+
+  if(${USE_CONAN})
+    set(CONAN_EXTRA_REQUIRES nlohmann_json/[>=3.9.0])
+    run_conan()
+    target_link_libraries(njson_adapter INTERFACE CONAN_PKG::nlohmann_json)
+  elseif(${USE_VCPKG})
+    find_package(nlohmann_json CONFIG REQUIRED)
+    target_link_libraries(njson_adapter INTERFACE nlohmann_json
+                                                  nlohmann_json::nlohmann_json)
+  else()
+    find_path(njson_path nlohmann/json.hpp)
+    target_include_directories(njson_adapter INTERFACE njson_path)
+  endif()
+
   install(FILES "rpc_njson.hpp"
           DESTINATION "${CMAKE_INSTALL_PREFIX}/include/rpc_adapters")
 endif()
 
 if(${BUILD_RAPIDJSON_ADAPTER})
-  if(${USE_CONAN})
-    set(CONAN_EXTRA_REQUIRES rapidjson/[>=1.1.0])
-    run_conan()
-    add_library(rpdjson_lib INTERFACE)
-    target_link_libraries(rpdjson_lib INTERFACE CONAN_PKG::rapidjson)
-  else()
-    add_library(rpdjson_lib INTERFACE)
-    find_path(rpdjson_path rapidjson/document.h)
-    target_include_directories(rpdjson_lib INTERFACE rpdjson_path)
-  endif()
-
   add_library(rpdjson_adapter INTERFACE)
   target_include_directories(rpdjson_adapter
                              INTERFACE "${PROJECT_SOURCE_DIR}/include")
   target_compile_definitions(rpdjson_adapter
                              INTERFACE RPC_HPP_RAPIDJSON_ENABLED)
-  target_link_libraries(rpdjson_adapter INTERFACE ${CMAKE_THREAD_LIBS_INIT}
-                                                  rpdjson_lib)
+  target_link_libraries(rpdjson_adapter INTERFACE ${CMAKE_THREAD_LIBS_INIT})
+
+  if(${USE_CONAN})
+    set(CONAN_EXTRA_REQUIRES rapidjson/[>=1.1.0])
+    run_conan()
+    target_link_libraries(rpdjson_adapter INTERFACE CONAN_PKG::rapidjson)
+  elseif(${USE_VCPKG})
+    find_package(RapidJSON CONFIG REQUIRED)
+    target_include_directories(rpdjson_adapter
+                               INTERFACE ${RAPIDJSON_INCLUDE_DIRS})
+  else()
+    find_path(rpdjson_path rapidjson/document.h)
+    target_include_directories(rpdjson_adapter INTERFACE rpdjson_path)
+  endif()
+
   install(FILES "rpc_rapidjson.hpp"
           DESTINATION "${CMAKE_INSTALL_PREFIX}/include/rpc_adapters")
 endif()
