@@ -540,7 +540,30 @@ public:
     ///@param arg_index The index (0 start) of the argument to change
     ///@param value The value to set the argument to
     template<typename T>
-    void set_arg(size_t arg_index, T value) &
+    void set_arg(size_t arg_index, const T& value) &
+    {
+        if (arg_index > m_args.size())
+        {
+            throw std::logic_error("Index out of bounds for argument list: "
+                + std::to_string(arg_index) + " > " + std::to_string(m_args.size()) + "!");
+        }
+
+        if (m_args[arg_index].type() != typeid(T))
+        {
+            const std::string t_name = typeid(T).name();
+            throw std::runtime_error("Invalid argument type: \"" + t_name + "\" provided!");
+        }
+
+        m_args[arg_index] = value;
+    }
+
+    ///@brief Set a particular argument
+    ///
+    ///@tparam T Type of the argument to be set
+    ///@param arg_index The index (0 start) of the argument to change
+    ///@param value The value to set the argument to
+    template<typename T>
+    void set_arg(size_t arg_index, T&& value) &
     {
         if (arg_index > m_args.size())
         {
@@ -587,13 +610,13 @@ private:
 
     template<typename T>
     void update_arg_arr_helper(
-        [[maybe_unused]] const std::array<std::any, sizeof...(Args)>& arg_arr, size_t& count) &
+        [[maybe_unused]] std::array<std::any, sizeof...(Args)>&& arg_arr, size_t& count) &
     {
         if constexpr (std::is_pointer_v<T>)
         {
             const auto& arr = std::any_cast<
                 const details::dyn_array<std::remove_cv_t<std::remove_pointer_t<T>>>&>(
-                arg_arr[count]);
+                std::move(arg_arr[count]));
 
             m_arg_sz_arr[count] = arr.capacity();
         }
@@ -617,11 +640,11 @@ public:
     ///@brief Update the argument size array
     ///
     ///@param arg_arr Array of arguments to reference
-    void update_arg_arr(const std::array<std::any, sizeof...(Args)>& arg_arr) &
+    void update_arg_arr(std::array<std::any, sizeof...(Args)> arg_arr) &
     {
         size_t count = 0;
         using expander = int[];
-        (void)expander{ 0, ((void)update_arg_arr_helper<Args>(arg_arr, count), 0)... };
+        (void)expander{ 0, ((void)update_arg_arr_helper<Args>(std::move(arg_arr), count), 0)... };
     }
 #endif
 };
@@ -658,7 +681,24 @@ public:
     ///@param arg_index The index (0 start) of the argument to change
     ///@param value The value to set the argument to
     template<typename T>
-    void set_arg(size_t arg_index, T value) &
+    void set_arg(size_t arg_index, const T& value) &
+    {
+        if (m_args[arg_index].type() != typeid(T))
+        {
+            const std::string t_name = typeid(T).name();
+            throw std::runtime_error("Invalid argument type: \"" + t_name + "\" provided!");
+        }
+
+        m_args[arg_index] = value;
+    }
+
+    ///@brief Set a particular argument
+    ///
+    ///@tparam T Type of the argument to be set
+    ///@param arg_index The index (0 start) of the argument to change
+    ///@param value The value to set the argument to
+    template<typename T>
+    void set_arg(size_t arg_index, T&& value) &
     {
         if (m_args[arg_index].type() != typeid(T))
         {
@@ -698,13 +738,13 @@ private:
 
     template<typename T>
     void update_arg_arr_helper(
-        [[maybe_unused]] const std::array<std::any, sizeof...(Args)>& arg_arr, size_t& count) &
+        [[maybe_unused]] std::array<std::any, sizeof...(Args)>&& arg_arr, size_t& count) &
     {
         if constexpr (std::is_pointer_v<T>)
         {
             const auto& arr = std::any_cast<
                 const details::dyn_array<std::remove_cv_t<std::remove_pointer_t<T>>>&>(
-                arg_arr[count]);
+                std::move(arg_arr[count]));
 
             m_arg_sz_arr[count] = arr.capacity();
         }
@@ -728,11 +768,11 @@ public:
     ///@brief Update the argument size array
     ///
     ///@param arg_arr Array of arguments to reference
-    void update_arg_arr(const std::array<std::any, sizeof...(Args)>& arg_arr) &
+    void update_arg_arr(std::array<std::any, sizeof...(Args)> arg_arr) &
     {
         size_t count = 0;
         using expander = int[];
-        (void)expander{ 0, ((void)update_arg_arr_helper<Args>(arg_arr, count), 0)... };
+        (void)expander{ 0, ((void)update_arg_arr_helper<Args>(std::move(arg_arr), count), 0)... };
     }
 #endif
 };
@@ -771,7 +811,7 @@ public:
     ///@param pack The packaged function call to be converted
     ///@return value_type The serial object
     template<typename R, typename... Args>
-    [[nodiscard]] static doc_type from_packed_func(const packed_func<R, Args...>& pack);
+    [[nodiscard]] static doc_type from_packed_func(packed_func<R, Args...>&& pack);
 
     ///@brief Converts a serial object to a readable std::string
     ///
@@ -1004,7 +1044,8 @@ namespace details
         std::array<std::any, sizeof...(Args)> arg_arr;
 
         using expander = int[];
-        (void)expander{ 0, ((void)populate_arg_arr_helper<Args, Serial>(arg_list, arg_arr, count), 0)... };
+        (void)expander{ 0,
+            ((void)populate_arg_arr_helper<Args, Serial>(arg_list, arg_arr, count), 0)... };
 
         return arg_arr;
     }
@@ -1144,19 +1185,19 @@ namespace server
         {
             auto pack = create_func<Serial>(func, serial_obj);
             run_callback(func, pack);
-            serial_obj = serial_adapter<Serial>::from_packed_func(pack);
+            serial_obj = serial_adapter<Serial>::from_packed_func(std::move(pack));
         }
         else
         {
             const auto arg_arr = details::populate_arg_arr<Serial, Args...>(serial_obj);
             auto pack = create_func_w_ptr<Serial>(func, arg_arr, serial_obj);
             run_callback(func, pack);
-            serial_obj = serial_adapter<Serial>::from_packed_func(pack);
+            serial_obj = serial_adapter<Serial>::from_packed_func(std::move(pack));
         }
 #else
         auto pack = create_func(func, serial_obj);
         run_callback(func, pack);
-        serial_obj = serial_adapter<Serial>::from_packed_func(pack);
+        serial_obj = serial_adapter<Serial>::from_packed_func(std::move(pack));
 #endif
     }
 } // namespace rpc::server
@@ -1213,8 +1254,7 @@ inline namespace client
     ///@param args List of arguments to be packaged
     ///@return packed_func<R, Args...> The packaged function call
     template<typename R, typename... Args>
-    packed_func<R, details::ptr_decay_t<Args>...> pack_call(
-        const std::string& func_name, Args&&... args)
+    packed_func<R, details::ptr_decay_t<Args>...> pack_call(std::string&& func_name, Args&&... args)
     {
         std::array<size_t, sizeof...(Args)> arg_sz_arr{};
         unsigned i = 0;
@@ -1223,7 +1263,7 @@ inline namespace client
 
         if constexpr (std::is_void_v<R>)
         {
-            packed_func<void, details::ptr_decay_t<Args>...> pack(func_name, argArray);
+            packed_func<void, details::ptr_decay_t<Args>...> pack(std::move(func_name), argArray);
 
             for (size_t j = 0; j < sizeof...(Args); ++j)
             {
@@ -1234,7 +1274,8 @@ inline namespace client
         }
         else
         {
-            packed_func<R, details::ptr_decay_t<Args>...> pack(func_name, std::nullopt, argArray);
+            packed_func<R, details::ptr_decay_t<Args>...> pack(
+                std::move(func_name), std::nullopt, argArray);
 
             for (size_t j = 0; j < sizeof...(Args); ++j)
             {
@@ -1253,17 +1294,17 @@ inline namespace client
     ///@param args List of arguments to be packaged
     ///@return packed_func<R, Args...> The packaged function call
     template<typename R, typename... Args>
-    packed_func<R, Args...> pack_call(const std::string& func_name, Args&&... args)
+    packed_func<R, Args...> pack_call(std::string&& func_name, Args&&... args)
     {
         std::array<std::any, sizeof...(Args)> argArray{ std::forward<Args>(args)... };
 
         if constexpr (std::is_void_v<R>)
         {
-            return packed_func<void, Args...>(func_name, argArray);
+            return packed_func<void, Args...>(std::move(func_name), argArray);
         }
         else
         {
-            return packed_func<R, Args...>(func_name, std::nullopt, argArray);
+            return packed_func<R, Args...>(std::move(func_name), std::nullopt, argArray);
         }
     }
 #endif
@@ -1277,12 +1318,13 @@ inline namespace client
     ///@param args The list of parameters for the function call
     ///@return Serial The serial object representing the function call
     template<typename Serial, typename R = void, typename... Args>
-    typename Serial::doc_type serialize_call(const std::string& func_name, Args&&... args)
+    typename Serial::doc_type serialize_call(std::string&& func_name, Args&&... args)
     {
         // TODO: Can we elminate creating a packed_func JUST to serialize it back?
-        const auto packed = pack_call<R, Args...>(func_name, std::forward<Args>(args)...);
+        auto packed = pack_call<R, Args...>(std::move(func_name), std::forward<Args>(args)...);
+
         return serial_adapter<Serial>::template from_packed_func<R, details::ptr_decay_t<Args>...>(
-            packed);
+            std::move(packed));
     }
 
     ///@brief Transforms a function call to a serial object (asynchronously)
@@ -1297,8 +1339,9 @@ inline namespace client
     std::future<typename Serial::doc_type> async_serialize_call(
         const std::string& func_name, Args&&... args)
     {
-        const auto packed = pack_call<R, Args...>(func_name, std::forward<Args>(args)...);
-        return std::async(serial_adapter<Serial>::template from_packed_func<R, Args...>, packed);
+        auto packed = pack_call<R, Args...>(func_name, std::forward<Args>(args)...);
+        return std::async(
+            serial_adapter<Serial>::template from_packed_func<R, Args...>, std::move(packed));
     }
 
     ///@brief Sends a serialized function call to the server
@@ -1335,12 +1378,11 @@ inline namespace client
     ///@return packed_func<R, Args...> A packaged function call with the result and updated parameters
     template<typename Serial, typename R = void, typename... Args>
     packed_func<R, details::ptr_decay_t<Args>...> call(
-        client_base& client, const std::string& func_name, Args&&... args)
+        client_base& client, std::string&& func_name, Args&&... args)
     {
         const auto serial_obj =
-            serialize_call<Serial, R, Args...>(func_name, std::forward<Args>(args)...);
+            serialize_call<Serial, R, Args...>(std::move(func_name), std::forward<Args>(args)...);
 
-        const auto dbg_val = serial_adapter<Serial>::extract_func_name(serial_obj);
         send_to_server<Serial>(serial_obj, client);
         const auto resp_obj = get_server_response<Serial>(client);
 
@@ -1355,7 +1397,6 @@ inline namespace client
         }
         else
         {
-            //thread_local std::vector<std::any> any_vec;
             thread_local std::array<std::any, sizeof...(Args)> arg_arr;
 
             arg_arr = details::populate_arg_arr<Serial, details::ptr_decay_t<Args>...>(resp_obj);
@@ -1376,9 +1417,9 @@ inline namespace client
     ///@return std::future<packed_func<R, Args...>> Future of the packaged function call with the result and updated parameters
     template<typename Serial, typename R = void, typename... Args>
     std::future<packed_func<R, details::ptr_decay_t<Args>...>> async_call(
-        client_base& client, const std::string& func_name, Args&&... args)
+        client_base& client, std::string&& func_name, Args&&... args)
     {
-        return std::async(call<Serial, R, Args...>, client, func_name, args...);
+        return std::async(call<Serial, R, Args...>, client, std::move(func_name), args...);
     }
 #else
     ///@brief Packages and sends/receives a serialized function call in one easy function
@@ -1391,18 +1432,19 @@ inline namespace client
     ///@param args The list of parameters for the function call
     ///@return packed_func<R, Args...> A packaged function call with the result and updated parameters
     template<typename Serial, typename R = void, typename... Args>
-    packed_func<R, Args...> call(client_base& client, const std::string& func_name, Args&&... args)
+    packed_func<R, Args...> call(client_base& client, std::string&& func_name, Args&&... args)
     {
         static_assert(
             details::all_true_v<!(
                 std::is_pointer_v<std::remove_cv_t<std::remove_reference_t<
                     Args>>> || std::is_array_v<std::remove_cv_t<std::remove_reference_t<Args>>>)...>,
-            "Calling functions with pointer arguments is disabled by default as it adds overhead, "
+            "Calling functions with pointer arguments is disabled by default as it adds "
+            "overhead, "
             "please consider refactoring your API to avoid pointers. If you must use pointers, "
             "define 'RPC_HPP_ENABLE_POINTERS'.");
 
         const auto serial_obj =
-            serialize_call<Serial, R, Args...>(func_name, std::forward<Args>(args)...);
+            serialize_call<Serial, R, Args...>(std::move(func_name), std::forward<Args>(args)...);
 
         send_to_server(serial_obj, client);
         const auto resp_obj = get_server_response<Serial>(client);
@@ -1421,9 +1463,9 @@ inline namespace client
     ///@return std::future<packed_func<R, Args...>> Future of the packaged function call with the result and updated parameters
     template<typename Serial, typename R = void, typename... Args>
     std::future<packed_func<R, Args...>> async_call(
-        client_base& client, const std::string& func_name, Args&&... args)
+        client_base& client, std::string&& func_name, Args&&... args)
     {
-        return std::async(call<Serial, R, Args...>, client, func_name, args...);
+        return std::async(call<Serial, R, Args...>, client, std::move(func_name), args...);
     }
 #endif
 } // namespace rpc::client

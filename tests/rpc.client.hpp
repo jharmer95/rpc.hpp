@@ -55,7 +55,7 @@ public:
 
     void send(const std::string& mesg) override
     {
-        write(m_socket, asio::buffer(mesg, mesg.size()));
+        asio::write(m_socket, asio::buffer(mesg, mesg.size()));
     }
 
     [[nodiscard]] std::string receive() override

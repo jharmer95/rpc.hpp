@@ -135,7 +135,7 @@ void push_arg(T arg, njson& arg_list, const size_t arg_sz)
 
 template<>
 template<typename R, typename... Args>
-njson njson_adapter::from_packed_func(const packed_func<R, Args...>& pack)
+njson njson_adapter::from_packed_func(packed_func<R, Args...>&& pack)
 {
     njson ret_j;
 
@@ -388,7 +388,7 @@ rpc::packed_func<R, Args...> generic_serial_adapter::to_packed_func(const byte_v
 
 template<>
 template<typename R, typename... Args>
-byte_vec generic_serial_adapter::from_packed_func(const packed_func<R, Args...>& pack)
+byte_vec generic_serial_adapter::from_packed_func(packed_func<R, Args...>&& pack)
 {
     njson ret_j;
 

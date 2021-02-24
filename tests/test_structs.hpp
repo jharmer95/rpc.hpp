@@ -52,10 +52,6 @@
 #include <cstring>
 #include <string>
 
-#if defined(_MSC_VER)
-#    undef GetObject
-#endif
-
 struct TestMessage
 {
     bool flag1{};

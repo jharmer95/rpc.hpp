@@ -40,10 +40,6 @@
 
 #include "../rpc.hpp"
 
-#if defined(_MSC_VER)
-#    undef GetObject
-#endif
-
 #include <rapidjson/document.h>
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
@@ -183,7 +179,7 @@ void push_arg(
 
 template<>
 template<typename R, typename... Args>
-rpdjson_doc rpdjson_adapter::from_packed_func(const packed_func<R, Args...>& pack)
+rpdjson_doc rpdjson_adapter::from_packed_func(packed_func<R, Args...>&& pack)
 {
     rpdjson_doc d;
     auto& alloc = d.GetAllocator();

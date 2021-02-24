@@ -487,14 +487,16 @@ RPC_DEFAULT_DISPATCH(KillServer, SimpleSum, StrLen, AddOneToEach, AddOneToEachRe
 template<typename Serial>
 void session(tcp::socket sock)
 {
+    constexpr auto BUFFER_SZ = 64U * 1024UL;
+    std::unique_ptr<char[]> data = std::make_unique<char[]>(BUFFER_SZ);
+
     try
     {
+
         while (true)
         {
-            std::unique_ptr<char[]> data = std::make_unique<char[]>(64U * 1024UL);
-
             asio::error_code error;
-            const size_t len = sock.read_some(asio::buffer(data.get(), 64U * 1024UL), error);
+            const size_t len = sock.read_some(asio::buffer(data.get(), BUFFER_SZ), error);
 
             if (error == asio::error::eof)
             {
@@ -508,9 +510,11 @@ void session(tcp::socket sock)
             }
 
             const std::string str(data.get(), data.get() + len);
+
 #if !defined(NDEBUG)
             std::cout << "Received: " << str << '\n';
 #endif
+
             auto serial_obj = rpc::serial_adapter<Serial>::from_string(str);
             rpc::server::dispatch<Serial>(serial_obj);
             const auto ret_str = rpc::serial_adapter<Serial>::to_string(serial_obj);
