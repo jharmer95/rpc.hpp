@@ -1,13 +1,13 @@
 ///@file rpc.server.cpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Example implementation of an RPC server
-///@version 0.2.1
-///@date 10-20-2020
+///@version 0.2.3
+///@date 02-24-2021
 ///
 ///@copyright
 ///BSD 3-Clause License
 ///
-///Copyright (c) 2020, Jackson Harmer
+///Copyright (c) 2020-2021, Jackson Harmer
 ///All rights reserved.
 ///
 ///Redistribution and use in source and binary forms, with or without

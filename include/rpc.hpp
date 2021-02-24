@@ -1,13 +1,13 @@
 ///@file rpc.hpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Header-only library for serialized RPC usage
-///@version 0.2.2
-///@date 11-13-2020
+///@version 0.2.3
+///@date 02-24-2021
 ///
 ///@copyright
 ///BSD 3-Clause License
 ///
-///Copyright (c) 2020, Jackson Harmer
+///Copyright (c) 2020-2021, Jackson Harmer
 ///All rights reserved.
 ///
 ///Redistribution and use in source and binary forms, with or without
