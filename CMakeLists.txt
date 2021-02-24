@@ -134,8 +134,13 @@ if(${GENERATE_DOXYGEN})
 endif()
 
 option(USE_CONAN "Use Conan to manage C/C++ dependencies" OFF)
+option(USE_VCPKG "Use vcpkg to manage C/C++ dependencies" OFF)
 
 if(${USE_CONAN})
+  if (${USE_VCPKG})
+    message(FATAL_ERROR "Using both vcpkg and Conan is not supported!")
+  endif()
+
   set(CONAN_EXTRA_REQUIRES "")
   set(CONAN_EXTRA_OPTIONS "")
   include(cmake/Conan.cmake)
