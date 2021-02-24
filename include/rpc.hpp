@@ -487,7 +487,7 @@ protected:
     packed_func_base(packed_func_base&&) noexcept = default;
 
 private:
-    const std::string m_func_name;
+    std::string m_func_name;
     std::string m_err_mesg{};
 };
 
@@ -517,7 +517,7 @@ public:
     packed_func(const packed_func&) = default;
     packed_func(packed_func&&) noexcept = default;
     packed_func& operator=(const packed_func&) & = default;
-    packed_func& operator=(packed_func&&) & noexcept = default;
+    packed_func& operator=(packed_func&&) & = default;
 
     explicit operator bool() const noexcept { return m_result.has_value(); }
 
@@ -671,7 +671,7 @@ public:
     packed_func(const packed_func&) = default;
     packed_func(packed_func&&) noexcept = default;
     packed_func& operator=(const packed_func&) & = default;
-    packed_func& operator=(packed_func&&) & noexcept = default;
+    packed_func& operator=(packed_func&&) & = default;
 
     explicit operator bool() const noexcept { return true; }
 
