@@ -1,13 +1,13 @@
 ///@file rpc_adapters/rpc_njson.hpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Implementation of adapting nlohmann/json (https://github.com/nlohmann/json)
-///@version 0.2.2
-///@date 11-12-2020
+///@version 0.2.3
+///@date 02-24-2021
 ///
 ///@copyright
 ///BSD 3-Clause License
 ///
-///Copyright (c) 2020, Jackson Harmer
+///Copyright (c) 2020-2021, Jackson Harmer
 ///All rights reserved.
 ///
 ///Redistribution and use in source and binary forms, with or without
@@ -56,7 +56,8 @@ Please define this macro or do not include this header!)")
 #else
 
 using njson = nlohmann::json;
-using njson_adapter = rpc::serial_adapter<njson>;
+using njson_serial_t = rpc::serial_t<njson>;
+using njson_adapter = rpc::serial_adapter<njson_serial_t>;
 
 template<>
 template<typename R, typename... Args>
@@ -64,7 +65,7 @@ rpc::packed_func<R, Args...> njson_adapter::to_packed_func(const njson& serial_o
 {
     unsigned i = 0;
 
-    std::array<std::any, sizeof...(Args)> args{ details::args_from_serial<njson, Args>(
+    std::array<std::any, sizeof...(Args)> args{ details::args_from_serial<njson_serial_t, Args>(
         serial_obj, i)... };
 
     if constexpr (!std::is_void_v<R>)
@@ -128,13 +129,13 @@ void push_arg(T arg, njson& arg_list, const size_t arg_sz)
     }
     else
     {
-        arg_list.push_back(rpc::serialize<njson, T>(arg));
+        arg_list.push_back(rpc::serialize<njson_serial_t, T>(arg));
     }
 }
 
 template<>
 template<typename R, typename... Args>
-njson njson_adapter::from_packed_func(const packed_func<R, Args...>& pack)
+njson njson_adapter::from_packed_func(packed_func<R, Args...>&& pack)
 {
     njson ret_j;
 
@@ -221,7 +222,7 @@ void njson_adapter::populate_array(const njson& obj, Container& container)
 
     for (const auto& val : obj)
     {
-        container.push_back(details::arg_from_serial<njson, value_t>(val));
+        container.push_back(details::arg_from_serial<njson_serial_t, value_t>(val));
     }
 }
 
@@ -239,8 +240,9 @@ rpc::packed_func<R, Args...> njson_adapter::to_packed_func_w_ptr(
 {
     unsigned i = 0;
 
-    std::array<std::any, sizeof...(Args)> args{ details::args_from_serial_w_ptr<njson, Args>(
-        serial_obj, arg_arr, i)... };
+    std::array<std::any, sizeof...(Args)> args{
+        details::args_from_serial_w_ptr<njson_serial_t, Args>(serial_obj, arg_arr, i)...
+    };
 
     std::unique_ptr<packed_func<R, Args...>> pack_ptr;
 
@@ -290,7 +292,7 @@ rpc::details::dyn_array<Value> njson_adapter::parse_arg_arr(const njson& arg_obj
 
         for (const auto& obj : data)
         {
-            arg_arr.push_back(details::arg_from_serial<njson, Value>(obj));
+            arg_arr.push_back(details::arg_from_serial<njson_serial_t, Value>(obj));
         }
     }
 
@@ -355,13 +357,13 @@ inline std::vector<uint8_t> to_func(const njson& serial_obj)
 }
 #        endif
 
-using generic_serial_t = std::vector<uint8_t>;
+using byte_vec = std::vector<uint8_t>;
+using generic_serial_t = rpc::serial_t<byte_vec>;
 using generic_serial_adapter = rpc::serial_adapter<generic_serial_t>;
 
 template<>
 template<typename R, typename... Args>
-rpc::packed_func<R, Args...> generic_serial_adapter::to_packed_func(
-    const generic_serial_t& serial_obj)
+rpc::packed_func<R, Args...> generic_serial_adapter::to_packed_func(const byte_vec& serial_obj)
 {
     unsigned i = 0;
     const njson j_obj = from_func(serial_obj);
@@ -386,7 +388,7 @@ rpc::packed_func<R, Args...> generic_serial_adapter::to_packed_func(
 
 template<>
 template<typename R, typename... Args>
-generic_serial_t generic_serial_adapter::from_packed_func(const packed_func<R, Args...>& pack)
+byte_vec generic_serial_adapter::from_packed_func(packed_func<R, Args...>&& pack)
 {
     njson ret_j;
 
@@ -419,51 +421,50 @@ generic_serial_t generic_serial_adapter::from_packed_func(const packed_func<R, A
     details::for_each_tuple(argTup, [&ret_j](auto x) { push_arg(x, ret_j["args"], 0); });
 #        endif
 
-    return generic_serial_t(to_func(ret_j));
+    return to_func(ret_j);
 }
 
 template<>
-inline std::string generic_serial_adapter::to_string(const generic_serial_t& serial_obj)
+inline std::string generic_serial_adapter::to_string(const byte_vec& serial_obj)
 {
     return from_func(serial_obj).dump();
 }
 
 template<>
-inline generic_serial_t generic_serial_adapter::from_string(const std::string& str)
+inline byte_vec generic_serial_adapter::from_string(const std::string& str)
 {
     return to_func(njson::parse(str));
 }
 
 template<>
-inline std::string generic_serial_adapter::extract_func_name(const generic_serial_t& obj)
+inline std::string generic_serial_adapter::extract_func_name(const byte_vec& obj)
 {
     return from_func(obj)["func_name"].get<std::string>();
 }
 
 template<>
-inline generic_serial_t generic_serial_adapter::make_sub_object(
-    const generic_serial_t& obj, const unsigned index)
+inline byte_vec generic_serial_adapter::make_sub_object(const byte_vec& obj, const unsigned index)
 {
     return to_func(from_func(obj)[index]);
 }
 
 template<>
-inline generic_serial_t generic_serial_adapter::make_sub_object(
-    const generic_serial_t& obj, const std::string& name)
+inline byte_vec generic_serial_adapter::make_sub_object(
+    const byte_vec& obj, const std::string& name)
 {
     return to_func(from_func(obj)[name]);
 }
 
 template<>
 template<typename T>
-T generic_serial_adapter::get_value(const generic_serial_t& obj)
+T generic_serial_adapter::get_value(const byte_vec& obj)
 {
     return from_func(obj).get<T>();
 }
 
 template<>
 template<typename Container>
-void generic_serial_adapter::populate_array(const generic_serial_t& obj, Container& container)
+void generic_serial_adapter::populate_array(const byte_vec& obj, Container& container)
 {
     static_assert(
         details::is_container_v<Container>, "Container type must have begin and end iterators");
@@ -473,12 +474,12 @@ void generic_serial_adapter::populate_array(const generic_serial_t& obj, Contain
 
     for (const auto& val : j_obj)
     {
-        container.push_back(details::arg_from_serial<njson, value_t>(val));
+        container.push_back(details::arg_from_serial<njson_serial_t, value_t>(val));
     }
 }
 
 template<>
-inline size_t generic_serial_adapter::get_num_args(const generic_serial_t& obj)
+inline size_t generic_serial_adapter::get_num_args(const byte_vec& obj)
 {
     return from_func(obj)["args"].size();
 }
@@ -487,7 +488,7 @@ inline size_t generic_serial_adapter::get_num_args(const generic_serial_t& obj)
 template<>
 template<typename R, typename... Args>
 rpc::packed_func<R, Args...> generic_serial_adapter::to_packed_func_w_ptr(
-    const generic_serial_t& serial_obj, const std::array<std::any, sizeof...(Args)>& arg_arr)
+    const byte_vec& serial_obj, const std::array<std::any, sizeof...(Args)>& arg_arr)
 {
     unsigned i = 0;
     const njson j_obj = from_func(serial_obj);
@@ -520,8 +521,7 @@ rpc::packed_func<R, Args...> generic_serial_adapter::to_packed_func_w_ptr(
 
 template<>
 template<typename Value>
-rpc::details::dyn_array<Value> generic_serial_adapter::parse_arg_arr(
-    const generic_serial_t& arg_obj)
+rpc::details::dyn_array<Value> generic_serial_adapter::parse_arg_arr(const byte_vec& arg_obj)
 {
     const njson j_obj = from_func(arg_obj);
     const auto cap = j_obj["c"].get<size_t>();
@@ -544,7 +544,7 @@ rpc::details::dyn_array<Value> generic_serial_adapter::parse_arg_arr(
 
         for (const auto& obj : data)
         {
-            arg_arr.push_back(details::arg_from_serial<njson, Value>(obj));
+            arg_arr.push_back(details::arg_from_serial<njson_serial_t, Value>(obj));
         }
     }
 
