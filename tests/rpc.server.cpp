@@ -53,6 +53,10 @@
 #    include "rpc_adapters/rpc_rapidjson.hpp"
 #endif
 
+#if defined(RPC_HPP_BOOST_JSON_ENABLED)
+#    include "rpc_adapters/rpc_boost_json.hpp"
+#endif
+
 #include "rpc_dispatch_helper.hpp"
 #include "test_structs.hpp"
 
@@ -492,7 +496,6 @@ void session(tcp::socket sock)
 
     try
     {
-
         while (true)
         {
             asio::error_code error;
@@ -537,23 +540,37 @@ struct port
 {
 };
 
+#if defined(RPC_HPP_NJSON_ENABLED)
 template<>
 struct port<njson_serial_t>
 {
     constexpr static uint16_t value = 5000U;
 };
+#endif
 
+#if defined(RPC_HPP_NLOHMANN_SERIAL_TYPE)
 template<>
 struct port<generic_serial_t>
 {
     constexpr static uint16_t value = 5001U;
 };
+#endif
 
+#if defined(RPC_HPP_RAPIDJSON_ENABLED)
 template<>
 struct port<rpdjson_serial_t>
 {
     constexpr static uint16_t value = 5002U;
 };
+#endif
+
+#if defined(RPC_HPP_BOOST_JSON_ENABLED)
+template<>
+struct port<bjson_serial_t>
+{
+    constexpr static uint16_t value = 5003U;
+};
+#endif
 
 template<typename Serial>
 inline constexpr uint16_t port_v = port<Serial>::value;
@@ -588,6 +605,11 @@ int main()
 #if defined(RPC_HPP_RAPIDJSON_ENABLED)
         std::thread(server<rpdjson_serial_t>, std::ref(io_context)).detach();
         std::cout << "Running rapidjson server on port " << port_v<rpdjson_serial_t> << "...\n";
+#endif
+
+#if defined(RPC_HPP_BOOST_JSON_ENABLED)
+        std::thread(server<bjson_serial_t>, std::ref(io_context)).detach();
+        std::cout << "Running Boost.JSON server on port " << port_v<bjson_serial_t> << "...\n";
 #endif
 
         while (RUNNING)

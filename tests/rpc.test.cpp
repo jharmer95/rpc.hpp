@@ -48,6 +48,10 @@ static_assert(false, "Test requires nlohmann/json adapter to be enabled!");
 #    include "rpc_adapters/rpc_rapidjson.hpp"
 #endif
 
+#if defined(RPC_HPP_BOOST_JSON_ENABLED)
+#    include "rpc_adapters/rpc_boost_json.hpp"
+#endif
+
 #include "rpc.client.hpp"
 #include "test_structs.hpp"
 
@@ -102,7 +106,21 @@ TEST_CASE("RAPIDJSON")
 }
 #endif
 
-using test_serial_t = rpdjson_serial_t;
+#if defined(RPC_HPP_BOOST_JSON_ENABLED)
+template<>
+TestClient& GetClient<bjson_serial_t>()
+{
+    static TestClient client("127.0.0.1", "5003");
+    return client;
+}
+
+TEST_CASE("BOOST_JSON")
+{
+    TestType<bjson_serial_t>();
+}
+#endif
+
+using test_serial_t = bjson_serial_t;
 
 #if defined(RPC_HPP_ENABLE_POINTERS)
 TEST_CASE("PtrSum")

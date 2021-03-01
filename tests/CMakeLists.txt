@@ -20,37 +20,59 @@ endif()
 
 add_executable(rpc_test "rpc.test.cpp")
 target_link_libraries(rpc_test PRIVATE rpc_hpp catch2_lib asio_lib)
+
 if(${BUILD_NJSON_ADAPTER})
   target_link_libraries(rpc_test PRIVATE njson_adapter)
 endif()
+
 if(${BUILD_RAPIDJSON_ADAPTER})
   target_link_libraries(rpc_test PRIVATE rpdjson_adapter)
 endif()
+
+if(${BUILD_BOOST_JSON_ADAPTER})
+  target_link_libraries(rpc_test PRIVATE boost_json_adapter)
+endif()
+
 if(CODE_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
   target_link_libraries(rpc_test PRIVATE coverage_config)
 endif()
+
 target_compile_options(rpc_test PRIVATE ${FULL_WARNING})
 target_compile_definitions(rpc_test PRIVATE RPC_HPP_ENABLE_POINTERS)
 catch_discover_tests(rpc_test)
 
 add_executable(rpc_benchmark "rpc.benchmark.cpp")
 target_link_libraries(rpc_benchmark PRIVATE rpc_hpp catch2_lib asio_lib)
+
 if(${BUILD_NJSON_ADAPTER})
   target_link_libraries(rpc_benchmark PRIVATE njson_adapter)
 endif()
+
 if(${BUILD_RAPIDJSON_ADAPTER})
   target_link_libraries(rpc_benchmark PRIVATE rpdjson_adapter)
 endif()
+
+if(${BUILD_BOOST_JSON_ADAPTER})
+  target_link_libraries(rpc_benchmark PRIVATE boost_json_adapter)
+endif()
+
 target_compile_options(rpc_benchmark PRIVATE ${FULL_WARNING})
 target_compile_definitions(rpc_benchmark PRIVATE RPC_HPP_ENABLE_POINTERS)
 
 add_executable(rpc_server "rpc.server.cpp")
 target_link_libraries(rpc_server PRIVATE rpc_hpp asio_lib)
+
 if(${BUILD_NJSON_ADAPTER})
   target_link_libraries(rpc_server PRIVATE njson_adapter)
 endif()
+
 if(${BUILD_RAPIDJSON_ADAPTER})
   target_link_libraries(rpc_server PRIVATE rpdjson_adapter)
 endif()
+
+if(${BUILD_BOOST_JSON_ADAPTER})
+  target_link_libraries(rpc_server PRIVATE boost_json_adapter)
+endif()
+
 target_compile_options(rpc_server PRIVATE ${FULL_WARNING})
 target_compile_definitions(rpc_server PRIVATE RPC_HPP_ENABLE_POINTERS)

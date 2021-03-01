@@ -49,6 +49,10 @@ static_assert(false, "Test requires nlohmann/json adapter to be enabled!");
 #    include "rpc_adapters/rpc_rapidjson.hpp"
 #endif
 
+#if defined(RPC_HPP_RAPIDJSON_ENABLED)
+#    include "rpc_adapters/rpc_boost_json.hpp"
+#endif
+
 #include "rpc.client.hpp"
 #include "test_structs.hpp"
 
@@ -80,12 +84,22 @@ TestClient& GetClient<rpdjson_serial_t>()
 }
 #endif
 
+#if defined(RPC_HPP_BOOST_JSON_ENABLED)
+template<>
+TestClient& GetClient<bjson_serial_t>()
+{
+    static TestClient client("127.0.0.1", "5003");
+    return client;
+}
+#endif
+
 TEST_CASE("By Value (simple)", "[value][simple]")
 {
     constexpr uint64_t expected = 10946ULL;
     uint64_t test = 1;
     auto& njson_client = GetClient<njson_serial_t>();
     auto& rpdjson_client = GetClient<rpdjson_serial_t>();
+    auto& bjson_client = GetClient<bjson_serial_t>();
 
     BENCHMARK("rpc.hpp (asio::tcp, njson)")
     {
@@ -102,6 +116,15 @@ TEST_CASE("By Value (simple)", "[value][simple]")
     };
 
     REQUIRE(expected == test);
+
+    test = 1;
+
+    BENCHMARK("rpc.hpp (asio::tcp, Boost.JSON)")
+    {
+        test = *rpc::call<bjson_serial_t, uint64_t>(bjson_client, "Fibonacci", 20).get_result();
+    };
+
+    REQUIRE(expected == test);
 }
 
 TEST_CASE("By Value (complex)", "[value][complex]")
@@ -110,6 +133,7 @@ TEST_CASE("By Value (complex)", "[value][complex]")
     std::string test;
     auto& njson_client = GetClient<njson_serial_t>();
     auto& rpdjson_client = GetClient<rpdjson_serial_t>();
+    auto& bjson_client = GetClient<bjson_serial_t>();
 
     BENCHMARK("rpc.hpp (asio::tcp, njson)")
     {
@@ -142,6 +166,23 @@ TEST_CASE("By Value (complex)", "[value][complex]")
     };
 
     REQUIRE_THAT(expected, Catch::Matchers::Equals(test));
+
+    test = "";
+
+    BENCHMARK("rpc.hpp (asio::tcp, Boost.JSON)")
+    {
+        ComplexObject cx;
+        cx.flag1 = false;
+        cx.flag2 = true;
+        cx.id = 24;
+        cx.name = "Franklin D. Roosevelt";
+        cx.vals = { 0, 1, 4, 6, 7, 8, 11, 15, 17, 22, 25, 26 };
+
+        test = *rpc::call<bjson_serial_t, std::string>(bjson_client, "HashComplex", cx)
+                    .get_result();
+    };
+
+    REQUIRE_THAT(expected, Catch::Matchers::Equals(test));
 }
 
 TEST_CASE("By Value (many)", "[value][many]")
@@ -150,6 +191,7 @@ TEST_CASE("By Value (many)", "[value][many]")
     double test = 1.0;
     auto& njson_client = GetClient<njson_serial_t>();
     auto& rpdjson_client = GetClient<rpdjson_serial_t>();
+    auto& bjson_client = GetClient<bjson_serial_t>();
 
     BENCHMARK("rpc.hpp (asio::tcp, njson)")
     {
@@ -165,6 +207,17 @@ TEST_CASE("By Value (many)", "[value][many]")
     BENCHMARK("rpc.hpp (asio::tcp, rapidjson)")
     {
         test = *rpc::call<rpdjson_serial_t, double>(rpdjson_client, "StdDev", 55.65, 125.325,
+            552.125, 12.767, 2599.6, 1245.125663, 9783.49, 125.12, 553.3333333333, 2266.1)
+                    .get_result();
+    };
+
+    REQUIRE_THAT(test, Catch::Matchers::WithinRel(expected));
+
+    test = 1.0;
+
+    BENCHMARK("rpc.hpp (asio::tcp, Boost.JSON)")
+    {
+        test = *rpc::call<bjson_serial_t, double>(bjson_client, "StdDev", 55.65, 125.325,
             552.125, 12.767, 2599.6, 1245.125663, 9783.49, 125.12, 553.3333333333, 2266.1)
                     .get_result();
     };

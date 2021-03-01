@@ -48,3 +48,31 @@ if(${BUILD_RAPIDJSON_ADAPTER})
   install(FILES "rpc_rapidjson.hpp"
           DESTINATION "${CMAKE_INSTALL_PREFIX}/include/rpc_adapters")
 endif()
+
+if(${BUILD_BOOST_JSON_ADAPTER})
+  add_library(boost_json_adapter INTERFACE)
+  target_include_directories(boost_json_adapter
+                             INTERFACE "${PROJECT_SOURCE_DIR}/include")
+  target_compile_definitions(boost_json_adapter
+                             INTERFACE RPC_HPP_BOOST_JSON_ENABLED)
+  target_link_libraries(boost_json_adapter INTERFACE ${CMAKE_THREAD_LIBS_INIT})
+
+  if(${USE_CONAN})
+    set(CONAN_EXTRA_REQUIRES boost/[>=1.75.0])
+    run_conan()
+    find_package(Boost 1.75.0 REQUIRED COMPONENTS json)
+    target_include_directories(boost_json_adapter
+                               INTERFACE ${Boost_INCLUDE_DIRS})
+    target_link_libraries(boost_json_adapter INTERFACE Boost::json)
+  elseif(${USE_VCPKG})
+    find_package(Boost 1.75.0 REQUIRED)
+    target_include_directories(boost_json_adapter
+                               INTERFACE ${Boost_INCLUDE_DIRS})
+  else()
+    find_path(boost_json_path boost/json.hpp)
+    target_include_directories(boost_json_adapter INTERFACE boost_json_path)
+  endif()
+
+  install(FILES "rpc_boost_json.hpp"
+          DESTINATION "${CMAKE_INSTALL_PREFIX}/include/rpc_adapters")
+endif()
