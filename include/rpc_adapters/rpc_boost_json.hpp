@@ -1,8 +1,8 @@
 ///@file rpc_adapters/rpc_boost_json.hpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Implementation of adapting Boost.JSON (https://github.com/boostorg/json)
-///@version 0.2.4
-///@date 03-01-2021
+///@version 0.3.1
+///@date 03-02-2021
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -52,7 +52,7 @@ namespace bjson = boost::json;
 using bjson_obj = bjson::object;
 using bjson_val = bjson::value;
 
-using bjson_serial_t = typename rpc::serial_t<bjson_val>;
+using bjson_serial_t = rpc::serial_t<bjson_val>;
 using bjson_adapter = rpc::serial_adapter<bjson_serial_t>;
 
 template<>

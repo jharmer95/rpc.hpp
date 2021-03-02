@@ -1,8 +1,8 @@
 ///@file rpc.server.cpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Example implementation of an RPC server
-///@version 0.2.4
-///@date 03-01-2021
+///@version 0.3.1
+///@date 03-02-2021
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -44,6 +44,8 @@
 #include <iostream>
 #include <sstream>
 #include <thread>
+
+#define RPC_HPP_ENABLE_SERVER_CACHE
 
 #if defined(RPC_HPP_NJSON_ENABLED)
 #    include "rpc_adapters/rpc_njson.hpp"
