@@ -38,10 +38,6 @@
 
 #pragma once
 
-// TODO: Remove when finished
-#define RPC_HPP_BOOST_JSON_ENABLED
-#define RPC_HPP_ENABLE_POINTERS
-
 #include "../rpc.hpp"
 
 #include <boost/json/src.hpp>

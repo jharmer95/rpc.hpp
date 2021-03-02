@@ -60,10 +60,7 @@ if(${BUILD_BOOST_JSON_ADAPTER})
   if(${USE_CONAN})
     set(CONAN_EXTRA_REQUIRES boost/[>=1.75.0])
     run_conan()
-    find_package(Boost 1.75.0 REQUIRED COMPONENTS json)
-    target_include_directories(boost_json_adapter
-                               INTERFACE ${Boost_INCLUDE_DIRS})
-    target_link_libraries(boost_json_adapter INTERFACE Boost::json)
+    target_include_directories(boost_json_adapter INTERFACE ${CONAN_INCLUDE_DIRS_BOOST})
   elseif(${USE_VCPKG})
     find_package(Boost 1.75.0 REQUIRED)
     target_include_directories(boost_json_adapter
