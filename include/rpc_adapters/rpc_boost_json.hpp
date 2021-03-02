@@ -111,7 +111,7 @@ void push_arg(T arg, bjson::array& arg_list, const size_t arg_sz)
     if constexpr (std::is_pointer_v<T>)
     {
         bjson_obj obj_j;
-        obj_j["c"] = arg_sz;
+        obj_j["c"].emplace_uint64() = arg_sz;
 
         if constexpr (std::is_same_v<std::remove_cv_t<std::remove_pointer_t<T>>, char>)
         {
@@ -341,7 +341,7 @@ rpc::details::dyn_array<Value> bjson_adapter::parse_arg_arr(const bjson_val& arg
 {
     assert(arg_obj.is_object());
     const auto& obj = arg_obj.as_object();
-    const size_t cap = obj.at("c").as_int64();
+    const size_t cap = obj.at("c").as_uint64();
     details::dyn_array<Value> arg_arr(cap);
 
     if constexpr (std::is_same_v<Value, char>)

@@ -331,13 +331,13 @@ inline TestMessage rpc::deserialize<bjson_serial_t>(const bjson_val& serial_obj)
     TestMessage mesg;
     mesg.flag1 = serial_obj.at("flag1").get_bool();
     mesg.flag2 = serial_obj.at("flag2").get_bool();
-    mesg.id = serial_obj.at("id").get_int64();
-    mesg.data_sz = serial_obj.at("data_sz").get_int64();
+    mesg.id = static_cast<int>(serial_obj.at("id").get_int64());
+    mesg.data_sz = static_cast<uint8_t>(serial_obj.at("data_sz").get_int64());
     const auto& data = serial_obj.at("data").as_array();
 
     for (uint8_t i = 0; i < mesg.data_sz; ++i)
     {
-        mesg.data[i] = data[i].get_int64();
+        mesg.data[i] = static_cast<int>(data[i].get_int64());
     }
 
     return mesg;
@@ -367,7 +367,7 @@ template<>
 inline ComplexObject rpc::deserialize<bjson_serial_t>(const bjson_val& serial_obj)
 {
     ComplexObject cx;
-    cx.id = serial_obj.at("id").get_int64();
+    cx.id = static_cast<int>(serial_obj.at("id").get_int64());
     cx.name = serial_obj.at("name").get_string().c_str();
     cx.flag1 = serial_obj.at("flag1").get_bool();
     cx.flag2 = serial_obj.at("flag2").get_bool();
@@ -377,14 +377,14 @@ inline ComplexObject rpc::deserialize<bjson_serial_t>(const bjson_val& serial_ob
     {
         for (size_t i = 0; i < 12; ++i)
         {
-            cx.vals[i] = vals[i].get_int64();
+            cx.vals[i] = static_cast<uint8_t>(vals[i].get_int64());
         }
     }
     else
     {
         for (size_t i = 0; i < vals.size(); ++i)
         {
-            cx.vals[i] = vals[i].get_int64();
+            cx.vals[i] = static_cast<uint8_t>(vals[i].get_int64());
         }
     }
 

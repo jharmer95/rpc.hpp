@@ -128,8 +128,8 @@ if(${GENERATE_DOXYGEN})
     set(DOXYGEN_EXCLUDE_PATTERNS "*/tests/*")
     set(DOXYGEN_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}")
     set(DOXYGEN_USE_MDFILE_AS_MAINPAGE "README.md")
-    doxygen_add_docs(docs ${PROJECT_SOURCE_DIR} COMMENT
-                     "Generate doxygen docs for rpc.hpp")
+    doxygen_add_docs(docs ${PROJECT_SOURCE_DIR}
+                     COMMENT "Generate doxygen docs for rpc.hpp")
   endif()
 endif()
 
@@ -137,7 +137,7 @@ option(USE_CONAN "Use Conan to manage C/C++ dependencies" OFF)
 option(USE_VCPKG "Use vcpkg to manage C/C++ dependencies" OFF)
 
 if(${USE_CONAN})
-  if (${USE_VCPKG})
+  if(${USE_VCPKG})
     message(FATAL_ERROR "Using both vcpkg and Conan is not supported!")
   endif()
 
