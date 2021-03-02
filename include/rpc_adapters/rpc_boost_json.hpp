@@ -1,7 +1,7 @@
 ///@file rpc_adapters/rpc_boost_json.hpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Implementation of adapting Boost.JSON (https://github.com/boostorg/json)
-///@version 0.2.3
+///@version 0.2.4
 ///@date 03-01-2021
 ///
 ///@copyright
