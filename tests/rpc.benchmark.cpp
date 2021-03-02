@@ -49,7 +49,7 @@ static_assert(false, "Test requires nlohmann/json adapter to be enabled!");
 #    include "rpc_adapters/rpc_rapidjson.hpp"
 #endif
 
-#if defined(RPC_HPP_RAPIDJSON_ENABLED)
+#if defined(RPC_HPP_BOOST_JSON_ENABLED)
 #    include "rpc_adapters/rpc_boost_json.hpp"
 #endif
 
