@@ -335,6 +335,37 @@ T rpdjson_adapter::get_value(const rpdjson_val& obj)
 }
 
 template<>
+template<typename R>
+void rpdjson_adapter::set_result(rpdjson_doc& serial_obj, R val)
+{
+    auto& alloc = serial_obj.GetAllocator();
+    auto& result = serial_obj["result"];
+
+    if constexpr (std::is_arithmetic_v<R>)
+    {
+        result.Set<R>(val);
+    }
+    else if constexpr (std::is_same_v<R, std::string>)
+    {
+        result.SetString(val.c_str(), alloc);
+    }
+    else if constexpr (details::is_container_v<R>)
+    {
+        const R container = val;
+        result.SetArray();
+
+        for (const auto& v : container)
+        {
+            result.PushBack(v, alloc);
+        }
+    }
+    else
+    {
+        result = serialize<rpdjson_serial_t, R>(val);
+    }
+}
+
+template<>
 template<typename Container>
 void rpdjson_adapter::populate_array(const rpdjson_val& obj, Container& container)
 {

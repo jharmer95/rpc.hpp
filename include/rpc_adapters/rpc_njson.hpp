@@ -209,6 +209,14 @@ T njson_adapter::get_value(const njson& obj)
 }
 
 template<>
+template<typename R>
+void njson_adapter::set_result(njson& serial_obj, R val)
+{
+    // TODO: Address use of containers/custom types for result
+    serial_obj["result"] = val;
+}
+
+template<>
 template<typename Container>
 void njson_adapter::populate_array(const njson& obj, Container& container)
 {
@@ -457,6 +465,17 @@ template<typename T>
 T generic_serial_adapter::get_value(const byte_vec& obj)
 {
     return from_func(obj).get<T>();
+}
+
+template<>
+template<typename R>
+void generic_serial_adapter::set_result(byte_vec& serial_obj, R val)
+{
+    auto obj_j = from_func(serial_obj);
+
+    // TODO: Address use of containers/custom types for result
+    obj_j["result"] = val;
+    serial_obj = to_func(obj_j);
 }
 
 template<>

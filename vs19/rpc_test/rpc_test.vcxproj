@@ -165,6 +165,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\rpc.hpp" />
+    <ClInclude Include="..\..\include\rpc_adapters\rpc_boost_json.hpp" />
     <ClInclude Include="..\..\include\rpc_adapters\rpc_njson.hpp" />
     <ClInclude Include="..\..\include\rpc_adapters\rpc_rapidjson.hpp" />
     <ClInclude Include="..\..\include\rpc_dispatch_helper.hpp" />

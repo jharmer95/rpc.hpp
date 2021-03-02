@@ -111,7 +111,7 @@ void push_arg(T arg, bjson::array& arg_list, const size_t arg_sz)
     if constexpr (std::is_pointer_v<T>)
     {
         bjson_obj obj_j;
-        obj_j["c"]= static_cast<int64_t>(arg_sz);
+        obj_j["c"] = static_cast<int64_t>(arg_sz);
 
         if constexpr (std::is_same_v<std::remove_cv_t<std::remove_pointer_t<T>>, char>)
         {
@@ -247,6 +247,33 @@ template<typename T>
 T bjson_adapter::get_value(const bjson_val& obj)
 {
     return bjson::value_to<T>(obj);
+}
+
+template<>
+template<typename R>
+void bjson_adapter::set_result(bjson_val& serial_obj, R val)
+{
+    assert(serial_obj.is_object());
+    auto& result = serial_obj.at("result");
+
+    if constexpr (std::is_arithmetic_v<R> || std::is_same_v<R, std::string>)
+    {
+        result = val;
+    }
+    else if constexpr (details::is_container_v<R>)
+    {
+        result = bjson::array{};
+        const auto container = val;
+
+        for (const auto& v : container)
+        {
+            result.as_array().push_back(v);
+        }
+    }
+    else
+    {
+        result = serialize<bjson_serial_t, R>(val);
+    }
 }
 
 template<>

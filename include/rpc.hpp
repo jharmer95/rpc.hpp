@@ -49,6 +49,7 @@
 #include <string>
 #include <tuple>
 #include <type_traits>
+#include <unordered_map>
 #include <utility>
 
 namespace rpc
@@ -219,7 +220,7 @@ namespace details
         dyn_array(const dyn_array& other)
             : m_capacity(other.m_capacity), m_size(other.m_size), m_ptr(new T[m_capacity])
         {
-            std::copy(other.m_ptr, other.m_ptr + m_size, m_ptr);
+            std::copy_n(other.m_ptr, m_size, m_ptr);
         }
 
         dyn_array(dyn_array&& other) noexcept
@@ -236,7 +237,7 @@ namespace details
             {
                 m_capacity = other.m_capacity;
                 m_size = other.m_size;
-                std::copy(other.m_ptr, other.m_ptr + m_size, m_ptr);
+                std::copy_n(other.m_ptr, m_size, m_ptr);
             }
 
             return *this;
@@ -855,6 +856,9 @@ public:
     template<typename T>
     [[nodiscard]] static T get_value(const value_type& obj);
 
+    template<typename R>
+    static void set_result(doc_type& serial_obj, R val);
+
     ///@brief Populate a container with the contents of a serial object
     ///
     ///@tparam Container Type of container used, must satisfy \ref is_container
@@ -894,7 +898,7 @@ public:
 ///
 ///@note This template must be instantiated for every custom struct/class that needs to be passed
 /// as a result or parameter via RPC
-///@tparam value_type The type of serial object to use
+///@tparam Serial The type of serial object to use
 ///@tparam Value The type of generic object to use
 ///@param val The object to be serialized
 ///@return value_type The serialized value
@@ -904,7 +908,7 @@ template<typename Serial, typename Value>
 ///@brief De-serializes a serial object to a generic object
 ///
 ///@note This template must be instantiated for every custom struct/class that needs to be passed as a result or parameter via RPC
-///@tparam value_type The type of serial object to use
+///@tparam Serial The type of serial object to use
 ///@tparam Value The type of generic object to use
 ///@param serial_obj The serial object to be de-serialized
 ///@return Value The de-serialized value
@@ -1159,6 +1163,36 @@ namespace server
     }
 #endif
 
+    template<typename Serial>
+    std::unordered_map<std::string, std::any>& get_cache()
+    {
+        static std::unordered_map<std::string, std::any> result_cache;
+        return result_cache;
+    }
+
+    template<typename Serial, typename R>
+    bool check_cache(typename Serial::doc_type& serial_obj)
+    {
+        const std::string objStr = serial_adapter<Serial>::to_string(serial_obj);
+        auto& result_cache = get_cache<Serial>();
+
+        const auto it = result_cache.find(objStr);
+
+        if (it != result_cache.end())
+        {
+            serial_adapter<Serial>::set_result(serial_obj, std::any_cast<R>(result_cache[objStr]));
+            return true;
+        }
+
+        return false;
+    }
+
+    template<typename Serial, typename R>
+    void update_cache(std::string&& key, R val)
+    {
+        get_cache<Serial>()[std::move(key)] = val;
+    }
+
     ///@brief Dispatches the function call based on the received serial object
     ///
     ///@note This function must be implemented in the server-side code (or by using the macros found in rpc_dispatch_helper.hpp)
@@ -1174,9 +1208,21 @@ namespace server
     ///@tparam Args The argument list of the function
     ///@param func Pointer to the function
     ///@param serial_obj Serial object to be used by the function call, will (potentially) be modified by calling the function
+    ///@param cacheable Determines whether the function is cacheable or not (default false)
     template<typename Serial, typename R, typename... Args>
-    void dispatch_func(R (*func)(Args...), typename Serial::doc_type& serial_obj)
+    void dispatch_func(
+        R (*func)(Args...), typename Serial::doc_type& serial_obj, bool cacheable = false)
     {
+#if defined(RPC_HPP_ENABLE_SERVER_CACHE)
+        if constexpr (!std::is_void_v<R>)
+        {
+            if (cacheable && check_cache<Serial, R>(serial_obj))
+            {
+                return;
+            }
+        }
+#endif
+
 #if defined(RPC_HPP_ENABLE_POINTERS)
         if constexpr (
             details::all_true_v<!(
@@ -1185,6 +1231,18 @@ namespace server
         {
             auto pack = create_func<Serial>(func, serial_obj);
             run_callback(func, pack);
+
+#    if defined(RPC_HPP_ENABLE_SERVER_CACHE)
+            if constexpr (!std::is_void_v<R>)
+            {
+                if (cacheable)
+                {
+                    update_cache<Serial, R>(
+                        serial_adapter<Serial>::to_string(serial_obj), *pack.get_result());
+                }
+            }
+#    endif
+
             serial_obj = serial_adapter<Serial>::from_packed_func(std::move(pack));
         }
         else
@@ -1192,11 +1250,35 @@ namespace server
             const auto arg_arr = details::populate_arg_arr<Serial, Args...>(serial_obj);
             auto pack = create_func_w_ptr<Serial>(func, arg_arr, serial_obj);
             run_callback(func, pack);
+
+#    if defined(RPC_HPP_ENABLE_SERVER_CACHE)
+            if constexpr (!std::is_void_v<R>)
+            {
+                if (cacheable)
+                {
+                    update_cache<Serial, R>(
+                        serial_adapter<Serial>::to_string(serial_obj), *pack.get_result());
+                }
+            }
+#    endif
+
             serial_obj = serial_adapter<Serial>::from_packed_func(std::move(pack));
         }
 #else
         auto pack = create_func(func, serial_obj);
         run_callback(func, pack);
+
+#    if defined(RPC_HPP_ENABLE_SERVER_CACHE)
+        if constexpr (!std::is_void_v<R>)
+        {
+            if (cacheable)
+            {
+                update_cache<Serial, R>(
+                    serial_adapter<Serial>::to_string(serial_obj), *pack.get_result());
+            }
+        }
+#    endif
+
         serial_obj = serial_adapter<Serial>::from_packed_func(std::move(pack));
 #endif
     }
