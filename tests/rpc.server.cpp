@@ -37,6 +37,7 @@
 ///
 
 #include <asio.hpp>
+#include <magic_enum.hpp>
 
 #include <atomic>
 #include <cmath>
@@ -436,6 +437,16 @@ double AverageContainer(const std::vector<T>& vec)
     return sum / static_cast<double>(vec.size());
 }
 
+inline double AverageContainer_double(const std::vector<double>& vec)
+{
+    return AverageContainer<double>(vec);
+}
+
+inline double AverageContainer_uint64_t(const std::vector<uint64_t>& vec)
+{
+    return AverageContainer<uint64_t>(vec);
+}
+
 std::vector<uint64_t> RandInt(const uint64_t min, const uint64_t max, const size_t sz = 1000)
 {
     std::vector<uint64_t> vec;
@@ -486,21 +497,63 @@ void HashComplexRef(ComplexObject& cx, std::string& hashStr)
     hashStr = hash.str();
 }
 
+enum class FuncName
+{
+    PtrSum,
+    AddAllPtr,
+    ReadMessagePtr,
+    WriteMessagePtr,
+    FibonacciPtr,
+    SquareRootPtr,
+    HashComplexPtr,
+    SimpleSum,
+    StrLen,
+    AddOneToEach,
+    Fibonacci,
+    Average,
+    StdDev,
+    AverageContainer_double,
+    AverageContainer_uint64_t,
+    HashComplex,
+    KillServer,
+    AddOneToEachRef,
+    ReadMessageRef,
+    WriteMessageRef,
+    ReadMessageVec,
+    WriteMessageVec,
+    ClearBus,
+    FibonacciRef,
+    SquareRootRef,
+    RandInt,
+    HashComplexRef,
+};
+
 #if defined(RPC_HPP_ENABLE_POINTERS)
 template<typename Serial>
 void rpc::server::dispatch(typename Serial::doc_type& serial_obj)
 {
     const auto func_name = serial_adapter<Serial>::extract_func_name(serial_obj);
+    const auto xxx = magic_enum::enum_cast<FuncName>(func_name);
 
-    RPC_ATTACH_FUNCS(PtrSum, ReadMessagePtr, WriteMessagePtr, FibonacciPtr, SquareRootPtr,
-        HashComplexPtr, KillServer, AddOneToEach, AddOneToEachRef, ReadMessageRef, WriteMessageRef,
-        ReadMessageVec, WriteMessageVec, ClearBus, FibonacciRef, SquareRootRef, RandInt,
-        HashComplexRef)
+    if (!xxx.has_value())
+    {
+        throw std::runtime_error("RPC error: Called function: \"" + func_name + "\" not found!");
+    }
 
-    RPC_ATTACH_CACHED_FUNCS(AddAllPtr, SimpleSum, StrLen, AddOneToEach, Fibonacci, Average, StdDev,
-        AverageContainer<uint64_t>, AverageContainer<double>, HashComplex)
+    switch (*xxx)
+    {
+        RPC_ATTACH_FUNCS(PtrSum, ReadMessagePtr, WriteMessagePtr, FibonacciPtr, SquareRootPtr,
+            HashComplexPtr, KillServer, AddOneToEachRef, ReadMessageRef, WriteMessageRef,
+            ReadMessageVec, WriteMessageVec, ClearBus, FibonacciRef, SquareRootRef, RandInt,
+            HashComplexRef)
 
-    throw std::runtime_error("RPC error: Called function: \"" + func_name + "\" not found!");
+        RPC_ATTACH_CACHED_FUNCS(AddAllPtr, SimpleSum, StrLen, AddOneToEach, Fibonacci, Average,
+            StdDev, AverageContainer_double, AverageContainer_uint64_t, HashComplex)
+
+        default:
+            throw std::runtime_error(
+                "RPC error: Called function: \"" + func_name + "\" not found!");
+    }
 }
 
 #else
@@ -508,14 +561,26 @@ template<typename Serial>
 void rpc::server::dispatch(typename Serial::doc_type& serial_obj)
 {
     const auto func_name = serial_adapter<Serial>::extract_func_name(serial_obj);
+    const FuncName xxx = magic_enum::enum_cast<FuncName>(func_name);
 
-    RPC_ATTACH_FUNCS(KillServer, AddOneToEachRef, ReadMessageRef, WriteMessageRef, ReadMessageVec,
-        WriteMessageVec, ClearBus, FibonacciRef, SquareRootRef, RandInt, HashComplexRef)
+    if (!xxx.has_value())
+    {
+        throw std::runtime_error("RPC error: Called function: \"" + func_name + "\" not found!");
+    }
 
-    RPC_ATTACH_CACHED_FUNCS(SimpleSum, StrLen, AddOneToEach, Fibonacci, Average, StdDev,
-        AverageContainer<uint64_t>, AverageContainer<double>, HashComplex)
+    switch (*xxx)
+    {
+        RPC_ATTACH_FUNCS(KillServer, AddOneToEachRef, ReadMessageRef, WriteMessageRef,
+            ReadMessageVec, WriteMessageVec, ClearBus, FibonacciRef, SquareRootRef, RandInt,
+            HashComplexRef)
 
-    throw std::runtime_error("RPC error: Called function: \"" + func_name + "\" not found!");
+        RPC_ATTACH_CACHED_FUNCS(SimpleSum, StrLen, AddOneToEach, Fibonacci, Average, StdDev,
+            AverageContainer_double, AverageContainer_uint64_t, HashComplex)
+
+        default:
+            throw std::runtime_error(
+                "RPC error: Called function: \"" + func_name + "\" not found!");
+    }
 }
 #endif
 

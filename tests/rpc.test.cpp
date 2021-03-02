@@ -378,7 +378,7 @@ TEST_CASE("AverageContainer<double>")
         125.12, 553.3333333333, 2266.1 };
 
     const auto test =
-        *rpc::call<test_serial_t, double>(client, "AverageContainer<double>", vec).get_result();
+        *rpc::call<test_serial_t, double>(client, "AverageContainer_double", vec).get_result();
 
     REQUIRE_THAT(test, Catch::Matchers::WithinAbs(expected, 0.001));
 }
@@ -433,5 +433,5 @@ TEST_CASE("KillServer", "[!mayfail]")
     {
     }
 
-    REQUIRE_THROWS(TestType<njson_serial_t>());
+    REQUIRE_THROWS(TestType<test_serial_t>());
 }

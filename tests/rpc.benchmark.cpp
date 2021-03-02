@@ -454,7 +454,7 @@ TEST_CASE("With Container", "[container][cached]")
             9783.49, 125.12, 553.3333333333, 2266.1 };
 
         test = *rpc::call<njson_serial_t, double>(
-            GetClient<njson_serial_t>(), "AverageContainer<double>", vec)
+            GetClient<njson_serial_t>(), "AverageContainer_double", vec)
                     .get_result();
     };
 
@@ -469,7 +469,7 @@ TEST_CASE("With Container", "[container][cached]")
             9783.49, 125.12, 553.3333333333, 2266.1 };
 
         test = *rpc::call<rpdjson_serial_t, double>(
-            GetClient<rpdjson_serial_t>(), "AverageContainer<double>", vec)
+            GetClient<rpdjson_serial_t>(), "AverageContainer_double", vec)
                     .get_result();
     };
 #endif
@@ -483,7 +483,7 @@ TEST_CASE("With Container", "[container][cached]")
             9783.49, 125.12, 553.3333333333, 2266.1 };
 
         test = *rpc::call<bjson_serial_t, double>(
-            GetClient<bjson_serial_t>(), "AverageContainer<double>", vec)
+            GetClient<bjson_serial_t>(), "AverageContainer_double", vec)
                     .get_result();
     };
 #endif
@@ -505,7 +505,7 @@ TEST_CASE("Sequential", "[sequential][cached]")
         }
 
         return *rpc::call<njson_serial_t, double>(
-            GetClient<njson_serial_t>(), "AverageContainer<uint64_t>", vec)
+            GetClient<njson_serial_t>(), "AverageContainer_uint64_t", vec)
                     .get_result();
     };
 
@@ -524,7 +524,7 @@ TEST_CASE("Sequential", "[sequential][cached]")
         }
 
         return *rpc::call<rpdjson_serial_t, double>(
-            GetClient<rpdjson_serial_t>(), "AverageContainer<uint64_t>", vec)
+            GetClient<rpdjson_serial_t>(), "AverageContainer_uint64_t", vec)
                     .get_result();
     };
 #endif
@@ -544,7 +544,7 @@ TEST_CASE("Sequential", "[sequential][cached]")
         }
 
         return *rpc::call<bjson_serial_t, double>(
-            GetClient<bjson_serial_t>(), "AverageContainer<uint64_t>", vec)
+            GetClient<bjson_serial_t>(), "AverageContainer_uint64_t", vec)
                     .get_result();
     };
 #endif
@@ -768,7 +768,8 @@ TEST_CASE("By Pointer (many)", "[pointer][many]")
 }
 #endif
 
-TEST_CASE("KillServer", "[!mayfail][value][simple][cached][ref][complex][sequential][pointer][many][container]")
+TEST_CASE("KillServer",
+    "[!mayfail][value][simple][cached][ref][complex][sequential][pointer][many][container]")
 {
     auto& client = GetClient<njson_serial_t>();
 
