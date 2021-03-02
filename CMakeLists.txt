@@ -163,6 +163,18 @@ find_package(Threads)
 add_library(rpc_hpp INTERFACE)
 target_include_directories(rpc_hpp INTERFACE "${PROJECT_SOURCE_DIR}/include")
 target_link_libraries(rpc_hpp INTERFACE ${CMAKE_THREAD_LIBS_INIT})
+
+if(${USE_CONAN})
+  set(CONAN_EXTRA_REQUIRES magic_enum/[>=0.7.0])
+  run_conan()
+elseif(${USE_VCPKG})
+  find_package(magic_enum CONFIG REQUIRED)
+  target_link_libraries(rpc_hpp INTERFACE magic_enum::magic_enum)
+else()
+  find_path(magic_enum_path magic_enum.hpp)
+  target_include_directories(rpc_hpp SYSTEM INTERFACE magic_enum_path)
+endif()
+
 install(FILES "${PROJECT_SOURCE_DIR}/include/rpc.hpp"
         DESTINATION "${CMAKE_INSTALL_PREFIX}/include")
 

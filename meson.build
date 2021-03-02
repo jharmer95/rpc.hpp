@@ -82,6 +82,7 @@ elif cpp_compiler == 'msvc'
 endif
 
 thread_dep = dependency('threads')
+magic_enum_dep = dependency('magic_enum', version : ['>=0.7.0'])
 
 include_dirs = include_directories('./include')
 rpc_hpp_dep = declare_dependency(include_directories : include_dirs, dependencies : thread_dep)
