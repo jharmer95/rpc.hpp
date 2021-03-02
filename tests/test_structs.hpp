@@ -1,8 +1,8 @@
 ///@file test_structs.hpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Structures/classes for use with rpc.hpp unit tests
-///@version 0.2.3
-///@date 02-24-2021
+///@version 0.2.4
+///@date 03-01-2021
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -44,6 +44,10 @@
 
 #if defined(RPC_HPP_RAPIDJSON_ENABLED)
 #    include "rpc_adapters/rpc_rapidjson.hpp"
+#endif
+
+#if defined(RPC_HPP_BOOST_JSON_ENABLED)
+#    include "rpc_adapters/rpc_boost_json.hpp"
 #endif
 
 #include <algorithm>
@@ -298,5 +302,92 @@ inline ComplexObject rpc::deserialize<rpdjson_serial_t>(const rpdjson_val& seria
     }
 
     return obj;
+}
+#endif
+
+#if defined(RPC_HPP_BOOST_JSON_ENABLED)
+template<>
+inline bjson_val rpc::serialize<bjson_serial_t>(const TestMessage& val)
+{
+    bjson_obj obj_j;
+    obj_j["flag1"] = val.flag1;
+    obj_j["flag2"] = val.flag2;
+    obj_j["id"] = val.id;
+    obj_j["data"] = bjson::array{};
+    auto& data = obj_j["data"].as_array();
+    obj_j["data_sz"] = val.data_sz;
+
+    for (uint8_t i = 0; i < val.data_sz; ++i)
+    {
+        data.push_back(val.data[i]);
+    }
+
+    return obj_j;
+}
+
+template<>
+inline TestMessage rpc::deserialize<bjson_serial_t>(const bjson_val& serial_obj)
+{
+    TestMessage mesg;
+    mesg.flag1 = serial_obj.at("flag1").get_bool();
+    mesg.flag2 = serial_obj.at("flag2").get_bool();
+    mesg.id = static_cast<int>(serial_obj.at("id").get_int64());
+    mesg.data_sz = static_cast<uint8_t>(serial_obj.at("data_sz").get_int64());
+    const auto& data = serial_obj.at("data").as_array();
+
+    for (uint8_t i = 0; i < mesg.data_sz; ++i)
+    {
+        mesg.data[i] = static_cast<int>(data[i].get_int64());
+    }
+
+    return mesg;
+}
+
+template<>
+inline bjson_val rpc::serialize<bjson_serial_t>(const ComplexObject& val)
+{
+    bjson_obj obj_j;
+    obj_j["id"] = val.id;
+    obj_j["name"] = val.name;
+    obj_j["flag1"] = val.flag1;
+    obj_j["flag2"] = val.flag2;
+    bjson::array arr;
+
+    for (const auto v : val.vals)
+    {
+        arr.push_back(v);
+    }
+
+    obj_j["vals"] = std::move(arr);
+
+    return obj_j;
+}
+
+template<>
+inline ComplexObject rpc::deserialize<bjson_serial_t>(const bjson_val& serial_obj)
+{
+    ComplexObject cx;
+    cx.id = static_cast<int>(serial_obj.at("id").get_int64());
+    cx.name = serial_obj.at("name").get_string().c_str();
+    cx.flag1 = serial_obj.at("flag1").get_bool();
+    cx.flag2 = serial_obj.at("flag2").get_bool();
+    const auto& vals = serial_obj.at("vals").as_array();
+
+    if (vals.size() > 12)
+    {
+        for (size_t i = 0; i < 12; ++i)
+        {
+            cx.vals[i] = static_cast<uint8_t>(vals[i].get_int64());
+        }
+    }
+    else
+    {
+        for (size_t i = 0; i < vals.size(); ++i)
+        {
+            cx.vals[i] = static_cast<uint8_t>(vals[i].get_int64());
+        }
+    }
+
+    return cx;
 }
 #endif

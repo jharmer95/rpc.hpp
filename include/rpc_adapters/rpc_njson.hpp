@@ -1,8 +1,8 @@
 ///@file rpc_adapters/rpc_njson.hpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Implementation of adapting nlohmann/json (https://github.com/nlohmann/json)
-///@version 0.2.3
-///@date 02-24-2021
+///@version 0.2.4
+///@date 03-01-2021
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -96,8 +96,7 @@ void push_arg(T arg, njson& arg_list, const size_t arg_sz)
         if constexpr (std::is_same_v<std::remove_cv_t<std::remove_pointer_t<T>>, char>)
         {
             // special case for char*
-            const std::string str(arg);
-            obj_j["d"] = str;
+            obj_j["d"] = std::string(arg);
         }
         else
         {
@@ -216,8 +215,6 @@ void njson_adapter::populate_array(const njson& obj, Container& container)
     static_assert(
         details::is_container_v<Container>, "Container type must have begin and end iterators");
 
-    static_assert(details::is_container_v<Container>, "Type is not a container!");
-
     using value_t = typename Container::value_type;
 
     for (const auto& val : obj)
@@ -261,7 +258,7 @@ rpc::packed_func<R, Args...> njson_adapter::to_packed_func_w_ptr(
     }
     else
     {
-        pack_ptr = std::make_unique<packed_func<R, Args...>>(serial_obj["func_name"], args);
+        pack_ptr = std::make_unique<packed_func<void, Args...>>(serial_obj["func_name"], args);
     }
 
     pack_ptr->update_arg_arr(arg_arr);

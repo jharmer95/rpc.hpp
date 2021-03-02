@@ -1,8 +1,8 @@
 ///@file rpc.test.cpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Unit test source file for rpc.hpp
-///@version 0.2.3
-///@date 02-24-2021
+///@version 0.2.4
+///@date 03-01-2021
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -46,6 +46,10 @@ static_assert(false, "Test requires nlohmann/json adapter to be enabled!");
 
 #if defined(RPC_HPP_RAPIDJSON_ENABLED)
 #    include "rpc_adapters/rpc_rapidjson.hpp"
+#endif
+
+#if defined(RPC_HPP_BOOST_JSON_ENABLED)
+#    include "rpc_adapters/rpc_boost_json.hpp"
 #endif
 
 #include "rpc.client.hpp"
@@ -102,7 +106,21 @@ TEST_CASE("RAPIDJSON")
 }
 #endif
 
-using test_serial_t = rpdjson_serial_t;
+#if defined(RPC_HPP_BOOST_JSON_ENABLED)
+template<>
+TestClient& GetClient<bjson_serial_t>()
+{
+    static TestClient client("127.0.0.1", "5003");
+    return client;
+}
+
+TEST_CASE("BOOST_JSON")
+{
+    TestType<bjson_serial_t>();
+}
+#endif
+
+using test_serial_t = njson_serial_t;
 
 #if defined(RPC_HPP_ENABLE_POINTERS)
 TEST_CASE("PtrSum")
@@ -403,7 +421,7 @@ TEST_CASE("HashComplexRef")
     REQUIRE_THAT(expected, Catch::Matchers::Equals(test));
 }
 
-TEST_CASE("KillServer")
+TEST_CASE("KillServer", "[!mayfail]")
 {
     auto& client = GetClient<test_serial_t>();
 
