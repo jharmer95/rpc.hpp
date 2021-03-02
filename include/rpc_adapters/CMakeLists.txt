@@ -67,7 +67,7 @@ if(${BUILD_BOOST_JSON_ADAPTER})
     target_include_directories(boost_json_adapter SYSTEM
                                INTERFACE ${Boost_INCLUDE_DIRS})
   else()
-    find_path(boost_json_path boost/json.hpp)
+    find_path(boost_json_path boost/json/src.hpp)
     target_include_directories(boost_json_adapter SYSTEM
                                INTERFACE boost_json_path)
   endif()

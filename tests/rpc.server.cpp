@@ -514,7 +514,7 @@ void session(tcp::socket sock)
 
             const std::string str(data.get(), data.get() + len);
 
-#if defined(_DEBUG)
+#if defined(_DEBUG) || !defined(NDEBUG)
             std::cout << "Received: " << str << '\n';
 #endif
 
@@ -522,7 +522,7 @@ void session(tcp::socket sock)
             rpc::server::dispatch<Serial>(serial_obj);
             const auto ret_str = rpc::serial_adapter<Serial>::to_string(serial_obj);
 
-#if defined(_DEBUG)
+#if defined(_DEBUG) || !defined(NDEBUG)
             std::cout << "Sending: " << ret_str << '\n';
 #endif
 
