@@ -1,8 +1,8 @@
 ///@file test_structs.hpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Structures/classes for use with rpc.hpp unit tests
-///@version 0.2.4
-///@date 03-01-2021
+///@version 0.3.1
+///@date 03-02-2021
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -112,7 +112,7 @@ inline TestMessage rpc::deserialize<njson_serial_t>(const njson& serial_obj)
     mesg.flag2 = serial_obj["flag2"].get<bool>();
     mesg.id = serial_obj["id"].get<int>();
     mesg.data_sz = serial_obj["data_sz"].get<uint8_t>();
-    std::copy(serial_obj["data"].begin(), serial_obj["data"].begin() + mesg.data_sz, mesg.data);
+    std::copy_n(serial_obj["data"].begin(), mesg.data_sz, mesg.data);
     return mesg;
 }
 
@@ -141,7 +141,7 @@ inline ComplexObject rpc::deserialize<njson_serial_t>(const njson& serial_obj)
 
     if (vals.size() > 12)
     {
-        std::copy(vals.begin(), vals.begin() + 12, cx.vals.begin());
+        std::copy_n(vals.begin(), 12, cx.vals.begin());
     }
     else
     {

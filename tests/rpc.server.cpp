@@ -1,8 +1,8 @@
 ///@file rpc.server.cpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Example implementation of an RPC server
-///@version 0.2.4
-///@date 03-01-2021
+///@version 0.3.1
+///@date 03-02-2021
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -45,6 +45,8 @@
 #include <sstream>
 #include <thread>
 
+#define RPC_HPP_ENABLE_SERVER_CACHE
+
 #if defined(RPC_HPP_NJSON_ENABLED)
 #    include "rpc_adapters/rpc_njson.hpp"
 #endif
@@ -70,6 +72,7 @@ constexpr void PtrSum(int* const n1, const int n2)
     *n1 += n2;
 }
 
+// cached
 constexpr int AddAllPtr(const int* const vals, const int num_vals)
 {
     int sum = 0;
@@ -202,16 +205,19 @@ void KillServer()
     RUNNING = false;
 }
 
+// cached
 constexpr int SimpleSum(const int n1, const int n2)
 {
     return n1 + n2;
 }
 
+// cached
 size_t StrLen(const std::string& str)
 {
     return str.size();
 }
 
+// cached
 std::vector<int> AddOneToEach(std::vector<int> vec)
 {
     for (auto& n : vec)
@@ -368,6 +374,7 @@ void ClearBus()
     std::ofstream("bus.txt");
 }
 
+// cached
 uint64_t Fibonacci(const uint64_t number)
 {
     return number < 2 ? 1 : Fibonacci(number - 1) + Fibonacci(number - 2);
@@ -389,12 +396,14 @@ void FibonacciRef(uint64_t& number)
     }
 }
 
+// cached
 double Average(const double n1, const double n2, const double n3, const double n4, const double n5,
     const double n6, const double n7, const double n8, const double n9, const double n10)
 {
     return (n1 + n2 + n3 + n4 + n5 + n6 + n7 + n8 + n9 + n10) / 10.00;
 }
 
+// cached
 double StdDev(const double n1, const double n2, const double n3, const double n4, const double n5,
     const double n6, const double n7, const double n8, const double n9, const double n10)
 {
@@ -419,6 +428,7 @@ void SquareRootRef(double& n1, double& n2, double& n3, double& n4, double& n5, d
     n10 = std::sqrt(n10);
 }
 
+// cached
 template<typename T>
 double AverageContainer(const std::vector<T>& vec)
 {
@@ -439,6 +449,7 @@ std::vector<uint64_t> RandInt(const uint64_t min, const uint64_t max, const size
     return vec;
 }
 
+// cached
 std::string HashComplex(ComplexObject cx)
 {
     std::stringstream hash;
@@ -476,23 +487,43 @@ void HashComplexRef(ComplexObject& cx, std::string& hashStr)
 }
 
 #if defined(RPC_HPP_ENABLE_POINTERS)
-RPC_DEFAULT_DISPATCH(PtrSum, AddAllPtr, ReadMessagePtr, WriteMessagePtr, FibonacciPtr,
-    SquareRootPtr, HashComplexPtr, KillServer, SimpleSum, StrLen, AddOneToEach, AddOneToEachRef,
-    ReadMessageRef, WriteMessageRef, ReadMessageVec, WriteMessageVec, ClearBus, Fibonacci,
-    FibonacciRef, Average, StdDev, SquareRootRef, AverageContainer<uint64_t>,
-    AverageContainer<double>, RandInt, HashComplex, HashComplexRef)
+template<typename Serial>
+void rpc::server::dispatch(typename Serial::doc_type& serial_obj)
+{
+    const auto func_name = serial_adapter<Serial>::extract_func_name(serial_obj);
+
+    RPC_ATTACH_FUNCS(PtrSum, ReadMessagePtr, WriteMessagePtr, FibonacciPtr, SquareRootPtr,
+        HashComplexPtr, KillServer, AddOneToEach, AddOneToEachRef, ReadMessageRef, WriteMessageRef,
+        ReadMessageVec, WriteMessageVec, ClearBus, FibonacciRef, SquareRootRef, RandInt,
+        HashComplexRef)
+
+    RPC_ATTACH_CACHED_FUNCS(AddAllPtr, SimpleSum, StrLen, AddOneToEach, Fibonacci, Average, StdDev,
+        AverageContainer<uint64_t>, AverageContainer<double>, HashComplex)
+
+    throw std::runtime_error("RPC error: Called function: \"" + func_name + "\" not found!");
+}
+
 #else
-RPC_DEFAULT_DISPATCH(KillServer, SimpleSum, StrLen, AddOneToEach, AddOneToEachRef, ReadMessageRef,
-    WriteMessageRef, ReadMessageVec, WriteMessageVec, ClearBus, Fibonacci, FibonacciRef, Average,
-    StdDev, SquareRootRef, AverageContainer<uint64_t>, AverageContainer<double>, RandInt,
-    HashComplex, HashComplexRef)
+template<typename Serial>
+void rpc::server::dispatch(typename Serial::doc_type& serial_obj)
+{
+    const auto func_name = serial_adapter<Serial>::extract_func_name(serial_obj);
+
+    RPC_ATTACH_FUNCS(KillServer, AddOneToEachRef, ReadMessageRef, WriteMessageRef, ReadMessageVec,
+        WriteMessageVec, ClearBus, FibonacciRef, SquareRootRef, RandInt, HashComplexRef)
+
+    RPC_ATTACH_CACHED_FUNCS(SimpleSum, StrLen, AddOneToEach, Fibonacci, Average, StdDev,
+        AverageContainer<uint64_t>, AverageContainer<double>, HashComplex)
+
+    throw std::runtime_error("RPC error: Called function: \"" + func_name + "\" not found!");
+}
 #endif
 
 template<typename Serial>
 void session(tcp::socket sock)
 {
     constexpr auto BUFFER_SZ = 64U * 1024UL;
-    std::unique_ptr<char[]> data = std::make_unique<char[]>(BUFFER_SZ);
+    const std::unique_ptr<char[]> data = std::make_unique<char[]>(BUFFER_SZ);
 
     try
     {

@@ -1,8 +1,8 @@
 ///@file rpc_adapters/rpc_rapidjson.hpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Implementation of adapting rapidjson (https://github.com/Tencent/rapidjson)
-///@version 0.2.4
-///@date 03-01-2021
+///@version 0.3.1
+///@date 03-02-2021
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -52,7 +52,7 @@ Please define this macro or do not include this header!)")
 
 using rpdjson_doc = rapidjson::Document;
 using rpdjson_val = rapidjson::Value;
-using rpdjson_serial_t = typename rpc::serial_t<rpdjson_val, rpdjson_doc>;
+using rpdjson_serial_t = rpc::serial_t<rpdjson_val, rpdjson_doc>;
 using rpdjson_adapter = rpc::serial_adapter<rpdjson_serial_t>;
 
 template<>
@@ -331,6 +331,37 @@ T rpdjson_adapter::get_value(const rpdjson_val& obj)
     else
     {
         return rpc::deserialize<rpdjson_serial_t, T>(obj);
+    }
+}
+
+template<>
+template<typename R>
+void rpdjson_adapter::set_result(rpdjson_doc& serial_obj, R val)
+{
+    auto& alloc = serial_obj.GetAllocator();
+    auto& result = serial_obj["result"];
+
+    if constexpr (std::is_arithmetic_v<R>)
+    {
+        result.Set<R>(val);
+    }
+    else if constexpr (std::is_same_v<R, std::string>)
+    {
+        result.SetString(val.c_str(), alloc);
+    }
+    else if constexpr (details::is_container_v<R>)
+    {
+        const R container = val;
+        result.SetArray();
+
+        for (const auto& v : container)
+        {
+            result.PushBack(v, alloc);
+        }
+    }
+    else
+    {
+        result = serialize<rpdjson_serial_t, R>(val);
     }
 }
 

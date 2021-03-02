@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.1...3.19)
 
 project(
   "rpc.hpp"
-  VERSION 0.2.4
+  VERSION 0.3.1
   DESCRIPTION "Simple RPC Header-Only Library"
   LANGUAGES CXX)
 

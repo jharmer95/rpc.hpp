@@ -1,8 +1,8 @@
 ///@file rpc.benchmark.cpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Benchmarking source file for rpc.hpp
-///@version 0.2.4
-///@date 03-01-2021
+///@version 0.3.1
+///@date 03-02-2021
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -93,7 +93,7 @@ TestClient& GetClient<bjson_serial_t>()
 }
 #endif
 
-TEST_CASE("By Value (simple)", "[value][simple]")
+TEST_CASE("By Value (simple)", "[value][simple][cached]")
 {
     constexpr uint64_t expected = 10946ULL;
     uint64_t test = 1;
@@ -132,7 +132,7 @@ TEST_CASE("By Value (simple)", "[value][simple]")
 #endif
 }
 
-TEST_CASE("By Value (complex)", "[value][complex]")
+TEST_CASE("By Value (complex)", "[value][complex][cached]")
 {
     const std::string expected = "467365747274747d315a473a527073796c7e707b85";
     std::string test;
@@ -194,7 +194,7 @@ TEST_CASE("By Value (complex)", "[value][complex]")
 #endif
 }
 
-TEST_CASE("By Value (many)", "[value][many]")
+TEST_CASE("By Value (many)", "[value][many][cached]")
 {
     constexpr double expected = 3313.695594785;
     double test = 1.0;
@@ -443,7 +443,7 @@ TEST_CASE("By Reference (many)", "[ref][many]")
 #endif
 }
 
-TEST_CASE("With Container", "[container]")
+TEST_CASE("With Container", "[container][cached]")
 {
     constexpr double expected = 1731.8635996333;
     double test = 1.0;
@@ -489,7 +489,7 @@ TEST_CASE("With Container", "[container]")
 #endif
 }
 
-TEST_CASE("Sequential", "[sequential]")
+TEST_CASE("Sequential", "[sequential][cached]")
 {
     BENCHMARK("rpc.hpp (asio::tcp, njson)")
     {
@@ -768,7 +768,7 @@ TEST_CASE("By Pointer (many)", "[pointer][many]")
 }
 #endif
 
-TEST_CASE("KillServer")
+TEST_CASE("KillServer", "[!mayfail][value][simple][cached][ref][complex][sequential][pointer][many][container]")
 {
     auto& client = GetClient<njson_serial_t>();
 
