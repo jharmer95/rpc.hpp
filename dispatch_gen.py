@@ -55,29 +55,29 @@ with open(fname, "w") as f:
     f.write("RPC_FE2_0)(ACTION, __VA_ARGS__))\n\n")
 
     f.write(
-        "#define RPC_ATTACH_FUNC(FUNCNAME) if (func_name == #FUNCNAME) { return dispatch_func<Serial>(FUNCNAME, serial_obj); }\n"
+        "#define RPC_ATTACH_FUNC(FUNCNAME) case::FuncName::FUNCNAME: return dispatch_func<Serial>(FUNCNAME, serial_obj);\n"
     )
     f.write(
         "#define RPC_ATTACH_FUNCS(FUNCNAME, ...) EXPAND(RPC_FOR_EACH(RPC_ATTACH_FUNC, FUNCNAME, __VA_ARGS__))\n\n"
     )
     f.write(
-        "#define RPC_ATTACH_CACHED_FUNC(FUNCNAME) if (func_name == #FUNCNAME) { return dispatch_func<Serial>(FUNCNAME, serial_obj, true); }\n"
+        "#define RPC_ATTACH_CACHED_FUNC(FUNCNAME) case FuncName::FUNCNAME: return dispatch_func<Serial>(FUNCNAME, serial_obj, true);\n"
     )
     f.write(
         "#define RPC_ATTACH_CACHED_FUNCS(FUNCNAME, ...) EXPAND(RPC_FOR_EACH(RPC_ATTACH_CACHED_FUNC, FUNCNAME, __VA_ARGS__))\n\n"
     )
     f.write(
-        "#define RPC_ALIAS_FUNC(FUNCNAME, FUNC_ALIAS) if (func_name == #FUNC_ALIAS) { return dispatch_func<Serial>(FUNCNAME, serial_obj); }\n"
+        "#define RPC_ALIAS_FUNC(FUNCNAME, FUNC_ALIAS) case FuncName::FUNC_ALIAS: return dispatch_func<Serial>(FUNCNAME, serial_obj);\n"
     )
     f.write(
         "#define RPC_MULTI_ALIAS_FUNC(FUNCNAME, FUNC_ALIAS,...) EXPAND(RPC_FOR_EACH2(RPC_ALIAS_FUNC, FUNCNAME, FUNC_ALIAS, __VA_ARGS__))\n\n"
     )
     f.write(
-        "#define RPC_ALIAS_CACHED_FUNC(FUNCNAME, FUNC_ALIAS) if (func_name == #FUNC_ALIAS) { return dispatch_func<Serial>(FUNCNAME, serial_obj, true); }\n"
+        "#define RPC_ALIAS_CACHED_FUNC(FUNCNAME, FUNC_ALIAS) case FuncName::FUNC_ALIAS: return dispatch_func<Serial>(FUNCNAME, serial_obj, true);\n"
     )
     f.write(
         "#define RPC_MULTI_ALIAS_CACHED_FUNC(FUNCNAME, FUNC_ALIAS,...) EXPAND(RPC_FOR_EACH2(RPC_ALIAS_CACHED_FUNC, FUNCNAME, FUNC_ALIAS, __VA_ARGS__))\n\n"
     )
     f.write(
-        '#define RPC_DEFAULT_DISPATCH(FUNCNAME, ...) EXPAND(template<typename Serial> void rpc::server::dispatch(typename Serial::doc_type& serial_obj) { const auto func_name = serial_adapter<Serial>::extract_func_name(serial_obj); RPC_ATTACH_FUNCS(FUNCNAME, __VA_ARGS__) throw std::runtime_error("RPC error: Called function: \"" + func_name + "\" not found!");})\n'
+        '#define RPC_DEFAULT_DISPATCH(FUNCNAME, ...) EXPAND(template<typename Serial> void rpc::server::dispatch(typename Serial::doc_type& serial_obj) { const auto func_name = serial_adapter<Serial>::extract_func_name(serial_obj); const auto func_enum = magic_enum::enum_cast<FuncName>(func_name); if (!func_enum.has_value()) { throw std::runtime_error("RPC error: Called function: \"" + func_name + "\" not found!"); }  switch(*func_enum) { RPC_ATTACH_FUNCS(FUNCNAME, __VA_ARGS__) }})\n'
     )

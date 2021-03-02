@@ -437,16 +437,6 @@ double AverageContainer(const std::vector<T>& vec)
     return sum / static_cast<double>(vec.size());
 }
 
-inline double AverageContainer_double(const std::vector<double>& vec)
-{
-    return AverageContainer<double>(vec);
-}
-
-inline double AverageContainer_uint64_t(const std::vector<uint64_t>& vec)
-{
-    return AverageContainer<uint64_t>(vec);
-}
-
 std::vector<uint64_t> RandInt(const uint64_t min, const uint64_t max, const size_t sz = 1000)
 {
     std::vector<uint64_t> vec;
@@ -547,12 +537,11 @@ void rpc::server::dispatch(typename Serial::doc_type& serial_obj)
             ReadMessageVec, WriteMessageVec, ClearBus, FibonacciRef, SquareRootRef, RandInt,
             HashComplexRef)
 
-        RPC_ATTACH_CACHED_FUNCS(AddAllPtr, SimpleSum, StrLen, AddOneToEach, Fibonacci, Average,
-            StdDev, AverageContainer_double, AverageContainer_uint64_t, HashComplex)
+        RPC_ATTACH_CACHED_FUNCS(
+            AddAllPtr, SimpleSum, StrLen, AddOneToEach, Fibonacci, Average, StdDev, HashComplex)
 
-        default:
-            throw std::runtime_error(
-                "RPC error: Called function: \"" + func_name + "\" not found!");
+        RPC_ALIAS_CACHED_FUNC(AverageContainer<double>, AverageContainer_double)
+        RPC_ALIAS_CACHED_FUNC(AverageContainer<uint64_t>, AverageContainer_uint64_t)
     }
 }
 
@@ -574,12 +563,11 @@ void rpc::server::dispatch(typename Serial::doc_type& serial_obj)
             ReadMessageVec, WriteMessageVec, ClearBus, FibonacciRef, SquareRootRef, RandInt,
             HashComplexRef)
 
-        RPC_ATTACH_CACHED_FUNCS(SimpleSum, StrLen, AddOneToEach, Fibonacci, Average, StdDev,
-            AverageContainer_double, AverageContainer_uint64_t, HashComplex)
+        RPC_ATTACH_CACHED_FUNCS(
+            SimpleSum, StrLen, AddOneToEach, Fibonacci, Average, StdDev, HashComplex)
 
-        default:
-            throw std::runtime_error(
-                "RPC error: Called function: \"" + func_name + "\" not found!");
+        RPC_ALIAS_CACHED_FUNC(AverageContainer<double>, AverageContainer_double)
+        RPC_ALIAS_CACHED_FUNC(AverageContainer<uint64_t>, AverageContainer_uint64_t)
     }
 }
 #endif
