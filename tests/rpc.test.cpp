@@ -421,7 +421,7 @@ TEST_CASE("HashComplexRef")
     REQUIRE_THAT(expected, Catch::Matchers::Equals(test));
 }
 
-TEST_CASE("KillServer")
+TEST_CASE("KillServer", "[!mayfail])
 {
     auto& client = GetClient<test_serial_t>();
 
