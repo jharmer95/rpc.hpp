@@ -97,43 +97,45 @@ TEST_CASE("By Value (simple)", "[value][simple]")
 {
     constexpr uint64_t expected = 10946ULL;
     uint64_t test = 1;
-    auto& njson_client = GetClient<njson_serial_t>();
-    auto& rpdjson_client = GetClient<rpdjson_serial_t>();
-    auto& bjson_client = GetClient<bjson_serial_t>();
 
     BENCHMARK("rpc.hpp (asio::tcp, njson)")
     {
-        test = *rpc::call<njson_serial_t, uint64_t>(njson_client, "Fibonacci", 20).get_result();
+        test = *rpc::call<njson_serial_t, uint64_t>(GetClient<njson_serial_t>(), "Fibonacci", 20)
+                    .get_result();
     };
 
     REQUIRE(expected == test);
 
+#if defined(RPC_HPP_RAPIDJSON_ENABLED)
     test = 1;
 
     BENCHMARK("rpc.hpp (asio::tcp, rapidjson)")
     {
-        test = *rpc::call<rpdjson_serial_t, uint64_t>(rpdjson_client, "Fibonacci", 20).get_result();
+        test =
+            *rpc::call<rpdjson_serial_t, uint64_t>(GetClient<rpdjson_serial_t>(), "Fibonacci", 20)
+                 .get_result();
     };
 
     REQUIRE(expected == test);
+#endif
 
+#if defined(RPC_HPP_BOOST_JSON_ENABLED)
     test = 1;
 
     BENCHMARK("rpc.hpp (asio::tcp, Boost.JSON)")
     {
-        test = *rpc::call<bjson_serial_t, uint64_t>(bjson_client, "Fibonacci", 20).get_result();
+        test = *rpc::call<bjson_serial_t, uint64_t>(GetClient<bjson_serial_t>(), "Fibonacci", 20)
+                    .get_result();
     };
 
     REQUIRE(expected == test);
+#endif
 }
 
 TEST_CASE("By Value (complex)", "[value][complex]")
 {
     const std::string expected = "467365747274747d315a473a527073796c7e707b85";
     std::string test;
-    auto& njson_client = GetClient<njson_serial_t>();
-    auto& rpdjson_client = GetClient<rpdjson_serial_t>();
-    auto& bjson_client = GetClient<bjson_serial_t>();
 
     BENCHMARK("rpc.hpp (asio::tcp, njson)")
     {
@@ -145,11 +147,13 @@ TEST_CASE("By Value (complex)", "[value][complex]")
         cx.vals = { 0, 1, 4, 6, 7, 8, 11, 15, 17, 22, 25, 26 };
 
         test =
-            *rpc::call<njson_serial_t, std::string>(njson_client, "HashComplex", cx).get_result();
+            *rpc::call<njson_serial_t, std::string>(GetClient<njson_serial_t>(), "HashComplex", cx)
+                 .get_result();
     };
 
     REQUIRE_THAT(expected, Catch::Matchers::Equals(test));
 
+#if defined(RPC_HPP_RAPIDJSON_ENABLED)
     test = "";
 
     BENCHMARK("rpc.hpp (asio::tcp, rapidjson)")
@@ -161,12 +165,15 @@ TEST_CASE("By Value (complex)", "[value][complex]")
         cx.name = "Franklin D. Roosevelt";
         cx.vals = { 0, 1, 4, 6, 7, 8, 11, 15, 17, 22, 25, 26 };
 
-        test = *rpc::call<rpdjson_serial_t, std::string>(rpdjson_client, "HashComplex", cx)
+        test = *rpc::call<rpdjson_serial_t, std::string>(
+            GetClient<rpdjson_serial_t>(), "HashComplex", cx)
                     .get_result();
     };
 
     REQUIRE_THAT(expected, Catch::Matchers::Equals(test));
+#endif
 
+#if defined(RPC_HPP_BOOST_JSON_ENABLED)
     test = "";
 
     BENCHMARK("rpc.hpp (asio::tcp, Boost.JSON)")
@@ -179,97 +186,100 @@ TEST_CASE("By Value (complex)", "[value][complex]")
         cx.vals = { 0, 1, 4, 6, 7, 8, 11, 15, 17, 22, 25, 26 };
 
         test =
-            *rpc::call<bjson_serial_t, std::string>(bjson_client, "HashComplex", cx).get_result();
+            *rpc::call<bjson_serial_t, std::string>(GetClient<bjson_serial_t>(), "HashComplex", cx)
+                 .get_result();
     };
 
     REQUIRE_THAT(expected, Catch::Matchers::Equals(test));
+#endif
 }
 
 TEST_CASE("By Value (many)", "[value][many]")
 {
     constexpr double expected = 3313.695594785;
     double test = 1.0;
-    auto& njson_client = GetClient<njson_serial_t>();
-    auto& rpdjson_client = GetClient<rpdjson_serial_t>();
-    auto& bjson_client = GetClient<bjson_serial_t>();
 
     BENCHMARK("rpc.hpp (asio::tcp, njson)")
     {
-        test = *rpc::call<njson_serial_t, double>(njson_client, "StdDev", 55.65, 125.325, 552.125,
-            12.767, 2599.6, 1245.125663, 9783.49, 125.12, 553.3333333333, 2266.1)
+        test = *rpc::call<njson_serial_t, double>(GetClient<njson_serial_t>(), "StdDev", 55.65,
+            125.325, 552.125, 12.767, 2599.6, 1245.125663, 9783.49, 125.12, 553.3333333333, 2266.1)
                     .get_result();
     };
 
     REQUIRE_THAT(test, Catch::Matchers::WithinRel(expected));
 
+#if defined(RPC_HPP_RAPIDJSON_ENABLED)
     test = 1.0;
 
     BENCHMARK("rpc.hpp (asio::tcp, rapidjson)")
     {
-        test = *rpc::call<rpdjson_serial_t, double>(rpdjson_client, "StdDev", 55.65, 125.325,
-            552.125, 12.767, 2599.6, 1245.125663, 9783.49, 125.12, 553.3333333333, 2266.1)
+        test = *rpc::call<rpdjson_serial_t, double>(GetClient<rpdjson_serial_t>(), "StdDev", 55.65,
+            125.325, 552.125, 12.767, 2599.6, 1245.125663, 9783.49, 125.12, 553.3333333333, 2266.1)
                     .get_result();
     };
 
     REQUIRE_THAT(test, Catch::Matchers::WithinRel(expected));
+#endif
 
+#if defined(RPC_HPP_BOOST_JSON_ENABLED)
     test = 1.0;
 
     BENCHMARK("rpc.hpp (asio::tcp, Boost.JSON)")
     {
-        test = *rpc::call<bjson_serial_t, double>(bjson_client, "StdDev", 55.65, 125.325, 552.125,
-            12.767, 2599.6, 1245.125663, 9783.49, 125.12, 553.3333333333, 2266.1)
+        test = *rpc::call<bjson_serial_t, double>(GetClient<bjson_serial_t>(), "StdDev", 55.65,
+            125.325, 552.125, 12.767, 2599.6, 1245.125663, 9783.49, 125.12, 553.3333333333, 2266.1)
                     .get_result();
     };
 
     REQUIRE_THAT(test, Catch::Matchers::WithinRel(expected));
+#endif
 }
 
 TEST_CASE("By Reference (simple)", "[ref][simple]")
 {
     constexpr uint64_t expected = 10946ULL;
     uint64_t test = 0;
-    auto& njson_client = GetClient<njson_serial_t>();
-    auto& rpdjson_client = GetClient<rpdjson_serial_t>();
-    auto& bjson_client = GetClient<bjson_serial_t>();
 
     BENCHMARK("rpc.hpp (asio::tcp, njson)")
     {
         uint64_t num = 20;
-        test = rpc::call<njson_serial_t>(njson_client, "FibonacciRef", num).get_arg<uint64_t>(0);
+        test = rpc::call<njson_serial_t>(GetClient<njson_serial_t>(), "FibonacciRef", num)
+                   .get_arg<uint64_t>(0);
     };
 
     REQUIRE(expected == test);
 
+#if defined(RPC_HPP_RAPIDJSON_ENABLED)
     test = 0;
 
     BENCHMARK("rpc.hpp (asio::tcp, rapidjson)")
     {
         uint64_t num = 20;
-        test =
-            rpc::call<rpdjson_serial_t>(rpdjson_client, "FibonacciRef", num).get_arg<uint64_t>(0);
+        test = rpc::call<rpdjson_serial_t>(GetClient<rpdjson_serial_t>(), "FibonacciRef", num)
+                   .get_arg<uint64_t>(0);
     };
+#endif
 
     REQUIRE(expected == test);
 
+#if defined(RPC_HPP_BOOST_JSON_ENABLED)
     test = 0;
 
     BENCHMARK("rpc.hpp (asio::tcp, Boost.JSON)")
     {
         uint64_t num = 20;
-        test = rpc::call<bjson_serial_t>(bjson_client, "FibonacciRef", num).get_arg<uint64_t>(0);
+        test = rpc::call<bjson_serial_t>(GetClient<bjson_serial_t>(), "FibonacciRef", num)
+                   .get_arg<uint64_t>(0);
     };
 
     REQUIRE(expected == test);
+#endif
 }
 
 TEST_CASE("By Reference (complex)", "[ref][complex]")
 {
     const std::string expected = "467365747274747d315a473a527073796c7e707b85";
     std::string test;
-    auto& njson_client = GetClient<njson_serial_t>();
-    auto& rpdjson_client = GetClient<rpdjson_serial_t>();
-    auto& bjson_client = GetClient<bjson_serial_t>();
 
     BENCHMARK("rpc.hpp (asio::tcp, njson)")
     {
@@ -280,12 +290,13 @@ TEST_CASE("By Reference (complex)", "[ref][complex]")
         cx.name = "Franklin D. Roosevelt";
         cx.vals = { 0, 1, 4, 6, 7, 8, 11, 15, 17, 22, 25, 26 };
 
-        test = rpc::call<njson_serial_t>(njson_client, "HashComplexRef", cx, test)
+        test = rpc::call<njson_serial_t>(GetClient<njson_serial_t>(), "HashComplexRef", cx, test)
                    .get_arg<std::string>(1);
     };
 
     REQUIRE_THAT(expected, Catch::Matchers::Equals(test));
 
+#if defined(RPC_HPP_RAPIDJSON_ENABLED)
     test = "";
 
     BENCHMARK("rpc.hpp (asio::tcp, rapidjson)")
@@ -297,12 +308,15 @@ TEST_CASE("By Reference (complex)", "[ref][complex]")
         cx.name = "Franklin D. Roosevelt";
         cx.vals = { 0, 1, 4, 6, 7, 8, 11, 15, 17, 22, 25, 26 };
 
-        test = rpc::call<rpdjson_serial_t>(rpdjson_client, "HashComplexRef", cx, test)
-                   .get_arg<std::string>(1);
+        test =
+            rpc::call<rpdjson_serial_t>(GetClient<rpdjson_serial_t>(), "HashComplexRef", cx, test)
+                .get_arg<std::string>(1);
     };
 
     REQUIRE_THAT(expected, Catch::Matchers::Equals(test));
+#endif
 
+#if defined(RPC_HPP_BOOST_JSON_ENABLED)
     test = "";
 
     BENCHMARK("rpc.hpp (asio::tcp, Boost.JSON)")
@@ -314,20 +328,18 @@ TEST_CASE("By Reference (complex)", "[ref][complex]")
         cx.name = "Franklin D. Roosevelt";
         cx.vals = { 0, 1, 4, 6, 7, 8, 11, 15, 17, 22, 25, 26 };
 
-        test = rpc::call<bjson_serial_t>(bjson_client, "HashComplexRef", cx, test)
+        test = rpc::call<bjson_serial_t>(GetClient<bjson_serial_t>(), "HashComplexRef", cx, test)
                    .get_arg<std::string>(1);
     };
 
     REQUIRE_THAT(expected, Catch::Matchers::Equals(test));
+#endif
 }
 
 TEST_CASE("By Reference (many)", "[ref][many]")
 {
     constexpr double expected = 313.2216436152;
     double test = 1.0;
-    auto& njson_client = GetClient<njson_serial_t>();
-    auto& rpdjson_client = GetClient<rpdjson_serial_t>();
-    auto& bjson_client = GetClient<bjson_serial_t>();
 
     BENCHMARK("rpc.hpp (asio::tcp, njson)")
     {
@@ -343,7 +355,7 @@ TEST_CASE("By Reference (many)", "[ref][many]")
         double n10 = 2266.1;
 
         const auto pack = rpc::call<njson_serial_t>(
-            njson_client, "SquareRootRef", n1, n2, n3, n4, n5, n6, n7, n8, n9, n10);
+            GetClient<njson_serial_t>(), "SquareRootRef", n1, n2, n3, n4, n5, n6, n7, n8, n9, n10);
 
         n1 = pack.get_arg<double>(0);
         n2 = pack.get_arg<double>(1);
@@ -360,6 +372,7 @@ TEST_CASE("By Reference (many)", "[ref][many]")
 
     REQUIRE_THAT(test, Catch::Matchers::WithinAbs(expected, 0.001));
 
+#if defined(RPC_HPP_RAPIDJSON_ENABLED)
     test = 1.0;
 
     BENCHMARK("rpc.hpp (asio::tcp, rapidjson)")
@@ -375,8 +388,8 @@ TEST_CASE("By Reference (many)", "[ref][many]")
         double n9 = 553.3333333333;
         double n10 = 2266.1;
 
-        const auto pack = rpc::call<rpdjson_serial_t>(
-            rpdjson_client, "SquareRootRef", n1, n2, n3, n4, n5, n6, n7, n8, n9, n10);
+        const auto pack = rpc::call<rpdjson_serial_t>(GetClient<rpdjson_serial_t>(),
+            "SquareRootRef", n1, n2, n3, n4, n5, n6, n7, n8, n9, n10);
 
         n1 = pack.get_arg<double>(0);
         n2 = pack.get_arg<double>(1);
@@ -392,7 +405,9 @@ TEST_CASE("By Reference (many)", "[ref][many]")
     };
 
     REQUIRE_THAT(test, Catch::Matchers::WithinAbs(expected, 0.001));
+#endif
 
+#if defined(RPC_HPP_BOOST_JSON_ENABLED)
     test = 1.0;
 
     BENCHMARK("rpc.hpp (asio::tcp, Boost.JSON)")
@@ -409,7 +424,7 @@ TEST_CASE("By Reference (many)", "[ref][many]")
         double n10 = 2266.1;
 
         const auto pack = rpc::call<bjson_serial_t>(
-            bjson_client, "SquareRootRef", n1, n2, n3, n4, n5, n6, n7, n8, n9, n10);
+            GetClient<bjson_serial_t>(), "SquareRootRef", n1, n2, n3, n4, n5, n6, n7, n8, n9, n10);
 
         n1 = pack.get_arg<double>(0);
         n2 = pack.get_arg<double>(1);
@@ -425,27 +440,27 @@ TEST_CASE("By Reference (many)", "[ref][many]")
     };
 
     REQUIRE_THAT(test, Catch::Matchers::WithinAbs(expected, 0.001));
+#endif
 }
 
 TEST_CASE("With Container", "[container]")
 {
     constexpr double expected = 1731.8635996333;
     double test = 1.0;
-    auto& njson_client = GetClient<njson_serial_t>();
-    auto& rpdjson_client = GetClient<rpdjson_serial_t>();
-    auto& bjson_client = GetClient<bjson_serial_t>();
 
     BENCHMARK("rpc.hpp (asio::tcp, njson)")
     {
         const std::vector<double> vec{ 55.65, 125.325, 552.125, 12.767, 2599.6, 1245.125663,
             9783.49, 125.12, 553.3333333333, 2266.1 };
 
-        test = *rpc::call<njson_serial_t, double>(njson_client, "AverageContainer<double>", vec)
+        test = *rpc::call<njson_serial_t, double>(
+            GetClient<njson_serial_t>(), "AverageContainer<double>", vec)
                     .get_result();
     };
 
     REQUIRE_THAT(test, Catch::Matchers::WithinAbs(expected, 0.001));
 
+#if defined(RPC_HPP_RAPIDJSON_ENABLED)
     test = 1.0;
 
     BENCHMARK("rpc.hpp (asio::tcp, rapidjson)")
@@ -453,10 +468,13 @@ TEST_CASE("With Container", "[container]")
         const std::vector<double> vec{ 55.65, 125.325, 552.125, 12.767, 2599.6, 1245.125663,
             9783.49, 125.12, 553.3333333333, 2266.1 };
 
-        test = *rpc::call<rpdjson_serial_t, double>(rpdjson_client, "AverageContainer<double>", vec)
+        test = *rpc::call<rpdjson_serial_t, double>(
+            GetClient<rpdjson_serial_t>(), "AverageContainer<double>", vec)
                     .get_result();
     };
+#endif
 
+#if defined(RPC_HPP_BOOST_JSON_ENABLED)
     test = 1.0;
 
     BENCHMARK("rpc.hpp (asio::tcp, Boost.JSON)")
@@ -464,63 +482,72 @@ TEST_CASE("With Container", "[container]")
         const std::vector<double> vec{ 55.65, 125.325, 552.125, 12.767, 2599.6, 1245.125663,
             9783.49, 125.12, 553.3333333333, 2266.1 };
 
-        test = *rpc::call<bjson_serial_t, double>(bjson_client, "AverageContainer<double>", vec)
+        test = *rpc::call<bjson_serial_t, double>(
+            GetClient<bjson_serial_t>(), "AverageContainer<double>", vec)
                     .get_result();
     };
+#endif
 }
 
 TEST_CASE("Sequential", "[sequential]")
 {
-    auto& njson_client = GetClient<njson_serial_t>();
-    auto& rpdjson_client = GetClient<rpdjson_serial_t>();
-    auto& bjson_client = GetClient<bjson_serial_t>();
-
     BENCHMARK("rpc.hpp (asio::tcp, njson)")
     {
-        auto vec =
-            *rpc::call<njson_serial_t, std::vector<uint64_t>>(njson_client, "RandInt", 5, 30, 1000)
-                 .get_result();
-
-        for (auto& val : vec)
-        {
-            val = *rpc::call<njson_serial_t, uint64_t>(njson_client, "Fibonacci", val).get_result();
-        }
-
-        return *rpc::call<njson_serial_t, double>(njson_client, "AverageContainer<uint64_t>", vec)
-                    .get_result();
-    };
-
-    BENCHMARK("rpc.hpp (asio::tcp, rapidjson)")
-    {
-        auto vec = *rpc::call<rpdjson_serial_t, std::vector<uint64_t>>(
-            rpdjson_client, "RandInt", 5, 30, 1000)
+        auto vec = *rpc::call<njson_serial_t, std::vector<uint64_t>>(
+            GetClient<njson_serial_t>(), "RandInt", 5, 30, 1000)
                         .get_result();
 
         for (auto& val : vec)
         {
-            val = *rpc::call<rpdjson_serial_t, uint64_t>(rpdjson_client, "Fibonacci", val)
+            val =
+                *rpc::call<njson_serial_t, uint64_t>(GetClient<njson_serial_t>(), "Fibonacci", val)
+                     .get_result();
+        }
+
+        return *rpc::call<njson_serial_t, double>(
+            GetClient<njson_serial_t>(), "AverageContainer<uint64_t>", vec)
+                    .get_result();
+    };
+
+#if defined(RPC_HPP_RAPIDJSON_ENABLED)
+    BENCHMARK("rpc.hpp (asio::tcp, rapidjson)")
+    {
+        auto vec = *rpc::call<rpdjson_serial_t, std::vector<uint64_t>>(
+            GetClient<rpdjson_serial_t>(), "RandInt", 5, 30, 1000)
+                        .get_result();
+
+        for (auto& val : vec)
+        {
+            val = *rpc::call<rpdjson_serial_t, uint64_t>(
+                GetClient<rpdjson_serial_t>(), "Fibonacci", val)
                        .get_result();
         }
 
         return *rpc::call<rpdjson_serial_t, double>(
-            rpdjson_client, "AverageContainer<uint64_t>", vec)
+            GetClient<rpdjson_serial_t>(), "AverageContainer<uint64_t>", vec)
                     .get_result();
     };
+#endif
 
+#if defined(RPC_HPP_BOOST_JSON_ENABLED)
     BENCHMARK("rpc.hpp (asio::tcp, bjson)")
     {
-        auto vec =
-            *rpc::call<bjson_serial_t, std::vector<uint64_t>>(bjson_client, "RandInt", 5, 30, 1000)
-                 .get_result();
+        auto vec = *rpc::call<bjson_serial_t, std::vector<uint64_t>>(
+            GetClient<bjson_serial_t>(), "RandInt", 5, 30, 1000)
+                        .get_result();
 
         for (auto& val : vec)
         {
-            val = *rpc::call<bjson_serial_t, uint64_t>(bjson_client, "Fibonacci", val).get_result();
+            val =
+                *rpc::call<bjson_serial_t, uint64_t>(GetClient<bjson_serial_t>(), "Fibonacci", val)
+                     .get_result();
         }
 
-        return *rpc::call<bjson_serial_t, double>(bjson_client, "AverageContainer<uint64_t>", vec)
+        return *rpc::call<bjson_serial_t, double>(
+            GetClient<bjson_serial_t>(), "AverageContainer<uint64_t>", vec)
                     .get_result();
     };
+#endif
 }
 
 #if defined(RPC_HPP_ENABLE_POINTERS)
@@ -528,47 +555,47 @@ TEST_CASE("By Pointer (simple)", "[pointer][simple]")
 {
     constexpr uint64_t expected = 10946ULL;
     uint64_t test = 0;
-    auto& njson_client = GetClient<njson_serial_t>();
-    auto& rpdjson_client = GetClient<rpdjson_serial_t>();
-    auto& bjson_client = GetClient<bjson_serial_t>();
 
     BENCHMARK("rpc.hpp (asio::tcp, njson)")
     {
         uint64_t num = 20;
-        test = *rpc::call<njson_serial_t>(njson_client, "FibonacciPtr", &num).get_arg<uint64_t*>(0);
-    };
-
-    REQUIRE(expected == test);
-
-    test = 0;
-
-    BENCHMARK("rpc.hpp (asio::tcp, rapidjson)")
-    {
-        uint64_t num = 20;
-        test = *rpc::call<rpdjson_serial_t>(rpdjson_client, "FibonacciPtr", &num)
+        test = *rpc::call<njson_serial_t>(GetClient<njson_serial_t>(), "FibonacciPtr", &num)
                     .get_arg<uint64_t*>(0);
     };
 
     REQUIRE(expected == test);
 
+#    if defined(RPC_HPP_RAPIDJSON_ENABLED)
+    test = 0;
+
+    BENCHMARK("rpc.hpp (asio::tcp, rapidjson)")
+    {
+        uint64_t num = 20;
+        test = *rpc::call<rpdjson_serial_t>(GetClient<rpdjson_serial_t>(), "FibonacciPtr", &num)
+                    .get_arg<uint64_t*>(0);
+    };
+
+    REQUIRE(expected == test);
+#    endif
+
+#    if defined(RPC_HPP_BOOST_JSON_ENABLED)
     test = 0;
 
     BENCHMARK("rpc.hpp (asio::tcp, Boost.JSON)")
     {
         uint64_t num = 20;
-        test = *rpc::call<bjson_serial_t>(bjson_client, "FibonacciPtr", &num).get_arg<uint64_t*>(0);
+        test = *rpc::call<bjson_serial_t>(GetClient<bjson_serial_t>(), "FibonacciPtr", &num)
+                    .get_arg<uint64_t*>(0);
     };
 
     REQUIRE(expected == test);
+#    endif
 }
 
 TEST_CASE("By Pointer (complex)", "[pointer][complex]")
 {
     const std::string expected = "467365747274747d315a473a527073796c7e707b85";
     std::string test;
-    auto& njson_client = GetClient<njson_serial_t>();
-    auto& rpdjson_client = GetClient<rpdjson_serial_t>();
-    auto& bjson_client = GetClient<bjson_serial_t>();
 
     BENCHMARK("rpc.hpp (asio::tcp, njson)")
     {
@@ -582,11 +609,13 @@ TEST_CASE("By Pointer (complex)", "[pointer][complex]")
         char hash[256]{};
 
         test = std::string(
-            rpc::call<njson_serial_t>(njson_client, "HashComplexPtr", &cx, hash).get_arg<char*>(1));
+            rpc::call<njson_serial_t>(GetClient<njson_serial_t>(), "HashComplexPtr", &cx, hash)
+                .get_arg<char*>(1));
     };
 
     REQUIRE_THAT(expected, Catch::Matchers::Equals(test));
 
+#    if defined(RPC_HPP_RAPIDJSON_ENABLED)
     test = "";
 
     BENCHMARK("rpc.hpp (asio::tcp, rapidjson)")
@@ -600,12 +629,15 @@ TEST_CASE("By Pointer (complex)", "[pointer][complex]")
 
         char hash[256]{};
 
-        test = std::string(rpc::call<rpdjson_serial_t>(rpdjson_client, "HashComplexPtr", &cx, hash)
-                               .get_arg<char*>(1));
+        test = std::string(
+            rpc::call<rpdjson_serial_t>(GetClient<rpdjson_serial_t>(), "HashComplexPtr", &cx, hash)
+                .get_arg<char*>(1));
     };
 
     REQUIRE_THAT(expected, Catch::Matchers::Equals(test));
+#    endif
 
+#    if defined(RPC_HPP_BOOST_JSON_ENABLED)
     test = "";
 
     BENCHMARK("rpc.hpp (asio::tcp, Boost.JSON)")
@@ -620,19 +652,18 @@ TEST_CASE("By Pointer (complex)", "[pointer][complex]")
         char hash[256]{};
 
         test = std::string(
-            rpc::call<bjson_serial_t>(bjson_client, "HashComplexPtr", &cx, hash).get_arg<char*>(1));
+            rpc::call<bjson_serial_t>(GetClient<bjson_serial_t>(), "HashComplexPtr", &cx, hash)
+                .get_arg<char*>(1));
     };
 
     REQUIRE_THAT(expected, Catch::Matchers::Equals(test));
+#    endif
 }
 
 TEST_CASE("By Pointer (many)", "[pointer][many]")
 {
     constexpr double expected = 313.2216436152;
     double test = 1.0;
-    auto& njson_client = GetClient<njson_serial_t>();
-    auto& rpdjson_client = GetClient<rpdjson_serial_t>();
-    auto& bjson_client = GetClient<bjson_serial_t>();
 
     BENCHMARK("rpc.hpp (asio::tcp, njson)")
     {
@@ -647,8 +678,8 @@ TEST_CASE("By Pointer (many)", "[pointer][many]")
         double n9 = 553.3333333333;
         double n10 = 2266.1;
 
-        const auto pack = rpc::call<njson_serial_t>(
-            njson_client, "SquareRootPtr", &n1, &n2, &n3, &n4, &n5, &n6, &n7, &n8, &n9, &n10);
+        const auto pack = rpc::call<njson_serial_t>(GetClient<njson_serial_t>(), "SquareRootPtr",
+            &n1, &n2, &n3, &n4, &n5, &n6, &n7, &n8, &n9, &n10);
 
         n1 = *pack.get_arg<double*>(0);
         n2 = *pack.get_arg<double*>(1);
@@ -665,6 +696,7 @@ TEST_CASE("By Pointer (many)", "[pointer][many]")
 
     REQUIRE_THAT(test, Catch::Matchers::WithinAbs(expected, 0.001));
 
+#    if defined(RPC_HPP_RAPIDJSON_ENABLED)
     test = 1.0;
 
     BENCHMARK("rpc.hpp (asio::tcp, rapidjson)")
@@ -680,8 +712,8 @@ TEST_CASE("By Pointer (many)", "[pointer][many]")
         double n9 = 553.3333333333;
         double n10 = 2266.1;
 
-        const auto pack = rpc::call<rpdjson_serial_t>(
-            rpdjson_client, "SquareRootPtr", &n1, &n2, &n3, &n4, &n5, &n6, &n7, &n8, &n9, &n10);
+        const auto pack = rpc::call<rpdjson_serial_t>(GetClient<rpdjson_serial_t>(),
+            "SquareRootPtr", &n1, &n2, &n3, &n4, &n5, &n6, &n7, &n8, &n9, &n10);
 
         n1 = *pack.get_arg<double*>(0);
         n2 = *pack.get_arg<double*>(1);
@@ -697,7 +729,9 @@ TEST_CASE("By Pointer (many)", "[pointer][many]")
     };
 
     REQUIRE_THAT(test, Catch::Matchers::WithinAbs(expected, 0.001));
+#    endif
 
+#    if defined(RPC_HPP_BOOST_JSON_ENABLED)
     test = 1.0;
 
     BENCHMARK("rpc.hpp (asio::tcp, Boost.JSON)")
@@ -713,8 +747,8 @@ TEST_CASE("By Pointer (many)", "[pointer][many]")
         double n9 = 553.3333333333;
         double n10 = 2266.1;
 
-        const auto pack = rpc::call<bjson_serial_t>(
-            bjson_client, "SquareRootPtr", &n1, &n2, &n3, &n4, &n5, &n6, &n7, &n8, &n9, &n10);
+        const auto pack = rpc::call<bjson_serial_t>(GetClient<bjson_serial_t>(), "SquareRootPtr",
+            &n1, &n2, &n3, &n4, &n5, &n6, &n7, &n8, &n9, &n10);
 
         n1 = *pack.get_arg<double*>(0);
         n2 = *pack.get_arg<double*>(1);
@@ -730,6 +764,7 @@ TEST_CASE("By Pointer (many)", "[pointer][many]")
     };
 
     REQUIRE_THAT(test, Catch::Matchers::WithinAbs(expected, 0.001));
+#    endif
 }
 #endif
 

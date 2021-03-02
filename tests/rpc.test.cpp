@@ -120,7 +120,7 @@ TEST_CASE("BOOST_JSON")
 }
 #endif
 
-using test_serial_t = rpdjson_serial_t;
+using test_serial_t = njson_serial_t;
 
 #if defined(RPC_HPP_ENABLE_POINTERS)
 TEST_CASE("PtrSum")
