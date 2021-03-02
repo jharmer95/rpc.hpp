@@ -14,6 +14,10 @@ if get_option('build_rapidjson_adapter')
     test_dependencies += [rapidjson_adapter_dep]
 endif
 
+if get_option('build_boost_json_adapter')
+    test_dependencies += [boost_json_adapter_dep]
+endif
+
 rpc_test_exe = executable('rpc_test', 'rpc.test.cpp', link_with : lib_catch2, dependencies : test_dependencies, install : false, cpp_args : [project_warnings, '-DRPC_HPP_ENABLE_POINTERS'])
 test('rpc_test', rpc_test_exe)
 

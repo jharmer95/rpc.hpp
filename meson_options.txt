@@ -1,2 +1,3 @@
 option('build_njson_adapter', type : 'boolean', value : true)
 option('build_rapidjson_adapter', type : 'boolean', value : true)
+option('build_boost_json_adapter', type : 'boolean', value : false)
