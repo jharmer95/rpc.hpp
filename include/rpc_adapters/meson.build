@@ -10,5 +10,11 @@ if get_option('build_rapidjson_adapter')
     add_project_arguments('-DRPC_HPP_RAPIDJSON_ENABLED', language : 'cpp')
 endif
 
-adapter_list = ['rpc_njson.hpp', 'rpc_rapidjson.hpp']
+if get_option('build_boost_json_adapter')
+    boost_json_dep = dependency('boost', version : '>=1.75.0')
+    boost_json_adapter_dep = declare_dependency(dependencies : [rpc_hpp_dep, boost_json_dep])
+    add_project_arguments('-DRPC_HPP_BOOST_JSON_ENABLED', language : 'cpp')
+endif
+
+adapter_list = ['rpc_njson.hpp', 'rpc_rapidjson.hpp', 'rpc_boost_json.hpp']
 install_headers(adapter_list)
