@@ -1,8 +1,7 @@
 ///@file rpc_adapters/rpc_rapidjson.hpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Implementation of adapting rapidjson (https://github.com/Tencent/rapidjson)
-///@version 0.3.1
-///@date 03-02-2021
+///@version 0.3.2
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -92,10 +91,34 @@ rpc::packed_func<R, Args...> rpdjson_adapter::to_packed_func(const rpdjson_doc& 
                 return packed_func<R, Args...>(
                     serial_obj["func_name"].GetString(), container, args);
             }
-            else
+            else if constexpr (std::is_arithmetic_v<R>)
+            {
+                if constexpr (std::is_same_v<R,
+                                  char> || std::is_same_v<R, int8_t> || std::is_same_v<R, int16_t>)
+                {
+                    return packed_func<R, Args...>(
+                        serial_obj["func_name"].GetString(), result.GetInt(), args);
+                }
+                else if constexpr (std::is_same_v<R, uint8_t> || std::is_same_v<R, uint16_t>)
+                {
+                    return packed_func<R, Args...>(
+                        serial_obj["func_name"].GetString(), result.GetUint(), args);
+                }
+                else
+                {
+                    return packed_func<R, Args...>(
+                        serial_obj["func_name"].GetString(), result.Get<R>(), args);
+                }
+            }
+            else if constexpr (details::is_serializable_v<rpdjson_serial_t, R>)
             {
                 return packed_func<R, Args...>(
-                    serial_obj["func_name"].GetString(), result.Get<R>(), args);
+                    serial_obj["func_name"].GetString(), R::deserialize(result), args);
+            }
+            else
+            {
+                return packed_func<R, Args...>(serial_obj["func_name"].GetString(),
+                    rpc::deserialize<rpdjson_serial_t, R>(result), args);
             }
         }
 
@@ -168,6 +191,13 @@ void push_arg(
 
         arg_list.PushBack(sub_arr, alloc);
     }
+    else if constexpr (rpc::details::is_serializable_v<rpdjson_serial_t, T>)
+    {
+        rpdjson_doc serialized = T::serialize(arg);
+        rpdjson_val arr_val;
+        arr_val.CopyFrom(serialized, alloc);
+        arg_list.PushBack(arr_val, alloc);
+    }
     else
     {
         rpdjson_doc serialized = rpc::serialize<rpdjson_serial_t, T>(arg);
@@ -217,9 +247,15 @@ rpdjson_doc rpdjson_adapter::from_packed_func(packed_func<R, Args...>&& pack)
                     result.PushBack(val, alloc);
                 }
             }
+            else if constexpr (details::is_serializable_v<rpdjson_serial_t, R>)
+            {
+                rpdjson_doc tmp = R::serialize(*pack.get_result());
+                result.CopyFrom(tmp, alloc);
+            }
             else
             {
-                result = serialize<rpdjson_serial_t, R>(*pack.get_result());
+                rpdjson_doc tmp = serialize<rpdjson_serial_t, R>(*pack.get_result());
+                result.CopyFrom(tmp, alloc);
             }
         }
         else
@@ -328,6 +364,10 @@ T rpdjson_adapter::get_value(const rpdjson_val& obj)
             return obj.Get<T>();
         }
     }
+    else if constexpr (details::is_serializable_v<rpdjson_serial_t, T>)
+    {
+        return T::deserialize(obj);
+    }
     else
     {
         return rpc::deserialize<rpdjson_serial_t, T>(obj);
@@ -358,6 +398,10 @@ void rpdjson_adapter::set_result(rpdjson_doc& serial_obj, R val)
         {
             result.PushBack(v, alloc);
         }
+    }
+    else if constexpr (details::is_serializable_v<rpdjson_serial_t, R>)
+    {
+        result = R::serialize(val);
     }
     else
     {

@@ -1,8 +1,7 @@
 ///@file rpc.benchmark.cpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Benchmarking source file for rpc.hpp
-///@version 0.3.1
-///@date 03-02-2021
+///@version 0.3.2
 ///
 ///@copyright
 ///BSD 3-Clause License
