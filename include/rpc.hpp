@@ -1,8 +1,7 @@
 ///@file rpc.hpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Header-only library for serialized RPC usage
-///@version 0.3.1
-///@date 03-02-2021
+///@version 0.3.2
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -58,6 +57,91 @@ namespace rpc
 /// Using anything in this namespace in your project is discouraged
 namespace details
 {
+    /// @brief Default implementation for SFINAE struct
+    template<typename, typename T>
+    struct is_serializable_base
+    {
+        static_assert(std::integral_constant<T, false>::value,
+            "Second template parameter needs to be of function type");
+    };
+
+    /// @brief SFINAE struct checking a type for a 'serialize' member function
+    ///
+    /// Checks whether the given type \c C has a member function to serialize it to the type given by \c R
+    /// @tparam C The type to check for 'serialize'
+    /// @tparam R The type to be serialized to
+    /// @tparam Args The types of arguments (generic)
+    template<typename C, typename R, typename... Args>
+    struct is_serializable_base<C, R(Args...)>
+    {
+    private:
+        template<typename T>
+        static constexpr auto check(T*) noexcept ->
+            typename std::is_same<decltype(std::declval<T>().serialize(std::declval<Args>()...)),
+                R>::type;
+
+        template<typename>
+        static constexpr std::false_type check(...) noexcept;
+
+        using type = decltype(check<C>(nullptr));
+
+    public:
+        static constexpr bool value = type::value;
+    };
+
+    /// @brief Default implementation for SFINAE struct
+    template<typename, typename T>
+    struct is_deserializable_base
+    {
+        static_assert(std::integral_constant<T, false>::value,
+            "Second template parameter needs to be of function type");
+    };
+
+    /// @brief SFINAE struct checking a type for a 'deserialize' member function
+    ///
+    /// Checks whether the given type \c C has a member function to de-serialize it to the type given by \c R
+    /// @tparam C The type to check for 'deserialize'
+    /// @tparam R The type to be de-serialized to
+    /// @tparam Args They types of arguments (generic)
+    template<typename C, typename R, typename... Args>
+    struct is_deserializable_base<C, R(Args...)>
+    {
+    private:
+        template<typename T>
+        static constexpr auto check(T*) noexcept ->
+            typename std::is_same<decltype(std::declval<T>().deserialize(std::declval<Args>()...)),
+                R>::type;
+
+        template<typename>
+        static constexpr std::false_type check(...) noexcept;
+
+        using type = decltype(check<C>(nullptr));
+
+    public:
+        static constexpr bool value = type::value;
+    };
+
+    /// @brief SFINAE struct combining the logic of @ref is_serializable_base and @ref is_deserializable_base
+    ///
+    /// Checks whether the given type \c Value can be serialized to and de-serialized from the serial type \c Serial
+    /// @tparam Serial The serial object type
+    /// @tparam Value The type of object to serialize/de-serialize
+    template<typename Serial, typename Value>
+    struct is_serializable
+        : std::integral_constant<bool,
+              is_serializable_base<Value, typename Serial::doc_type(const Value&)>::value
+                  && is_deserializable_base<Value,
+                      Value(const typename Serial::value_type&)>::value>
+    {
+    };
+
+    /// @brief Helper variable for @ref is_serializable
+    ///
+    /// @tparam Serial The serial object type
+    /// @tparam Value The type of object to serialize/de-serialize
+    template<typename Serial, typename Value>
+    inline constexpr bool is_serializable_v = is_serializable<Serial, Value>::value;
+
     /// @brief SFINAE struct for checking a type for a 'begin' member function
     ///
     /// Checks whether the given type \c C has a function 'begin' that returns an iterator type
@@ -941,6 +1025,11 @@ namespace details
             serial_adapter<Serial>::populate_array(obj, container);
             return container;
         }
+        else if constexpr (details::is_serializable_v<Serial, no_ref_t>)
+        {
+            // Attempt to find static T::deserialize function
+            return no_ref_t::deserialize(obj);
+        }
         else
         {
             // Attempt to find overloaded rpc::deserialize function
@@ -1265,7 +1354,7 @@ namespace server
             serial_obj = serial_adapter<Serial>::from_packed_func(std::move(pack));
         }
 #else
-        auto pack = create_func(func, serial_obj);
+        auto pack = create_func<Serial>(func, serial_obj);
         run_callback(func, pack);
 
 #    if defined(RPC_HPP_ENABLE_SERVER_CACHE)
@@ -1528,7 +1617,7 @@ inline namespace client
         const auto serial_obj =
             serialize_call<Serial, R, Args...>(std::move(func_name), std::forward<Args>(args)...);
 
-        send_to_server(serial_obj, client);
+        send_to_server<Serial>(serial_obj, client);
         const auto resp_obj = get_server_response<Serial>(client);
 
         return serial_adapter<Serial>::template to_packed_func<R, Args...>(resp_obj);

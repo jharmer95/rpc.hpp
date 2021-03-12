@@ -79,5 +79,5 @@ with open(fname, "w") as f:
         "#define RPC_MULTI_ALIAS_CACHED_FUNC(FUNCNAME, FUNC_ALIAS,...) EXPAND(RPC_FOR_EACH2(RPC_ALIAS_CACHED_FUNC, FUNCNAME, FUNC_ALIAS, __VA_ARGS__))\n\n"
     )
     f.write(
-        '#define RPC_DEFAULT_DISPATCH(FUNCNAME, ...) EXPAND(template<typename Serial> void rpc::server::dispatch(typename Serial::doc_type& serial_obj) { const auto func_name = serial_adapter<Serial>::extract_func_name(serial_obj); RPC_ATTACH_FUNCS(FUNCNAME, __VA_ARGS__) throw std::runtime_error("RPC error: Called function: \"" + func_name + "\" not found!");})\n'
+        '#define RPC_DEFAULT_DISPATCH(FUNCNAME, ...) EXPAND(template<typename Serial> void rpc::server::dispatch(typename Serial::doc_type& serial_obj) { const auto func_name = serial_adapter<Serial>::extract_func_name(serial_obj); RPC_ATTACH_FUNCS(FUNCNAME, __VA_ARGS__) throw std::runtime_error("RPC error: Called function: \\\"" + func_name + "\\\" not found!");})\n'
     )

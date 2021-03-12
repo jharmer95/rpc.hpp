@@ -1,8 +1,7 @@
 ///@file test_structs.hpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Structures/classes for use with rpc.hpp unit tests
-///@version 0.3.1
-///@date 03-02-2021
+///@version 0.3.2
 ///
 ///@copyright
 ///BSD 3-Clause License

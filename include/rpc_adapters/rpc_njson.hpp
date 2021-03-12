@@ -1,8 +1,7 @@
 ///@file rpc_adapters/rpc_njson.hpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Implementation of adapting nlohmann/json (https://github.com/nlohmann/json)
-///@version 0.3.1
-///@date 03-02-2021
+///@version 0.3.2
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -125,6 +124,10 @@ void push_arg(T arg, njson& arg_list, const size_t arg_sz)
         }
 
         arg_list.push_back(arr);
+    }
+    else if constexpr (rpc::details::is_serializable_v<njson_serial_t, T>)
+    {
+        arg_list.push_back(T::serialize(arg));
     }
     else
     {
