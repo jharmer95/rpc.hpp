@@ -1,7 +1,7 @@
 ///@file rpc.test.cpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Unit test source file for rpc.hpp
-///@version 0.3.2
+///@version 0.3.3
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -62,7 +62,7 @@ void TestType()
 {
     auto& client = GetClient<Serial>();
     auto pack = rpc::call<Serial, int>(client, "SimpleSum", 1, 2);
-    REQUIRE(*pack.get_result() == 3);
+    REQUIRE(pack.get_result() == 3);
 }
 
 template<>
@@ -128,7 +128,7 @@ TEST_CASE("PtrSum")
 
     int n = 12;
     const auto pack = rpc::call<test_serial_t>(client, "PtrSum", &n, -3);
-    auto* ptr = pack.get_arg<int*>(0);
+    auto* ptr = pack.get_arg<int*, 0>();
 
     REQUIRE(ptr != nullptr);
     REQUIRE(*ptr == 9);
@@ -141,7 +141,7 @@ TEST_CASE("AddAllPtr")
     int myArr[] = { 2, 5, 7, 3 };
     const auto pack = rpc::call<test_serial_t, int>(client, "AddAllPtr", myArr, 4);
 
-    REQUIRE(*pack.get_result() == 17);
+    REQUIRE(pack.get_result() == 17);
 }
 
 TEST_CASE("FibonacciPtr")
@@ -150,7 +150,7 @@ TEST_CASE("FibonacciPtr")
 
     uint64_t n = 20;
     const auto pack = rpc::call<test_serial_t>(client, "FibonacciPtr", &n);
-    auto* ptr = pack.get_arg<uint64_t*>(0);
+    auto* ptr = pack.get_arg<uint64_t*, 0>();
 
     REQUIRE(ptr != nullptr);
     REQUIRE(*ptr == 10946ULL);
@@ -174,16 +174,16 @@ TEST_CASE("SquareRootPtr")
     const auto pack = rpc::call<test_serial_t>(
         client, "SquareRootPtr", &n1, &n2, &n3, &n4, &n5, &n6, &n7, &n8, &n9, &n10);
 
-    n1 = *pack.get_arg<double*>(0);
-    n2 = *pack.get_arg<double*>(1);
-    n3 = *pack.get_arg<double*>(2);
-    n4 = *pack.get_arg<double*>(3);
-    n5 = *pack.get_arg<double*>(4);
-    n6 = *pack.get_arg<double*>(5);
-    n7 = *pack.get_arg<double*>(6);
-    n8 = *pack.get_arg<double*>(7);
-    n9 = *pack.get_arg<double*>(8);
-    n10 = *pack.get_arg<double*>(9);
+    n1 = *pack.get_arg<double*, 0>();
+    n2 = *pack.get_arg<double*, 1>();
+    n3 = *pack.get_arg<double*, 2>();
+    n4 = *pack.get_arg<double*, 3>();
+    n5 = *pack.get_arg<double*, 4>();
+    n6 = *pack.get_arg<double*, 5>();
+    n7 = *pack.get_arg<double*, 6>();
+    n8 = *pack.get_arg<double*, 7>();
+    n9 = *pack.get_arg<double*, 8>();
+    n10 = *pack.get_arg<double*, 9>();
     const auto test = n1 + n2 + n3 + n4 + n5 + n6 + n7 + n8 + n9 + n10;
 
     REQUIRE_THAT(test, Catch::Matchers::WithinAbs(313.2216436152, 0.001));
@@ -204,7 +204,7 @@ TEST_CASE("HashComplexPtr")
     char hash[256]{};
 
     const std::string test(
-        rpc::call<test_serial_t>(client, "HashComplexPtr", &cx, hash).get_arg<char*>(1));
+        rpc::call<test_serial_t>(client, "HashComplexPtr", &cx, hash).get_arg<char*, 1>());
 
     REQUIRE_THAT(expected, Catch::Matchers::Equals(test));
 }
@@ -237,10 +237,10 @@ TEST_CASE("WriteMessagePtr")
     int numMsg = 2;
 
     const auto pack = rpc::call<test_serial_t, int>(client, "WriteMessagePtr", msg, &numMsg);
-    numMsg = *pack.get_arg<int*>(1);
+    numMsg = *pack.get_arg<int*, 1>();
 
     REQUIRE(numMsg == 2);
-    REQUIRE(*pack.get_result() == 0);
+    REQUIRE(pack.get_result() == 0);
 }
 
 TEST_CASE("ReadMessagePtr")
@@ -251,11 +251,11 @@ TEST_CASE("ReadMessagePtr")
 
     int numMsg = 2;
     const auto pack = rpc::call<test_serial_t, int>(client, "ReadMessagePtr", msg, &numMsg);
-    const auto* ptr = pack.get_arg<TestMessage*>(0);
-    numMsg = *pack.get_arg<int*>(1);
+    const auto* ptr = pack.get_arg<TestMessage*, 0>();
+    numMsg = *pack.get_arg<int*, 1>();
 
     REQUIRE(numMsg == 2);
-    REQUIRE(*pack.get_result() == 0);
+    REQUIRE(pack.get_result() == 0);
     REQUIRE(ptr[0].id == 14);
     REQUIRE(ptr[1].id == 15);
 }
@@ -266,7 +266,7 @@ TEST_CASE("StrLen")
     auto& client = GetClient<test_serial_t>();
     const auto pack = rpc::call<test_serial_t, int>(client, "StrLen", std::string("hello, world"));
 
-    REQUIRE(*pack.get_result() == 12);
+    REQUIRE(pack.get_result() == 12);
 }
 
 TEST_CASE("AddOneToEach")
@@ -275,7 +275,7 @@ TEST_CASE("AddOneToEach")
     const std::vector<int> vec{ 2, 4, 6, 8 };
     const auto pack = rpc::call<test_serial_t, std::vector<int>>(client, "AddOneToEach", vec);
 
-    const auto retVec = *pack.get_result();
+    const auto retVec = pack.get_result();
     REQUIRE(retVec.size() == vec.size());
 
     for (size_t i = 0; i < retVec.size(); ++i)
@@ -290,7 +290,7 @@ TEST_CASE("AddOneToEachRef")
     std::vector<int> vec{ 2, 4, 6, 8 };
     const auto pack = rpc::call<test_serial_t>(client, "AddOneToEachRef", vec);
 
-    const auto retVec = pack.get_arg<std::vector<int>>(0);
+    const auto retVec = pack.get_arg<std::vector<int>, 0>();
     REQUIRE(retVec.size() == vec.size());
 
     for (size_t i = 0; i < retVec.size(); ++i)
@@ -304,7 +304,7 @@ TEST_CASE("Fibonacci")
     constexpr uint64_t expected = 10946ULL;
     auto& client = GetClient<test_serial_t>();
 
-    const auto test = *rpc::call<test_serial_t, uint64_t>(client, "Fibonacci", 20).get_result();
+    const auto test = rpc::call<test_serial_t, uint64_t>(client, "Fibonacci", 20).get_result();
     REQUIRE(expected == test);
 }
 
@@ -314,7 +314,7 @@ TEST_CASE("FibonacciRef")
     auto& client = GetClient<test_serial_t>();
 
     uint64_t num = 20ULL;
-    const auto test = rpc::call<test_serial_t>(client, "FibonacciRef", num).get_arg<uint64_t>(0);
+    const auto test = rpc::call<test_serial_t>(client, "FibonacciRef", num).get_arg<uint64_t, 0>();
 
     //REQUIRE(num == test);
     REQUIRE(expected == test);
@@ -325,9 +325,9 @@ TEST_CASE("StdDev")
     constexpr double expected = 3313.695594785;
     auto& client = GetClient<test_serial_t>();
 
-    const auto test = *rpc::call<test_serial_t, double>(client, "StdDev", 55.65, 125.325, 552.125,
+    const auto test = rpc::call<test_serial_t, double>(client, "StdDev", 55.65, 125.325, 552.125,
         12.767, 2599.6, 1245.125663, 9783.49, 125.12, 553.3333333333, 2266.1)
-                           .get_result();
+                          .get_result();
 
     REQUIRE_THAT(test, Catch::Matchers::WithinRel(expected));
 }
@@ -352,16 +352,16 @@ TEST_CASE("SquareRootRef")
         rpc::call<test_serial_t>(client, "SquareRootRef", n1, n2, n3, n4, n5, n6, n7, n8, n9, n10);
 
     // TODO: Find a way to have references updated automatically?
-    n1 = pack.get_arg<double>(0);
-    n2 = pack.get_arg<double>(1);
-    n3 = pack.get_arg<double>(2);
-    n4 = pack.get_arg<double>(3);
-    n5 = pack.get_arg<double>(4);
-    n6 = pack.get_arg<double>(5);
-    n7 = pack.get_arg<double>(6);
-    n8 = pack.get_arg<double>(7);
-    n9 = pack.get_arg<double>(8);
-    n10 = pack.get_arg<double>(9);
+    n1 = pack.get_arg<double, 0>();
+    n2 = pack.get_arg<double, 1>();
+    n3 = pack.get_arg<double, 2>();
+    n4 = pack.get_arg<double, 3>();
+    n5 = pack.get_arg<double, 4>();
+    n6 = pack.get_arg<double, 5>();
+    n7 = pack.get_arg<double, 6>();
+    n8 = pack.get_arg<double, 7>();
+    n9 = pack.get_arg<double, 8>();
+    n10 = pack.get_arg<double, 9>();
 
     const auto test = n1 + n2 + n3 + n4 + n5 + n6 + n7 + n8 + n9 + n10;
 
@@ -377,7 +377,7 @@ TEST_CASE("AverageContainer<double>")
         125.12, 553.3333333333, 2266.1 };
 
     const auto test =
-        *rpc::call<test_serial_t, double>(client, "AverageContainer<double>", vec).get_result();
+        rpc::call<test_serial_t, double>(client, "AverageContainer<double>", vec).get_result();
 
     REQUIRE_THAT(test, Catch::Matchers::WithinAbs(expected, 0.001));
 }
@@ -394,8 +394,7 @@ TEST_CASE("HashComplex")
     cx.name = "Franklin D. Roosevelt";
     cx.vals = { 0, 1, 4, 6, 7, 8, 11, 15, 17, 22, 25, 26 };
 
-    const auto test =
-        *rpc::call<test_serial_t, std::string>(client, "HashComplex", cx).get_result();
+    const auto test = rpc::call<test_serial_t, std::string>(client, "HashComplex", cx).get_result();
 
     REQUIRE_THAT(expected, Catch::Matchers::Equals(test));
 }
@@ -415,9 +414,33 @@ TEST_CASE("HashComplexRef")
     std::string test;
 
     // TODO: Find a way to have references updated automatically?
-    test = rpc::call<test_serial_t>(client, "HashComplexRef", cx, test).get_arg<std::string>(1);
+    test = rpc::call<test_serial_t>(client, "HashComplexRef", cx, test).get_arg<std::string, 1>();
 
     REQUIRE_THAT(expected, Catch::Matchers::Equals(test));
+}
+
+TEST_CASE("function not found")
+{
+    auto& client = GetClient<test_serial_t>();
+
+    const auto exp = [&client]() {
+        [[maybe_unused]] auto x = rpc::call<test_serial_t, int>(client, "FUNC_WHICH_DOES_NOT_EXIST").get_result();
+    };
+
+    REQUIRE_THROWS_WITH(exp(),
+        Catch::Matchers::Equals(
+            "RPC error: Called function: \"FUNC_WHICH_DOES_NOT_EXIST\" not found!"));
+}
+
+TEST_CASE("ThrowError")
+{
+    auto& client = GetClient<test_serial_t>();
+
+    const auto exp = [&client]() {
+        [[maybe_unused]] auto x = rpc::call<test_serial_t, int>(client, "ThrowError").get_result();
+    };
+
+    REQUIRE_THROWS_WITH(exp(), "THIS IS A TEST ERROR!");
 }
 
 TEST_CASE("KillServer", "[!mayfail]")

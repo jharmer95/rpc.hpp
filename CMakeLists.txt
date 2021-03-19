@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.1...3.19)
 
 project(
   "rpc.hpp"
-  VERSION 0.3.2
+  VERSION 0.3.3
   DESCRIPTION "Simple RPC Header-Only Library"
   LANGUAGES CXX)
 
@@ -65,9 +65,16 @@ if(CXX_MSVC)
       /w14906
       /w14928
       /we4834
-      /bigobj)
-  set(MIN_WARNING /W1 /experimental:external /external:W0
-                  /external:anglebrackets /wd4619 /bigobj)
+      /bigobj
+      -D_WIN32_WINNT=0x0A00)
+  set(MIN_WARNING
+      /W1
+      /experimental:external
+      /external:W0
+      /external:anglebrackets
+      /wd4619
+      /bigobj
+      -D_WIN32_WINNT=0x0A00)
 elseif(CXX_GCC OR CXX_MINGW)
   set(FULL_WARNING
       -Wall

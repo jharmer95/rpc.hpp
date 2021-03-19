@@ -1,7 +1,7 @@
 ///@file rpc.hpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Header-only library for serialized RPC usage
-///@version 0.3.2
+///@version 0.3.3
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -535,67 +535,143 @@ namespace details
         size_t m_size{ 0 };
         T* m_ptr;
     };
+
+    ///@brief Polymorphic base class for \ref packed_func
+    template<typename... Args>
+    class packed_func_base
+    {
+    public:
+        using args_type = std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...>;
+
+        virtual ~packed_func_base() = default;
+
+        packed_func_base(std::string func_name, args_type args)
+            : m_func_name(std::move(func_name)), m_args(std::move(args))
+        {
+        }
+
+        // Prevents slicing
+        packed_func_base& operator=(const packed_func_base&) = delete;
+        packed_func_base& operator=(packed_func_base&&) = delete;
+
+        [[nodiscard]] std::string& get_func_name() & noexcept { return m_func_name; }
+        [[nodiscard]] const std::string& get_func_name() const& noexcept { return m_func_name; }
+        [[nodiscard]] std::string get_func_name() && noexcept { return std::move(m_func_name); }
+
+        [[nodiscard]] std::string& get_err_mesg() & noexcept { return m_err_mesg; }
+        [[nodiscard]] const std::string& get_err_mesg() const& noexcept { return m_err_mesg; }
+        [[nodiscard]] std::string get_err_mesg() && noexcept { return std::move(m_err_mesg); }
+
+        void set_err_mesg(const std::string& mesg) & noexcept { m_err_mesg = mesg; }
+        void set_err_mesg(std::string&& mesg) & noexcept { m_err_mesg = std::move(mesg); }
+
+        explicit virtual operator bool() const noexcept { return true; }
+
+        [[nodiscard]] args_type& get_args() & noexcept { return m_args; }
+        [[nodiscard]] const args_type& get_args() const& noexcept { return m_args; }
+        [[nodiscard]] args_type get_args() && noexcept { return std::move(m_args); }
+
+        template<typename T, size_t Index>
+        T& get_arg() &
+        {
+            return std::get<Index>(m_args);
+        }
+
+        template<typename T, size_t Index>
+        const T& get_arg() const&
+        {
+            return std::get<Index>(m_args);
+        }
+
+        template<typename T, size_t Index>
+        T get_arg() &&
+        {
+            return std::move(std::get<Index>(m_args));
+        }
+
+        ///@brief Set all arguments
+        ///
+        ///@param args A tuple containing the list of arguments to set
+        void set_args(args_type&& args) & { m_args = std::move(args); }
+
+    protected:
+        packed_func_base(const packed_func_base&) = default;
+        packed_func_base(packed_func_base&&) noexcept = default;
+
+    private:
+        std::string m_func_name;
+        std::string m_err_mesg{};
+        args_type m_args;
+
+#if defined(RPC_HPP_ENABLE_POINTERS)
+        std::array<size_t, sizeof...(Args)> m_arg_sz_arr{};
+
+        template<typename T>
+        void update_arg_arr_helper(
+            [[maybe_unused]] std::array<std::any, sizeof...(Args)>&& arg_arr, size_t& count) &
+        {
+            if constexpr (std::is_pointer_v<T>)
+            {
+                const auto& arr = std::any_cast<
+                    const details::dyn_array<std::remove_cv_t<std::remove_pointer_t<T>>>&>(
+                    std::move(arg_arr[count]));
+
+                m_arg_sz_arr[count] = arr.capacity();
+            }
+
+            ++count;
+        }
+
+    public:
+        ///@brief Get the indexed argument size
+        ///
+        ///@param index The index to get the arg size for
+        ///@return size_t The size (number of elements) for the given argument
+        [[nodiscard]] size_t get_arg_arr_sz(const size_t index) const
+        {
+            return m_arg_sz_arr[index];
+        }
+
+        ///@brief Set the size for the indexed argument
+        ///
+        ///@param index The index to set the arg size for
+        ///@param sz The size (number of elements) for the given argument
+        void set_arg_arr_sz(const size_t index, const size_t sz) & { m_arg_sz_arr[index] = sz; }
+
+        ///@brief Update the argument size array
+        ///
+        ///@param arg_arr Array of arguments to reference
+        void update_arg_arr(std::array<std::any, sizeof...(Args)> arg_arr) &
+        {
+            size_t count = 0;
+            using expander = int[];
+            (void)expander{ 0,
+                ((void)update_arg_arr_helper<Args>(std::move(arg_arr), count), 0)... };
+        }
+#endif
+    };
 } // namespace rpc::details
-
-///@brief Polymorphic base class for \ref packed_func
-class packed_func_base
-{
-public:
-    virtual ~packed_func_base() = default;
-
-    ///@brief Construct a new packed_func_base object
-    ///
-    ///@param func_name Name of the function (case-sensitive)
-    explicit packed_func_base(std::string func_name) : m_func_name(std::move(func_name)) {}
-
-    // Prevents slicing
-    packed_func_base& operator=(const packed_func_base&) = delete;
-    packed_func_base& operator=(packed_func_base&&) = delete;
-
-    ///@brief Get the function name
-    ///
-    ///@return std::string Name of the stored function (case-sensitive)
-    [[nodiscard]] std::string get_func_name() const noexcept { return m_func_name; }
-
-    ///@brief Get the error message
-    ///
-    ///@return std::string The error message (if any)
-    [[nodiscard]] std::string get_err_mesg() const noexcept { return m_err_mesg; }
-
-    ///@brief Set the error message
-    ///
-    ///@param mesg String to set as the error message
-    void set_err_mesg(const std::string& mesg) & noexcept { m_err_mesg = mesg; }
-
-protected:
-    packed_func_base(const packed_func_base&) = default;
-    packed_func_base(packed_func_base&&) noexcept = default;
-
-private:
-    std::string m_func_name;
-    std::string m_err_mesg{};
-};
 
 ///@brief Class reprensenting a function call including its name, result, and parameters
 ///
 ///@tparam R The return type
 ///@tparam Args The list of parameter type(s)
 template<typename R, typename... Args>
-class packed_func final : public packed_func_base
+class packed_func final : public details::packed_func_base<Args...>
 {
 public:
     ///@brief The type of the packed_func's result
     using result_type = R;
+    using typename details::packed_func_base<Args...>::args_type;
 
     ///@brief Construct a new packed_func object
     ///
     ///@param func_name Name of the function (case-sensitive)
     ///@param result Function call result (if no result yet, use std::nullopt)
     ///@param args List of parameters for the function call
-    packed_func(std::string func_name, std::optional<result_type> result,
-        std::array<std::any, sizeof...(Args)> args)
-        : packed_func_base(std::move(func_name)), m_result(std::move(result)),
-          m_args(std::move(args))
+    packed_func(std::string func_name, std::optional<result_type> result, args_type args)
+        : details::packed_func_base<Args...>(std::move(func_name), std::move(args)),
+          m_result(std::move(result))
     {
     }
 
@@ -604,12 +680,17 @@ public:
     packed_func& operator=(const packed_func&) & = default;
     packed_func& operator=(packed_func&&) & = default;
 
-    explicit operator bool() const noexcept { return m_result.has_value(); }
+    explicit operator bool() const noexcept override { return m_result.has_value(); }
 
-    ///@brief Get the result of the function call (if it exists)
-    ///
-    ///@return std::optional<R> If the function has not been called, or resulted in a err0r: std::nullopt, else: the result of the function call
-    [[nodiscard]] std::optional<R> get_result() const noexcept { return m_result; }
+    [[nodiscard]] R get_result() const
+    {
+        if (m_result.has_value())
+        {
+            return m_result.value();
+        }
+
+        throw std::runtime_error(this->get_err_mesg());
+    }
 
     ///@brief Set the result
     ///
@@ -619,137 +700,22 @@ public:
     ///@brief Sets the result back to null
     void clear_result() & noexcept { m_result = std::nullopt; }
 
-    ///@brief Set a particular argument
-    ///
-    ///@tparam T Type of the argument to be set
-    ///@param arg_index The index (0 start) of the argument to change
-    ///@param value The value to set the argument to
-    template<typename T>
-    void set_arg(size_t arg_index, const T& value) &
-    {
-        if (arg_index > m_args.size())
-        {
-            throw std::logic_error("Index out of bounds for argument list: "
-                + std::to_string(arg_index) + " > " + std::to_string(m_args.size()) + "!");
-        }
-
-        if (m_args[arg_index].type() != typeid(T))
-        {
-            const std::string t_name = typeid(T).name();
-            throw std::runtime_error("Invalid argument type: \"" + t_name + "\" provided!");
-        }
-
-        m_args[arg_index] = value;
-    }
-
-    ///@brief Set a particular argument
-    ///
-    ///@tparam T Type of the argument to be set
-    ///@param arg_index The index (0 start) of the argument to change
-    ///@param value The value to set the argument to
-    template<typename T>
-    void set_arg(size_t arg_index, T&& value) &
-    {
-        if (arg_index > m_args.size())
-        {
-            throw std::logic_error("Index out of bounds for argument list: "
-                + std::to_string(arg_index) + " > " + std::to_string(m_args.size()) + "!");
-        }
-
-        if (m_args[arg_index].type() != typeid(T))
-        {
-            const std::string t_name = typeid(T).name();
-            throw std::runtime_error("Invalid argument type: \"" + t_name + "\" provided!");
-        }
-
-        m_args[arg_index] = std::move(value);
-    }
-
-    ///@brief Set all arguments
-    ///
-    ///@param args A tuple containing the list of arguments to set
-    void set_args(const std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...>& args) &
-    {
-        size_t i = 0;
-        details::for_each_tuple(args, [&i, this](auto x) { m_args[i++] = x; });
-    }
-
-    ///@brief Get the arg object
-    ///
-    ///@tparam T Type to be acquired from the argument list (via std::any_cast)
-    ///@param arg_index The index (0 start) of the argument to retrieve
-    ///@return std::remove_cv_t<std::remove_reference_t<T>> The argument's value
-    template<typename T>
-    [[nodiscard]] std::remove_cv_t<std::remove_reference_t<T>> get_arg(size_t arg_index) const
-    {
-        // TODO: Remove the remove_cv/remove_reference?
-        return std::any_cast<std::remove_cv_t<std::remove_reference_t<T>>>(m_args[arg_index]);
-    }
-
 private:
     std::optional<result_type> m_result{ std::nullopt };
-    std::array<std::any, sizeof...(Args)> m_args;
-
-#if defined(RPC_HPP_ENABLE_POINTERS)
-    std::array<size_t, sizeof...(Args)> m_arg_sz_arr{};
-
-    template<typename T>
-    void update_arg_arr_helper(
-        [[maybe_unused]] std::array<std::any, sizeof...(Args)>&& arg_arr, size_t& count) &
-    {
-        if constexpr (std::is_pointer_v<T>)
-        {
-            const auto& arr = std::any_cast<
-                const details::dyn_array<std::remove_cv_t<std::remove_pointer_t<T>>>&>(
-                std::move(arg_arr[count]));
-
-            m_arg_sz_arr[count] = arr.capacity();
-        }
-
-        ++count;
-    }
-
-public:
-    ///@brief Get the indexed argument size
-    ///
-    ///@param index The index to get the arg size for
-    ///@return size_t The size (number of elements) for the given argument
-    [[nodiscard]] size_t get_arg_arr_sz(const size_t index) const { return m_arg_sz_arr[index]; }
-
-    ///@brief Set the size for the indexed argument
-    ///
-    ///@param index The index to set the arg size for
-    ///@param sz The size (number of elements) for the given argument
-    void set_arg_arr_sz(const size_t index, const size_t sz) & { m_arg_sz_arr[index] = sz; }
-
-    ///@brief Update the argument size array
-    ///
-    ///@param arg_arr Array of arguments to reference
-    void update_arg_arr(std::array<std::any, sizeof...(Args)> arg_arr) &
-    {
-        size_t count = 0;
-        using expander = int[];
-        (void)expander{ 0, ((void)update_arg_arr_helper<Args>(std::move(arg_arr), count), 0)... };
-    }
-#endif
 };
 
 ///@brief Class reprensenting a function call (with void result) including its name and parameters
 ///
 ///@tparam Args The list of parameter type(s)
 template<typename... Args>
-class packed_func<void, Args...> final : public packed_func_base
+class packed_func<void, Args...> final : public details::packed_func_base<Args...>
 {
 public:
-    ///@brief The type of the result (void)
     using result_type = void;
+    using typename details::packed_func_base<Args...>::args_type;
 
-    ///@brief Construct a new packed_func object
-    ///
-    ///@param func_name Name of the function (case-sensitive)
-    ///@param args List of parameters for the function call
-    packed_func(std::string func_name, std::array<std::any, sizeof...(Args)> args)
-        : packed_func_base(std::move(func_name)), m_args(std::move(args))
+    packed_func(std::string func_name, args_type args)
+        : details::packed_func_base<Args...>(std::move(func_name), std::move(args))
     {
     }
 
@@ -757,109 +723,6 @@ public:
     packed_func(packed_func&&) noexcept = default;
     packed_func& operator=(const packed_func&) & = default;
     packed_func& operator=(packed_func&&) & = default;
-
-    explicit operator bool() const noexcept { return true; }
-
-    ///@brief Set a particular argument
-    ///
-    ///@tparam T Type of the argument to be set
-    ///@param arg_index The index (0 start) of the argument to change
-    ///@param value The value to set the argument to
-    template<typename T>
-    void set_arg(size_t arg_index, const T& value) &
-    {
-        if (m_args[arg_index].type() != typeid(T))
-        {
-            const std::string t_name = typeid(T).name();
-            throw std::runtime_error("Invalid argument type: \"" + t_name + "\" provided!");
-        }
-
-        m_args[arg_index] = value;
-    }
-
-    ///@brief Set a particular argument
-    ///
-    ///@tparam T Type of the argument to be set
-    ///@param arg_index The index (0 start) of the argument to change
-    ///@param value The value to set the argument to
-    template<typename T>
-    void set_arg(size_t arg_index, T&& value) &
-    {
-        if (m_args[arg_index].type() != typeid(T))
-        {
-            const std::string t_name = typeid(T).name();
-            throw std::runtime_error("Invalid argument type: \"" + t_name + "\" provided!");
-        }
-
-        m_args[arg_index] = std::move(value);
-    }
-
-    ///@brief Set all arguments
-    ///
-    ///@param args A tuple containing the list of arguments to set
-    void set_args(const std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...>& args) &
-    {
-        size_t i = 0;
-        details::for_each_tuple(args, [&i, this](auto x) { m_args[i++] = x; });
-    }
-
-    ///@brief Get the arg object
-    ///
-    ///@tparam T Type to be acquired from the argument list (via std::any_cast)
-    ///@param arg_index The index (0 start) of the argument to retrieve
-    ///@return std::remove_cv_t<std::remove_reference_t<T>> The argument's value
-    template<typename T>
-    [[nodiscard]] std::remove_cv_t<std::remove_reference_t<T>> get_arg(size_t arg_index) const
-    {
-        // TODO: Remove the remove_cv/remove_reference?
-        return std::any_cast<std::remove_cv_t<std::remove_reference_t<T>>>(m_args[arg_index]);
-    }
-
-private:
-    std::array<std::any, sizeof...(Args)> m_args;
-
-#if defined(RPC_HPP_ENABLE_POINTERS)
-    std::array<size_t, sizeof...(Args)> m_arg_sz_arr{};
-
-    template<typename T>
-    void update_arg_arr_helper(
-        [[maybe_unused]] std::array<std::any, sizeof...(Args)>&& arg_arr, size_t& count) &
-    {
-        if constexpr (std::is_pointer_v<T>)
-        {
-            const auto& arr = std::any_cast<
-                const details::dyn_array<std::remove_cv_t<std::remove_pointer_t<T>>>&>(
-                std::move(arg_arr[count]));
-
-            m_arg_sz_arr[count] = arr.capacity();
-        }
-
-        ++count;
-    }
-
-public:
-    ///@brief Get the indexed argument size
-    ///
-    ///@param index The index to get the arg size for
-    ///@return size_t The size (number of elements) for the given argument
-    [[nodiscard]] size_t get_arg_arr_sz(const size_t index) const { return m_arg_sz_arr[index]; }
-
-    ///@brief Set the size for the indexed argument
-    ///
-    ///@param index The index to set the arg size for
-    ///@param sz The size (number of elements) for the given argument
-    void set_arg_arr_sz(const size_t index, const size_t sz) & { m_arg_sz_arr[index] = sz; }
-
-    ///@brief Update the argument size array
-    ///
-    ///@param arg_arr Array of arguments to reference
-    void update_arg_arr(std::array<std::any, sizeof...(Args)> arg_arr) &
-    {
-        size_t count = 0;
-        using expander = int[];
-        (void)expander{ 0, ((void)update_arg_arr_helper<Args>(std::move(arg_arr), count), 0)... };
-    }
-#endif
 };
 
 template<typename Value_T, typename Doc_T = Value_T>
@@ -916,6 +779,8 @@ public:
     ///@return std::string The function name (case-sensitive)
     [[nodiscard]] static std::string extract_func_name(const value_type& obj);
 
+    static void set_err_mesg(doc_type& serial_obj, const std::string& str);
+
     ///@brief Creates a serial object from inside another serial object
     ///
     ///@param obj The original object to extract the sub-object from
@@ -929,8 +794,6 @@ public:
     ///@param name The name of the member of the original object to copy out
     ///@return value_type The serial object representing an inner object of the original
     [[nodiscard]] static doc_type make_sub_object(const value_type& obj, const std::string& name);
-
-    // TODO: Change get_value to return std::optional?
 
     ///@brief Extract a value from a serial object
     ///
@@ -1053,21 +916,6 @@ namespace details
         return arg_from_serial<Serial, Value>(sub_obj);
     }
 
-    ///@brief Unpacks the argument values from a \ref packed_func
-    ///
-    ///@tparam Value The type of the argument to be unpacked
-    ///@tparam R The type of the result for the \ref packed_func
-    ///@tparam Args The list of parameter type(s) for the \ref packed_func
-    ///@param pack The packaged function call to unpack
-    ///@param arg_index The index of the argument to be unpacked (is iterated in a parameter pack when called from a tuple)
-    ///@return std::remove_cv_t<std::remove_reference_t<Value>> The unpacked argument value
-    template<typename Value, typename R, typename... Args>
-    std::remove_cv_t<std::remove_reference_t<Value>> args_from_packed(
-        const packed_func<R, Args...>& pack, unsigned& arg_index)
-    {
-        return pack.template get_arg<std::remove_cv_t<std::remove_reference_t<Value>>>(arg_index++);
-    }
-
 #if defined(RPC_HPP_ENABLE_POINTERS)
     ///@brief Retrieves the argument values from a serial object (accepts pointers)
     ///
@@ -1149,36 +997,6 @@ namespace details
 /// Client-side code should not need to use anything in this namespace
 namespace server
 {
-    ///@brief Converts a \ref packed_func_base to a specific templated \ref packed_func
-    ///
-    ///@tparam R Return type for the \ref packed_func
-    ///@tparam Args List of parameter type(s) for the \ref packed_func
-    ///@param unused Function object to derive R and Args from
-    ///@param pack packed_func_base reference to be converted
-    ///@return packed_func<R, Args...>& A casted reference to a specific \ref packed_func
-    template<typename R, typename... Args>
-    packed_func<R, Args...>& convert_func(
-        [[maybe_unused]] std::function<R(Args...)> unused, const packed_func_base& pack)
-    {
-        return dynamic_cast<packed_func<R, Args...>&>(pack);
-    }
-
-    ///@brief Converts a \ref packed_func_base to a specific templated \ref packed_func
-    ///
-    ///@tparam R Return type for the \ref packed_func
-    ///@tparam Args List of parameter type(s) for the \ref packed_func
-    ///@param unused Function pointer to derive R and Args from
-    ///@param pack packed_func_base reference to be converted
-    ///@return packed_func<R, Args...>& A casted reference to a specific \ref packed_func
-    template<typename R, typename... Args>
-    packed_func<R, Args...>& convert_func(
-        [[maybe_unused]] R (*unused)(Args...), const packed_func_base& pack)
-    {
-        return dynamic_cast<packed_func<R, Args...>&>(pack);
-    }
-
-    // TODO: Server-side asynchronous functions (will probably have to return vs. reference)
-
     ///@brief Create a \ref packed_func object from a serial object
     ///
     ///@tparam Serial The type of serial object
@@ -1198,40 +1016,33 @@ namespace server
     ///
     ///@tparam R The type of the result for the function call
     ///@tparam Args The list of parameter type(s) for the function call
-    ///@param func The function object to call
-    ///@param pack The packaged function call to get/set result and/or parameters
-    template<typename R, typename... Args>
-    void run_callback(std::function<R(Args...)> func, packed_func<R, Args...>& pack)
-    {
-        unsigned arg_count = 0;
-
-        std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...> args{
-            details::args_from_packed<Args, R, Args...>(pack, arg_count)...
-        };
-
-        if constexpr (std::is_void_v<R>)
-        {
-            std::apply(func, args);
-            pack.set_args(args);
-        }
-        else
-        {
-            auto result = std::apply(func, args);
-            pack.set_args(args);
-            pack.set_result(result);
-        }
-    }
-
-    ///@brief Runs the callback function and populates the \ref packed_func with the result and/or updated arguments
-    ///
-    ///@tparam R The type of the result for the function call
-    ///@tparam Args The list of parameter type(s) for the function call
     ///@param func Pointer to the function to call
     ///@param pack The packaged function call to get/set result and/or parameters
     template<typename R, typename... Args>
     void run_callback(R (*func)(Args...), packed_func<R, Args...>& pack)
     {
-        return run_callback(std::function<R(Args...)>(func), pack);
+        auto args = pack.get_args();
+
+        if constexpr (std::is_void_v<R>)
+        {
+            std::apply(func, args);
+            pack.set_args(std::move(args));
+        }
+        else
+        {
+            try
+            {
+                auto result = std::apply(func, args);
+                pack.set_result(std::move(result));
+            }
+            catch (const std::exception&)
+            {
+                pack.clear_result();
+                throw;
+            }
+
+            pack.set_args(std::move(args));
+        }
     }
 
 #if defined(RPC_HPP_ENABLE_POINTERS)
@@ -1302,22 +1113,60 @@ namespace server
     void dispatch_func(
         R (*func)(Args...), typename Serial::doc_type& serial_obj, bool cacheable = false)
     {
-#if defined(RPC_HPP_ENABLE_SERVER_CACHE)
-        if constexpr (!std::is_void_v<R>)
+        try
         {
-            if (cacheable && check_cache<Serial, R>(serial_obj))
+#if defined(RPC_HPP_ENABLE_SERVER_CACHE)
+            if constexpr (!std::is_void_v<R>)
             {
-                return;
+                if (cacheable && check_cache<Serial, R>(serial_obj))
+                {
+                    return;
+                }
             }
-        }
 #endif
 
 #if defined(RPC_HPP_ENABLE_POINTERS)
-        if constexpr (
-            details::all_true_v<!(
-                std::is_pointer_v<std::remove_cv_t<std::remove_reference_t<
-                    Args>>> || std::is_array_v<std::remove_cv_t<std::remove_reference_t<Args>>>)...>)
-        {
+            if constexpr (
+                details::all_true_v<!(
+                    std::is_pointer_v<std::remove_cv_t<std::remove_reference_t<
+                        Args>>> || std::is_array_v<std::remove_cv_t<std::remove_reference_t<Args>>>)...>)
+            {
+                auto pack = create_func<Serial>(func, serial_obj);
+                run_callback(func, pack);
+
+#    if defined(RPC_HPP_ENABLE_SERVER_CACHE)
+                if constexpr (!std::is_void_v<R>)
+                {
+                    if (cacheable)
+                    {
+                        update_cache<Serial, R>(
+                            serial_adapter<Serial>::to_string(serial_obj), pack.get_result());
+                    }
+                }
+#    endif
+
+                serial_obj = serial_adapter<Serial>::from_packed_func(std::move(pack));
+            }
+            else
+            {
+                const auto arg_arr = details::populate_arg_arr<Serial, Args...>(serial_obj);
+                auto pack = create_func_w_ptr<Serial>(func, arg_arr, serial_obj);
+                run_callback(func, pack);
+
+#    if defined(RPC_HPP_ENABLE_SERVER_CACHE)
+                if constexpr (!std::is_void_v<R>)
+                {
+                    if (cacheable)
+                    {
+                        update_cache<Serial, R>(
+                            serial_adapter<Serial>::to_string(serial_obj), pack.get_result());
+                    }
+                }
+#    endif
+
+                serial_obj = serial_adapter<Serial>::from_packed_func(std::move(pack));
+            }
+#else
             auto pack = create_func<Serial>(func, serial_obj);
             run_callback(func, pack);
 
@@ -1327,49 +1176,18 @@ namespace server
                 if (cacheable)
                 {
                     update_cache<Serial, R>(
-                        serial_adapter<Serial>::to_string(serial_obj), *pack.get_result());
+                        serial_adapter<Serial>::to_string(serial_obj), pack.get_result());
                 }
             }
 #    endif
 
             serial_obj = serial_adapter<Serial>::from_packed_func(std::move(pack));
-        }
-        else
-        {
-            const auto arg_arr = details::populate_arg_arr<Serial, Args...>(serial_obj);
-            auto pack = create_func_w_ptr<Serial>(func, arg_arr, serial_obj);
-            run_callback(func, pack);
-
-#    if defined(RPC_HPP_ENABLE_SERVER_CACHE)
-            if constexpr (!std::is_void_v<R>)
-            {
-                if (cacheable)
-                {
-                    update_cache<Serial, R>(
-                        serial_adapter<Serial>::to_string(serial_obj), *pack.get_result());
-                }
-            }
-#    endif
-
-            serial_obj = serial_adapter<Serial>::from_packed_func(std::move(pack));
-        }
-#else
-        auto pack = create_func<Serial>(func, serial_obj);
-        run_callback(func, pack);
-
-#    if defined(RPC_HPP_ENABLE_SERVER_CACHE)
-        if constexpr (!std::is_void_v<R>)
-        {
-            if (cacheable)
-            {
-                update_cache<Serial, R>(
-                    serial_adapter<Serial>::to_string(serial_obj), *pack.get_result());
-            }
-        }
-#    endif
-
-        serial_obj = serial_adapter<Serial>::from_packed_func(std::move(pack));
 #endif
+        }
+        catch (const std::exception& ex)
+        {
+            serial_adapter<Serial>::set_err_mesg(serial_obj, ex.what());
+        }
     }
 } // namespace rpc::server
 
@@ -1430,11 +1248,13 @@ inline namespace client
         std::array<size_t, sizeof...(Args)> arg_sz_arr{};
         unsigned i = 0;
 
-        std::array<std::any, sizeof...(Args)> argArray{ pack_arg(args, arg_sz_arr.data(), i)... };
+        typename packed_func<R, details::ptr_decay_t<Args>...>::args_type argTup{ pack_arg(
+            args, arg_sz_arr.data(), i)... };
 
         if constexpr (std::is_void_v<R>)
         {
-            packed_func<void, details::ptr_decay_t<Args>...> pack(std::move(func_name), argArray);
+            packed_func<void, details::ptr_decay_t<Args>...> pack(
+                std::move(func_name), std::move(argTup));
 
             for (size_t j = 0; j < sizeof...(Args); ++j)
             {
@@ -1446,7 +1266,7 @@ inline namespace client
         else
         {
             packed_func<R, details::ptr_decay_t<Args>...> pack(
-                std::move(func_name), std::nullopt, argArray);
+                std::move(func_name), std::nullopt, std::move(argTup));
 
             for (size_t j = 0; j < sizeof...(Args); ++j)
             {
@@ -1491,7 +1311,6 @@ inline namespace client
     template<typename Serial, typename R = void, typename... Args>
     typename Serial::doc_type serialize_call(std::string&& func_name, Args&&... args)
     {
-        // TODO: Can we elminate creating a packed_func JUST to serialize it back?
         auto packed = pack_call<R, Args...>(std::move(func_name), std::forward<Args>(args)...);
 
         return serial_adapter<Serial>::template from_packed_func<R, details::ptr_decay_t<Args>...>(
@@ -1609,10 +1428,9 @@ inline namespace client
             details::all_true_v<!(
                 std::is_pointer_v<std::remove_cv_t<std::remove_reference_t<
                     Args>>> || std::is_array_v<std::remove_cv_t<std::remove_reference_t<Args>>>)...>,
-            "Calling functions with pointer arguments is disabled by default as it adds "
-            "overhead, "
-            "please consider refactoring your API to avoid pointers. If you must use pointers, "
-            "define 'RPC_HPP_ENABLE_POINTERS'.");
+            "Calling functions with pointer arguments is disabled by default as it adds overhead, "
+            "please consider refactoring your API to avoid pointers."
+            "If you must use pointers, define 'RPC_HPP_ENABLE_POINTERS'.");
 
         const auto serial_obj =
             serialize_call<Serial, R, Args...>(std::move(func_name), std::forward<Args>(args)...);
