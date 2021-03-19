@@ -174,7 +174,7 @@ install(FILES "${PROJECT_SOURCE_DIR}/include/rpc.hpp"
         DESTINATION "${CMAKE_INSTALL_PREFIX}/include")
 
 option(BUILD_NJSON_ADAPTER "Build the adapter for nlohmann/json" ON)
-option(BUILD_RAPIDJSON_ADAPTER "Build the adapter for rapidjson" ON)
+option(BUILD_RAPIDJSON_ADAPTER "Build the adapter for rapidjson" OFF)
 option(BUILD_BOOST_JSON_ADAPTER "Build the adapter for Boost.JSON" OFF)
 
 add_subdirectory(include/rpc_adapters)

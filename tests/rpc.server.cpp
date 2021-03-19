@@ -44,27 +44,18 @@
 #include <sstream>
 #include <thread>
 
-#define RPC_HPP_ENABLE_SERVER_CACHE
+//#define RPC_HPP_ENABLE_SERVER_CACHE
 
-#if defined(RPC_HPP_NJSON_ENABLED)
-#    include "rpc_adapters/rpc_njson.hpp"
-#endif
-
-#if defined(RPC_HPP_RAPIDJSON_ENABLED)
-#    include "rpc_adapters/rpc_rapidjson.hpp"
-#endif
-
-#if defined(RPC_HPP_BOOST_JSON_ENABLED)
-#    include "rpc_adapters/rpc_boost_json.hpp"
-#endif
+#include "rpc_adapters/rpc_njson.hpp"
 
 #include "rpc_dispatch_helper.hpp"
-#include "test_structs.hpp"
+//#include "test_structs.hpp"
 
 using asio::ip::tcp;
 
 static std::atomic_bool RUNNING = false;
 
+/*
 #if defined(RPC_HPP_ENABLE_POINTERS)
 constexpr void PtrSum(int* const n1, const int n2)
 {
@@ -198,6 +189,7 @@ void HashComplexPtr(const ComplexObject* const cx, char* const hashStr)
     hashStr[str.size()] = '\0';
 }
 #endif
+*/
 
 void ThrowError()
 {
@@ -215,6 +207,7 @@ constexpr int SimpleSum(const int n1, const int n2)
     return n1 + n2;
 }
 
+/*
 // cached
 size_t StrLen(const std::string& str)
 {
@@ -489,48 +482,46 @@ void HashComplexRef(ComplexObject& cx, std::string& hashStr)
 
     hashStr = hash.str();
 }
+*/
 
-#if defined(RPC_HPP_ENABLE_POINTERS)
-template<typename Serial>
-void rpc::server::dispatch(typename Serial::doc_type& serial_obj)
+template<rpc::serial_t Serial>
+void rpc::server::dispatch(byte_vec& bytes)
 {
-    const auto func_name = serial_adapter<Serial>::extract_func_name(serial_obj);
+    const auto func_name = details::serial_adapter<Serial>::get_func_name(bytes);
 
-    RPC_ATTACH_FUNCS(PtrSum, ReadMessagePtr, WriteMessagePtr, FibonacciPtr, SquareRootPtr,
-        HashComplexPtr, KillServer, ThrowError, AddOneToEach, AddOneToEachRef, ReadMessageRef,
-        WriteMessageRef, ReadMessageVec, WriteMessageVec, ClearBus, FibonacciRef, SquareRootRef,
-        RandInt, HashComplexRef)
+    // if (func_name == "KillServer")
+    // {
+    //     return rpc::server::dispatch_func<Serial>(KillServer, bytes);
+    // }
 
-    RPC_ATTACH_CACHED_FUNCS(AddAllPtr, SimpleSum, StrLen, AddOneToEach, Fibonacci, Average, StdDev,
-        AverageContainer<uint64_t>, AverageContainer<double>, HashComplex)
+    // if (func_name == "ThrowError")
+    // {
+    //     return rpc::server::dispatch_func<Serial>(ThrowError, bytes);
+    // }
 
-    serial_adapter<Serial>::set_err_mesg(
-        serial_obj, "RPC error: Called function: \"" + func_name + "\" not found!");
-}
+    // if (func_name == "SimpleSum")
+    // {
+    //     return rpc::server::dispatch_func<Serial>(SimpleSum, bytes);
+    // }
 
-#else
-template<typename Serial>
-void rpc::server::dispatch(typename Serial::doc_type& serial_obj)
-{
-    const auto func_name = serial_adapter<Serial>::extract_func_name(serial_obj);
-
-    RPC_ATTACH_FUNCS(KillServer, ThrowError, AddOneToEachRef, ReadMessageRef, WriteMessageRef,
+    RPC_ATTACH_FUNCS(KillServer, ThrowError, SimpleSum/*, AddOneToEachRef, ReadMessageRef, WriteMessageRef,
         ReadMessageVec, WriteMessageVec, ClearBus, FibonacciRef, SquareRootRef, RandInt,
-        HashComplexRef)
+        HashComplexRef*/)
 
+    /*
     RPC_ATTACH_CACHED_FUNCS(SimpleSum, StrLen, AddOneToEach, Fibonacci, Average, StdDev,
         AverageContainer<uint64_t>, AverageContainer<double>, HashComplex)
 
     serial_adapter<Serial>::set_err_mesg(
         serial_obj, "RPC error: Called function: \"" + func_name + "\" not found!");
+    */
 }
-#endif
 
-template<typename Serial>
+template<rpc::serial_t Serial>
 void session(tcp::socket sock)
 {
     constexpr auto BUFFER_SZ = 64U * 1024UL;
-    const std::unique_ptr<char[]> data = std::make_unique<char[]>(BUFFER_SZ);
+    const auto data = std::make_unique<uint8_t[]>(BUFFER_SZ);
 
     try
     {
@@ -550,21 +541,9 @@ void session(tcp::socket sock)
                 throw asio::system_error(error);
             }
 
-            const std::string str(data.get(), data.get() + len);
-
-#if defined(_DEBUG) || !defined(NDEBUG)
-            std::cout << "Received: " << str << '\n';
-#endif
-
-            auto serial_obj = rpc::serial_adapter<Serial>::from_string(str);
-            rpc::server::dispatch<Serial>(serial_obj);
-            const auto ret_str = rpc::serial_adapter<Serial>::to_string(serial_obj);
-
-#if defined(_DEBUG) || !defined(NDEBUG)
-            std::cout << "Sending: " << ret_str << '\n';
-#endif
-
-            write(sock, asio::buffer(ret_str, ret_str.size()));
+            rpc::byte_vec bytes(data.get(), data.get() + len);
+            rpc::server::dispatch<Serial>(bytes);
+            write(sock, asio::buffer(bytes, bytes.size()));
         }
     }
     catch (const std::exception& ex)
@@ -573,47 +552,21 @@ void session(tcp::socket sock)
     }
 }
 
-template<typename Serial>
+template<rpc::serial_t Serial>
 struct port
 {
 };
 
-#if defined(RPC_HPP_NJSON_ENABLED)
 template<>
-struct port<njson_serial_t>
+struct port<rpc::serial_t::json>
 {
     constexpr static uint16_t value = 5000U;
 };
-#endif
 
-#if defined(RPC_HPP_NLOHMANN_SERIAL_TYPE)
-template<>
-struct port<generic_serial_t>
-{
-    constexpr static uint16_t value = 5001U;
-};
-#endif
-
-#if defined(RPC_HPP_RAPIDJSON_ENABLED)
-template<>
-struct port<rpdjson_serial_t>
-{
-    constexpr static uint16_t value = 5002U;
-};
-#endif
-
-#if defined(RPC_HPP_BOOST_JSON_ENABLED)
-template<>
-struct port<bjson_serial_t>
-{
-    constexpr static uint16_t value = 5003U;
-};
-#endif
-
-template<typename Serial>
+template<rpc::serial_t Serial>
 inline constexpr uint16_t port_v = port<Serial>::value;
 
-template<typename Serial>
+template<rpc::serial_t Serial>
 [[noreturn]] void server(asio::io_context& io_context)
 {
     while (true)
@@ -630,25 +583,8 @@ int main()
         asio::io_context io_context;
         RUNNING = true;
 
-#if defined(RPC_HPP_NJSON_ENABLED)
-        std::thread(server<njson_serial_t>, std::ref(io_context)).detach();
-        std::cout << "Running njson server on port " << port_v<njson_serial_t> << "...\n";
-#    if defined(RPC_HPP_NLOHMANN_SERIAL_TYPE)
-        std::thread(server<generic_serial_t>, std::ref(io_context)).detach();
-        std::cout << "Running nlohmann/serial_type server on port "
-                  << port_v<generic_serial_t> << "...\n";
-#    endif
-#endif
-
-#if defined(RPC_HPP_RAPIDJSON_ENABLED)
-        std::thread(server<rpdjson_serial_t>, std::ref(io_context)).detach();
-        std::cout << "Running rapidjson server on port " << port_v<rpdjson_serial_t> << "...\n";
-#endif
-
-#if defined(RPC_HPP_BOOST_JSON_ENABLED)
-        std::thread(server<bjson_serial_t>, std::ref(io_context)).detach();
-        std::cout << "Running Boost.JSON server on port " << port_v<bjson_serial_t> << "...\n";
-#endif
+        std::thread(server<rpc::serial_t::json>, std::ref(io_context)).detach();
+        std::cout << "Running njson server on port " << port_v<rpc::serial_t::json> << "...\n";
 
         while (RUNNING)
         {

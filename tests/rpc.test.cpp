@@ -37,88 +37,35 @@
 
 #include <catch2/catch.hpp>
 
-#if !defined(RPC_HPP_NJSON_ENABLED)
-static_assert(false, "Test requires nlohmann/json adapter to be enabled!");
-#endif
-
 #include "rpc_adapters/rpc_njson.hpp"
 
-#if defined(RPC_HPP_RAPIDJSON_ENABLED)
-#    include "rpc_adapters/rpc_rapidjson.hpp"
-#endif
-
-#if defined(RPC_HPP_BOOST_JSON_ENABLED)
-#    include "rpc_adapters/rpc_boost_json.hpp"
-#endif
-
 #include "rpc.client.hpp"
-#include "test_structs.hpp"
+//#include "test_structs.hpp"
 
-template<typename Serial>
+template<rpc::serial_t Serial>
 TestClient& GetClient();
 
-template<typename Serial>
+template<rpc::serial_t Serial>
 void TestType()
 {
     auto& client = GetClient<Serial>();
-    auto pack = rpc::call<Serial, int>(client, "SimpleSum", 1, 2);
-    REQUIRE(pack.get_result() == 3);
+    const auto result = rpc::client::call_func<rpc::serial_t::json, int>(client, "SimpleSum", 1, 2);
+    REQUIRE(result == 3);
 }
 
 template<>
-TestClient& GetClient<njson_serial_t>()
+TestClient& GetClient<rpc::serial_t::json>()
 {
     static TestClient client("127.0.0.1", "5000");
     return client;
 }
 
-TEST_CASE("NJSON")
+TEST_CASE("JSON")
 {
-    TestType<njson_serial_t>();
+    TestType<rpc::serial_t::json>();
 }
 
-#if defined(RPC_HPP_NLOHMANN_SERIAL_TYPE)
-template<>
-TestClient& GetClient<generic_serial_t>()
-{
-    static TestClient client("127.0.0.1", "5001");
-    return client;
-}
-
-TEST_CASE("GENERIC_SERIAL_T")
-{
-    TestType<generic_serial_t>();
-}
-#endif
-
-#if defined(RPC_HPP_RAPIDJSON_ENABLED)
-template<>
-TestClient& GetClient<rpdjson_serial_t>()
-{
-    static TestClient client("127.0.0.1", "5002");
-    return client;
-}
-
-TEST_CASE("RAPIDJSON")
-{
-    TestType<rpdjson_serial_t>();
-}
-#endif
-
-#if defined(RPC_HPP_BOOST_JSON_ENABLED)
-template<>
-TestClient& GetClient<bjson_serial_t>()
-{
-    static TestClient client("127.0.0.1", "5003");
-    return client;
-}
-
-TEST_CASE("BOOST_JSON")
-{
-    TestType<bjson_serial_t>();
-}
-#endif
-
+/*
 using test_serial_t = njson_serial_t;
 
 #if defined(RPC_HPP_ENABLE_POINTERS)
@@ -457,3 +404,4 @@ TEST_CASE("KillServer", "[!mayfail]")
 
     REQUIRE_THROWS(TestType<njson_serial_t>());
 }
+*/

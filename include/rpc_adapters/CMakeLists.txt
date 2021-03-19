@@ -2,9 +2,8 @@ if(${BUILD_NJSON_ADAPTER})
   add_library(njson_adapter INTERFACE)
   target_include_directories(njson_adapter
                              INTERFACE "${PROJECT_SOURCE_DIR}/include")
-  target_compile_definitions(
-    njson_adapter INTERFACE RPC_HPP_NJSON_ENABLED
-                            RPC_HPP_NLOHMANN_SERIAL_TYPE=1)
+  target_compile_definitions(njson_adapter INTERFACE RPC_HPP_ENABLE_JSON
+                                                     RPC_HPP_JSON_USE_NJSON)
   target_link_libraries(njson_adapter INTERFACE ${CMAKE_THREAD_LIBS_INIT})
 
   if(${USE_CONAN})
@@ -28,8 +27,8 @@ if(${BUILD_RAPIDJSON_ADAPTER})
   add_library(rpdjson_adapter INTERFACE)
   target_include_directories(rpdjson_adapter
                              INTERFACE "${PROJECT_SOURCE_DIR}/include")
-  target_compile_definitions(rpdjson_adapter
-                             INTERFACE RPC_HPP_RAPIDJSON_ENABLED)
+  target_compile_definitions(
+    rpdjson_adapter INTERFACE RPC_HPP_ENABLE_JSON RPC_HPP_JSON_USE_RAPIDJSON)
   target_link_libraries(rpdjson_adapter INTERFACE ${CMAKE_THREAD_LIBS_INIT})
 
   if(${USE_CONAN})
@@ -53,8 +52,9 @@ if(${BUILD_BOOST_JSON_ADAPTER})
   add_library(boost_json_adapter INTERFACE)
   target_include_directories(boost_json_adapter
                              INTERFACE "${PROJECT_SOURCE_DIR}/include")
-  target_compile_definitions(boost_json_adapter
-                             INTERFACE RPC_HPP_BOOST_JSON_ENABLED)
+  target_compile_definitions(
+    boost_json_adapter INTERFACE RPC_HPP_ENABLE_JSON
+                                 RPC_HPP_JSON_USE_BOOST_JSON)
   target_link_libraries(boost_json_adapter INTERFACE ${CMAKE_THREAD_LIBS_INIT})
 
   if(${USE_CONAN})
