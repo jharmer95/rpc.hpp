@@ -1,7 +1,7 @@
 ///@file rpc_adapters/rpc_njson.hpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Implementation of adapting nlohmann/json (https://github.com/nlohmann/json)
-///@version 0.3.2
+///@version 0.3.3
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -64,22 +64,37 @@ rpc::packed_func<R, Args...> njson_adapter::to_packed_func(const njson& serial_o
 {
     unsigned i = 0;
 
-    std::array<std::any, sizeof...(Args)> args{ details::args_from_serial<njson_serial_t, Args>(
-        serial_obj, i)... };
+    typename rpc::packed_func<R, Args...>::args_type args{
+        details::args_from_serial<njson_serial_t, Args>(serial_obj, i)...
+    };
 
     if constexpr (!std::is_void_v<R>)
     {
         if (serial_obj.contains("result") && !serial_obj["result"].is_null())
         {
             return packed_func<R, Args...>(
-                serial_obj["func_name"], serial_obj["result"].get<R>(), args);
+                serial_obj["func_name"], serial_obj["result"].get<R>(), std::move(args));
         }
 
-        return packed_func<R, Args...>(serial_obj["func_name"], std::nullopt, args);
+        packed_func<R, Args...> pack(serial_obj["func_name"], std::nullopt, std::move(args));
+
+        if (serial_obj.contains("err_mesg"))
+        {
+            pack.set_err_mesg(serial_obj["err_mesg"]);
+        }
+
+        return pack;
     }
     else
     {
-        return packed_func<void, Args...>(serial_obj["func_name"], args);
+        packed_func<void, Args...> pack(serial_obj["func_name"], std::move(args));
+
+        if (serial_obj.contains("err_mesg"))
+        {
+            pack.set_err_mesg(serial_obj["err_mesg"]);
+        }
+
+        return pack;
     }
 }
 
@@ -142,23 +157,31 @@ njson njson_adapter::from_packed_func(packed_func<R, Args...>&& pack)
     njson ret_j;
 
     ret_j["func_name"] = pack.get_func_name();
-    ret_j["result"] = nullptr;
+
+    const auto err_mesg = pack.get_err_mesg();
+
+    if (!err_mesg.empty())
+    {
+        ret_j["err_mesg"] = err_mesg;
+    }
 
     // TODO: Address use of containers/custom types for result
     if constexpr (!std::is_void_v<R>)
     {
         if (pack)
         {
-            ret_j["result"] = *pack.get_result();
+            ret_j["result"] = pack.get_result();
+        }
+        else
+        {
+            ret_j["result"] = nullptr;
         }
     }
 
     ret_j["args"] = njson::array();
     unsigned i = 0;
 
-    std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...> argTup{
-        details::args_from_packed<Args, R, Args...>(pack, i)...
-    };
+    const auto& argTup = pack.get_args();
 
 #    if defined(RPC_HPP_ENABLE_POINTERS)
     i = 0;
@@ -190,6 +213,13 @@ template<>
 inline std::string njson_adapter::extract_func_name(const njson& obj)
 {
     return obj["func_name"].get<std::string>();
+}
+
+template<>
+inline void njson_adapter::set_err_mesg(njson& serial_obj, const std::string& str)
+{
+    serial_obj["result"] = nullptr;
+    serial_obj["err_mesg"] = str;
 }
 
 template<>
@@ -248,7 +278,7 @@ rpc::packed_func<R, Args...> njson_adapter::to_packed_func_w_ptr(
 {
     unsigned i = 0;
 
-    std::array<std::any, sizeof...(Args)> args{
+    typename rpc::packed_func<R, Args...>::args_type args{
         details::args_from_serial_w_ptr<njson_serial_t, Args>(serial_obj, arg_arr, i)...
     };
 
@@ -259,17 +289,18 @@ rpc::packed_func<R, Args...> njson_adapter::to_packed_func_w_ptr(
         if (serial_obj.contains("result") && !serial_obj["result"].is_null())
         {
             pack_ptr = std::make_unique<packed_func<R, Args...>>(
-                serial_obj["func_name"], serial_obj["result"].get<R>(), args);
+                serial_obj["func_name"], serial_obj["result"].get<R>(), std::move(args));
         }
         else
         {
             pack_ptr = std::make_unique<packed_func<R, Args...>>(
-                serial_obj["func_name"], std::nullopt, args);
+                serial_obj["func_name"], std::nullopt, std::move(args));
         }
     }
     else
     {
-        pack_ptr = std::make_unique<packed_func<void, Args...>>(serial_obj["func_name"], args);
+        pack_ptr =
+            std::make_unique<packed_func<void, Args...>>(serial_obj["func_name"], std::move(args));
     }
 
     pack_ptr->update_arg_arr(arg_arr);
@@ -376,21 +407,37 @@ rpc::packed_func<R, Args...> generic_serial_adapter::to_packed_func(const byte_v
     unsigned i = 0;
     const njson j_obj = from_func(serial_obj);
 
-    std::array<std::any, sizeof...(Args)> args{ details::args_from_serial<generic_serial_t, Args>(
-        serial_obj, i)... };
+    typename rpc::packed_func<R, Args...>::args_type args{
+        details::args_from_serial<generic_serial_t, Args>(serial_obj, i)...
+    };
 
     if constexpr (!std::is_void_v<R>)
     {
         if (j_obj.contains("result") && !j_obj["result"].is_null())
         {
-            return packed_func<R, Args...>(j_obj["func_name"], j_obj["result"].get<R>(), args);
+            return packed_func<R, Args...>(
+                j_obj["func_name"], j_obj["result"].get<R>(), std::move(args));
         }
 
-        return packed_func<R, Args...>(j_obj["func_name"], std::nullopt, args);
+        packed_func<R, Args...> pack(j_obj["func_name"], std::nullopt, std::move(args));
+
+        if (j_obj.contains("err_mesg"))
+        {
+            pack.set_err_mesg(j_obj["err_mesg"]);
+        }
+
+        return pack;
     }
     else
     {
-        return packed_func<void, Args...>(j_obj["func_name"], args);
+        packed_func<void, Args...> pack(j_obj["func_name"], std::move(args));
+
+        if (j_obj.contains("err_mesg"))
+        {
+            pack.set_err_mesg(j_obj["err_mesg"]);
+        }
+
+        return pack;
     }
 }
 
@@ -401,22 +448,30 @@ byte_vec generic_serial_adapter::from_packed_func(packed_func<R, Args...>&& pack
     njson ret_j;
 
     ret_j["func_name"] = pack.get_func_name();
-    ret_j["result"] = nullptr;
+
+    const auto err_mesg = pack.get_err_mesg();
+
+    if (!err_mesg.empty())
+    {
+        ret_j["err_mesg"] = err_mesg;
+    }
 
     if constexpr (!std::is_void_v<R>)
     {
         if (pack)
         {
-            ret_j["result"] = *pack.get_result();
+            ret_j["result"] = pack.get_result();
+        }
+        else
+        {
+            ret_j["result"] = nullptr;
         }
     }
 
     ret_j["args"] = njson::array();
     unsigned i = 0;
 
-    std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...> argTup{
-        details::args_from_packed<Args, R, Args...>(pack, i)...
-    };
+    const auto& argTup = pack.get_args();
 
 #        if defined(RPC_HPP_ENABLE_POINTERS)
     i = 0;
@@ -448,6 +503,16 @@ template<>
 inline std::string generic_serial_adapter::extract_func_name(const byte_vec& obj)
 {
     return from_func(obj)["func_name"].get<std::string>();
+}
+
+template<>
+inline void generic_serial_adapter::set_err_mesg(byte_vec& serial_obj, const std::string& str)
+{
+    auto obj_j = from_func(serial_obj);
+
+    obj_j["result"] = nullptr;
+    obj_j["err_mesg"] = str;
+    serial_obj = to_func(obj_j);
 }
 
 template<>
@@ -512,7 +577,7 @@ rpc::packed_func<R, Args...> generic_serial_adapter::to_packed_func_w_ptr(
     unsigned i = 0;
     const njson j_obj = from_func(serial_obj);
 
-    std::array<std::any, sizeof...(Args)> args{
+    typename rpc::packed_func<R, Args...>::args_type args{
         details::args_from_serial_w_ptr<generic_serial_t, Args>(serial_obj, arg_arr, i)...
     };
 
@@ -523,15 +588,16 @@ rpc::packed_func<R, Args...> generic_serial_adapter::to_packed_func_w_ptr(
         if (j_obj.contains("result") && !j_obj["result"].is_null())
         {
             pack_ptr = std::make_unique<packed_func<R, Args...>>(
-                j_obj["func_name"], j_obj["result"].get<R>(), args);
+                j_obj["func_name"], j_obj["result"].get<R>(), std::move(args));
         }
 
-        pack_ptr =
-            std::make_unique<packed_func<R, Args...>>(j_obj["func_name"], std::nullopt, args);
+        pack_ptr = std::make_unique<packed_func<R, Args...>>(
+            j_obj["func_name"], std::nullopt, std::move(args));
     }
     else
     {
-        pack_ptr = std::make_unique<packed_func<void, Args...>>(j_obj["func_name"], args);
+        pack_ptr =
+            std::make_unique<packed_func<void, Args...>>(j_obj["func_name"], std::move(args));
     }
 
     pack_ptr->update_arg_arr(arg_arr);

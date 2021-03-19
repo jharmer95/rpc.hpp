@@ -1,7 +1,7 @@
 ///@file rpc.server.cpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Example implementation of an RPC server
-///@version 0.3.2
+///@version 0.3.3
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -198,6 +198,11 @@ void HashComplexPtr(const ComplexObject* const cx, char* const hashStr)
     hashStr[str.size()] = '\0';
 }
 #endif
+
+void ThrowError()
+{
+    throw std::runtime_error("THIS IS A TEST ERROR!");
+}
 
 void KillServer()
 {
@@ -492,14 +497,15 @@ void rpc::server::dispatch(typename Serial::doc_type& serial_obj)
     const auto func_name = serial_adapter<Serial>::extract_func_name(serial_obj);
 
     RPC_ATTACH_FUNCS(PtrSum, ReadMessagePtr, WriteMessagePtr, FibonacciPtr, SquareRootPtr,
-        HashComplexPtr, KillServer, AddOneToEach, AddOneToEachRef, ReadMessageRef, WriteMessageRef,
-        ReadMessageVec, WriteMessageVec, ClearBus, FibonacciRef, SquareRootRef, RandInt,
-        HashComplexRef)
+        HashComplexPtr, KillServer, ThrowError, AddOneToEach, AddOneToEachRef, ReadMessageRef,
+        WriteMessageRef, ReadMessageVec, WriteMessageVec, ClearBus, FibonacciRef, SquareRootRef,
+        RandInt, HashComplexRef)
 
     RPC_ATTACH_CACHED_FUNCS(AddAllPtr, SimpleSum, StrLen, AddOneToEach, Fibonacci, Average, StdDev,
         AverageContainer<uint64_t>, AverageContainer<double>, HashComplex)
 
-    throw std::runtime_error("RPC error: Called function: \"" + func_name + "\" not found!");
+    serial_adapter<Serial>::set_err_mesg(
+        serial_obj, "RPC error: Called function: \"" + func_name + "\" not found!");
 }
 
 #else
@@ -508,13 +514,15 @@ void rpc::server::dispatch(typename Serial::doc_type& serial_obj)
 {
     const auto func_name = serial_adapter<Serial>::extract_func_name(serial_obj);
 
-    RPC_ATTACH_FUNCS(KillServer, AddOneToEachRef, ReadMessageRef, WriteMessageRef, ReadMessageVec,
-        WriteMessageVec, ClearBus, FibonacciRef, SquareRootRef, RandInt, HashComplexRef)
+    RPC_ATTACH_FUNCS(KillServer, ThrowError, AddOneToEachRef, ReadMessageRef, WriteMessageRef,
+        ReadMessageVec, WriteMessageVec, ClearBus, FibonacciRef, SquareRootRef, RandInt,
+        HashComplexRef)
 
     RPC_ATTACH_CACHED_FUNCS(SimpleSum, StrLen, AddOneToEach, Fibonacci, Average, StdDev,
         AverageContainer<uint64_t>, AverageContainer<double>, HashComplex)
 
-    throw std::runtime_error("RPC error: Called function: \"" + func_name + "\" not found!");
+    serial_adapter<Serial>::set_err_mesg(
+        serial_obj, "RPC error: Called function: \"" + func_name + "\" not found!");
 }
 #endif
 

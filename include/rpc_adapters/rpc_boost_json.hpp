@@ -1,7 +1,7 @@
 ///@file rpc_adapters/rpc_boost_json.hpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Implementation of adapting Boost.JSON (https://github.com/boostorg/json)
-///@version 0.3.2
+///@version 0.3.3
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -62,12 +62,20 @@ rpc::packed_func<R, Args...> bjson_adapter::to_packed_func(const bjson_val& seri
     const auto& obj = serial_obj.as_object();
     unsigned i = 0;
 
-    std::array<std::any, sizeof...(Args)> args{ details::args_from_serial<bjson_serial_t, Args>(
-        obj, i)... };
+    typename rpc::packed_func<R, Args...>::args_type args{
+        details::args_from_serial<bjson_serial_t, Args>(obj, i)...
+    };
 
     if constexpr (std::is_void_v<R>)
     {
-        return packed_func<void, Args...>(obj.at("func_name").get_string().c_str(), args);
+        packed_func<void, Args...> pack(obj.at("func_name").get_string().c_str(), std::move(args));
+
+        if (obj.contains("err_mesg"))
+        {
+            pack.set_err_mesg(obj.at("err_mesg").get_string().c_str());
+        }
+
+        return pack;
     }
     else
     {
@@ -77,30 +85,37 @@ rpc::packed_func<R, Args...> bjson_adapter::to_packed_func(const bjson_val& seri
 
             if constexpr (std::is_arithmetic_v<R>)
             {
-                return packed_func<R, Args...>(
-                    obj.at("func_name").get_string().c_str(), bjson::value_to<R>(result), args);
+                return packed_func<R, Args...>(obj.at("func_name").get_string().c_str(),
+                    bjson::value_to<R>(result), std::move(args));
             }
             else if constexpr (std::is_same_v<R, std::string>)
             {
-                return packed_func<R, Args...>(
-                    obj.at("func_name").get_string().c_str(), result.get_string().c_str(), args);
+                return packed_func<R, Args...>(obj.at("func_name").get_string().c_str(),
+                    result.get_string().c_str(), std::move(args));
             }
             else if constexpr (details::is_container_v<R>)
             {
                 R container;
                 populate_array(result, container);
                 return packed_func<R, Args...>(
-                    obj.at("func_name").get_string().c_str(), container, args);
+                    obj.at("func_name").get_string().c_str(), container, std::move(args));
             }
             else
             {
                 return packed_func<R, Args...>(obj.at("func_name").get_string().c_str(),
-                    deserialize<bjson_serial_t, R>(result), args);
+                    deserialize<bjson_serial_t, R>(result), std::move(args));
             }
         }
 
-        return packed_func<R, Args...>(
-            obj.at("func_name").get_string().c_str(), std::nullopt, args);
+        packed_func<R, Args...> pack(
+            obj.at("func_name").get_string().c_str(), std::nullopt, std::move(args));
+
+        if (obj.contains("err_mesg"))
+        {
+            pack.set_err_mesg(obj.at("err_mesg").get_string().c_str());
+        }
+
+        return pack;
     }
 }
 
@@ -158,21 +173,29 @@ bjson_val bjson_adapter::from_packed_func(packed_func<R, Args...>&& pack)
     bjson_obj ret_j;
 
     ret_j["func_name"] = pack.get_func_name();
-    ret_j["result"] = nullptr;
-    auto& result = ret_j["result"];
+
+    const auto err_mesg = pack.get_err_mesg();
+
+    if (!err_mesg.empty())
+    {
+        ret_j["err_mesg"] = err_mesg;
+    }
 
     if constexpr (!std::is_void_v<R>)
     {
+        ret_j["result"] = nullptr;
+        auto& result = ret_j["result"];
+
         if (pack)
         {
             if constexpr (std::is_arithmetic_v<R> || std::is_same_v<R, std::string>)
             {
-                result = *pack.get_result();
+                result = pack.get_result();
             }
             else if constexpr (details::is_container_v<R>)
             {
                 result = bjson::array{};
-                const auto container = *pack.get_result();
+                const auto container = pack.get_result();
 
                 for (const auto& val : container)
                 {
@@ -181,7 +204,7 @@ bjson_val bjson_adapter::from_packed_func(packed_func<R, Args...>&& pack)
             }
             else
             {
-                result = serialize<bjson_serial_t, R>(*pack.get_result());
+                result = serialize<bjson_serial_t, R>(pack.get_result());
             }
         }
     }
@@ -190,9 +213,7 @@ bjson_val bjson_adapter::from_packed_func(packed_func<R, Args...>&& pack)
     auto& args = ret_j["args"].as_array();
     unsigned i = 0;
 
-    std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...> argTup{
-        details::args_from_packed<Args, R, Args...>(pack, i)...
-    };
+    const auto& argTup = pack.get_args();
 
 #    if defined(RPC_HPP_ENABLE_POINTERS)
     i = 0;
@@ -225,6 +246,14 @@ inline std::string bjson_adapter::extract_func_name(const bjson_val& obj)
 {
     assert(obj.is_object());
     return obj.at("func_name").get_string().c_str();
+}
+
+template<>
+inline void bjson_adapter::set_err_mesg(bjson_val& serial_obj, const std::string& str)
+{
+    assert(serial_obj.is_object());
+    serial_obj["result"] = nullptr;
+    serial_obj["err_mesg"] = str;
 }
 
 template<>
@@ -309,7 +338,7 @@ rpc::packed_func<R, Args...> bjson_adapter::to_packed_func_w_ptr(
     auto& obj = serial_obj.as_object();
     unsigned i = 0;
 
-    std::array<std::any, sizeof...(Args)> args{
+    typename rpc::packed_func<R, Args...>::args_type args{
         details::args_from_serial_w_ptr<bjson_serial_t, Args>(serial_obj, arg_arr, i)...
     };
 
@@ -318,7 +347,7 @@ rpc::packed_func<R, Args...> bjson_adapter::to_packed_func_w_ptr(
     if constexpr (std::is_void_v<R>)
     {
         pack_ptr = std::make_unique<packed_func<void, Args...>>(
-            obj.at("func_name").get_string().c_str(), args);
+            obj.at("func_name").get_string().c_str(), std::move(args));
     }
     else
     {
@@ -329,31 +358,33 @@ rpc::packed_func<R, Args...> bjson_adapter::to_packed_func_w_ptr(
             if constexpr (std::is_arithmetic_v<R>)
             {
                 pack_ptr = std::make_unique<packed_func<R, Args...>>(
-                    obj.at("func_name").get_string().c_str(), bjson::value_to<R>(result), args);
+                    obj.at("func_name").get_string().c_str(), bjson::value_to<R>(result),
+                    std::move(args));
             }
             else if constexpr (std::is_same_v<R, std::string>)
             {
                 pack_ptr = std::make_unique<packed_func<R, Args...>>(
-                    obj.at("func_name").get_string().c_str(), result.get_string().c_str(), args);
+                    obj.at("func_name").get_string().c_str(), result.get_string().c_str(),
+                    std::move(args));
             }
             else if constexpr (details::is_container_v<R>)
             {
                 R container;
                 populate_array(result, container);
                 pack_ptr = std::make_unique<packed_func<R, Args...>>(
-                    obj.at("func_name").get_string().c_str(), container, args);
+                    obj.at("func_name").get_string().c_str(), container, std::move(args));
             }
             else
             {
                 pack_ptr = std::make_unique<packed_func<R, Args...>>(
                     obj.at("func_name").get_string().c_str(),
-                    deserialize<bjson_serial_t, R>(result), args);
+                    deserialize<bjson_serial_t, R>(result), std::move(args));
             }
         }
         else
         {
             pack_ptr = std::make_unique<packed_func<R, Args...>>(
-                obj.at("func_name").get_string().c_str(), std::nullopt, args);
+                obj.at("func_name").get_string().c_str(), std::nullopt, std::move(args));
         }
     }
 
