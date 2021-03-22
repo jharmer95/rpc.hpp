@@ -115,16 +115,14 @@ namespace details
         static constexpr bool value = type::value;
     };
 
-    template<typename Serial, typename Value>
-    struct is_serializable
-        : std::integral_constant<bool,
-              is_serializable_base<Value, typename Serial::doc_type(const Value&)>::value
-                  && is_deserializable_base<Value,
-                      Value(const typename Serial::value_type&)>::value>
+    template<serial_t Serial, typename Value>
+    struct is_serializable : std::integral_constant<bool,
+                                 is_serializable_base<Value, byte_vec(const Value&)>::value
+                                     && is_deserializable_base<Value, Value(byte_vec&&)>::value>
     {
     };
 
-    template<typename Serial, typename Value>
+    template<serial_t Serial, typename Value>
     inline constexpr bool is_serializable_v = is_serializable<Serial, Value>::value;
 
     template<typename C>
@@ -380,7 +378,7 @@ inline namespace client
         virtual byte_vec receive() = 0;
     };
 
-    template<serial_t Serial, typename R, typename... Args>
+    template<serial_t Serial, typename R = void, typename... Args>
     R call_func(client_interface& client, std::string&& func_name, Args&&... args)
     {
         if constexpr (std::is_void_v<R>)

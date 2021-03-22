@@ -60,11 +60,13 @@ namespace adapters
     template<typename T>
     void push_arg(T arg, njson& arg_arr)
     {
-        if constexpr (std::is_arithmetic_v<T> || std::is_same_v<T, std::string>)
+        using no_ref_t = std::remove_cv_t<std::remove_reference_t<T>>;
+
+        if constexpr (std::is_arithmetic_v<no_ref_t> || std::is_same_v<no_ref_t, std::string>)
         {
             arg_arr.push_back(arg);
         }
-        else if constexpr (details::is_container_v<T>)
+        else if constexpr (details::is_container_v<no_ref_t>)
         {
             njson arr = njson::array();
 
@@ -78,43 +80,42 @@ namespace adapters
         else
         {
             byte_vec serialized = [&arg]() {
-                if constexpr (details::is_serializable_v<serial_t::json, T>)
+                if constexpr (details::is_serializable_v<serial_t::json, no_ref_t>)
                 {
-                    return T::serialize<serial_t::json>(arg);
+                    return no_ref_t::serialize<serial_t::json>(arg);
                 }
                 else
                 {
-                    return serialize<serial_t::json, T>(arg);
+                    return serialize<serial_t::json, no_ref_t>(arg);
                 }
             }();
 
-            std::string obj_str;
-            obj_str.reserve(serialized.size());
-            std::move(serialized.begin(), serialized.end(), std::back_inserter(obj_str));
-            arg_arr.push_back(njson::parse(std::move(obj_str)));
+            arg_arr.push_back(njson::parse(std::move(serialized)));
         }
     }
 
     template<typename T>
-    T parse_arg(const njson& arg_arr, unsigned& index)
+    std::remove_cv_t<std::remove_reference_t<T>> parse_arg(const njson& arg_arr, unsigned& index)
     {
-        const auto& arg = arg_arr[index++];
+        using no_ref_t = std::remove_cv_t<std::remove_reference_t<T>>;
 
-        if constexpr (std::is_arithmetic_v<T> || std::is_same_v<T, std::string>)
+        const auto& arg = arg_arr.is_array() ? arg_arr[index++] : arg_arr;
+
+        if constexpr (std::is_arithmetic_v<no_ref_t> || std::is_same_v<no_ref_t, std::string>)
         {
-            return arg.get<T>();
+            return arg.get<no_ref_t>();
         }
-        else if constexpr (details::is_container_v<T>)
+        else if constexpr (details::is_container_v<no_ref_t>)
         {
-            using value_t = typename T::value_type;
-            T container;
+            using value_t = typename no_ref_t::value_type;
+            no_ref_t container;
             container.reserve(arg.size());
 
             unsigned j = 0;
 
             for (const auto& val : arg)
             {
-                container.push_back(parse_arg<value_t>(arg, j));
+                container.push_back(parse_arg<value_t>(val, j));
             }
 
             return container;
@@ -122,17 +123,15 @@ namespace adapters
         else
         {
             auto obj_str = arg.dump();
-            byte_vec bytes;
-            bytes.reserve(obj_str.size());
-            std::move(obj_str.begin(), obj_str.end(), std::back_inserter(bytes));
+            byte_vec bytes(obj_str.begin(), obj_str.end());
 
-            if constexpr (details::is_serializable_v<serial_t::json, T>)
+            if constexpr (details::is_serializable_v<serial_t::json, no_ref_t>)
             {
-                return T::deserialize<serial_t::json>(std::move(bytes));
+                return no_ref_t::deserialize<serial_t::json>(std::move(bytes));
             }
             else
             {
-                return deserialize<serial_t::json, T>(std::move(bytes));
+                return deserialize<serial_t::json, no_ref_t>(std::move(bytes));
             }
         }
     }
@@ -169,10 +168,7 @@ byte_vec json_adapter::serialize_pack(const packed_func<R, Args...>& pack)
     }
 
     auto obj_str = obj.dump();
-    byte_vec bytes;
-    bytes.reserve(obj_str.size());
-    std::move(obj_str.begin(), obj_str.end(), std::back_inserter(bytes));
-    return bytes;
+    return byte_vec(obj_str.begin(), obj_str.end());
 }
 
 template<>
@@ -181,11 +177,7 @@ details::packed_func<R, Args...> json_adapter::deserialize_pack(const byte_vec& 
 {
     using namespace adapters;
 
-    std::string obj_str;
-    obj_str.reserve(bytes.size());
-    std::copy(bytes.begin(), bytes.end(), std::back_inserter(obj_str));
-
-    const auto obj = njson::parse(std::move(obj_str));
+    const auto obj = njson::parse(bytes);
     unsigned i = 0;
 
     typename packed_func<R, Args...>::args_t args{ parse_arg<Args>(obj["args"], i)... };
@@ -205,7 +197,8 @@ details::packed_func<R, Args...> json_adapter::deserialize_pack(const byte_vec& 
     {
         if (obj.contains("result") && !obj["result"].is_null())
         {
-            return packed_func<R, Args...>(obj["func_name"], obj["result"], std::move(args));
+            return packed_func<R, Args...>(
+                obj["func_name"], obj["result"].get<R>(), std::move(args));
         }
 
         packed_func<R, Args...> pack(obj["func_name"], std::nullopt, std::move(args));
@@ -220,11 +213,7 @@ inline std::string json_adapter::get_func_name(const byte_vec& bytes)
 {
     using namespace adapters;
 
-    std::string obj_str;
-    obj_str.reserve(bytes.size());
-    std::copy(bytes.begin(), bytes.end(), std::back_inserter(obj_str));
-
-    const auto obj = njson::parse(std::move(obj_str));
+    const auto obj = njson::parse(bytes);
     return obj["func_name"];
 }
 } // namespace rpc

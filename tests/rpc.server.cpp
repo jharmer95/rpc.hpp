@@ -49,7 +49,7 @@
 #include "rpc_adapters/rpc_njson.hpp"
 
 #include "rpc_dispatch_helper.hpp"
-//#include "test_structs.hpp"
+#include "test_structs.hpp"
 
 using asio::ip::tcp;
 
@@ -207,7 +207,6 @@ constexpr int SimpleSum(const int n1, const int n2)
     return n1 + n2;
 }
 
-/*
 // cached
 size_t StrLen(const std::string& str)
 {
@@ -249,8 +248,10 @@ int ReadMessageRef(TestMessage& mesg)
     {
         if (file_in >> s)
         {
-            mesg = rpc::deserialize<njson_serial_t, TestMessage>(njson::parse(s));
+            rpc::byte_vec bytes(s.begin(), s.end());
+            mesg = rpc::deserialize<rpc::serial_t::json, TestMessage>(std::move(bytes));
         }
+
         while (file_in >> s)
         {
             ss << s << '\n';
@@ -285,7 +286,9 @@ int WriteMessageRef(const TestMessage& mesg)
 
     try
     {
-        file_out << rpc::serialize<njson_serial_t, TestMessage>(mesg).dump() << '\n';
+        rpc::byte_vec bytes = rpc::serialize<rpc::serial_t::json, TestMessage>(mesg);
+        const std::string s(bytes.begin(), bytes.end());
+        file_out << s << '\n';
     }
     catch (...)
     {
@@ -305,7 +308,6 @@ int ReadMessageVec(std::vector<TestMessage>& vec, int& num_mesgs)
     }
 
     std::stringstream ss;
-
     std::string s;
     int i = 0;
 
@@ -315,7 +317,8 @@ int ReadMessageVec(std::vector<TestMessage>& vec, int& num_mesgs)
         {
             if (i < num_mesgs)
             {
-                vec.push_back(rpc::deserialize<njson_serial_t, TestMessage>(njson::parse(s)));
+                rpc::byte_vec bytes(s.begin(), s.end());
+                vec.push_back(rpc::deserialize<rpc::serial_t::json, TestMessage>(std::move(bytes)));
             }
             else
             {
@@ -355,7 +358,9 @@ int WriteMessageVec(const std::vector<TestMessage>& vec)
     {
         try
         {
-            file_out << rpc::serialize<njson_serial_t, TestMessage>(mesg).dump() << '\n';
+            rpc::byte_vec bytes = rpc::serialize<rpc::serial_t::json, TestMessage>(mesg);
+            const std::string s(bytes.begin(), bytes.end());
+            file_out << s << '\n';
         }
         catch (...)
         {
@@ -482,39 +487,20 @@ void HashComplexRef(ComplexObject& cx, std::string& hashStr)
 
     hashStr = hash.str();
 }
-*/
 
 template<rpc::serial_t Serial>
 void rpc::server::dispatch(byte_vec& bytes)
 {
     const auto func_name = details::serial_adapter<Serial>::get_func_name(bytes);
 
-    // if (func_name == "KillServer")
-    // {
-    //     return rpc::server::dispatch_func<Serial>(KillServer, bytes);
-    // }
+    RPC_ATTACH_FUNCS(KillServer, ThrowError, SimpleSum, AddOneToEachRef, ReadMessageRef,
+        WriteMessageRef, ReadMessageVec, WriteMessageVec, ClearBus, FibonacciRef, SquareRootRef,
+        RandInt, HashComplexRef)
 
-    // if (func_name == "ThrowError")
-    // {
-    //     return rpc::server::dispatch_func<Serial>(ThrowError, bytes);
-    // }
-
-    // if (func_name == "SimpleSum")
-    // {
-    //     return rpc::server::dispatch_func<Serial>(SimpleSum, bytes);
-    // }
-
-    RPC_ATTACH_FUNCS(KillServer, ThrowError, SimpleSum/*, AddOneToEachRef, ReadMessageRef, WriteMessageRef,
-        ReadMessageVec, WriteMessageVec, ClearBus, FibonacciRef, SquareRootRef, RandInt,
-        HashComplexRef*/)
-
-    /*
     RPC_ATTACH_CACHED_FUNCS(SimpleSum, StrLen, AddOneToEach, Fibonacci, Average, StdDev,
         AverageContainer<uint64_t>, AverageContainer<double>, HashComplex)
 
-    serial_adapter<Serial>::set_err_mesg(
-        serial_obj, "RPC error: Called function: \"" + func_name + "\" not found!");
-    */
+    throw std::runtime_error("RPC error: Called function: \"" + func_name + "\" not found!");
 }
 
 template<rpc::serial_t Serial>
