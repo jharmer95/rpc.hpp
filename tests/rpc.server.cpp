@@ -529,6 +529,11 @@ void session(tcp::socket sock)
 
             rpc::byte_vec bytes(data.get(), data.get() + len);
             rpc::server::dispatch<Serial>(bytes);
+
+#if defined(_DEBUG) || !defined(NDEBUG)
+            std::cout << "Return message: \"" << std::string(bytes.begin(), bytes.end()) << "\"\n";
+#endif
+
             write(sock, asio::buffer(bytes, bytes.size()));
         }
     }

@@ -173,11 +173,11 @@ byte_vec json_adapter::serialize_pack(const packed_func<R, Args...>& pack)
 
 template<>
 template<typename R, typename... Args>
-details::packed_func<R, Args...> json_adapter::deserialize_pack(const byte_vec& bytes)
+details::packed_func<R, Args...> json_adapter::deserialize_pack(byte_vec&& bytes)
 {
     using namespace adapters;
 
-    const auto obj = njson::parse(bytes);
+    const auto obj = njson::parse(std::move(bytes));
     unsigned i = 0;
 
     typename packed_func<R, Args...>::args_t args{ parse_arg<Args>(obj["args"], i)... };

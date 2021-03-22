@@ -49,7 +49,9 @@ template<rpc::serial_t Serial>
 void TestType()
 {
     auto& client = GetClient<Serial>();
-    const auto result = rpc::client::call_func<rpc::serial_t::json, int>(client, "SimpleSum", 1, 2);
+    const auto result =
+        rpc::client::call_func<rpc::serial_t::json, int>(client, "SimpleSum", 1, 2).get_result();
+
     REQUIRE(result == 3);
 }
 
@@ -211,7 +213,8 @@ TEST_CASE("StrLen")
 {
     auto& client = GetClient<test_serial_t>();
     const auto result =
-        rpc::call_func<test_serial_t, int>(client, "StrLen", std::string("hello, world"));
+        rpc::call_func<test_serial_t, int>(client, "StrLen", std::string("hello, world"))
+            .get_result();
 
     REQUIRE(result == 12);
 }
@@ -221,7 +224,7 @@ TEST_CASE("AddOneToEach")
     auto& client = GetClient<test_serial_t>();
     const std::vector<int> vec{ 2, 4, 6, 8 };
     const auto result =
-        rpc::call_func<test_serial_t, std::vector<int>>(client, "AddOneToEach", vec);
+        rpc::call_func<test_serial_t, std::vector<int>>(client, "AddOneToEach", vec).get_result();
 
     REQUIRE(result.size() == vec.size());
 
@@ -231,42 +234,41 @@ TEST_CASE("AddOneToEach")
     }
 }
 
-// TEST_CASE("AddOneToEachRef")
-// {
-//     auto& client = GetClient<test_serial_t>();
-//     const std::vector<int> vec{ 2, 4, 6, 8 };
-//     auto vec2 = vec;
-//     rpc::call_func<test_serial_t>(client, "AddOneToEachRef", vec2);
+TEST_CASE("AddOneToEachRef")
+{
+    auto& client = GetClient<test_serial_t>();
+    const std::vector<int> vec{ 2, 4, 6, 8 };
+    const auto pack = rpc::call_func<test_serial_t>(client, "AddOneToEachRef", vec);
 
-//     REQUIRE(vec2.size() == vec.size());
+    const auto vec2 = pack.get_arg<0>();
 
-//     for (size_t i = 0; i < vec2.size(); ++i)
-//     {
-//         REQUIRE(vec2[i] == vec[i] + 1);
-//     }
-// }
+    REQUIRE(vec2.size() == vec.size());
+
+    for (size_t i = 0; i < vec2.size(); ++i)
+    {
+        REQUIRE(vec2[i] == vec[i] + 1);
+    }
+}
 
 TEST_CASE("Fibonacci")
 {
     constexpr uint64_t expected = 10946ULL;
     auto& client = GetClient<test_serial_t>();
 
-    const auto test = rpc::call_func<test_serial_t, uint64_t>(client, "Fibonacci", 20);
+    const auto test = rpc::call_func<test_serial_t, uint64_t>(client, "Fibonacci", 20).get_result();
     REQUIRE(expected == test);
 }
 
-// TEST_CASE("FibonacciRef")
-// {
-//     constexpr uint64_t expected = 10946ULL;
-//     auto& client = GetClient<test_serial_t>();
+TEST_CASE("FibonacciRef")
+{
+    constexpr uint64_t expected = 10946ULL;
+    auto& client = GetClient<test_serial_t>();
 
-//     uint64_t num = 20ULL;
-//     const auto test =
-//         rpc::call_func<test_serial_t>(client, "FibonacciRef", num).get_arg<uint64_t, 0>();
+    uint64_t num = 20ULL;
+    const auto test = rpc::call_func<test_serial_t>(client, "FibonacciRef", num).get_arg<0>();
 
-//     //REQUIRE(num == test);
-//     REQUIRE(expected == test);
-// }
+    REQUIRE(expected == test);
+}
 
 TEST_CASE("StdDev")
 {
@@ -274,46 +276,46 @@ TEST_CASE("StdDev")
     auto& client = GetClient<test_serial_t>();
 
     const auto test = rpc::call_func<test_serial_t, double>(client, "StdDev", 55.65, 125.325,
-        552.125, 12.767, 2599.6, 1245.125663, 9783.49, 125.12, 553.3333333333, 2266.1);
+        552.125, 12.767, 2599.6, 1245.125663, 9783.49, 125.12, 553.3333333333, 2266.1)
+                          .get_result();
 
     REQUIRE_THAT(test, Catch::Matchers::WithinRel(expected));
 }
 
-// TEST_CASE("SquareRootRef")
-// {
-//     constexpr double expected = 313.2216436152;
-//     auto& client = GetClient<test_serial_t>();
+TEST_CASE("SquareRootRef")
+{
+    constexpr double expected = 313.2216436152;
+    auto& client = GetClient<test_serial_t>();
 
-//     double n1 = 55.65;
-//     double n2 = 125.325;
-//     double n3 = 552.125;
-//     double n4 = 12.767;
-//     double n5 = 2599.6;
-//     double n6 = 1245.125663;
-//     double n7 = 9783.49;
-//     double n8 = 125.12;
-//     double n9 = 553.3333333333;
-//     double n10 = 2266.1;
+    double n1 = 55.65;
+    double n2 = 125.325;
+    double n3 = 552.125;
+    double n4 = 12.767;
+    double n5 = 2599.6;
+    double n6 = 1245.125663;
+    double n7 = 9783.49;
+    double n8 = 125.12;
+    double n9 = 553.3333333333;
+    double n10 = 2266.1;
 
-//     const auto pack = rpc::call_func<test_serial_t>(
-//         client, "SquareRootRef", n1, n2, n3, n4, n5, n6, n7, n8, n9, n10);
+    const auto pack = rpc::call_func<test_serial_t>(
+        client, "SquareRootRef", n1, n2, n3, n4, n5, n6, n7, n8, n9, n10);
 
-//     // TODO: Find a way to have references updated automatically?
-//     n1 = pack.get_arg<double, 0>();
-//     n2 = pack.get_arg<double, 1>();
-//     n3 = pack.get_arg<double, 2>();
-//     n4 = pack.get_arg<double, 3>();
-//     n5 = pack.get_arg<double, 4>();
-//     n6 = pack.get_arg<double, 5>();
-//     n7 = pack.get_arg<double, 6>();
-//     n8 = pack.get_arg<double, 7>();
-//     n9 = pack.get_arg<double, 8>();
-//     n10 = pack.get_arg<double, 9>();
+    n1 = pack.get_arg<0>();
+    n2 = pack.get_arg<1>();
+    n3 = pack.get_arg<2>();
+    n4 = pack.get_arg<3>();
+    n5 = pack.get_arg<4>();
+    n6 = pack.get_arg<5>();
+    n7 = pack.get_arg<6>();
+    n8 = pack.get_arg<7>();
+    n9 = pack.get_arg<8>();
+    n10 = pack.get_arg<9>();
 
-//     const auto test = n1 + n2 + n3 + n4 + n5 + n6 + n7 + n8 + n9 + n10;
+    const auto test = n1 + n2 + n3 + n4 + n5 + n6 + n7 + n8 + n9 + n10;
 
-//     REQUIRE_THAT(test, Catch::Matchers::WithinAbs(expected, 0.001));
-// }
+    REQUIRE_THAT(test, Catch::Matchers::WithinAbs(expected, 0.001));
+}
 
 TEST_CASE("AverageContainer<double>")
 {
@@ -324,7 +326,7 @@ TEST_CASE("AverageContainer<double>")
         125.12, 553.3333333333, 2266.1 };
 
     const auto test =
-        rpc::call_func<test_serial_t, double>(client, "AverageContainer<double>", vec);
+        rpc::call_func<test_serial_t, double>(client, "AverageContainer<double>", vec).get_result();
 
     REQUIRE_THAT(test, Catch::Matchers::WithinAbs(expected, 0.001));
 }
@@ -341,30 +343,32 @@ TEST_CASE("HashComplex")
     cx.name = "Franklin D. Roosevelt";
     cx.vals = { 0, 1, 4, 6, 7, 8, 11, 15, 17, 22, 25, 26 };
 
-    const auto test = rpc::call_func<test_serial_t, std::string>(client, "HashComplex", cx);
+    const auto test =
+        rpc::call_func<test_serial_t, std::string>(client, "HashComplex", cx).get_result();
 
     REQUIRE_THAT(expected, Catch::Matchers::Equals(test));
 }
 
-// TEST_CASE("HashComplexRef")
-// {
-//     const std::string expected = "467365747274747d315a473a527073796c7e707b85";
-//     auto& client = GetClient<test_serial_t>();
+TEST_CASE("HashComplexRef")
+{
+    const std::string expected = "467365747274747d315a473a527073796c7e707b85";
+    auto& client = GetClient<test_serial_t>();
 
-//     ComplexObject cx;
-//     cx.flag1 = false;
-//     cx.flag2 = true;
-//     cx.id = 24;
-//     cx.name = "Franklin D. Roosevelt";
-//     cx.vals = { 0, 1, 4, 6, 7, 8, 11, 15, 17, 22, 25, 26 };
+    ComplexObject cx;
+    cx.flag1 = false;
+    cx.flag2 = true;
+    cx.id = 24;
+    cx.name = "Franklin D. Roosevelt";
+    cx.vals = { 0, 1, 4, 6, 7, 8, 11, 15, 17, 22, 25, 26 };
 
-//     std::string test;
+    // initialize empty string to pass
+    std::string test{};
 
-//     test =
-//         rpc::call_func<test_serial_t>(client, "HashComplexRef", cx, test).get_arg<std::string, 1>();
+    // re-assign string to arg<1>
+    test = rpc::call_func<test_serial_t>(client, "HashComplexRef", cx, test).get_arg<1>();
 
-//     REQUIRE_THAT(expected, Catch::Matchers::Equals(test));
-// }
+    REQUIRE_THAT(expected, Catch::Matchers::Equals(test));
+}
 
 // TEST_CASE("Function not found")
 // {

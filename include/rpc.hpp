@@ -233,20 +233,20 @@ namespace details
         [[nodiscard]] const args_t& get_args() const& noexcept { return m_args; }
         [[nodiscard]] args_t get_args() && noexcept { return std::move(m_args); }
 
-        template<typename T, size_t Index>
-        T& get_arg() &
+        template<size_t Index>
+        auto& get_arg() &
         {
             return std::get<Index>(m_args);
         }
 
-        template<typename T, size_t Index>
-        const T& get_arg() const&
+        template<size_t Index>
+        const auto& get_arg() const&
         {
             return std::get<Index>(m_args);
         }
 
-        template<typename T, size_t Index>
-        T get_arg() &&
+        template<size_t Index>
+        auto get_arg() &&
         {
             return std::move(std::get<Index>(m_args));
         }
@@ -329,7 +329,7 @@ namespace details
         [[nodiscard]] static byte_vec serialize_pack(const packed_func<R, Args...>& pack);
 
         template<typename R, typename... Args>
-        [[nodiscard]] static packed_func<R, Args...> deserialize_pack(const byte_vec& bytes);
+        [[nodiscard]] static packed_func<R, Args...> deserialize_pack(byte_vec&& bytes);
 
         [[nodiscard]] static std::string get_func_name(const byte_vec& bytes);
     };
@@ -361,7 +361,7 @@ namespace server
     template<serial_t Serial, typename R, typename... Args>
     void dispatch_func(R (*func)(Args...), byte_vec& bytes)
     {
-        auto pack = details::serial_adapter<Serial>::template deserialize_pack<R, Args...>(bytes);
+        auto pack = details::serial_adapter<Serial>::template deserialize_pack<R, Args...>(std::move(bytes));
         run_callback(func, pack);
         bytes = details::serial_adapter<Serial>::serialize_pack(pack);
     }
@@ -379,12 +379,13 @@ inline namespace client
     };
 
     template<serial_t Serial, typename R = void, typename... Args>
-    R call_func(client_interface& client, std::string&& func_name, Args&&... args)
+    details::packed_func<R, Args...> call_func(
+        client_interface& client, std::string&& func_name, Args&&... args)
     {
         if constexpr (std::is_void_v<R>)
         {
             const details::packed_func<R, Args...> pack(
-                std::move(func_name), std::make_tuple(std::forward<Args>(args)...));
+                std::move(func_name), std::forward_as_tuple(args...));
 
             byte_vec bytes = details::serial_adapter<Serial>::serialize_pack(pack);
             client.send(std::move(bytes));
@@ -392,31 +393,14 @@ inline namespace client
         else
         {
             const details::packed_func<R, Args...> pack(
-                std::move(func_name), std::nullopt, std::make_tuple(std::forward<Args>(args)...));
+                std::move(func_name), std::nullopt, std::forward_as_tuple(args...));
 
             byte_vec bytes = details::serial_adapter<Serial>::serialize_pack(pack);
             client.send(std::move(bytes));
         }
 
-        const auto bytes = client.receive();
-        const auto pack =
-            details::serial_adapter<Serial>::template deserialize_pack<R, Args...>(bytes);
-
-        if constexpr (std::is_void_v<R>)
-        {
-            if (!pack)
-            {
-                throw std::runtime_error(pack.get_err_mesg());
-            }
-            else
-            {
-                return;
-            }
-        }
-        else
-        {
-            return pack.get_result();
-        }
+        return details::serial_adapter<Serial>::template deserialize_pack<R, Args...>(
+            client.receive());
     }
 } // namespace client
 } // namespace rpc
