@@ -2,8 +2,7 @@ if(${BUILD_NJSON_ADAPTER})
   add_library(njson_adapter INTERFACE)
   target_include_directories(njson_adapter
                              INTERFACE "${PROJECT_SOURCE_DIR}/include")
-  target_compile_definitions(njson_adapter INTERFACE RPC_HPP_ENABLE_JSON
-                                                     RPC_HPP_JSON_USE_NJSON)
+  target_compile_definitions(njson_adapter INTERFACE RPC_HPP_ENABLE_NJSON)
   target_link_libraries(njson_adapter INTERFACE ${CMAKE_THREAD_LIBS_INIT})
 
   if(${USE_CONAN})
@@ -12,8 +11,7 @@ if(${BUILD_NJSON_ADAPTER})
     target_link_libraries(njson_adapter INTERFACE CONAN_PKG::nlohmann_json)
   elseif(${USE_VCPKG})
     find_package(nlohmann_json CONFIG REQUIRED)
-    target_link_libraries(njson_adapter INTERFACE nlohmann_json
-                                                  nlohmann_json::nlohmann_json)
+    target_link_libraries(njson_adapter INTERFACE nlohmann_json::nlohmann_json)
   else()
     find_path(njson_path nlohmann/json.hpp)
     target_include_directories(njson_adapter SYSTEM INTERFACE njson_path)
@@ -27,8 +25,7 @@ if(${BUILD_RAPIDJSON_ADAPTER})
   add_library(rpdjson_adapter INTERFACE)
   target_include_directories(rpdjson_adapter
                              INTERFACE "${PROJECT_SOURCE_DIR}/include")
-  target_compile_definitions(
-    rpdjson_adapter INTERFACE RPC_HPP_ENABLE_JSON RPC_HPP_JSON_USE_RAPIDJSON)
+  target_compile_definitions(rpdjson_adapter INTERFACE RPC_HPP_ENABLE_RAPIDJSON)
   target_link_libraries(rpdjson_adapter INTERFACE ${CMAKE_THREAD_LIBS_INIT})
 
   if(${USE_CONAN})
@@ -52,9 +49,8 @@ if(${BUILD_BOOST_JSON_ADAPTER})
   add_library(boost_json_adapter INTERFACE)
   target_include_directories(boost_json_adapter
                              INTERFACE "${PROJECT_SOURCE_DIR}/include")
-  target_compile_definitions(
-    boost_json_adapter INTERFACE RPC_HPP_ENABLE_JSON
-                                 RPC_HPP_JSON_USE_BOOST_JSON)
+  target_compile_definitions(boost_json_adapter
+                             INTERFACE RPC_HPP_ENABLE_BOOST_JSON)
   target_link_libraries(boost_json_adapter INTERFACE ${CMAKE_THREAD_LIBS_INIT})
 
   if(${USE_CONAN})

@@ -37,12 +37,26 @@
 
 #include <catch2/catch.hpp>
 
-#include "rpc_adapters/rpc_njson.hpp"
+#if defined(RPC_HPP_ENABLE_NJSON)
+#    include "rpc_adapters/rpc_njson.hpp"
+
+using rpc::adapters::njson_adapter;
+#endif
+
+#if defined(RPC_HPP_ENABLE_RAPIDJSON)
+#    include "rpc_adapters/rpc_rapidjson.hpp"
+
+using rpc::adapters::rapidjson_adapter;
+#endif
+
+#if defined(RPC_HPP_ENABLE_BOOST_JSON)
+#    include "rpc_adapters/rpc_boost_json.hpp"
+
+using rpc::adapters::boost_json_adapter;
+#endif
 
 #include "rpc.client.hpp"
 #include "test_structs.hpp"
-
-using rpc::adapters::njson_adapter;
 
 template<typename Serial>
 TestClient& GetClient();
@@ -57,6 +71,7 @@ void TestType()
     REQUIRE(result == 3);
 }
 
+#if defined(RPC_HPP_ENABLE_NJSON)
 template<>
 TestClient& GetClient<njson_adapter>()
 {
@@ -68,6 +83,35 @@ TEST_CASE("NJSON")
 {
     TestType<njson_adapter>();
 }
+#endif
+
+#if defined(RPC_HPP_ENABLE_RAPIDJSON)
+template<>
+TestClient& GetClient<rapidjson_adapter>()
+{
+    static TestClient client("127.0.0.1", "5001");
+    return client;
+}
+
+TEST_CASE("RAPIDJSON")
+{
+    TestType<rapidjson_adapter>();
+}
+#endif
+
+#if defined(RPC_HPP_ENABLE_BOOST_JSON)
+template<>
+TestClient& GetClient<boost_json_adapter>()
+{
+    static TestClient client("127.0.0.1", "5002");
+    return client;
+}
+
+TEST_CASE("BOOST_JSON")
+{
+    TestType<boost_json_adapter>();
+}
+#endif
 
 using test_serial_t = njson_adapter;
 

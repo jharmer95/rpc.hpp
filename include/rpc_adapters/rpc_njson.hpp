@@ -37,19 +37,13 @@
 
 #pragma once
 
-#if !defined(RPC_HPP_ENABLE_JSON) || !defined(RPC_HPP_JSON_USE_NJSON)
-#    error 'rpc_njson' was included without defining 'RPC_HPP_ENABLE_JSON' AND 'RPC_HPP_JSON_USE_JSON'! Please define both of these macros or do not include this header!
-#else
+#if !defined(RPC_HPP_ENABLE_NJSON)
+#    error 'rpc_njson' was included without defining 'RPC_HPP_ENABLE_NJSON' Please define this macro or do not include this header!
+#endif
 
-#    if defined(RPC_HPP_JSON_CHECK)
-#        error Only one JSON adapter may be used at a time, please define exactly one of 'RPC_HPP_JSON_USE_XXX'!
-#    else
-#        define RPC_HPP_JSON_CHECK
-#    endif
+#include "../rpc.hpp"
 
-#    include "../rpc.hpp"
-
-#    include <nlohmann/json.hpp>
+#include <nlohmann/json.hpp>
 
 namespace rpc
 {
@@ -59,7 +53,7 @@ namespace adapters
     using njson_adapter = details::serial_adapter<njson, std::string>;
 
     template<typename T>
-    void push_arg(T arg, njson& arg_arr)
+    void push_arg(const T& arg, njson& arg_arr)
     {
         using no_ref_t = std::remove_cv_t<std::remove_reference_t<T>>;
 
@@ -114,16 +108,13 @@ namespace adapters
 
             return container;
         }
+        else if constexpr (details::is_serializable_v<njson_adapter, no_ref_t>)
+        {
+            return no_ref_t::template deserialize<njson_adapter>(arg);
+        }
         else
         {
-            if constexpr (details::is_serializable_v<njson_adapter, no_ref_t>)
-            {
-                return no_ref_t::template deserialize<njson_adapter>(arg);
-            }
-            else
-            {
-                return njson_adapter::template deserialize<no_ref_t>(arg);
-            }
+            return njson_adapter::template deserialize<no_ref_t>(arg);
         }
     }
 } // namespace adapters
@@ -154,7 +145,7 @@ inline adapters::njson adapters::njson_adapter::from_bytes(std::string&& bytes)
 
 template<>
 template<typename R, typename... Args>
-adapters::njson rpc::details::pack_adapter<adapters::njson_adapter>::serialize_pack(
+adapters::njson details::pack_adapter<adapters::njson_adapter>::serialize_pack(
     const packed_func<R, Args...>& pack)
 {
     using namespace adapters;
@@ -166,7 +157,7 @@ adapters::njson rpc::details::pack_adapter<adapters::njson_adapter>::serialize_p
     auto arg_arr = njson::array();
 
     const auto& argTup = pack.get_args();
-    for_each_tuple(argTup, [&arg_arr](auto x) { push_arg(x, arg_arr); });
+    for_each_tuple(argTup, [&arg_arr](const auto& x) { push_arg(x, arg_arr); });
 
     obj["args"] = std::move(arg_arr);
 
@@ -229,4 +220,3 @@ inline std::string details::pack_adapter<adapters::njson_adapter>::get_func_name
     return serial_obj["func_name"];
 }
 } // namespace rpc
-#endif

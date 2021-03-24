@@ -46,7 +46,20 @@
 
 //#define RPC_HPP_ENABLE_SERVER_CACHE
 
-#include "rpc_adapters/rpc_njson.hpp"
+#if defined(RPC_HPP_ENABLE_NJSON)
+#    include "rpc_adapters/rpc_njson.hpp"
+
+using rpc::adapters::njson;
+using rpc::adapters::njson_adapter;
+#endif
+
+#if defined(RPC_HPP_ENABLE_RAPIDJSON)
+#    include "rpc_adapters/rpc_rapidjson.hpp"
+
+using rpc::adapters::rapidjson_adapter;
+using rpc::adapters::rapidjson_doc;
+using rpc::adapters::rapidjson_val;
+#endif
 
 #include "rpc_dispatch_helper.hpp"
 #include "test_structs.hpp"
@@ -248,7 +261,7 @@ int ReadMessageRef(TestMessage& mesg)
     {
         if (file_in >> s)
         {
-            mesg = rpc::adapters::njson_adapter::deserialize<TestMessage>(std::move(s));
+            mesg = njson_adapter::deserialize<TestMessage>(njson::parse(std::move(s)));
         }
 
         while (file_in >> s)
@@ -285,7 +298,7 @@ int WriteMessageRef(const TestMessage& mesg)
 
     try
     {
-        const std::string s = rpc::adapters::njson_adapter::serialize<TestMessage>(mesg);
+        const std::string s = njson_adapter::serialize<TestMessage>(mesg).dump();
         file_out << s << '\n';
     }
     catch (...)
@@ -315,7 +328,7 @@ int ReadMessageVec(std::vector<TestMessage>& vec, int& num_mesgs)
         {
             if (i < num_mesgs)
             {
-                vec.push_back(rpc::adapters::njson_adapter::deserialize<TestMessage>(std::move(s)));
+                vec.push_back(njson_adapter::deserialize<TestMessage>(njson::parse(std::move(s))));
             }
             else
             {
@@ -355,7 +368,7 @@ int WriteMessageVec(const std::vector<TestMessage>& vec)
     {
         try
         {
-            const std::string s = rpc::adapters::njson_adapter::serialize<TestMessage>(mesg);
+            const std::string s = njson_adapter::serialize<TestMessage>(mesg).dump();
             file_out << s << '\n';
         }
         catch (...)
@@ -524,7 +537,7 @@ void session(tcp::socket sock)
                 throw asio::system_error(error);
             }
 
-            std::string bytes(data.get(), data.get() + len);
+            typename Serial::bytes_t bytes(data.get(), data.get() + len);
             rpc::server::dispatch<Serial>(bytes);
 
 #if defined(_DEBUG) || !defined(NDEBUG)
@@ -545,11 +558,21 @@ struct port
 {
 };
 
+#if defined(RPC_HPP_ENABLE_NJSON)
 template<>
-struct port<rpc::adapters::njson_adapter>
+struct port<njson_adapter>
 {
     constexpr static uint16_t value = 5000U;
 };
+#endif
+
+#if defined(RPC_HPP_ENABLE_RAPIDJSON)
+template<>
+struct port<rapidjson_adapter>
+{
+    constexpr static uint16_t value = 5001U;
+};
+#endif
 
 template<typename Serial>
 inline constexpr uint16_t port_v = port<Serial>::value;
@@ -571,9 +594,15 @@ int main()
         asio::io_context io_context;
         RUNNING = true;
 
-        std::thread(server<rpc::adapters::njson_adapter>, std::ref(io_context)).detach();
-        std::cout << "Running njson server on port "
-                  << port_v<rpc::adapters::njson_adapter> << "...\n";
+#if defined(RPC_HPP_ENABLE_NJSON)
+        std::thread(server<njson_adapter>, std::ref(io_context)).detach();
+        std::cout << "Running njson server on port " << port_v<njson_adapter> << "...\n";
+#endif
+
+#if defined(RPC_HPP_ENABLE_RAPIDJSON)
+        std::thread(server<rapidjson_adapter>, std::ref(io_context)).detach();
+        std::cout << "Running rapidjson server on port " << port_v<rapidjson_adapter> << "...\n";
+#endif
 
         while (RUNNING)
         {
