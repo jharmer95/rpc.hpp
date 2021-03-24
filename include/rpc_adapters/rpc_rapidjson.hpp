@@ -296,17 +296,17 @@ rpdjson_doc rpdjson_adapter::from_packed_func(packed_func<R, Args...>&& pack)
 
     rpdjson_val args;
     args.SetArray();
-    unsigned i = 0;
 
     const auto& argTup = pack.get_args();
 
 #    if defined(RPC_HPP_ENABLE_POINTERS)
-    i = 0;
+    unsigned i = 0;
 
     details::for_each_tuple(argTup, [&args, &alloc, &pack, &i](auto x) {
         const auto arg_sz = pack.get_arg_arr_sz(i++);
         push_arg(x, args, arg_sz, alloc);
     });
+
 #    else
     details::for_each_tuple(argTup, [&args, &alloc](auto x) { push_arg(x, args, 0, alloc); });
 #    endif

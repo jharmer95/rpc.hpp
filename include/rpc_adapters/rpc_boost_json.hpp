@@ -211,17 +211,17 @@ bjson_val bjson_adapter::from_packed_func(packed_func<R, Args...>&& pack)
 
     ret_j["args"] = bjson::array{};
     auto& args = ret_j["args"].as_array();
-    unsigned i = 0;
 
     const auto& argTup = pack.get_args();
 
 #    if defined(RPC_HPP_ENABLE_POINTERS)
-    i = 0;
+    unsigned i = 0;
 
     details::for_each_tuple(argTup, [&args, &pack, &i](auto x) {
         const auto arg_sz = pack.get_arg_arr_sz(i++);
         push_arg(x, args, arg_sz);
     });
+
 #    else
     details::for_each_tuple(argTup, [&args](auto x) { push_arg(x, args, 0); });
 #    endif
