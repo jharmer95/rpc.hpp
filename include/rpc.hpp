@@ -1287,15 +1287,14 @@ inline namespace client
     template<typename R, typename... Args>
     packed_func<R, Args...> pack_call(std::string&& func_name, Args&&... args)
     {
-        std::array<std::any, sizeof...(Args)> argArray{ std::forward<Args>(args)... };
-
         if constexpr (std::is_void_v<R>)
         {
-            return packed_func<void, Args...>(std::move(func_name), argArray);
+            return packed_func<void, Args...>(std::move(func_name), std::forward_as_tuple(args...));
         }
         else
         {
-            return packed_func<R, Args...>(std::move(func_name), std::nullopt, argArray);
+            return packed_func<R, Args...>(
+                std::move(func_name), std::nullopt, std::forward_as_tuple(args...));
         }
     }
 #endif

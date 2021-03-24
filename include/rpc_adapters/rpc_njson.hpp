@@ -179,17 +179,17 @@ njson njson_adapter::from_packed_func(packed_func<R, Args...>&& pack)
     }
 
     ret_j["args"] = njson::array();
-    unsigned i = 0;
 
     const auto& argTup = pack.get_args();
 
 #    if defined(RPC_HPP_ENABLE_POINTERS)
-    i = 0;
+    unsigned i = 0;
 
     details::for_each_tuple(argTup, [&ret_j, &pack, &i](auto x) {
         const auto arg_sz = pack.get_arg_arr_sz(i++);
         push_arg(x, ret_j["args"], arg_sz);
     });
+
 #    else
     details::for_each_tuple(argTup, [&ret_j](auto x) { push_arg(x, ret_j["args"], 0); });
 #    endif
@@ -469,17 +469,17 @@ byte_vec generic_serial_adapter::from_packed_func(packed_func<R, Args...>&& pack
     }
 
     ret_j["args"] = njson::array();
-    unsigned i = 0;
 
     const auto& argTup = pack.get_args();
 
 #        if defined(RPC_HPP_ENABLE_POINTERS)
-    i = 0;
+    unsigned i = 0;
 
     details::for_each_tuple(argTup, [&ret_j, &pack, &i](auto x) {
         const auto arg_sz = pack.get_arg_arr_sz(i++);
         push_arg(x, ret_j["args"], arg_sz);
     });
+
 #        else
     details::for_each_tuple(argTup, [&ret_j](auto x) { push_arg(x, ret_j["args"], 0); });
 #        endif
