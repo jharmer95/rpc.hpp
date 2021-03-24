@@ -48,21 +48,6 @@
 
 namespace rpc
 {
-using byte_vec = std::vector<uint8_t>;
-
-enum class serial_t : uint8_t
-{
-    binary,
-    json,
-    unknown = 0xFFU,
-};
-
-template<serial_t Serial, typename T>
-[[nodiscard]] byte_vec serialize(const T& val);
-
-template<serial_t Serial, typename T>
-[[nodiscard]] T deserialize(byte_vec&& bytes);
-
 namespace details
 {
     template<typename, typename T>
@@ -115,14 +100,15 @@ namespace details
         static constexpr bool value = type::value;
     };
 
-    template<serial_t Serial, typename Value>
-    struct is_serializable : std::integral_constant<bool,
-                                 is_serializable_base<Value, byte_vec(const Value&)>::value
-                                     && is_deserializable_base<Value, Value(byte_vec&&)>::value>
+    template<typename Serial, typename Value>
+    struct is_serializable
+        : std::integral_constant<bool,
+              is_serializable_base<Value, typename Serial::serial_t(const Value&)>::value
+                  && is_deserializable_base<Value, Value(const typename Serial::serial_t&)>::value>
     {
     };
 
-    template<serial_t Serial, typename Value>
+    template<typename Serial, typename Value>
     inline constexpr bool is_serializable_v = is_serializable<Serial, Value>::value;
 
     template<typename C>
@@ -321,17 +307,37 @@ namespace details
         packed_func& operator=(packed_func&&) & = default;
     };
 
-    template<serial_t Serial>
-    class serial_adapter
+    template<typename T_Serial, typename T_Bytes = std::string>
+    struct serial_adapter
+    {
+        using serial_t = T_Serial;
+        using bytes_t = T_Bytes;
+
+        template<typename T>
+        [[nodiscard]] static serial_t serialize(const T& val);
+
+        template<typename T>
+        [[nodiscard]] static T deserialize(const serial_t& serial_obj);
+
+        [[nodiscard]] static bytes_t to_bytes(const serial_t& serial_obj);
+        [[nodiscard]] static serial_t from_bytes(const bytes_t& bytes);
+        [[nodiscard]] static bytes_t to_bytes(serial_t&& serial_obj);
+        [[nodiscard]] static serial_t from_bytes(bytes_t&& bytes);
+    };
+
+    template<typename Serial>
+    class pack_adapter
     {
     public:
         template<typename R, typename... Args>
-        [[nodiscard]] static byte_vec serialize_pack(const packed_func<R, Args...>& pack);
+        [[nodiscard]] static typename Serial::serial_t serialize_pack(
+            const packed_func<R, Args...>& pack);
 
         template<typename R, typename... Args>
-        [[nodiscard]] static packed_func<R, Args...> deserialize_pack(byte_vec&& bytes);
+        [[nodiscard]] static packed_func<R, Args...> deserialize_pack(
+            const typename Serial::serial_t& serial_obj);
 
-        [[nodiscard]] static std::string get_func_name(const byte_vec& bytes);
+        [[nodiscard]] static std::string get_func_name(typename const Serial::serial_t& serial_obj);
     };
 } // namespace details
 
@@ -355,15 +361,17 @@ namespace server
         }
     }
 
-    template<serial_t Serial>
-    void dispatch(byte_vec& bytes);
+    template<typename Serial>
+    void dispatch(typename Serial::bytes_t& bytes);
 
-    template<serial_t Serial, typename R, typename... Args>
-    void dispatch_func(R (*func)(Args...), byte_vec& bytes)
+    template<typename Serial, typename R, typename... Args>
+    void dispatch_func(R (*func)(Args...), typename Serial::serial_t& serial_obj)
     {
-        auto pack = details::serial_adapter<Serial>::template deserialize_pack<R, Args...>(std::move(bytes));
+        auto pack =
+            details::pack_adapter<Serial>::template deserialize_pack<R, Args...>(serial_obj);
+
         run_callback(func, pack);
-        bytes = details::serial_adapter<Serial>::serialize_pack(pack);
+        serial_obj = details::pack_adapter<Serial>::template serialize_pack<R, Args...>(pack);
     }
 } // namespace server
 
@@ -373,34 +381,32 @@ inline namespace client
     {
     public:
         virtual ~client_interface() = default;
-        virtual void send(const byte_vec& mesg) = 0;
-        virtual void send(byte_vec&& mesg) = 0;
-        virtual byte_vec receive() = 0;
+        virtual void send(const std::string& mesg) = 0;
+        virtual void send(std::string&& mesg) = 0;
+        virtual std::string receive() = 0;
     };
 
-    template<serial_t Serial, typename R = void, typename... Args>
+    template<typename Serial, typename R = void, typename... Args>
     details::packed_func<R, Args...> call_func(
         client_interface& client, std::string&& func_name, Args&&... args)
     {
         if constexpr (std::is_void_v<R>)
         {
-            const details::packed_func<R, Args...> pack(
+            const details::packed_func<void, Args...> pack(
                 std::move(func_name), std::forward_as_tuple(args...));
 
-            byte_vec bytes = details::serial_adapter<Serial>::serialize_pack(pack);
-            client.send(std::move(bytes));
+            client.send(Serial::to_bytes(details::pack_adapter<Serial>::serialize_pack(pack)));
         }
         else
         {
             const details::packed_func<R, Args...> pack(
                 std::move(func_name), std::nullopt, std::forward_as_tuple(args...));
 
-            byte_vec bytes = details::serial_adapter<Serial>::serialize_pack(pack);
-            client.send(std::move(bytes));
+            client.send(Serial::to_bytes(details::pack_adapter<Serial>::serialize_pack(pack)));
         }
 
-        return details::serial_adapter<Serial>::template deserialize_pack<R, Args...>(
-            client.receive());
+        return details::pack_adapter<Serial>::template deserialize_pack<R, Args...>(
+            Serial::from_bytes(client.receive()));
     }
 } // namespace client
 } // namespace rpc

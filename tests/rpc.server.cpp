@@ -248,8 +248,7 @@ int ReadMessageRef(TestMessage& mesg)
     {
         if (file_in >> s)
         {
-            rpc::byte_vec bytes(s.begin(), s.end());
-            mesg = rpc::deserialize<rpc::serial_t::json, TestMessage>(std::move(bytes));
+            mesg = rpc::adapters::njson_adapter::deserialize<TestMessage>(std::move(s));
         }
 
         while (file_in >> s)
@@ -286,8 +285,7 @@ int WriteMessageRef(const TestMessage& mesg)
 
     try
     {
-        rpc::byte_vec bytes = rpc::serialize<rpc::serial_t::json, TestMessage>(mesg);
-        const std::string s(bytes.begin(), bytes.end());
+        const std::string s = rpc::adapters::njson_adapter::serialize<TestMessage>(mesg);
         file_out << s << '\n';
     }
     catch (...)
@@ -317,8 +315,7 @@ int ReadMessageVec(std::vector<TestMessage>& vec, int& num_mesgs)
         {
             if (i < num_mesgs)
             {
-                rpc::byte_vec bytes(s.begin(), s.end());
-                vec.push_back(rpc::deserialize<rpc::serial_t::json, TestMessage>(std::move(bytes)));
+                vec.push_back(rpc::adapters::njson_adapter::deserialize<TestMessage>(std::move(s)));
             }
             else
             {
@@ -358,8 +355,7 @@ int WriteMessageVec(const std::vector<TestMessage>& vec)
     {
         try
         {
-            rpc::byte_vec bytes = rpc::serialize<rpc::serial_t::json, TestMessage>(mesg);
-            const std::string s(bytes.begin(), bytes.end());
+            const std::string s = rpc::adapters::njson_adapter::serialize<TestMessage>(mesg);
             file_out << s << '\n';
         }
         catch (...)
@@ -488,22 +484,23 @@ void HashComplexRef(ComplexObject& cx, std::string& hashStr)
     hashStr = hash.str();
 }
 
-template<rpc::serial_t Serial>
-void rpc::server::dispatch(byte_vec& bytes)
+template<typename Serial>
+void rpc::server::dispatch(typename Serial::bytes_t& bytes)
 {
-    const auto func_name = details::serial_adapter<Serial>::get_func_name(bytes);
+    auto serial_obj = Serial::from_bytes(bytes);
+    const auto func_name = details::pack_adapter<Serial>::get_func_name(serial_obj);
 
     RPC_ATTACH_FUNCS(KillServer, ThrowError, SimpleSum, AddOneToEachRef, ReadMessageRef,
         WriteMessageRef, ReadMessageVec, WriteMessageVec, ClearBus, FibonacciRef, SquareRootRef,
         RandInt, HashComplexRef)
 
-    RPC_ATTACH_CACHED_FUNCS(SimpleSum, StrLen, AddOneToEach, Fibonacci, Average, StdDev,
+    RPC_ATTACH_FUNCS(SimpleSum, StrLen, AddOneToEach, Fibonacci, Average, StdDev,
         AverageContainer<uint64_t>, AverageContainer<double>, HashComplex)
 
     throw std::runtime_error("RPC error: Called function: \"" + func_name + "\" not found!");
 }
 
-template<rpc::serial_t Serial>
+template<typename Serial>
 void session(tcp::socket sock)
 {
     constexpr auto BUFFER_SZ = 64U * 1024UL;
@@ -527,11 +524,11 @@ void session(tcp::socket sock)
                 throw asio::system_error(error);
             }
 
-            rpc::byte_vec bytes(data.get(), data.get() + len);
+            std::string bytes(data.get(), data.get() + len);
             rpc::server::dispatch<Serial>(bytes);
 
 #if defined(_DEBUG) || !defined(NDEBUG)
-            std::cout << "Return message: \"" << std::string(bytes.begin(), bytes.end()) << "\"\n";
+            std::cout << "Return message: \"" << bytes << "\"\n";
 #endif
 
             write(sock, asio::buffer(bytes, bytes.size()));
@@ -543,21 +540,21 @@ void session(tcp::socket sock)
     }
 }
 
-template<rpc::serial_t Serial>
+template<typename Serial>
 struct port
 {
 };
 
 template<>
-struct port<rpc::serial_t::json>
+struct port<rpc::adapters::njson_adapter>
 {
     constexpr static uint16_t value = 5000U;
 };
 
-template<rpc::serial_t Serial>
+template<typename Serial>
 inline constexpr uint16_t port_v = port<Serial>::value;
 
-template<rpc::serial_t Serial>
+template<typename Serial>
 [[noreturn]] void server(asio::io_context& io_context)
 {
     while (true)
@@ -574,8 +571,9 @@ int main()
         asio::io_context io_context;
         RUNNING = true;
 
-        std::thread(server<rpc::serial_t::json>, std::ref(io_context)).detach();
-        std::cout << "Running njson server on port " << port_v<rpc::serial_t::json> << "...\n";
+        std::thread(server<rpc::adapters::njson_adapter>, std::ref(io_context)).detach();
+        std::cout << "Running njson server on port "
+                  << port_v<rpc::adapters::njson_adapter> << "...\n";
 
         while (RUNNING)
         {

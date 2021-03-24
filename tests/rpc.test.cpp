@@ -42,32 +42,34 @@
 #include "rpc.client.hpp"
 #include "test_structs.hpp"
 
-template<rpc::serial_t Serial>
+using rpc::adapters::njson_adapter;
+
+template<typename Serial>
 TestClient& GetClient();
 
-template<rpc::serial_t Serial>
+template<typename Serial>
 void TestType()
 {
     auto& client = GetClient<Serial>();
     const auto result =
-        rpc::client::call_func<rpc::serial_t::json, int>(client, "SimpleSum", 1, 2).get_result();
+        rpc::client::call_func<njson_adapter, int>(client, "SimpleSum", 1, 2).get_result();
 
     REQUIRE(result == 3);
 }
 
 template<>
-TestClient& GetClient<rpc::serial_t::json>()
+TestClient& GetClient<njson_adapter>()
 {
     static TestClient client("127.0.0.1", "5000");
     return client;
 }
 
-TEST_CASE("JSON")
+TEST_CASE("NJSON")
 {
-    TestType<rpc::serial_t::json>();
+    TestType<njson_adapter>();
 }
 
-constexpr auto test_serial_t = rpc::serial_t::json;
+using test_serial_t = njson_adapter;
 
 #if defined(RPC_HPP_ENABLE_POINTERS)
 TEST_CASE("PtrSum")
@@ -404,5 +406,5 @@ TEST_CASE("KillServer", "[!mayfail]")
     {
     }
 
-    REQUIRE_THROWS(TestType<rpc::serial_t::json>());
+    REQUIRE_THROWS(TestType<njson_adapter>());
 }

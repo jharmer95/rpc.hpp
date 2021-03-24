@@ -82,7 +82,8 @@ struct ComplexObject
 
 #if defined(RPC_HPP_JSON_USE_NJSON)
 template<>
-inline rpc::byte_vec rpc::serialize<rpc::serial_t::json>(const TestMessage& val)
+template<>
+inline njson rpc::adapters::njson_adapter::serialize(const TestMessage& val)
 {
     njson obj_j;
     obj_j["flag1"] = val.flag1;
@@ -96,15 +97,13 @@ inline rpc::byte_vec rpc::serialize<rpc::serial_t::json>(const TestMessage& val)
         obj_j["data"].push_back(val.data[i]);
     }
 
-    auto obj_str = obj_j.dump();
-    return byte_vec(obj_str.begin(), obj_str.end());
+    return obj_j;
 }
 
 template<>
-inline TestMessage rpc::deserialize<rpc::serial_t::json>(rpc::byte_vec&& bytes)
+template<>
+inline TestMessage rpc::adapters::njson_adapter::deserialize(const njson& serial_obj)
 {
-    const njson serial_obj = njson::parse(std::move(bytes));
-
     TestMessage mesg;
     mesg.flag1 = serial_obj["flag1"].get<bool>();
     mesg.flag2 = serial_obj["flag2"].get<bool>();
@@ -115,7 +114,8 @@ inline TestMessage rpc::deserialize<rpc::serial_t::json>(rpc::byte_vec&& bytes)
 }
 
 template<>
-inline rpc::byte_vec rpc::serialize<rpc::serial_t::json>(const ComplexObject& val)
+template<>
+inline njson rpc::adapters::njson_adapter::serialize(const ComplexObject& val)
 {
     njson obj_j;
     obj_j["id"] = val.id;
@@ -124,15 +124,13 @@ inline rpc::byte_vec rpc::serialize<rpc::serial_t::json>(const ComplexObject& va
     obj_j["flag2"] = val.flag2;
     obj_j["vals"] = val.vals;
 
-    auto obj_str = obj_j.dump();
-    return byte_vec(obj_str.begin(), obj_str.end());
+    return obj_j;
 }
 
 template<>
-inline ComplexObject rpc::deserialize<rpc::serial_t::json>(rpc::byte_vec&& bytes)
+template<>
+inline ComplexObject rpc::adapters::njson_adapter::deserialize(const njson& serial_obj)
 {
-    const njson serial_obj = njson::parse(std::move(bytes));
-
     ComplexObject cx;
     cx.id = serial_obj["id"].get<int>();
     cx.name = serial_obj["name"].get<std::string>();

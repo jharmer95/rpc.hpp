@@ -52,20 +52,20 @@ public:
         asio::connect(m_socket, m_resolver.resolve(host, port));
     }
 
-    void send(const rpc::byte_vec& mesg) override
+    void send(const std::string& mesg) override
     {
         asio::write(m_socket, asio::buffer(mesg, mesg.size()));
     }
 
-    void send(rpc::byte_vec&& mesg) override
+    void send(std::string&& mesg) override
     {
         asio::write(m_socket, asio::buffer(mesg, mesg.size()));
     }
 
-    [[nodiscard]] rpc::byte_vec receive() override
+    [[nodiscard]] std::string receive() override
     {
         const auto numBytes = m_socket.read_some(asio::buffer(m_buffer, 64U * 1024UL));
-        return rpc::byte_vec(m_buffer, m_buffer + numBytes);
+        return std::string(m_buffer, m_buffer + numBytes);
     }
 
     [[nodiscard]] std::string getIP() const
