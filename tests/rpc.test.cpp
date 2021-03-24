@@ -52,7 +52,7 @@ using rpc::adapters::rapidjson_adapter;
 #if defined(RPC_HPP_ENABLE_BOOST_JSON)
 #    include "rpc_adapters/rpc_boost_json.hpp"
 
-using rpc::adapters::boost_json_adapter;
+using rpc::adapters::bjson_adapter;
 #endif
 
 #include "rpc.client.hpp"
@@ -101,7 +101,7 @@ TEST_CASE("RAPIDJSON")
 
 #if defined(RPC_HPP_ENABLE_BOOST_JSON)
 template<>
-TestClient& GetClient<boost_json_adapter>()
+TestClient& GetClient<bjson_adapter>()
 {
     static TestClient client("127.0.0.1", "5002");
     return client;
@@ -109,11 +109,11 @@ TestClient& GetClient<boost_json_adapter>()
 
 TEST_CASE("BOOST_JSON")
 {
-    TestType<boost_json_adapter>();
+    TestType<bjson_adapter>();
 }
 #endif
 
-using test_serial_t = njson_adapter;
+using test_serial_t = rapidjson_adapter;
 
 #if defined(RPC_HPP_ENABLE_POINTERS)
 TEST_CASE("PtrSum")

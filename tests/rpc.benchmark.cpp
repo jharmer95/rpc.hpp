@@ -53,7 +53,7 @@ using rpc::adapters::rapidjson_adapter;
 #if defined(RPC_HPP_ENABLE_BOOST_JSON)
 #    include "rpc_adapters/rpc_boost_json.hpp"
 
-using rpc::adapters::boost_json_adapter;
+using rpc::adapters::bjson_adapter;
 #endif
 
 #include "rpc.client.hpp"
@@ -80,7 +80,7 @@ TestClient& GetClient<rapidjson_adapter>()
 
 #if defined(RPC_HPP_ENABLE_BOOST_JSON)
 template<>
-TestClient& GetClient<boost_json_adapter>()
+TestClient& GetClient<bjson_adapter>()
 {
     static TestClient client("127.0.0.1", "5002");
     return client;
@@ -118,8 +118,7 @@ TEST_CASE("By Value (simple)", "[value][simple][cached]")
 
     BENCHMARK("rpc.hpp (asio::tcp, Boost.JSON)")
     {
-        test = rpc::call_func<boost_json_adapter, uint64_t>(
-            GetClient<boost_json_adapter>(), "Fibonacci", 20)
+        test = rpc::call_func<bjson_adapter, uint64_t>(GetClient<bjson_adapter>(), "Fibonacci", 20)
                    .get_result();
     };
 
@@ -180,8 +179,8 @@ TEST_CASE("By Value (complex)", "[value][complex][cached]")
         cx.name = "Franklin D. Roosevelt";
         cx.vals = { 0, 1, 4, 6, 7, 8, 11, 15, 17, 22, 25, 26 };
 
-        test = rpc::call_func<boost_json_adapter, std::string>(
-            GetClient<boost_json_adapter>(), "HashComplex", cx)
+        test = rpc::call_func<bjson_adapter, std::string>(
+            GetClient<bjson_adapter>(), "HashComplex", cx)
                    .get_result();
     };
 
@@ -222,9 +221,8 @@ TEST_CASE("By Value (many)", "[value][many][cached]")
 
     BENCHMARK("rpc.hpp (asio::tcp, Boost.JSON)")
     {
-        test = rpc::call_func<boost_json_adapter, double>(GetClient<boost_json_adapter>(), "StdDev",
-            55.65, 125.325, 552.125, 12.767, 2599.6, 1245.125663, 9783.49, 125.12, 553.3333333333,
-            2266.1)
+        test = rpc::call_func<bjson_adapter, double>(GetClient<bjson_adapter>(), "StdDev", 55.65,
+            125.325, 552.125, 12.767, 2599.6, 1245.125663, 9783.49, 125.12, 553.3333333333, 2266.1)
                    .get_result();
     };
 
@@ -266,9 +264,8 @@ TEST_CASE("By Reference (simple)", "[ref][simple]")
     BENCHMARK("rpc.hpp (asio::tcp, Boost.JSON)")
     {
         uint64_t num = 20;
-        test =
-            rpc::call_func<boost_json_adapter>(GetClient<boost_json_adapter>(), "FibonacciRef", num)
-                .get_arg<0>();
+        test = rpc::call_func<bjson_adapter>(GetClient<bjson_adapter>(), "FibonacciRef", num)
+                   .get_arg<0>();
     };
 
     REQUIRE(expected == test);
@@ -327,8 +324,7 @@ TEST_CASE("By Reference (complex)", "[ref][complex]")
         cx.name = "Franklin D. Roosevelt";
         cx.vals = { 0, 1, 4, 6, 7, 8, 11, 15, 17, 22, 25, 26 };
 
-        test = rpc::call_func<boost_json_adapter>(
-            GetClient<boost_json_adapter>(), "HashComplexRef", cx, test)
+        test = rpc::call_func<bjson_adapter>(GetClient<bjson_adapter>(), "HashComplexRef", cx, test)
                    .get_arg<1>();
     };
 
@@ -423,8 +419,8 @@ TEST_CASE("By Reference (many)", "[ref][many]")
         double n9 = 553.3333333333;
         double n10 = 2266.1;
 
-        const auto pack = rpc::call_func<boost_json_adapter>(GetClient<boost_json_adapter>(),
-            "SquareRootRef", n1, n2, n3, n4, n5, n6, n7, n8, n9, n10);
+        const auto pack = rpc::call_func<bjson_adapter>(
+            GetClient<bjson_adapter>(), "SquareRootRef", n1, n2, n3, n4, n5, n6, n7, n8, n9, n10);
 
         n1 = pack.get_arg<0>();
         n2 = pack.get_arg<1>();
@@ -482,8 +478,8 @@ TEST_CASE("With Container", "[container][cached]")
         const std::vector<double> vec{ 55.65, 125.325, 552.125, 12.767, 2599.6, 1245.125663,
             9783.49, 125.12, 553.3333333333, 2266.1 };
 
-        test = rpc::call_func<boost_json_adapter, double>(
-            GetClient<boost_json_adapter>(), "AverageContainer<double>", vec)
+        test = rpc::call_func<bjson_adapter, double>(
+            GetClient<bjson_adapter>(), "AverageContainer<double>", vec)
                    .get_result();
     };
 #endif
@@ -532,19 +528,19 @@ TEST_CASE("Sequential", "[sequential][cached]")
 #if defined(RPC_HPP_ENABLE_BOOST_JSON)
     BENCHMARK("rpc.hpp (asio::tcp, bjson)")
     {
-        auto vec = rpc::call_func<boost_json_adapter, std::vector<uint64_t>>(
-            GetClient<boost_json_adapter>(), "RandInt", 5, 30, 1000)
+        auto vec = rpc::call_func<bjson_adapter, std::vector<uint64_t>>(
+            GetClient<bjson_adapter>(), "RandInt", 5, 30, 1000)
                        .get_result();
 
         for (auto& val : vec)
         {
-            val = rpc::call_func<boost_json_adapter, uint64_t>(
-                GetClient<boost_json_adapter>(), "Fibonacci", val)
+            val = rpc::call_func<bjson_adapter, uint64_t>(
+                GetClient<bjson_adapter>(), "Fibonacci", val)
                       .get_result();
         }
 
-        return rpc::call_func<boost_json_adapter, double>(
-            GetClient<boost_json_adapter>(), "AverageContainer<uint64_t>", vec)
+        return rpc::call_func<bjson_adapter, double>(
+            GetClient<bjson_adapter>(), "AverageContainer<uint64_t>", vec)
             .get_result();
     };
 #endif
@@ -585,8 +581,7 @@ TEST_CASE("By Pointer (simple)", "[pointer][simple]")
     BENCHMARK("rpc.hpp (asio::tcp, Boost.JSON)")
     {
         uint64_t num = 20;
-        test = *rpc::call_func<boost_json_adapter>(
-            GetClient<boost_json_adapter>(), "FibonacciPtr", &num)
+        test = *rpc::call_func<bjson_adapter>(GetClient<bjson_adapter>(), "FibonacciPtr", &num)
                     .get_arg<0>();
     };
 
@@ -653,8 +648,8 @@ TEST_CASE("By Pointer (complex)", "[pointer][complex]")
 
         char hash[256]{};
 
-        test = std::string(rpc::call_func<boost_json_adapter>(
-                               GetClient<boost_json_adapter>(), "HashComplexPtr", &cx, hash)
+        test = std::string(rpc::call_func<bjson_adapter>(
+                               GetClient<bjson_adapter>(), "HashComplexPtr", &cx, hash)
                                .get_arg
                        < char*,
                    1)
@@ -752,8 +747,8 @@ TEST_CASE("By Pointer (many)", "[pointer][many]")
         double n9 = 553.3333333333;
         double n10 = 2266.1;
 
-        const auto pack = rpc::call_func<boost_json_adapter>(GetClient<boost_json_adapter>(),
-            "SquareRootPtr", &n1, &n2, &n3, &n4, &n5, &n6, &n7, &n8, &n9, &n10);
+        const auto pack = rpc::call_func<bjson_adapter>(GetClient<bjson_adapter>(), "SquareRootPtr",
+            &n1, &n2, &n3, &n4, &n5, &n6, &n7, &n8, &n9, &n10);
 
         n1 = *pack.get_arg<0>();
         n2 = *pack.get_arg<1>();

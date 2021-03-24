@@ -53,32 +53,32 @@ namespace adapters
     using njson_adapter = details::serial_adapter<njson, std::string>;
 
     template<typename T>
-    void push_arg(const T& arg, njson& arg_arr)
+    void push_arg(T&& arg, njson& arg_arr)
     {
         using no_ref_t = std::remove_cv_t<std::remove_reference_t<T>>;
 
         if constexpr (std::is_arithmetic_v<no_ref_t> || std::is_same_v<no_ref_t, std::string>)
         {
-            arg_arr.push_back(arg);
+            arg_arr.push_back(std::forward<T>(arg));
         }
         else if constexpr (details::is_container_v<no_ref_t>)
         {
             njson arr = njson::array();
 
-            for (const auto& val : arg)
+            for (auto&& val : arg)
             {
-                push_arg(val, arr);
+                push_arg(std::forward<decltype(val)>(val), arr);
             }
 
-            arg_arr.push_back(arr);
+            arg_arr.push_back(std::move(arr));
         }
         else if constexpr (details::is_serializable_v<njson_adapter, no_ref_t>)
         {
-            arg_arr.push_back(no_ref_t::template serialize<njson_adapter>(arg));
+            arg_arr.push_back(no_ref_t::template serialize<njson_adapter>(std::forward<T>(arg)));
         }
         else
         {
-            arg_arr.push_back(njson_adapter::template serialize<no_ref_t>(arg));
+            arg_arr.push_back(njson_adapter::template serialize<no_ref_t>(std::forward<T>(arg)));
         }
     }
 
@@ -96,6 +96,7 @@ namespace adapters
         else if constexpr (details::is_container_v<no_ref_t>)
         {
             using value_t = typename no_ref_t::value_type;
+
             no_ref_t container;
             container.reserve(arg.size());
 
@@ -157,7 +158,8 @@ adapters::njson details::pack_adapter<adapters::njson_adapter>::serialize_pack(
     auto arg_arr = njson::array();
 
     const auto& argTup = pack.get_args();
-    for_each_tuple(argTup, [&arg_arr](const auto& x) { push_arg(x, arg_arr); });
+    for_each_tuple(
+        argTup, [&arg_arr](auto&& x) { push_arg(std::forward<decltype(x)>(x), arg_arr); });
 
     obj["args"] = std::move(arg_arr);
 
@@ -208,7 +210,11 @@ details::packed_func<R, Args...> details::pack_adapter<adapters::njson_adapter>:
 
         packed_func<R, Args...> pack(serial_obj["func_name"], std::nullopt, std::move(args));
 
-        pack.set_err_mesg(serial_obj["err_mesg"]);
+        if (serial_obj.contains("err_mesg"))
+        {
+            pack.set_err_mesg(serial_obj["err_mesg"]);
+        }
+
         return pack;
     }
 }

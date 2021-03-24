@@ -61,6 +61,15 @@ using rpc::adapters::rapidjson_doc;
 using rpc::adapters::rapidjson_val;
 #endif
 
+#if defined(RPC_HPP_ENABLE_BOOST_JSON)
+#    include "rpc_adapters/rpc_boost_json.hpp"
+
+namespace bjson = boost::json;
+using rpc::adapters::bjson_adapter;
+using rpc::adapters::bjson_obj;
+using rpc::adapters::bjson_val;
+#endif
+
 #include "rpc_dispatch_helper.hpp"
 #include "test_structs.hpp"
 
@@ -574,6 +583,14 @@ struct port<rapidjson_adapter>
 };
 #endif
 
+#if defined(RPC_HPP_ENABLE_BOOST_JSON)
+template<>
+struct port<bjson_adapter>
+{
+    constexpr static uint16_t value = 5002U;
+};
+#endif
+
 template<typename Serial>
 inline constexpr uint16_t port_v = port<Serial>::value;
 
@@ -602,6 +619,11 @@ int main()
 #if defined(RPC_HPP_ENABLE_RAPIDJSON)
         std::thread(server<rapidjson_adapter>, std::ref(io_context)).detach();
         std::cout << "Running rapidjson server on port " << port_v<rapidjson_adapter> << "...\n";
+#endif
+
+#if defined(RPC_HPP_ENABLE_BOOST_JSON)
+        std::thread(server<bjson_adapter>, std::ref(io_context)).detach();
+        std::cout << "Running Boost.JSON server on port " << port_v<bjson_adapter> << "...\n";
 #endif
 
         while (RUNNING)
