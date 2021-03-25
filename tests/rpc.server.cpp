@@ -37,10 +37,12 @@
 
 #include <asio.hpp>
 
-#include <atomic>
 #include <cmath>
+#include <condition_variable>
+#include <cstdint>
 #include <fstream>
 #include <iostream>
+#include <mutex>
 #include <sstream>
 #include <thread>
 
@@ -75,152 +77,23 @@ using rpc::adapters::bjson_val;
 
 using asio::ip::tcp;
 
-static std::atomic_bool RUNNING = false;
+static bool RUNNING = false;
 
-/*
-#if defined(RPC_HPP_ENABLE_POINTERS)
-constexpr void PtrSum(int* const n1, const int n2)
-{
-    *n1 += n2;
-}
-
-// cached
-constexpr int AddAllPtr(const int* const vals, const int num_vals)
-{
-    int sum = 0;
-
-    for (int i = 0; i < num_vals; ++i)
-    {
-        sum += vals[i];
-    }
-
-    return sum;
-}
-
-int ReadMessagePtr(TestMessage* const mesg_arr, int* const num_mesgs)
-{
-    std::ifstream file_in("bus.txt");
-
-    if (!file_in.is_open())
-    {
-        return 2;
-    }
-
-    std::stringstream ss;
-    std::string s;
-    int i = 0;
-
-    try
-    {
-        while (file_in >> s)
-        {
-            if (i < *num_mesgs)
-            {
-                mesg_arr[i++] = rpc::deserialize<njson_serial_t, TestMessage>(njson::parse(s));
-            }
-            else
-            {
-                ss << s << '\n';
-            }
-        }
-    }
-    catch (...)
-    {
-        *num_mesgs = i;
-        return 1;
-    }
-
-    file_in.close();
-    std::ofstream file_out("bus.txt");
-
-    file_out << ss.str();
-    return 0;
-}
-
-int WriteMessagePtr(const TestMessage* const mesg_arr, int* const num_mesgs)
-{
-    std::ofstream file_out("bus.txt", std::fstream::out | std::fstream::app);
-
-    for (int i = 0; i < *num_mesgs; ++i)
-    {
-        try
-        {
-            file_out << rpc::serialize<njson_serial_t, TestMessage>(mesg_arr[i]).dump() << '\n';
-        }
-        catch (...)
-        {
-            *num_mesgs = i;
-            return 1;
-        }
-    }
-
-    return 0;
-}
-
-void FibonacciPtr(uint64_t* number)
-{
-    if (*number < 2)
-    {
-        *number = 1;
-    }
-    else
-    {
-        uint64_t n1 = *number - 1;
-        uint64_t n2 = *number - 2;
-        FibonacciPtr(&n1);
-        FibonacciPtr(&n2);
-        *number = n1 + n2;
-    }
-}
-
-void SquareRootPtr(double* const n1, double* const n2, double* const n3, double* const n4,
-    double* const n5, double* const n6, double* const n7, double* const n8, double* const n9,
-    double* const n10)
-{
-    *n1 = std::sqrt(*n1);
-    *n2 = std::sqrt(*n2);
-    *n3 = std::sqrt(*n3);
-    *n4 = std::sqrt(*n4);
-    *n5 = std::sqrt(*n5);
-    *n6 = std::sqrt(*n6);
-    *n7 = std::sqrt(*n7);
-    *n8 = std::sqrt(*n8);
-    *n9 = std::sqrt(*n9);
-    *n10 = std::sqrt(*n10);
-}
-
-void HashComplexPtr(const ComplexObject* const cx, char* const hashStr)
-{
-    std::stringstream hash;
-    std::array<uint8_t, 12> valsCpy = cx->vals;
-
-    if (cx->flag1)
-    {
-        std::reverse(valsCpy.begin(), valsCpy.end());
-    }
-
-    for (size_t i = 0; i < cx->name.size(); ++i)
-    {
-        const int acc =
-            cx->flag2 ? (cx->name[i] + valsCpy[i % 12]) : (cx->name[i] - valsCpy[i % 12]);
-        hash << std::hex << acc;
-    }
-
-    auto str = hash.str();
-    std::copy(str.begin(), str.end(), hashStr);
-    hashStr[str.size()] = '\0';
-}
-#endif
-*/
+static std::mutex MUTEX;
+static std::condition_variable cv;
 
 void ThrowError()
 {
     throw std::runtime_error("THIS IS A TEST ERROR!");
 }
 
+// NOTE: This function is only for testing purposes. Obviously you would not want this in a production server!
 void KillServer()
 {
+    std::unique_lock lk{ MUTEX };
     RUNNING = false;
+    lk.unlock();
+    cv.notify_one();
 }
 
 // cached
@@ -549,7 +422,7 @@ void session(tcp::socket sock)
             typename Serial::bytes_t bytes(data.get(), data.get() + len);
             rpc::server::dispatch<Serial>(bytes);
 
-#if defined(_DEBUG) || !defined(NDEBUG)
+#if !defined(NDEBUG)
             std::cout << "Return message: \"" << bytes << "\"\n";
 #endif
 
@@ -626,9 +499,9 @@ int main()
         std::cout << "Running Boost.JSON server on port " << port_v<bjson_adapter> << "...\n";
 #endif
 
-        while (RUNNING)
-        {
-        }
+        std::unique_lock lk{ MUTEX };
+        cv.wait(lk, [] { return !RUNNING; });
+        return 0;
     }
     catch (const std::exception& ex)
     {
