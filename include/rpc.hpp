@@ -37,13 +37,14 @@
 
 #pragma once
 
-#include <cstdint>
+#include <cstddef>
 #include <optional>
 #include <stdexcept>
 #include <string>
 #include <utility>
 #include <tuple>
 #include <type_traits>
+#include <unordered_map>
 #include <vector>
 
 namespace rpc
@@ -363,6 +364,42 @@ namespace server
 
     template<typename Serial>
     void dispatch(typename Serial::bytes_t& bytes);
+
+#if defined(RPC_HPP_ENABLE_SERVER_CACHE)
+    template<typename Serial, typename R, typename... Args>
+    void dispatch_cached_func(R (*func)(Args...), typename Serial::serial_t& serial_obj)
+    {
+        static std::unordered_map<typename Serial::bytes_t, R> result_cache;
+
+        auto pack =
+            details::pack_adapter<Serial>::template deserialize_pack<R, Args...>(serial_obj);
+
+        if constexpr (!std::is_void_v<R>)
+        {
+            auto bytes = Serial::to_bytes(serial_obj);
+
+            const auto it = result_cache.find(bytes);
+
+            if (it != result_cache.end())
+            {
+                pack.set_result(it->second);
+                serial_obj =
+                    details::pack_adapter<Serial>::template serialize_pack<R, Args...>(pack);
+
+                return;
+            }
+
+            run_callback(func, pack);
+            result_cache[std::move(bytes)] = pack.get_result();
+        }
+        else
+        {
+            run_callback(func, pack);
+        }
+
+        serial_obj = details::pack_adapter<Serial>::template serialize_pack<R, Args...>(pack);
+    }
+#endif
 
     template<typename Serial, typename R, typename... Args>
     void dispatch_func(R (*func)(Args...), typename Serial::serial_t& serial_obj)

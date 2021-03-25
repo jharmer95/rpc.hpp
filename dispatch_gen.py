@@ -61,7 +61,7 @@ with open(fname, "w") as f:
         "#define RPC_ATTACH_FUNCS(FUNCNAME, ...) EXPAND(RPC_FOR_EACH(RPC_ATTACH_FUNC, FUNCNAME, __VA_ARGS__))\n\n"
     )
     f.write(
-        "#define RPC_ATTACH_CACHED_FUNC(FUNCNAME) if (func_name == #FUNCNAME) { dispatch_func<Serial>(FUNCNAME, serial_obj, true); bytes = Serial::to_bytes(std::move(serial_obj)); return; }\n"
+        "#define RPC_ATTACH_CACHED_FUNC(FUNCNAME) if (func_name == #FUNCNAME) { dispatch_cached_func<Serial>(FUNCNAME, serial_obj); bytes = Serial::to_bytes(std::move(serial_obj)); return; }\n"
     )
     f.write(
         "#define RPC_ATTACH_CACHED_FUNCS(FUNCNAME, ...) EXPAND(RPC_FOR_EACH(RPC_ATTACH_CACHED_FUNC, FUNCNAME, __VA_ARGS__))\n\n"
@@ -73,7 +73,7 @@ with open(fname, "w") as f:
         "#define RPC_MULTI_ALIAS_FUNC(FUNCNAME, FUNC_ALIAS,...) EXPAND(RPC_FOR_EACH2(RPC_ALIAS_FUNC, FUNCNAME, FUNC_ALIAS, __VA_ARGS__))\n\n"
     )
     f.write(
-        "#define RPC_ALIAS_CACHED_FUNC(FUNCNAME, FUNC_ALIAS) if (func_name == #FUNC_ALIAS) { dispatch_func<Serial>(FUNCNAME, serial_obj, true); bytes = Serial::to_bytes(std::move(serial_obj)); return; }\n"
+        "#define RPC_ALIAS_CACHED_FUNC(FUNCNAME, FUNC_ALIAS) if (func_name == #FUNC_ALIAS) { dispatch_cached_func<Serial>(FUNCNAME, serial_obj); bytes = Serial::to_bytes(std::move(serial_obj)); return; }\n"
     )
     f.write(
         "#define RPC_MULTI_ALIAS_CACHED_FUNC(FUNCNAME, FUNC_ALIAS,...) EXPAND(RPC_FOR_EACH2(RPC_ALIAS_CACHED_FUNC, FUNCNAME, FUNC_ALIAS, __VA_ARGS__))\n\n"

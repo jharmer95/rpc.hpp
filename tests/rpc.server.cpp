@@ -44,7 +44,7 @@
 #include <sstream>
 #include <thread>
 
-//#define RPC_HPP_ENABLE_SERVER_CACHE
+#define RPC_HPP_ENABLE_SERVER_CACHE
 
 #if defined(RPC_HPP_ENABLE_NJSON)
 #    include "rpc_adapters/rpc_njson.hpp"
@@ -516,7 +516,7 @@ void rpc::server::dispatch(typename Serial::bytes_t& bytes)
         WriteMessageRef, ReadMessageVec, WriteMessageVec, ClearBus, FibonacciRef, SquareRootRef,
         RandInt, HashComplexRef)
 
-    RPC_ATTACH_FUNCS(SimpleSum, StrLen, AddOneToEach, Fibonacci, Average, StdDev,
+    RPC_ATTACH_CACHED_FUNCS(SimpleSum, StrLen, AddOneToEach, Fibonacci, Average, StdDev,
         AverageContainer<uint64_t>, AverageContainer<double>, HashComplex)
 
     throw std::runtime_error("RPC error: Called function: \"" + func_name + "\" not found!");
