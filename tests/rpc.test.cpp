@@ -113,164 +113,44 @@ TEST_CASE("BOOST_JSON")
 }
 #endif
 
-using test_serial_t = njson_adapter;
-
-#if defined(RPC_HPP_ENABLE_POINTERS)
-TEST_CASE("PtrSum")
-{
-    auto& client = GetClient<test_serial_t>();
-
-    int n = 12;
-    const auto pack = rpc::call_func<test_serial_t>(client, "PtrSum", &n, -3);
-    auto* ptr = pack.get_arg<int*, 0>();
-
-    REQUIRE(ptr != nullptr);
-    REQUIRE(*ptr == 9);
-}
-
-TEST_CASE("AddAllPtr")
-{
-    auto& client = GetClient<test_serial_t>();
-
-    int myArr[] = { 2, 5, 7, 3 };
-    const auto pack = rpc::call_func<test_serial_t, int>(client, "AddAllPtr", myArr, 4);
-
-    REQUIRE(pack.get_result() == 17);
-}
-
-TEST_CASE("FibonacciPtr")
-{
-    auto& client = GetClient<test_serial_t>();
-
-    uint64_t n = 20;
-    const auto pack = rpc::call_func<test_serial_t>(client, "FibonacciPtr", &n);
-    auto* ptr = pack.get_arg<uint64_t*, 0>();
-
-    REQUIRE(ptr != nullptr);
-    REQUIRE(*ptr == 10946ULL);
-}
-
-TEST_CASE("SquareRootPtr")
-{
-    auto& client = GetClient<test_serial_t>();
-
-    double n1 = 55.65;
-    double n2 = 125.325;
-    double n3 = 552.125;
-    double n4 = 12.767;
-    double n5 = 2599.6;
-    double n6 = 1245.125663;
-    double n7 = 9783.49;
-    double n8 = 125.12;
-    double n9 = 553.3333333333;
-    double n10 = 2266.1;
-
-    const auto pack = rpc::call_func<test_serial_t>(
-        client, "SquareRootPtr", &n1, &n2, &n3, &n4, &n5, &n6, &n7, &n8, &n9, &n10);
-
-    n1 = *pack.get_arg<double*, 0>();
-    n2 = *pack.get_arg<double*, 1>();
-    n3 = *pack.get_arg<double*, 2>();
-    n4 = *pack.get_arg<double*, 3>();
-    n5 = *pack.get_arg<double*, 4>();
-    n6 = *pack.get_arg<double*, 5>();
-    n7 = *pack.get_arg<double*, 6>();
-    n8 = *pack.get_arg<double*, 7>();
-    n9 = *pack.get_arg<double*, 8>();
-    n10 = *pack.get_arg<double*, 9>();
-    const auto test = n1 + n2 + n3 + n4 + n5 + n6 + n7 + n8 + n9 + n10;
-
-    REQUIRE_THAT(test, Catch::Matchers::WithinAbs(313.2216436152, 0.001));
-}
-
-TEST_CASE("HashComplexPtr")
-{
-    const std::string expected = "467365747274747d315a473a527073796c7e707b85";
-    auto& client = GetClient<test_serial_t>();
-
-    ComplexObject cx;
-    cx.flag1 = false;
-    cx.flag2 = true;
-    cx.id = 24;
-    cx.name = "Franklin D. Roosevelt";
-    cx.vals = { 0, 1, 4, 6, 7, 8, 11, 15, 17, 22, 25, 26 };
-
-    char hash[256]{};
-
-    const std::string test(
-        rpc::call_func<test_serial_t>(client, "HashComplexPtr", &cx, hash).get_arg<char*, 1>());
-
-    REQUIRE_THAT(expected, Catch::Matchers::Equals(test));
-}
-
-TEST_CASE("WriteMessagePtr")
-{
-    auto& client = GetClient<test_serial_t>();
-
-    TestMessage msg[2];
-    msg[0].flag1 = true;
-    msg[0].flag2 = false;
-    msg[0].id = 14;
-    msg[0].data_sz = 22;
-
-    for (int i = 0; i < msg[0].data_sz; ++i)
-    {
-        msg[0].data[i] = i * 2;
-    }
-
-    msg[1].flag1 = false;
-    msg[1].flag2 = false;
-    msg[1].id = 15;
-    msg[1].data_sz = 12;
-
-    for (int i = 0; i < msg[1].data_sz; ++i)
-    {
-        msg[1].data[i] = i * 3;
-    }
-
-    int numMsg = 2;
-
-    const auto pack = rpc::call_func<test_serial_t, int>(client, "WriteMessagePtr", msg, &numMsg);
-    numMsg = *pack.get_arg<int*, 1>();
-
-    REQUIRE(numMsg == 2);
-    REQUIRE(pack.get_result() == 0);
-}
-
-TEST_CASE("ReadMessagePtr")
-{
-    auto& client = GetClient<test_serial_t>();
-
-    TestMessage msg[4];
-
-    int numMsg = 2;
-    const auto pack = rpc::call_func<test_serial_t, int>(client, "ReadMessagePtr", msg, &numMsg);
-    const auto* ptr = pack.get_arg<TestMessage*, 0>();
-    numMsg = *pack.get_arg<int*, 1>();
-
-    REQUIRE(numMsg == 2);
-    REQUIRE(pack.get_result() == 0);
-    REQUIRE(ptr[0].id == 14);
-    REQUIRE(ptr[1].id == 15);
-}
+// TODO: Clean this up somehow
+#if defined(RPC_HPP_ENABLE_NJSON)
+#    if defined(RPC_HPP_ENABLE_RAPIDJSON)
+#        if defined(RPC_HPP_ENABLE_BOOST_JSON)
+using test_types_t = std::tuple<njson_adapter, rapidjson_adapter, bjson_adapter>;
+#        else
+using test_types_t = std::tuple<njson_adapter, rapidjson_adapter>;
+#        endif
+#    elif defined(RPC_HPP_ENABLE_BOOST_JSON)
+using test_types_t = std::tuple<njson_adapter, bjson_adapter>;
+#    else
+using test_types_t = std::tuple<njson_adapter>;
+#    endif
+#elif defined(RPC_HPP_ENABLE_RAPIDJSON)
+#    if defined(RPC_HPP_ENABLE_BOOST_JSON)
+using test_types_t = std::tuple<rapidjson_adapter, bjson_adapter>;
+#    else
+using test_types_t = std::tuple<rapidjson_adapter>;
+#    endif
+#elif defined(RPC_HPP_ENABLE_BOOST_JSON)
+using test_types_t = std::tuple<bjson_adapter>;
 #endif
 
-TEST_CASE("StrLen")
+TEMPLATE_LIST_TEST_CASE("StrLen", "", test_types_t)
 {
-    auto& client = GetClient<test_serial_t>();
+    auto& client = GetClient<TestType>();
     const auto result =
-        rpc::call_func<test_serial_t, int>(client, "StrLen", std::string("hello, world"))
-            .get_result();
+        rpc::call_func<TestType, int>(client, "StrLen", std::string("hello, world")).get_result();
 
     REQUIRE(result == 12);
 }
 
-TEST_CASE("AddOneToEach")
+TEMPLATE_LIST_TEST_CASE("AddOneToEach", "", test_types_t)
 {
-    auto& client = GetClient<test_serial_t>();
+    auto& client = GetClient<TestType>();
     const std::vector<int> vec{ 2, 4, 6, 8 };
     const auto result =
-        rpc::call_func<test_serial_t, std::vector<int>>(client, "AddOneToEach", vec).get_result();
+        rpc::call_func<TestType, std::vector<int>>(client, "AddOneToEach", vec).get_result();
 
     REQUIRE(result.size() == vec.size());
 
@@ -280,11 +160,11 @@ TEST_CASE("AddOneToEach")
     }
 }
 
-TEST_CASE("AddOneToEachRef")
+TEMPLATE_LIST_TEST_CASE("AddOneToEachRef", "", test_types_t)
 {
-    auto& client = GetClient<test_serial_t>();
+    auto& client = GetClient<TestType>();
     const std::vector<int> vec{ 2, 4, 6, 8 };
-    const auto pack = rpc::call_func<test_serial_t>(client, "AddOneToEachRef", vec);
+    const auto pack = rpc::call_func<TestType>(client, "AddOneToEachRef", vec);
 
     const auto vec2 = pack.get_arg<0>();
 
@@ -296,42 +176,42 @@ TEST_CASE("AddOneToEachRef")
     }
 }
 
-TEST_CASE("Fibonacci")
+TEMPLATE_LIST_TEST_CASE("Fibonacci", "", test_types_t)
 {
     constexpr uint64_t expected = 10946ULL;
-    auto& client = GetClient<test_serial_t>();
+    auto& client = GetClient<TestType>();
 
-    const auto test = rpc::call_func<test_serial_t, uint64_t>(client, "Fibonacci", 20).get_result();
+    const auto test = rpc::call_func<TestType, uint64_t>(client, "Fibonacci", 20).get_result();
     REQUIRE(expected == test);
 }
 
-TEST_CASE("FibonacciRef")
+TEMPLATE_LIST_TEST_CASE("FibonacciRef", "", test_types_t)
 {
     constexpr uint64_t expected = 10946ULL;
-    auto& client = GetClient<test_serial_t>();
+    auto& client = GetClient<TestType>();
 
     uint64_t num = 20ULL;
-    const auto test = rpc::call_func<test_serial_t>(client, "FibonacciRef", num).get_arg<0>();
+    const auto test = rpc::call_func<TestType>(client, "FibonacciRef", num).get_arg<0>();
 
     REQUIRE(expected == test);
 }
 
-TEST_CASE("StdDev")
+TEMPLATE_LIST_TEST_CASE("StdDev", "", test_types_t)
 {
     constexpr double expected = 3313.695594785;
-    auto& client = GetClient<test_serial_t>();
+    auto& client = GetClient<TestType>();
 
-    const auto test = rpc::call_func<test_serial_t, double>(client, "StdDev", 55.65, 125.325,
-        552.125, 12.767, 2599.6, 1245.125663, 9783.49, 125.12, 553.3333333333, 2266.1)
+    const auto test = rpc::call_func<TestType, double>(client, "StdDev", 55.65, 125.325, 552.125,
+        12.767, 2599.6, 1245.125663, 9783.49, 125.12, 553.3333333333, 2266.1)
                           .get_result();
 
     REQUIRE_THAT(test, Catch::Matchers::WithinRel(expected));
 }
 
-TEST_CASE("SquareRootRef")
+TEMPLATE_LIST_TEST_CASE("SquareRootRef", "", test_types_t)
 {
     constexpr double expected = 313.2216436152;
-    auto& client = GetClient<test_serial_t>();
+    auto& client = GetClient<TestType>();
 
     double n1 = 55.65;
     double n2 = 125.325;
@@ -344,8 +224,8 @@ TEST_CASE("SquareRootRef")
     double n9 = 553.3333333333;
     double n10 = 2266.1;
 
-    const auto pack = rpc::call_func<test_serial_t>(
-        client, "SquareRootRef", n1, n2, n3, n4, n5, n6, n7, n8, n9, n10);
+    const auto pack =
+        rpc::call_func<TestType>(client, "SquareRootRef", n1, n2, n3, n4, n5, n6, n7, n8, n9, n10);
 
     n1 = pack.get_arg<0>();
     n2 = pack.get_arg<1>();
@@ -363,24 +243,24 @@ TEST_CASE("SquareRootRef")
     REQUIRE_THAT(test, Catch::Matchers::WithinAbs(expected, 0.001));
 }
 
-TEST_CASE("AverageContainer<double>")
+TEMPLATE_LIST_TEST_CASE("AverageContainer<double>", "", test_types_t)
 {
     constexpr double expected = 1731.8635996333;
-    auto& client = GetClient<test_serial_t>();
+    auto& client = GetClient<TestType>();
 
     const std::vector<double> vec{ 55.65, 125.325, 552.125, 12.767, 2599.6, 1245.125663, 9783.49,
         125.12, 553.3333333333, 2266.1 };
 
     const auto test =
-        rpc::call_func<test_serial_t, double>(client, "AverageContainer<double>", vec).get_result();
+        rpc::call_func<TestType, double>(client, "AverageContainer<double>", vec).get_result();
 
     REQUIRE_THAT(test, Catch::Matchers::WithinAbs(expected, 0.001));
 }
 
-TEST_CASE("HashComplex")
+TEMPLATE_LIST_TEST_CASE("HashComplex", "", test_types_t)
 {
     const std::string expected = "467365747274747d315a473a527073796c7e707b85";
-    auto& client = GetClient<test_serial_t>();
+    auto& client = GetClient<TestType>();
 
     ComplexObject cx;
     cx.flag1 = false;
@@ -389,16 +269,15 @@ TEST_CASE("HashComplex")
     cx.name = "Franklin D. Roosevelt";
     cx.vals = { 0, 1, 4, 6, 7, 8, 11, 15, 17, 22, 25, 26 };
 
-    const auto test =
-        rpc::call_func<test_serial_t, std::string>(client, "HashComplex", cx).get_result();
+    const auto test = rpc::call_func<TestType, std::string>(client, "HashComplex", cx).get_result();
 
     REQUIRE_THAT(expected, Catch::Matchers::Equals(test));
 }
 
-TEST_CASE("HashComplexRef")
+TEMPLATE_LIST_TEST_CASE("HashComplexRef", "", test_types_t)
 {
     const std::string expected = "467365747274747d315a473a527073796c7e707b85";
-    auto& client = GetClient<test_serial_t>();
+    auto& client = GetClient<TestType>();
 
     ComplexObject cx;
     cx.flag1 = false;
@@ -411,17 +290,17 @@ TEST_CASE("HashComplexRef")
     std::string test{};
 
     // re-assign string to arg<1>
-    test = rpc::call_func<test_serial_t>(client, "HashComplexRef", cx, test).get_arg<1>();
+    test = rpc::call_func<TestType>(client, "HashComplexRef", cx, test).get_arg<1>();
 
     REQUIRE_THAT(expected, Catch::Matchers::Equals(test));
 }
 
-// TEST_CASE("Function not found")
+// TEMPLATE_LIST_TEST_CASE("Function not found", "", test_types_t)
 // {
-//     auto& client = GetClient<test_serial_t>();
+//     auto& client = GetClient<TestType>();
 
 //     const auto exp = [&client]() {
-//         rpc::call_func<test_serial_t, int>(client, "FUNC_WHICH_DOES_NOT_EXIST");
+//         rpc::call_func<TestType, int>(client, "FUNC_WHICH_DOES_NOT_EXIST");
 //     };
 
 //     REQUIRE_THROWS_WITH(exp(),
@@ -429,22 +308,22 @@ TEST_CASE("HashComplexRef")
 //             "RPC error: Called function: \"FUNC_WHICH_DOES_NOT_EXIST\" not found!"));
 // }
 
-// TEST_CASE("ThrowError")
+// TEMPLATE_LIST_TEST_CASE("ThrowError", "", test_types_t)
 // {
-//     auto& client = GetClient<test_serial_t>();
+//     auto& client = GetClient<TestType>();
 
-//     const auto exp = [&client]() { rpc::call_func<test_serial_t, int>(client, "ThrowError"); };
+//     const auto exp = [&client]() { rpc::call_func<TestType, int>(client, "ThrowError"); };
 
 //     REQUIRE_THROWS_WITH(exp(), "THIS IS A TEST ERROR!");
 // }
 
 TEST_CASE("KillServer", "[!mayfail]")
 {
-    auto& client = GetClient<test_serial_t>();
+    auto& client = GetClient<njson_adapter>();
 
     try
     {
-        rpc::call_func<test_serial_t>(client, "KillServer");
+        rpc::call_func<njson_adapter>(client, "KillServer");
     }
     catch (...)
     {
