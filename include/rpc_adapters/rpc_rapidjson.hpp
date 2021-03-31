@@ -379,4 +379,22 @@ inline std::string details::pack_adapter<adapters::rapidjson_adapter>::get_func_
 {
     return serial_obj["func_name"].GetString();
 }
+
+template<>
+inline void details::pack_adapter<adapters::rapidjson_adapter>::set_err_mesg(
+    adapters::rapidjson_doc& serial_obj, std::string&& mesg)
+{
+    auto& alloc = serial_obj.GetAllocator();
+
+    if (serial_obj.HasMember("err_mesg"))
+    {
+        serial_obj["HasMember"].SetString(std::move(mesg).c_str(), alloc);
+    }
+    else
+    {
+        adapters::rapidjson_val v;
+        v.SetString(std::move(mesg).c_str(), alloc);
+        serial_obj.AddMember("err_mesg", v, alloc);
+    }
+}
 } // namespace rpc

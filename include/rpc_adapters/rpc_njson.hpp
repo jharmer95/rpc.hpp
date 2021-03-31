@@ -225,4 +225,11 @@ inline std::string details::pack_adapter<adapters::njson_adapter>::get_func_name
 {
     return serial_obj["func_name"];
 }
+
+template<>
+inline void details::pack_adapter<adapters::njson_adapter>::set_err_mesg(
+    adapters::njson& serial_obj, std::string&& mesg)
+{
+    serial_obj["err_mesg"] = std::move(mesg);
+}
 } // namespace rpc

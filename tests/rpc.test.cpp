@@ -295,27 +295,31 @@ TEMPLATE_LIST_TEST_CASE("HashComplexRef", "", test_types_t)
     REQUIRE_THAT(expected, Catch::Matchers::Equals(test));
 }
 
-// TEMPLATE_LIST_TEST_CASE("Function not found", "", test_types_t)
-// {
-//     auto& client = GetClient<TestType>();
+TEMPLATE_LIST_TEST_CASE("Function not found", "", test_types_t)
+{
+    auto& client = GetClient<TestType>();
 
-//     const auto exp = [&client]() {
-//         rpc::call_func<TestType, int>(client, "FUNC_WHICH_DOES_NOT_EXIST");
-//     };
+    const auto exp = [&client]() {
+        [[maybe_unused]] auto _unused =
+            rpc::call_func<TestType, int>(client, "FUNC_WHICH_DOES_NOT_EXIST").get_result();
+    };
 
-//     REQUIRE_THROWS_WITH(exp(),
-//         Catch::Matchers::Equals(
-//             "RPC error: Called function: \"FUNC_WHICH_DOES_NOT_EXIST\" not found!"));
-// }
+    REQUIRE_THROWS_WITH(exp(),
+        Catch::Matchers::Equals(
+            "RPC error: Called function: \"FUNC_WHICH_DOES_NOT_EXIST\" not found!"));
+}
 
-// TEMPLATE_LIST_TEST_CASE("ThrowError", "", test_types_t)
-// {
-//     auto& client = GetClient<TestType>();
+TEMPLATE_LIST_TEST_CASE("ThrowError", "", test_types_t)
+{
+    auto& client = GetClient<TestType>();
 
-//     const auto exp = [&client]() { rpc::call_func<TestType, int>(client, "ThrowError"); };
+    const auto exp = [&client]() {
+        [[maybe_unused]] auto _unused =
+            rpc::call_func<TestType, int>(client, "ThrowError").get_result();
+    };
 
-//     REQUIRE_THROWS_WITH(exp(), "THIS IS A TEST ERROR!");
-// }
+    REQUIRE_THROWS_WITH(exp(), "THIS IS A TEST ERROR!");
+}
 
 TEST_CASE("KillServer", "[!mayfail]")
 {

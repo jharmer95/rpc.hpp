@@ -339,6 +339,7 @@ namespace details
             const typename Serial::serial_t& serial_obj);
 
         [[nodiscard]] static std::string get_func_name(typename const Serial::serial_t& serial_obj);
+        static void set_err_mesg(typename Serial::serial_t& serial_obj, std::string&& mesg);
     };
 } // namespace details
 
@@ -363,7 +364,24 @@ namespace server
     }
 
     template<typename Serial>
-    void dispatch(typename Serial::bytes_t& bytes);
+    void dispatch_impl(typename Serial::serial_t& serial_obj);
+
+    template<typename Serial>
+    void dispatch(typename Serial::bytes_t& bytes)
+    {
+        auto serial_obj = Serial::from_bytes(std::move(bytes));
+
+        try
+        {
+            dispatch_impl<Serial>(serial_obj);
+        }
+        catch (const std::exception& ex)
+        {
+            details::pack_adapter<Serial>::set_err_mesg(serial_obj, ex.what());
+        }
+
+        bytes = Serial::to_bytes(std::move(serial_obj));
+    }
 
 #if defined(RPC_HPP_ENABLE_SERVER_CACHE)
     template<typename Serial, typename R, typename... Args>

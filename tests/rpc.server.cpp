@@ -380,9 +380,8 @@ void HashComplexRef(ComplexObject& cx, std::string& hashStr)
 }
 
 template<typename Serial>
-void rpc::server::dispatch(typename Serial::bytes_t& bytes)
+void rpc::server::dispatch_impl(typename Serial::serial_t& serial_obj)
 {
-    auto serial_obj = Serial::from_bytes(bytes);
     const auto func_name = details::pack_adapter<Serial>::get_func_name(serial_obj);
 
     RPC_ATTACH_FUNCS(KillServer, ThrowError, SimpleSum, AddOneToEachRef, ReadMessageRef,
