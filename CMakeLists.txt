@@ -120,9 +120,6 @@ elseif(CXX_CLANG)
   set(MIN_WARNING -Wall)
 endif()
 
-include(CTest)
-include(Catch)
-
 option(GENERATE_DOXYGEN "Generate Doxygen documentation from comments" OFF)
 
 if(${GENERATE_DOXYGEN})
@@ -173,6 +170,8 @@ target_link_libraries(rpc_hpp INTERFACE ${CMAKE_THREAD_LIBS_INIT})
 install(FILES "${PROJECT_SOURCE_DIR}/include/rpc.hpp"
         DESTINATION "${CMAKE_INSTALL_PREFIX}/include")
 
+option(BUILD_BENCHMARK "Build the benchmark suite" OFF)
+
 option(BUILD_NJSON_ADAPTER "Build the adapter for nlohmann/json" ON)
 option(BUILD_RAPIDJSON_ADAPTER "Build the adapter for rapidjson" ON)
 option(BUILD_BOOST_JSON_ADAPTER "Build the adapter for Boost.JSON" OFF)
@@ -181,6 +180,9 @@ add_subdirectory(include/rpc_adapters)
 
 option(BUILD_TESTING "Build the testing tree." ON)
 if(BUILD_TESTING AND (PROJECT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR))
-  enable_testing()
   add_subdirectory(tests)
+else()
+  if(BUILD_BENCHMARK)
+    message(FATAL_ERROR "BUILD_TESTING must be enabled to use BUILD_BENCMARK!")
+  endif()
 endif()
