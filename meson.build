@@ -1,5 +1,5 @@
 project('rpc.hpp', 'cpp',
-    version : '0.3.3',
+    version : '0.4.1',
     license : 'BSD-3-Clause',
     default_options : [
         'cpp_std=c++17',
