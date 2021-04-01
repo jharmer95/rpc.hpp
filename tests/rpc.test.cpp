@@ -65,8 +65,7 @@ template<typename Serial>
 void TestType()
 {
     auto& client = GetClient<Serial>();
-    const auto result =
-        rpc::client::call_func<njson_adapter, int>(client, "SimpleSum", 1, 2).get_result();
+    const auto result = rpc::client::call_func<njson_adapter, int>(client, "SimpleSum", 1, 2);
 
     REQUIRE(result == 3);
 }
@@ -140,7 +139,7 @@ TEMPLATE_LIST_TEST_CASE("StrLen", "", test_types_t)
 {
     auto& client = GetClient<TestType>();
     const auto result =
-        rpc::call_func<TestType, int>(client, "StrLen", std::string("hello, world")).get_result();
+        rpc::call_func<TestType, int>(client, "StrLen", std::string("hello, world"));
 
     REQUIRE(result == 12);
 }
@@ -148,9 +147,8 @@ TEMPLATE_LIST_TEST_CASE("StrLen", "", test_types_t)
 TEMPLATE_LIST_TEST_CASE("AddOneToEach", "", test_types_t)
 {
     auto& client = GetClient<TestType>();
-    const std::vector<int> vec{ 2, 4, 6, 8 };
-    const auto result =
-        rpc::call_func<TestType, std::vector<int>>(client, "AddOneToEach", vec).get_result();
+    std::vector<int> vec{ 2, 4, 6, 8 };
+    const auto result = rpc::call_func<TestType, std::vector<int>>(client, "AddOneToEach", vec);
 
     REQUIRE(result.size() == vec.size());
 
@@ -164,9 +162,8 @@ TEMPLATE_LIST_TEST_CASE("AddOneToEachRef", "", test_types_t)
 {
     auto& client = GetClient<TestType>();
     const std::vector<int> vec{ 2, 4, 6, 8 };
-    const auto pack = rpc::call_func<TestType>(client, "AddOneToEachRef", vec);
-
-    const auto vec2 = pack.get_arg<0>();
+    auto vec2 = vec;
+    rpc::call_func<TestType>(client, "AddOneToEachRef", vec2);
 
     REQUIRE(vec2.size() == vec.size());
 
@@ -181,7 +178,7 @@ TEMPLATE_LIST_TEST_CASE("Fibonacci", "", test_types_t)
     constexpr uint64_t expected = 10946ULL;
     auto& client = GetClient<TestType>();
 
-    const auto test = rpc::call_func<TestType, uint64_t>(client, "Fibonacci", 20).get_result();
+    const auto test = rpc::call_func<TestType, uint64_t>(client, "Fibonacci", 20);
     REQUIRE(expected == test);
 }
 
@@ -191,9 +188,9 @@ TEMPLATE_LIST_TEST_CASE("FibonacciRef", "", test_types_t)
     auto& client = GetClient<TestType>();
 
     uint64_t num = 20ULL;
-    const auto test = rpc::call_func<TestType>(client, "FibonacciRef", num).get_arg<0>();
+    rpc::call_func<TestType>(client, "FibonacciRef", num);
 
-    REQUIRE(expected == test);
+    REQUIRE(expected == num);
 }
 
 TEMPLATE_LIST_TEST_CASE("StdDev", "", test_types_t)
@@ -202,8 +199,7 @@ TEMPLATE_LIST_TEST_CASE("StdDev", "", test_types_t)
     auto& client = GetClient<TestType>();
 
     const auto test = rpc::call_func<TestType, double>(client, "StdDev", 55.65, 125.325, 552.125,
-        12.767, 2599.6, 1245.125663, 9783.49, 125.12, 553.3333333333, 2266.1)
-                          .get_result();
+        12.767, 2599.6, 1245.125663, 9783.49, 125.12, 553.3333333333, 2266.1);
 
     REQUIRE_THAT(test, Catch::Matchers::WithinRel(expected));
 }
@@ -224,19 +220,18 @@ TEMPLATE_LIST_TEST_CASE("SquareRootRef", "", test_types_t)
     double n9 = 553.3333333333;
     double n10 = 2266.1;
 
-    const auto pack =
-        rpc::call_func<TestType>(client, "SquareRootRef", n1, n2, n3, n4, n5, n6, n7, n8, n9, n10);
+    rpc::call_func<TestType>(client, "SquareRootRef", n1, n2, n3, n4, n5, n6, n7, n8, n9, n10);
 
-    n1 = pack.get_arg<0>();
-    n2 = pack.get_arg<1>();
-    n3 = pack.get_arg<2>();
-    n4 = pack.get_arg<3>();
-    n5 = pack.get_arg<4>();
-    n6 = pack.get_arg<5>();
-    n7 = pack.get_arg<6>();
-    n8 = pack.get_arg<7>();
-    n9 = pack.get_arg<8>();
-    n10 = pack.get_arg<9>();
+    // n1 = pack.get_arg<0>();
+    // n2 = pack.get_arg<1>();
+    // n3 = pack.get_arg<2>();
+    // n4 = pack.get_arg<3>();
+    // n5 = pack.get_arg<4>();
+    // n6 = pack.get_arg<5>();
+    // n7 = pack.get_arg<6>();
+    // n8 = pack.get_arg<7>();
+    // n9 = pack.get_arg<8>();
+    // n10 = pack.get_arg<9>();
 
     const auto test = n1 + n2 + n3 + n4 + n5 + n6 + n7 + n8 + n9 + n10;
 
@@ -248,11 +243,10 @@ TEMPLATE_LIST_TEST_CASE("AverageContainer<double>", "", test_types_t)
     constexpr double expected = 1731.8635996333;
     auto& client = GetClient<TestType>();
 
-    const std::vector<double> vec{ 55.65, 125.325, 552.125, 12.767, 2599.6, 1245.125663, 9783.49,
-        125.12, 553.3333333333, 2266.1 };
+    std::vector<double> vec{ 55.65, 125.325, 552.125, 12.767, 2599.6, 1245.125663, 9783.49, 125.12,
+        553.3333333333, 2266.1 };
 
-    const auto test =
-        rpc::call_func<TestType, double>(client, "AverageContainer<double>", vec).get_result();
+    const auto test = rpc::call_func<TestType, double>(client, "AverageContainer<double>", vec);
 
     REQUIRE_THAT(test, Catch::Matchers::WithinAbs(expected, 0.001));
 }
@@ -269,7 +263,7 @@ TEMPLATE_LIST_TEST_CASE("HashComplex", "", test_types_t)
     cx.name = "Franklin D. Roosevelt";
     cx.vals = { 0, 1, 4, 6, 7, 8, 11, 15, 17, 22, 25, 26 };
 
-    const auto test = rpc::call_func<TestType, std::string>(client, "HashComplex", cx).get_result();
+    const auto test = rpc::call_func<TestType, std::string>(client, "HashComplex", cx);
 
     REQUIRE_THAT(expected, Catch::Matchers::Equals(test));
 }
@@ -290,7 +284,7 @@ TEMPLATE_LIST_TEST_CASE("HashComplexRef", "", test_types_t)
     std::string test{};
 
     // re-assign string to arg<1>
-    test = rpc::call_func<TestType>(client, "HashComplexRef", cx, test).get_arg<1>();
+    rpc::call_func<TestType>(client, "HashComplexRef", cx, test);
 
     REQUIRE_THAT(expected, Catch::Matchers::Equals(test));
 }
@@ -301,7 +295,7 @@ TEMPLATE_LIST_TEST_CASE("Function not found", "", test_types_t)
 
     const auto exp = [&client]() {
         [[maybe_unused]] auto _unused =
-            rpc::call_func<TestType, int>(client, "FUNC_WHICH_DOES_NOT_EXIST").get_result();
+            rpc::call_func<TestType, int>(client, "FUNC_WHICH_DOES_NOT_EXIST");
     };
 
     REQUIRE_THROWS_WITH(exp(),
@@ -314,8 +308,7 @@ TEMPLATE_LIST_TEST_CASE("ThrowError", "", test_types_t)
     auto& client = GetClient<TestType>();
 
     const auto exp = [&client]() {
-        [[maybe_unused]] auto _unused =
-            rpc::call_func<TestType, int>(client, "ThrowError").get_result();
+        [[maybe_unused]] auto _unused = rpc::call_func<TestType, int>(client, "ThrowError");
     };
 
     REQUIRE_THROWS_WITH(exp(), "THIS IS A TEST ERROR!");

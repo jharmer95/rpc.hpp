@@ -186,6 +186,18 @@ namespace details
         for_each_tuple(tuple, func, std::make_index_sequence<sizeof...(Ts)>());
     }
 
+    template<typename... Args, std::size_t... Is>
+    std::tuple<Args&...> MakeTupleRef(std::tuple<Args...>& tuple, std::index_sequence<Is...>)
+    {
+        return std::tie(std::get<Is>(tuple)...);
+    }
+
+    template<typename... Args>
+    std::tuple<Args&...> MakeTupleRef(std::tuple<Args...>& tuple)
+    {
+        return MakeTupleRef(tuple, std::make_index_sequence<sizeof...(Args)>());
+    }
+
     template<typename... Args>
     class packed_func_base
     {
@@ -442,8 +454,7 @@ inline namespace client
     };
 
     template<typename Serial, typename R = void, typename... Args>
-    details::packed_func<R, Args...> call_func(
-        client_interface& client, std::string&& func_name, Args&&... args)
+    R call_func(client_interface& client, std::string&& func_name, Args&&... args)
     {
         if constexpr (std::is_void_v<R>)
         {
@@ -460,8 +471,19 @@ inline namespace client
             client.send(Serial::to_bytes(details::pack_adapter<Serial>::serialize_pack(pack)));
         }
 
-        return details::pack_adapter<Serial>::template deserialize_pack<R, Args...>(
+        const auto pack = details::pack_adapter<Serial>::template deserialize_pack<R, Args...>(
             Serial::from_bytes(client.receive()));
+
+        std::tie(args...) = pack.get_args();
+
+        if constexpr (std::is_void_v<R>)
+        {
+            return;
+        }
+        else
+        {
+            return pack.get_result();
+        }
     }
 } // namespace client
 } // namespace rpc
