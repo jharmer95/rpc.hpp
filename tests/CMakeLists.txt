@@ -1,5 +1,6 @@
 add_library(catch2_lib STATIC catch2_main.cpp)
 add_library(asio_lib INTERFACE)
+target_compile_definitions(asio_lib INTERFACE ASIO_STANDALONE)
 
 if(${USE_CONAN})
   set(CONAN_EXTRA_REQUIRES "catch2/[>2.10.0 <3.0.0]" "asio/[>=1.14.0]")
