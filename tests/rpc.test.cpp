@@ -1,7 +1,7 @@
 ///@file rpc.test.cpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Unit test source file for rpc.hpp
-///@version 0.3.3
+///@version 0.4.1
 ///
 ///@copyright
 ///BSD 3-Clause License

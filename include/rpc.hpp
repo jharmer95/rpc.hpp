@@ -1,7 +1,7 @@
 ///@file rpc.hpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Header-only library for serialized RPC usage
-///@version 0.4.0
+///@version 0.4.1
 ///
 ///@copyright
 ///BSD 3-Clause License

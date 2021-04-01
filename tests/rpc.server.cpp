@@ -1,7 +1,7 @@
 ///@file rpc.server.cpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Example implementation of an RPC server
-///@version 0.3.3
+///@version 0.4.1
 ///
 ///@copyright
 ///BSD 3-Clause License
