@@ -166,7 +166,7 @@ TEMPLATE_LIST_TEST_CASE("AddOneToEachRef", "", test_types_t)
     const std::vector<int> vec{ 2, 4, 6, 8 };
     const auto pack = rpc::call_func<TestType>(client, "AddOneToEachRef", vec);
 
-    const auto vec2 = pack.get_arg<0>();
+    const auto vec2 = pack.template get_arg<0>();
 
     REQUIRE(vec2.size() == vec.size());
 
@@ -191,7 +191,7 @@ TEMPLATE_LIST_TEST_CASE("FibonacciRef", "", test_types_t)
     auto& client = GetClient<TestType>();
 
     uint64_t num = 20ULL;
-    const auto test = rpc::call_func<TestType>(client, "FibonacciRef", num).get_arg<0>();
+    const auto test = rpc::call_func<TestType>(client, "FibonacciRef", num).template get_arg<0>();
 
     REQUIRE(expected == test);
 }
@@ -227,16 +227,16 @@ TEMPLATE_LIST_TEST_CASE("SquareRootRef", "", test_types_t)
     const auto pack =
         rpc::call_func<TestType>(client, "SquareRootRef", n1, n2, n3, n4, n5, n6, n7, n8, n9, n10);
 
-    n1 = pack.get_arg<0>();
-    n2 = pack.get_arg<1>();
-    n3 = pack.get_arg<2>();
-    n4 = pack.get_arg<3>();
-    n5 = pack.get_arg<4>();
-    n6 = pack.get_arg<5>();
-    n7 = pack.get_arg<6>();
-    n8 = pack.get_arg<7>();
-    n9 = pack.get_arg<8>();
-    n10 = pack.get_arg<9>();
+    n1 = pack.template get_arg<0>();
+    n2 = pack.template get_arg<1>();
+    n3 = pack.template get_arg<2>();
+    n4 = pack.template get_arg<3>();
+    n5 = pack.template get_arg<4>();
+    n6 = pack.template get_arg<5>();
+    n7 = pack.template get_arg<6>();
+    n8 = pack.template get_arg<7>();
+    n9 = pack.template get_arg<8>();
+    n10 = pack.template get_arg<9>();
 
     const auto test = n1 + n2 + n3 + n4 + n5 + n6 + n7 + n8 + n9 + n10;
 
@@ -290,7 +290,7 @@ TEMPLATE_LIST_TEST_CASE("HashComplexRef", "", test_types_t)
     std::string test{};
 
     // re-assign string to arg<1>
-    test = rpc::call_func<TestType>(client, "HashComplexRef", cx, test).get_arg<1>();
+    test = rpc::call_func<TestType>(client, "HashComplexRef", cx, test).template get_arg<1>();
 
     REQUIRE_THAT(expected, Catch::Matchers::Equals(test));
 }

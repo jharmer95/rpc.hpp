@@ -239,7 +239,7 @@ TEST_CASE("By Reference (simple)", "[ref][simple]")
     {
         uint64_t num = 20;
         test = rpc::call_func<njson_adapter>(GetClient<njson_adapter>(), "FibonacciRef", num)
-                   .get_arg<0>();
+                   .template get_arg<0>();
     };
 
     REQUIRE(expected == test);
@@ -252,7 +252,7 @@ TEST_CASE("By Reference (simple)", "[ref][simple]")
         uint64_t num = 20;
         test =
             rpc::call_func<rapidjson_adapter>(GetClient<rapidjson_adapter>(), "FibonacciRef", num)
-                .get_arg<0>();
+                .template get_arg<0>();
     };
 #endif
 
@@ -265,7 +265,7 @@ TEST_CASE("By Reference (simple)", "[ref][simple]")
     {
         uint64_t num = 20;
         test = rpc::call_func<bjson_adapter>(GetClient<bjson_adapter>(), "FibonacciRef", num)
-                   .get_arg<0>();
+                   .template get_arg<0>();
     };
 
     REQUIRE(expected == test);
@@ -287,7 +287,7 @@ TEST_CASE("By Reference (complex)", "[ref][complex]")
         cx.vals = { 0, 1, 4, 6, 7, 8, 11, 15, 17, 22, 25, 26 };
 
         test = rpc::call_func<njson_adapter>(GetClient<njson_adapter>(), "HashComplexRef", cx, test)
-                   .get_arg<1>();
+                   .template get_arg<1>();
     };
 
     REQUIRE_THAT(expected, Catch::Matchers::Equals(test));
@@ -306,7 +306,7 @@ TEST_CASE("By Reference (complex)", "[ref][complex]")
 
         test = rpc::call_func<rapidjson_adapter>(
             GetClient<rapidjson_adapter>(), "HashComplexRef", cx, test)
-                   .get_arg<1>();
+                   .template get_arg<1>();
     };
 
     REQUIRE_THAT(expected, Catch::Matchers::Equals(test));
@@ -325,7 +325,7 @@ TEST_CASE("By Reference (complex)", "[ref][complex]")
         cx.vals = { 0, 1, 4, 6, 7, 8, 11, 15, 17, 22, 25, 26 };
 
         test = rpc::call_func<bjson_adapter>(GetClient<bjson_adapter>(), "HashComplexRef", cx, test)
-                   .get_arg<1>();
+                   .template get_arg<1>();
     };
 
     REQUIRE_THAT(expected, Catch::Matchers::Equals(test));
@@ -353,16 +353,16 @@ TEST_CASE("By Reference (many)", "[ref][many]")
         const auto pack = rpc::call_func<njson_adapter>(
             GetClient<njson_adapter>(), "SquareRootRef", n1, n2, n3, n4, n5, n6, n7, n8, n9, n10);
 
-        n1 = pack.get_arg<0>();
-        n2 = pack.get_arg<1>();
-        n3 = pack.get_arg<2>();
-        n4 = pack.get_arg<3>();
-        n5 = pack.get_arg<4>();
-        n6 = pack.get_arg<5>();
-        n7 = pack.get_arg<6>();
-        n8 = pack.get_arg<7>();
-        n9 = pack.get_arg<8>();
-        n10 = pack.get_arg<9>();
+        n1 = pack.template get_arg<0>();
+        n2 = pack.template get_arg<1>();
+        n3 = pack.template get_arg<2>();
+        n4 = pack.template get_arg<3>();
+        n5 = pack.template get_arg<4>();
+        n6 = pack.template get_arg<5>();
+        n7 = pack.template get_arg<6>();
+        n8 = pack.template get_arg<7>();
+        n9 = pack.template get_arg<8>();
+        n10 = pack.template get_arg<9>();
         test = n1 + n2 + n3 + n4 + n5 + n6 + n7 + n8 + n9 + n10;
     };
 
@@ -387,16 +387,16 @@ TEST_CASE("By Reference (many)", "[ref][many]")
         const auto pack = rpc::call_func<rapidjson_adapter>(GetClient<rapidjson_adapter>(),
             "SquareRootRef", n1, n2, n3, n4, n5, n6, n7, n8, n9, n10);
 
-        n1 = pack.get_arg<0>();
-        n2 = pack.get_arg<1>();
-        n3 = pack.get_arg<2>();
-        n4 = pack.get_arg<3>();
-        n5 = pack.get_arg<4>();
-        n6 = pack.get_arg<5>();
-        n7 = pack.get_arg<6>();
-        n8 = pack.get_arg<7>();
-        n9 = pack.get_arg<8>();
-        n10 = pack.get_arg<9>();
+        n1 = pack.template get_arg<0>();
+        n2 = pack.template get_arg<1>();
+        n3 = pack.template get_arg<2>();
+        n4 = pack.template get_arg<3>();
+        n5 = pack.template get_arg<4>();
+        n6 = pack.template get_arg<5>();
+        n7 = pack.template get_arg<6>();
+        n8 = pack.template get_arg<7>();
+        n9 = pack.template get_arg<8>();
+        n10 = pack.template get_arg<9>();
         test = n1 + n2 + n3 + n4 + n5 + n6 + n7 + n8 + n9 + n10;
     };
 
@@ -422,16 +422,16 @@ TEST_CASE("By Reference (many)", "[ref][many]")
         const auto pack = rpc::call_func<bjson_adapter>(
             GetClient<bjson_adapter>(), "SquareRootRef", n1, n2, n3, n4, n5, n6, n7, n8, n9, n10);
 
-        n1 = pack.get_arg<0>();
-        n2 = pack.get_arg<1>();
-        n3 = pack.get_arg<2>();
-        n4 = pack.get_arg<3>();
-        n5 = pack.get_arg<4>();
-        n6 = pack.get_arg<5>();
-        n7 = pack.get_arg<6>();
-        n8 = pack.get_arg<7>();
-        n9 = pack.get_arg<8>();
-        n10 = pack.get_arg<9>();
+        n1 = pack.template get_arg<0>();
+        n2 = pack.template get_arg<1>();
+        n3 = pack.template get_arg<2>();
+        n4 = pack.template get_arg<3>();
+        n5 = pack.template get_arg<4>();
+        n6 = pack.template get_arg<5>();
+        n7 = pack.template get_arg<6>();
+        n8 = pack.template get_arg<7>();
+        n9 = pack.template get_arg<8>();
+        n10 = pack.template get_arg<9>();
         test = n1 + n2 + n3 + n4 + n5 + n6 + n7 + n8 + n9 + n10;
     };
 
@@ -556,7 +556,7 @@ TEST_CASE("By Pointer (simple)", "[pointer][simple]")
     {
         uint64_t num = 20;
         test = *rpc::call_func<njson_adapter>(GetClient<njson_adapter>(), "FibonacciPtr", &num)
-                    .get_arg<0>();
+                    .template get_arg<0>();
     };
 
     REQUIRE(expected == test);
@@ -569,7 +569,7 @@ TEST_CASE("By Pointer (simple)", "[pointer][simple]")
         uint64_t num = 20;
         test =
             *rpc::call_func<rapidjson_adapter>(GetClient<rapidjson_adapter>(), "FibonacciPtr", &num)
-                 .get_arg<0>();
+                 .template get_arg<0>();
     };
 
     REQUIRE(expected == test);
@@ -582,7 +582,7 @@ TEST_CASE("By Pointer (simple)", "[pointer][simple]")
     {
         uint64_t num = 20;
         test = *rpc::call_func<bjson_adapter>(GetClient<bjson_adapter>(), "FibonacciPtr", &num)
-                    .get_arg<0>();
+                    .template get_arg<0>();
     };
 
     REQUIRE(expected == test);
@@ -607,7 +607,7 @@ TEST_CASE("By Pointer (complex)", "[pointer][complex]")
 
         test = std::string(
             rpc::call_func<njson_adapter>(GetClient<njson_adapter>(), "HashComplexPtr", &cx, hash)
-                .get_arg<1>());
+                .template get_arg<1>());
     };
 
     REQUIRE_THAT(expected, Catch::Matchers::Equals(test));
@@ -628,7 +628,7 @@ TEST_CASE("By Pointer (complex)", "[pointer][complex]")
 
         test = std::string(rpc::call_func<rapidjson_adapter>(
             GetClient<rapidjson_adapter>(), "HashComplexPtr", &cx, hash)
-                               .get_arg<1>());
+                               .template get_arg<1>());
     };
 
     REQUIRE_THAT(expected, Catch::Matchers::Equals(test));
@@ -681,16 +681,16 @@ TEST_CASE("By Pointer (many)", "[pointer][many]")
         const auto pack = rpc::call_func<njson_adapter>(GetClient<njson_adapter>(), "SquareRootPtr",
             &n1, &n2, &n3, &n4, &n5, &n6, &n7, &n8, &n9, &n10);
 
-        n1 = *pack.get_arg<0>();
-        n2 = *pack.get_arg<1>();
-        n3 = *pack.get_arg<2>();
-        n4 = *pack.get_arg<3>();
-        n5 = *pack.get_arg<4>();
-        n6 = *pack.get_arg<5>();
-        n7 = *pack.get_arg<6>();
-        n8 = *pack.get_arg<7>();
-        n9 = *pack.get_arg<8>();
-        n10 = *pack.get_arg<9>();
+        n1 = *pack.template get_arg<0>();
+        n2 = *pack.template get_arg<1>();
+        n3 = *pack.template get_arg<2>();
+        n4 = *pack.template get_arg<3>();
+        n5 = *pack.template get_arg<4>();
+        n6 = *pack.template get_arg<5>();
+        n7 = *pack.template get_arg<6>();
+        n8 = *pack.template get_arg<7>();
+        n9 = *pack.template get_arg<8>();
+        n10 = *pack.template get_arg<9>();
         test = n1 + n2 + n3 + n4 + n5 + n6 + n7 + n8 + n9 + n10;
     };
 
@@ -715,16 +715,16 @@ TEST_CASE("By Pointer (many)", "[pointer][many]")
         const auto pack = rpc::call_func<rapidjson_adapter>(GetClient<rapidjson_adapter>(),
             "SquareRootPtr", &n1, &n2, &n3, &n4, &n5, &n6, &n7, &n8, &n9, &n10);
 
-        n1 = *pack.get_arg<0>();
-        n2 = *pack.get_arg<1>();
-        n3 = *pack.get_arg<2>();
-        n4 = *pack.get_arg<3>();
-        n5 = *pack.get_arg<4>();
-        n6 = *pack.get_arg<5>();
-        n7 = *pack.get_arg<6>();
-        n8 = *pack.get_arg<7>();
-        n9 = *pack.get_arg<8>();
-        n10 = *pack.get_arg<9>();
+        n1 = *pack.template get_arg<0>();
+        n2 = *pack.template get_arg<1>();
+        n3 = *pack.template get_arg<2>();
+        n4 = *pack.template get_arg<3>();
+        n5 = *pack.template get_arg<4>();
+        n6 = *pack.template get_arg<5>();
+        n7 = *pack.template get_arg<6>();
+        n8 = *pack.template get_arg<7>();
+        n9 = *pack.template get_arg<8>();
+        n10 = *pack.template get_arg<9>();
         test = n1 + n2 + n3 + n4 + n5 + n6 + n7 + n8 + n9 + n10;
     };
 
@@ -750,16 +750,16 @@ TEST_CASE("By Pointer (many)", "[pointer][many]")
         const auto pack = rpc::call_func<bjson_adapter>(GetClient<bjson_adapter>(), "SquareRootPtr",
             &n1, &n2, &n3, &n4, &n5, &n6, &n7, &n8, &n9, &n10);
 
-        n1 = *pack.get_arg<0>();
-        n2 = *pack.get_arg<1>();
-        n3 = *pack.get_arg<2>();
-        n4 = *pack.get_arg<3>();
-        n5 = *pack.get_arg<4>();
-        n6 = *pack.get_arg<5>();
-        n7 = *pack.get_arg<6>();
-        n8 = *pack.get_arg<7>();
-        n9 = *pack.get_arg<8>();
-        n10 = *pack.get_arg<9>();
+        n1 = *pack.template get_arg<0>();
+        n2 = *pack.template get_arg<1>();
+        n3 = *pack.template get_arg<2>();
+        n4 = *pack.template get_arg<3>();
+        n5 = *pack.template get_arg<4>();
+        n6 = *pack.template get_arg<5>();
+        n7 = *pack.template get_arg<6>();
+        n8 = *pack.template get_arg<7>();
+        n9 = *pack.template get_arg<8>();
+        n10 = *pack.template get_arg<9>();
         test = n1 + n2 + n3 + n4 + n5 + n6 + n7 + n8 + n9 + n10;
     };
 

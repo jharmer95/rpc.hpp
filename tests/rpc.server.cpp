@@ -82,7 +82,7 @@ static bool RUNNING = false;
 static std::mutex MUTEX;
 static std::condition_variable cv;
 
-void ThrowError()
+[[noreturn]] void ThrowError()
 {
     throw std::runtime_error("THIS IS A TEST ERROR!");
 }
@@ -90,7 +90,7 @@ void ThrowError()
 // NOTE: This function is only for testing purposes. Obviously you would not want this in a production server!
 void KillServer()
 {
-    std::unique_lock lk{ MUTEX };
+    std::unique_lock<std::mutex> lk{ MUTEX };
     RUNNING = false;
     lk.unlock();
     cv.notify_one();
@@ -498,7 +498,7 @@ int main()
         std::cout << "Running Boost.JSON server on port " << port_v<bjson_adapter> << "...\n";
 #endif
 
-        std::unique_lock lk{ MUTEX };
+        std::unique_lock<std::mutex> lk{ MUTEX };
         cv.wait(lk, [] { return !RUNNING; });
         return 0;
     }

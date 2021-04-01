@@ -338,7 +338,7 @@ namespace details
         [[nodiscard]] static packed_func<R, Args...> deserialize_pack(
             const typename Serial::serial_t& serial_obj);
 
-        [[nodiscard]] static std::string get_func_name(typename const Serial::serial_t& serial_obj);
+        [[nodiscard]] static std::string get_func_name(const typename Serial::serial_t& serial_obj);
         static void set_err_mesg(typename Serial::serial_t& serial_obj, std::string&& mesg);
     };
 } // namespace details
