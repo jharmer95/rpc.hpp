@@ -39,7 +39,7 @@ if(CODE_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
 endif()
 
 target_compile_options(rpc_test PRIVATE ${FULL_WARNING})
-target_compile_definitions(rpc_test PRIVATE RPC_HPP_ENABLE_POINTERS)
+target_compile_definitions(rpc_test PRIVATE)
 catch_discover_tests(rpc_test)
 
 add_executable(rpc_benchmark "rpc.benchmark.cpp")
@@ -58,7 +58,7 @@ if(${BUILD_BOOST_JSON_ADAPTER})
 endif()
 
 target_compile_options(rpc_benchmark PRIVATE ${FULL_WARNING})
-target_compile_definitions(rpc_benchmark PRIVATE RPC_HPP_ENABLE_POINTERS)
+target_compile_definitions(rpc_benchmark PRIVATE)
 
 add_executable(rpc_server "rpc.server.cpp")
 target_link_libraries(rpc_server PRIVATE rpc_hpp asio_lib)
@@ -76,4 +76,4 @@ if(${BUILD_BOOST_JSON_ADAPTER})
 endif()
 
 target_compile_options(rpc_server PRIVATE ${FULL_WARNING})
-target_compile_definitions(rpc_server PRIVATE RPC_HPP_ENABLE_POINTERS)
+target_compile_definitions(rpc_server PRIVATE)

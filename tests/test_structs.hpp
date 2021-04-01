@@ -37,16 +37,28 @@
 
 #pragma once
 
-#if defined(RPC_HPP_NJSON_ENABLED)
+#if defined(RPC_HPP_ENABLE_NJSON)
 #    include "rpc_adapters/rpc_njson.hpp"
+
+using rpc::adapters::njson;
+using rpc::adapters::njson_adapter;
 #endif
 
-#if defined(RPC_HPP_RAPIDJSON_ENABLED)
+#if defined(RPC_HPP_ENABLE_RAPIDJSON)
 #    include "rpc_adapters/rpc_rapidjson.hpp"
+
+using rpc::adapters::rapidjson_adapter;
+using rpc::adapters::rapidjson_doc;
+using rpc::adapters::rapidjson_val;
 #endif
 
-#if defined(RPC_HPP_BOOST_JSON_ENABLED)
+#if defined(RPC_HPP_ENABLE_BOOST_JSON)
 #    include "rpc_adapters/rpc_boost_json.hpp"
+
+namespace bjson = boost::json;
+using rpc::adapters::bjson_adapter;
+using rpc::adapters::bjson_obj;
+using rpc::adapters::bjson_val;
 #endif
 
 #include <algorithm>
@@ -84,9 +96,10 @@ struct ComplexObject
     std::array<uint8_t, 12> vals{};
 };
 
-#if defined(RPC_HPP_NJSON_ENABLED)
+#if defined(RPC_HPP_ENABLE_NJSON)
 template<>
-inline njson rpc::serialize<njson_serial_t>(const TestMessage& val)
+template<>
+inline njson njson_adapter::serialize(const TestMessage& val)
 {
     njson obj_j;
     obj_j["flag1"] = val.flag1;
@@ -104,7 +117,8 @@ inline njson rpc::serialize<njson_serial_t>(const TestMessage& val)
 }
 
 template<>
-inline TestMessage rpc::deserialize<njson_serial_t>(const njson& serial_obj)
+template<>
+inline TestMessage njson_adapter::deserialize(const njson& serial_obj)
 {
     TestMessage mesg;
     mesg.flag1 = serial_obj["flag1"].get<bool>();
@@ -116,7 +130,8 @@ inline TestMessage rpc::deserialize<njson_serial_t>(const njson& serial_obj)
 }
 
 template<>
-inline njson rpc::serialize<njson_serial_t>(const ComplexObject& val)
+template<>
+inline njson njson_adapter::serialize(const ComplexObject& val)
 {
     njson obj_j;
     obj_j["id"] = val.id;
@@ -129,7 +144,8 @@ inline njson rpc::serialize<njson_serial_t>(const ComplexObject& val)
 }
 
 template<>
-inline ComplexObject rpc::deserialize<njson_serial_t>(const njson& serial_obj)
+template<>
+inline ComplexObject njson_adapter::deserialize(const njson& serial_obj)
 {
     ComplexObject cx;
     cx.id = serial_obj["id"].get<int>();
@@ -149,59 +165,34 @@ inline ComplexObject rpc::deserialize<njson_serial_t>(const njson& serial_obj)
 
     return cx;
 }
-
-#    if defined(RPC_HPP_NLOHMANN_SERIAL_TYPE)
-template<>
-inline byte_vec rpc::serialize<generic_serial_t>(const TestMessage& val)
-{
-    return to_func(rpc::serialize<njson_serial_t, TestMessage>(val));
-}
-
-template<>
-inline TestMessage rpc::deserialize<generic_serial_t>(const byte_vec& serial_obj)
-{
-    return rpc::deserialize<njson_serial_t, TestMessage>(from_func(serial_obj));
-}
-
-template<>
-inline byte_vec rpc::serialize<generic_serial_t>(const ComplexObject& val)
-{
-    return to_func(rpc::serialize<njson_serial_t, ComplexObject>(val));
-}
-
-template<>
-inline ComplexObject rpc::deserialize<generic_serial_t>(const byte_vec& serial_obj)
-{
-    return rpc::deserialize<njson_serial_t, ComplexObject>(from_func(serial_obj));
-}
-#    endif
 #endif
 
-#if defined(RPC_HPP_RAPIDJSON_ENABLED)
+#if defined(RPC_HPP_ENABLE_RAPIDJSON)
 template<>
-inline rpdjson_doc rpc::serialize<rpdjson_serial_t>(const TestMessage& val)
+template<>
+inline rapidjson_doc rapidjson_adapter::serialize(const TestMessage& val)
 {
-    rpdjson_doc d;
+    rapidjson_doc d;
     d.SetObject();
     auto& alloc = d.GetAllocator();
 
-    rpdjson_val flag1_v;
+    rapidjson_val flag1_v;
     flag1_v.SetBool(val.flag1);
     d.AddMember("flag1", flag1_v, alloc);
 
-    rpdjson_val flag2_v;
+    rapidjson_val flag2_v;
     flag2_v.SetBool(val.flag2);
     d.AddMember("flag2", flag2_v, alloc);
 
-    rpdjson_val id_v;
+    rapidjson_val id_v;
     id_v.SetInt(val.id);
     d.AddMember("id", id_v, alloc);
 
-    rpdjson_val data_sz_v;
+    rapidjson_val data_sz_v;
     data_sz_v.SetUint(val.data_sz);
     d.AddMember("data_sz", data_sz_v, alloc);
 
-    rpdjson_val data_v;
+    rapidjson_val data_v;
     data_v.SetArray();
 
     for (uint8_t i = 0; i < val.data_sz; ++i)
@@ -214,7 +205,8 @@ inline rpdjson_doc rpc::serialize<rpdjson_serial_t>(const TestMessage& val)
 }
 
 template<>
-inline TestMessage rpc::deserialize<rpdjson_serial_t>(const rpdjson_val& serial_obj)
+template<>
+inline TestMessage rapidjson_adapter::deserialize(const rapidjson_doc& serial_obj)
 {
     TestMessage obj;
     const auto flag1_v = serial_obj.FindMember("flag1");
@@ -241,29 +233,30 @@ inline TestMessage rpc::deserialize<rpdjson_serial_t>(const rpdjson_val& serial_
 }
 
 template<>
-inline rpdjson_doc rpc::serialize<rpdjson_serial_t>(const ComplexObject& val)
+template<>
+inline rapidjson_doc rapidjson_adapter::serialize(const ComplexObject& val)
 {
-    rpdjson_doc d;
+    rapidjson_doc d;
     d.SetObject();
     auto& alloc = d.GetAllocator();
 
-    rpdjson_val id_v;
+    rapidjson_val id_v;
     id_v.SetInt(val.id);
     d.AddMember("id", id_v, alloc);
 
-    rpdjson_val name_v;
+    rapidjson_val name_v;
     name_v.SetString(val.name.c_str(), alloc);
     d.AddMember("name", name_v, alloc);
 
-    rpdjson_val flag1_v;
+    rapidjson_val flag1_v;
     flag1_v.SetBool(val.flag1);
     d.AddMember("flag1", flag1_v, alloc);
 
-    rpdjson_val flag2_v;
+    rapidjson_val flag2_v;
     flag2_v.SetBool(val.flag2);
     d.AddMember("flag2", flag2_v, alloc);
 
-    rpdjson_val vals_v;
+    rapidjson_val vals_v;
     vals_v.SetArray();
 
     for (uint8_t i = 0; i < 12; ++i)
@@ -276,7 +269,8 @@ inline rpdjson_doc rpc::serialize<rpdjson_serial_t>(const ComplexObject& val)
 }
 
 template<>
-inline ComplexObject rpc::deserialize<rpdjson_serial_t>(const rpdjson_val& serial_obj)
+template<>
+inline ComplexObject rapidjson_adapter::deserialize(const rapidjson_doc& serial_obj)
 {
     ComplexObject obj;
 
@@ -304,9 +298,10 @@ inline ComplexObject rpc::deserialize<rpdjson_serial_t>(const rpdjson_val& seria
 }
 #endif
 
-#if defined(RPC_HPP_BOOST_JSON_ENABLED)
+#if defined(RPC_HPP_ENABLE_BOOST_JSON)
 template<>
-inline bjson_val rpc::serialize<bjson_serial_t>(const TestMessage& val)
+template<>
+inline bjson_val bjson_adapter::serialize(const TestMessage& val)
 {
     bjson_obj obj_j;
     obj_j["flag1"] = val.flag1;
@@ -325,7 +320,8 @@ inline bjson_val rpc::serialize<bjson_serial_t>(const TestMessage& val)
 }
 
 template<>
-inline TestMessage rpc::deserialize<bjson_serial_t>(const bjson_val& serial_obj)
+template<>
+inline TestMessage bjson_adapter::deserialize(const bjson_val& serial_obj)
 {
     TestMessage mesg;
     mesg.flag1 = serial_obj.at("flag1").get_bool();
@@ -343,7 +339,8 @@ inline TestMessage rpc::deserialize<bjson_serial_t>(const bjson_val& serial_obj)
 }
 
 template<>
-inline bjson_val rpc::serialize<bjson_serial_t>(const ComplexObject& val)
+template<>
+inline bjson_val bjson_adapter::serialize(const ComplexObject& val)
 {
     bjson_obj obj_j;
     obj_j["id"] = val.id;
@@ -363,7 +360,8 @@ inline bjson_val rpc::serialize<bjson_serial_t>(const ComplexObject& val)
 }
 
 template<>
-inline ComplexObject rpc::deserialize<bjson_serial_t>(const bjson_val& serial_obj)
+template<>
+inline ComplexObject bjson_adapter::deserialize(const bjson_val& serial_obj)
 {
     ComplexObject cx;
     cx.id = static_cast<int>(serial_obj.at("id").get_int64());

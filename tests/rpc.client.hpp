@@ -43,7 +43,7 @@
 
 using asio::ip::tcp;
 
-class TestClient final : public rpc::client::client_base
+class TestClient final : public rpc::client::client_interface
 {
 public:
     TestClient(const std::string_view host, const std::string_view port)
@@ -53,6 +53,11 @@ public:
     }
 
     void send(const std::string& mesg) override
+    {
+        asio::write(m_socket, asio::buffer(mesg, mesg.size()));
+    }
+
+    void send(std::string&& mesg) override
     {
         asio::write(m_socket, asio::buffer(mesg, mesg.size()));
     }
@@ -72,5 +77,5 @@ private:
     asio::io_context m_io{};
     tcp::socket m_socket;
     tcp::resolver m_resolver;
-    char m_buffer[64U * 1024UL]{};
+    uint8_t m_buffer[64U * 1024UL]{};
 };
