@@ -43,4 +43,4 @@ jobs:
       - name: Run unit tests
         run: |
           cd build/tests
-          bin/test_server & ctest
+          bin/test_server & bin/rpc_test
