@@ -43,4 +43,6 @@ jobs:
       - name: Run unit tests
         run: |
           cd build/tests
+          ls -l
+          ls bin -l
           bin/test_server & bin/rpc_test
