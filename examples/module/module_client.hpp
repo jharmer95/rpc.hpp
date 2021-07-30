@@ -41,7 +41,7 @@ public:
 #if defined(_WIN32)
         m_func = reinterpret_cast<remote_func_type>(GetProcAddress(m_module, "RunRemoteFunc"));
 #elif defined(__unix__)
-        m_func = static_cast<remote_func_type>(dlsym(m_module, "RunRemoteFunc"));
+        m_func = reinterpret_cast<remote_func_type>(dlsym(m_module, "RunRemoteFunc"));
 #endif
 
         if (m_func == nullptr)
