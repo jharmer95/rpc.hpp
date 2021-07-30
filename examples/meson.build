@@ -28,23 +28,34 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+asio_dep = dependency('asio')
+
+ex_dependencies = [rpc_hpp_dep, asio_dep]
+ex_defines = []
+
 if get_option('build_adapter_boost_json')
-    boost_json_dep = dependency('boost', version : '>=1.75.0')
-    boost_json_adapter_dep = declare_dependency(dependencies : [rpc_hpp_dep, boost_json_dep])
-    add_project_arguments('-DRPC_HPP_BOOST_JSON_ENABLED', language : 'cpp')
+    ex_dependencies += [boost_json_adapter_dep]
+    ex_defines += [-DRPC_HPP_ENABLE_BOOST_JSON]
 endif
 
 if get_option('build_adapter_njson')
-    njson_dep = dependency('nlohmann_json', version : '>=3.9.0')
-    njson_adapter_dep = declare_dependency(dependencies : [rpc_hpp_dep, njson_dep])
-    add_project_arguments(['-DRPC_HPP_NJSON_ENABLED', '-DRPC_HPP_NLOHMANN_SERIAL_TYPE=1'], language : 'cpp')
+    ex_dependencies += [njson_adapter_dep]
+    ex_defines += [-DRPC_HPP_ENABLE_NJSON]
 endif
 
 if get_option('build_adapter_rapidjson')
-    rapidjson_dep = dependency('rapidjson', version : '>=1.1.0')
-    rapidjson_adapter_dep = declare_dependency(dependencies : [rpc_hpp_dep, rapidjson_dep])
-    add_project_arguments('-DRPC_HPP_RAPIDJSON_ENABLED', language : 'cpp')
+    ex_dependencies += [rapidjson_adapter_dep]
+    ex_defines += [-DRPC_HPP_ENABLE_RAPIDJSON]
 endif
 
-adapter_list = ['rpc_njson.hpp', 'rpc_rapidjson.hpp', 'rpc_boost_json.hpp']
-install_headers(adapter_list)
+if host.machine.system() == 'linux'
+    dl_dep = cc.find_library('dl', required: false)
+else
+    dl_dep = dependency('', required: false)
+endif
+
+rpc_server_exe = executable('rpc_server', 'server/server.cpp', dependencies : [ex_dependencies, thread_dep], install : false, cpp_args : [project_warnings, ex_defines])
+rpc_client_exe = executable('rpc_client', 'client/client.cpp', dependencies : ex_dependencies, install : false, cpp_args : [project_warnings, ex_defines])
+
+rpc_module_dll = shared_module('rpc_module', 'module/module.cpp', dependencies : ex_dependencies, install : false, cpp_args : [project_warnings, ex_defines, -DRPC_HPP_EXPORT])
+rpc_module_exe = executable('rpc_module_client', 'module/module_client.cpp', dependencies : [ex_dependencies, dl_dep], install : false, cpp_args : [project_warnings, ex_defines])

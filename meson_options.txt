@@ -1,3 +1,7 @@
-option('build_njson_adapter', type : 'boolean', value : true)
-option('build_rapidjson_adapter', type : 'boolean', value : true)
-option('build_boost_json_adapter', type : 'boolean', value : false)
+option('build_adapter_boost_json', type : 'boolean', value : false)
+option('build_adapter_njson', type : 'boolean', value : false)
+option('build_adapter_rapidjson', type : 'boolean', value : false)
+
+option('build_examples', type : 'boolean', value : false)
+option('build_benchmarks', type : 'boolean', value : false)
+option('build_testing', type : 'boolean', value : false)

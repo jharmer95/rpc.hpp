@@ -1,7 +1,7 @@
 ///@file rpc.hpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Header-only library for serialized RPC usage
-///@version 0.4.1
+///@version 0.5.1
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -37,15 +37,21 @@
 
 #pragma once
 
-#include <cstddef>
-#include <optional>
-#include <stdexcept>
-#include <string>
-#include <utility>
-#include <tuple>
-#include <type_traits>
-#include <unordered_map>
-#include <vector>
+#if !defined(RPC_HPP_CLIENT_IMPL) && !defined(RPC_HPP_SERVER_IMPL) && !defined(RPC_HPP_MODULE_IMPL)
+#    error At least one implementation type must be defined using 'RPC_HPP_{CLIENT, SERVER, MODULE}_IMPL'
+#endif
+
+#include <cstddef>     // for size_t
+#include <optional>    // for nullopt, optional
+#include <stdexcept>   // for runtime_error
+#include <string>      // for string
+#include <tuple>       // for tuple, forward_as_tuple
+#include <type_traits> // for declval, false_type, is_same, integral_constant
+#include <utility>     // for move, index_sequence, make_index_sequence
+
+#if defined(RPC_HPP_SERVER_IMPL) && defined(RPC_HPP_ENABLE_SERVER_CACHE)
+#    include <unordered_map> // for unordered_map
+#endif
 
 namespace rpc
 {
@@ -343,6 +349,7 @@ namespace details
     };
 } // namespace details
 
+#if defined(RPC_HPP_SERVER_IMPL) || defined(RPC_HPP_MODULE_IMPL)
 namespace server
 {
     template<typename R, typename... Args>
@@ -383,7 +390,7 @@ namespace server
         bytes = Serial::to_bytes(std::move(serial_obj));
     }
 
-#if defined(RPC_HPP_ENABLE_SERVER_CACHE)
+#    if defined(RPC_HPP_SERVER_IMPL) && defined(RPC_HPP_ENABLE_SERVER_CACHE)
     template<typename Serial, typename R, typename... Args>
     void dispatch_cached_func(R (*func)(Args...), typename Serial::serial_t& serial_obj)
     {
@@ -417,7 +424,7 @@ namespace server
 
         serial_obj = details::pack_adapter<Serial>::template serialize_pack<R, Args...>(pack);
     }
-#endif
+#    endif
 
     template<typename Serial, typename R, typename... Args>
     void dispatch_func(R (*func)(Args...), typename Serial::serial_t& serial_obj)
@@ -429,39 +436,41 @@ namespace server
         serial_obj = details::pack_adapter<Serial>::template serialize_pack<R, Args...>(pack);
     }
 } // namespace server
+#endif
 
+#if defined(RPC_HPP_CLIENT_IMPL)
 inline namespace client
 {
+    template<typename Serial>
     class client_interface
     {
     public:
         virtual ~client_interface() = default;
-        virtual void send(const std::string& mesg) = 0;
-        virtual void send(std::string&& mesg) = 0;
-        virtual std::string receive() = 0;
+        virtual void send(const typename Serial::bytes_t& bytes) = 0;
+        virtual typename Serial::bytes_t receive() = 0;
+
+        template<typename R = void, typename... Args>
+        details::packed_func<R, Args...> call_func(std::string&& func_name, Args&&... args)
+        {
+            if constexpr (std::is_void_v<R>)
+            {
+                const details::packed_func<void, Args...> pack(
+                    std::move(func_name), std::forward_as_tuple(args...));
+
+                send(Serial::to_bytes(details::pack_adapter<Serial>::serialize_pack(pack)));
+            }
+            else
+            {
+                const details::packed_func<R, Args...> pack(
+                    std::move(func_name), std::nullopt, std::forward_as_tuple(args...));
+
+                send(Serial::to_bytes(details::pack_adapter<Serial>::serialize_pack(pack)));
+            }
+
+            return details::pack_adapter<Serial>::template deserialize_pack<R, Args...>(
+                Serial::from_bytes(receive()));
+        }
     };
-
-    template<typename Serial, typename R = void, typename... Args>
-    details::packed_func<R, Args...> call_func(
-        client_interface& client, std::string&& func_name, Args&&... args)
-    {
-        if constexpr (std::is_void_v<R>)
-        {
-            const details::packed_func<void, Args...> pack(
-                std::move(func_name), std::forward_as_tuple(args...));
-
-            client.send(Serial::to_bytes(details::pack_adapter<Serial>::serialize_pack(pack)));
-        }
-        else
-        {
-            const details::packed_func<R, Args...> pack(
-                std::move(func_name), std::nullopt, std::forward_as_tuple(args...));
-
-            client.send(Serial::to_bytes(details::pack_adapter<Serial>::serialize_pack(pack)));
-        }
-
-        return details::pack_adapter<Serial>::template deserialize_pack<R, Args...>(
-            Serial::from_bytes(client.receive()));
-    }
 } // namespace client
+#endif
 } // namespace rpc

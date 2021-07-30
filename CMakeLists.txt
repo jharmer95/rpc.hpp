@@ -1,17 +1,59 @@
-cmake_minimum_required(VERSION 3.1...3.19)
+# BSD 3-Clause License
+#
+# Copyright (c) 2020-2021, Jackson Harmer
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this
+#    list of conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+#
+# 3. Neither the name of the copyright holder nor the names of its
+#    contributors may be used to endorse or promote products derived from
+#    this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+cmake_minimum_required(VERSION 3.1)
 
 project(
   "rpc.hpp"
-  VERSION 0.4.1
+  VERSION 0.5.1
   DESCRIPTION "Simple RPC Header-Only Library"
-  LANGUAGES CXX)
+  LANGUAGES CXX
+)
 
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
-
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+# ==== Build Options ====
+
+option(BUILD_ADAPTER_BOOST_JSON "Build the adapter for Boost.JSON" OFF)
+option(BUILD_ADAPTER_NJSON "Build the adapter for nlohmann/json" OFF)
+option(BUILD_ADAPTER_RAPIDJSON "Build the adapter for rapidjson" OFF)
+option(BUILD_BENCHMARK "Build the benchmarking suite" OFF)
+option(BUILD_EXAMPLES "Build the examples" OFF)
+option(BUILD_TESTING "Build the testing tree" OFF)
+option(CODE_COVERAGE "Enable coverage reporting" OFF)
+option(DEPENDS_CONAN "Use Conan to manage C/C++ dependencies" OFF)
+option(DEPENDS_VCPKG "Use vcpkg to manage C/C++ dependencies" OFF)
+option(GENERATE_DOXYGEN "Generate Doxygen documentation from comments" OFF)
+
+# ==== Machine/Compiler Configs ====
 
 if(WIN32)
   set(TARGET_WINDOWS TRUE)
@@ -120,10 +162,7 @@ elseif(CXX_CLANG)
   set(MIN_WARNING -Wall)
 endif()
 
-include(CTest)
-include(Catch)
-
-option(GENERATE_DOXYGEN "Generate Doxygen documentation from comments" OFF)
+# ==== Documentation Generation ====
 
 if(${GENERATE_DOXYGEN})
   find_package(Doxygen OPTIONAL_COMPONENTS dot)
@@ -136,26 +175,12 @@ if(${GENERATE_DOXYGEN})
     set(DOXYGEN_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}")
     set(DOXYGEN_USE_MDFILE_AS_MAINPAGE "README.md")
     doxygen_add_docs(docs ${PROJECT_SOURCE_DIR}
-                     COMMENT "Generate doxygen docs for rpc.hpp")
+      COMMENT "Generate doxygen docs for rpc.hpp")
   endif()
 endif()
 
-option(USE_CONAN "Use Conan to manage C/C++ dependencies" OFF)
-option(USE_VCPKG "Use vcpkg to manage C/C++ dependencies" OFF)
+# ==== Code Coverage ====
 
-if(${USE_CONAN})
-  if(${USE_VCPKG})
-    message(FATAL_ERROR "Using both vcpkg and Conan is not supported!")
-  endif()
-
-  set(CONAN_EXTRA_REQUIRES "")
-  set(CONAN_EXTRA_OPTIONS "")
-  include(cmake/Conan.cmake)
-endif()
-
-add_library(coverage_config INTERFACE)
-
-option(CODE_COVERAGE "Enable coverage reporting" OFF)
 if(CODE_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
   target_compile_options(coverage_config INTERFACE -O0 -g --coverage)
   if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.13)
@@ -165,22 +190,76 @@ if(CODE_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
   endif()
 endif()
 
-find_package(Threads)
+# ==== Dependency Management ====
+
+if(${DEPENDS_CONAN})
+  if(${DEPENDS_VCPKG})
+    message(FATAL_ERROR "Using both vcpkg and Conan is not supported!")
+  endif()
+
+  set(CONAN_EXTRA_REQUIRES "")
+  set(CONAN_EXTRA_OPTIONS "")
+  include(cmake/Conan.cmake)
+endif()
+
+# ==== Target(s) ====
 
 add_library(rpc_hpp INTERFACE)
-target_include_directories(rpc_hpp INTERFACE "${PROJECT_SOURCE_DIR}/include")
-target_link_libraries(rpc_hpp INTERFACE ${CMAKE_THREAD_LIBS_INIT})
-install(FILES "${PROJECT_SOURCE_DIR}/include/rpc.hpp"
-        DESTINATION "${CMAKE_INSTALL_PREFIX}/include")
+add_library(RpcHpp::rpc_hpp ALIAS rpc_hpp)
 
-option(BUILD_NJSON_ADAPTER "Build the adapter for nlohmann/json" ON)
-option(BUILD_RAPIDJSON_ADAPTER "Build the adapter for rapidjson" ON)
-option(BUILD_BOOST_JSON_ADAPTER "Build the adapter for Boost.JSON" OFF)
+include(GNUInstallDirs)
+target_include_directories(rpc_hpp
+  INTERFACE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+)
+target_compile_features(rpc_hpp INTERFACE cxx_std_17)
 
-add_subdirectory(include/rpc_adapters)
+# ==== Target Installation ====
 
-option(BUILD_TESTING "Build the testing tree." ON)
+include(CMakePackageConfigHelpers)
+
+write_basic_package_version_file(${CMAKE_CURRENT_BINARY_DIR}/RpcHppConfigVersion.cmake
+  COMPATIBILITY SameMajorVersion)
+
+install(TARGETS rpc_hpp
+        EXPORT rpc_hpp-targets
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install(EXPORT rpc_hpp-targets
+        FILE "RpcHppConfig.cmake"
+        NAMESPACE RpcHpp::
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/rpc_hpp)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/RpcHppConfigVersion.cmake
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/rpc_hpp)
+install(FILES include/rpc.hpp include/rpc_dispatch_helper.hpp
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
+# ==== Sub-Projects ====
+
+if(BUILD_ADAPTER_BOOST_JSON OR BUILD_ADAPTER_NJSON OR BUILD_ADAPTER_RAPIDJSON)
+  message("Building rpc_adapters...")
+  add_subdirectory(include/rpc_adapters)
+else()
+  message("Skipping rpc_adapters...")
+endif()
+
+if(BUILD_BENCHMARK)
+  message("Building benchmarks...")
+  add_subdirectory(benchmarks)
+else()
+  message("Skipping benchmarks...")
+endif()
+
+if(BUILD_EXAMPLES)
+  message("Building examples...")
+  add_subdirectory(examples)
+else()
+  message("Skipping examples...")
+endif()
+
 if(BUILD_TESTING AND (PROJECT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR))
-  enable_testing()
+  message("Building tests...")
   add_subdirectory(tests)
+else()
+  message("Skipping tests...")
 endif()

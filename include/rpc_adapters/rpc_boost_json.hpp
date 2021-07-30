@@ -1,7 +1,7 @@
 ///@file rpc_adapters/rpc_boost_json.hpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Implementation of adapting Boost.JSON (https://github.com/boostorg/json)
-///@version 0.4.1
+///@version 0.5.1
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -42,6 +42,8 @@
 #endif
 
 #include "../rpc.hpp"
+
+#include <cassert>
 
 #include <boost/json/src.hpp>
 

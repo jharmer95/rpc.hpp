@@ -28,33 +28,20 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+cmake_minimum_required(VERSION 3.1)
+
+project(
+  "rpc.hpp examples"
+  LANGUAGES CXX
+)
+
 if(NOT TARGET RpcHpp::rpc_hpp)
   message(FATAL_ERROR "RpcHpp::rpc_hpp alias not set. Please generate CMake from the root directory")
 endif()
 
-include(CTest)
-include(Catch)
-enable_testing()
-
-if(NOT TARGET catch2_lib)
-  add_library(catch2_lib INTERFACE)
-
-  if(${DEPENDS_CONAN})
-    set(CONAN_EXTRA_REQUIRES "catch2/[>2.10.0 <3.0.0]")
-    run_conan()
-    target_link_libraries(catch2_lib INTERFACE CONAN_PKG::catch2)
-  elseif(${DEPENDS_VCPKG})
-    find_package(Catch2 CONFIG REQUIRED)
-    target_link_libraries(catch2_lib INTERFACE Catch2::Catch2)
-  else()
-    find_path(catch2_path catch2/catch.hpp)
-    target_include_directories(catch2_lib SYSTEM INTERFACE catch2_path)
-  endif()
-endif()
-
 if(NOT TARGET asio_lib)
   add_library(asio_lib INTERFACE)
-  target_compile_definitions(test_asio_lib INTERFACE ASIO_STANDALONE)
+  target_compile_definitions(asio_lib INTERFACE ASIO_STANDALONE)
 
   if(${DEPENDS_CONAN})
     set(CONAN_EXTRA_REQUIRES "asio/[>=1.14.0]")
@@ -69,43 +56,21 @@ if(NOT TARGET asio_lib)
   endif()
 endif()
 
-add_executable(rpc_test "rpc.test.cpp")
-target_link_libraries(rpc_test PRIVATE rpc_hpp catch2_lib asio_lib)
-
-if(${BUILD_ADAPTER_BOOST_JSON})
-  target_link_libraries(rpc_test PRIVATE boost_json_adapter)
-endif()
-
-if(${BUILD_ADAPTER_NJSON})
-  target_link_libraries(rpc_test PRIVATE njson_adapter)
-endif()
-
-if(${BUILD_ADAPTER_RAPIDJSON})
-  target_link_libraries(rpc_test PRIVATE rpdjson_adapter)
-endif()
-
-if(CODE_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-  target_link_libraries(rpc_test PRIVATE coverage_config)
-endif()
-
-target_compile_options(rpc_test PRIVATE ${FULL_WARNING})
-catch_discover_tests(rpc_test)
-
 find_package(Threads REQUIRED)
 
-add_executable(test_server "rpc.server.cpp")
-target_link_libraries(test_server PRIVATE rpc_hpp asio_lib Threads::Threads)
+add_executable(rpc_server "server/server.cpp")
+target_link_libraries(rpc_server PRIVATE rpc_hpp asio_lib Threads::Threads njson_adapter)
+target_compile_options(rpc_server PRIVATE ${FULL_WARNING})
 
-if(${BUILD_ADAPTER_BOOST_JSON})
-  target_link_libraries(test_server PRIVATE boost_json_adapter)
-endif()
+add_executable(rpc_client "client/client.cpp")
+target_link_libraries(rpc_client PRIVATE rpc_hpp asio_lib njson_adapter)
+target_compile_options(rpc_client PRIVATE ${FULL_WARNING})
 
-if(${BUILD_ADAPTER_NJSON})
-  target_link_libraries(test_server PRIVATE njson_adapter)
-endif()
+add_library(rpc_module MODULE "module/module.cpp")
+target_link_libraries(rpc_module PRIVATE rpc_hpp njson_adapter)
+target_compile_definitions(rpc_module PRIVATE -DRPC_HPP_EXPORT)
+target_compile_options(rpc_module PRIVATE ${FULL_WARNING})
 
-if(${BUILD_ADAPTER_RAPIDJSON})
-  target_link_libraries(test_server PRIVATE rpdjson_adapter)
-endif()
-
-target_compile_options(test_server PRIVATE ${FULL_WARNING})
+add_executable(rpc_module_client "module/module_client.cpp")
+target_link_libraries(rpc_module_client PRIVATE rpc_hpp njson_adapter ${CMAKE_DL_LIBS})
+target_compile_options(rpc_module_client PRIVATE ${FULL_WARNING})

@@ -28,23 +28,29 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+asio_dep = dependency('asio')
+catch2_dep = dependency('catch2', version : ['>2.10.0', '<3.0.0'])
+
+bench_dependencies = [rpc_hpp_dep, asio_dep, catch2_dep]
+bench_defines = []
+
 if get_option('build_adapter_boost_json')
-    boost_json_dep = dependency('boost', version : '>=1.75.0')
-    boost_json_adapter_dep = declare_dependency(dependencies : [rpc_hpp_dep, boost_json_dep])
-    add_project_arguments('-DRPC_HPP_BOOST_JSON_ENABLED', language : 'cpp')
+    bench_dependencies += [boost_json_adapter_dep]
+    bench_defines += [-DRPC_HPP_ENABLE_BOOST_JSON]
 endif
 
 if get_option('build_adapter_njson')
-    njson_dep = dependency('nlohmann_json', version : '>=3.9.0')
-    njson_adapter_dep = declare_dependency(dependencies : [rpc_hpp_dep, njson_dep])
-    add_project_arguments(['-DRPC_HPP_NJSON_ENABLED', '-DRPC_HPP_NLOHMANN_SERIAL_TYPE=1'], language : 'cpp')
+    bench_dependencies += [njson_adapter_dep]
+    bench_defines += [-DRPC_HPP_ENABLE_NJSON]
 endif
 
 if get_option('build_adapter_rapidjson')
-    rapidjson_dep = dependency('rapidjson', version : '>=1.1.0')
-    rapidjson_adapter_dep = declare_dependency(dependencies : [rpc_hpp_dep, rapidjson_dep])
-    add_project_arguments('-DRPC_HPP_RAPIDJSON_ENABLED', language : 'cpp')
+    bench_dependencies += [rapidjson_adapter_dep]
+    bench_defines += [-DRPC_HPP_ENABLE_RAPIDJSON]
 endif
 
-adapter_list = ['rpc_njson.hpp', 'rpc_rapidjson.hpp', 'rpc_boost_json.hpp']
-install_headers(adapter_list)
+rpc_bench_exe = executable('rpc_benchmark', 'benchmark.cpp', dependencies : bench_dependencies, install : false, cpp_args : [project_warnings, bench_defines])
+
+if get_option('buildtype') in ['debugoptimized', 'release']
+    benchmark('rpc_benchmark', rpc_bench_exe, args : ['--benchmark-samples 20'], timeout : 90)
+endif

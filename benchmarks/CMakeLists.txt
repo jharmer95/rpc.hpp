@@ -28,13 +28,16 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+cmake_minimum_required(VERSION 3.1)
+
+project(
+  "rpc.hpp benchmarks"
+  LANGUAGES CXX
+)
+
 if(NOT TARGET RpcHpp::rpc_hpp)
   message(FATAL_ERROR "RpcHpp::rpc_hpp alias not set. Please generate CMake from the root directory")
 endif()
-
-include(CTest)
-include(Catch)
-enable_testing()
 
 if(NOT TARGET catch2_lib)
   add_library(catch2_lib INTERFACE)
@@ -54,7 +57,7 @@ endif()
 
 if(NOT TARGET asio_lib)
   add_library(asio_lib INTERFACE)
-  target_compile_definitions(test_asio_lib INTERFACE ASIO_STANDALONE)
+  target_compile_definitions(asio_lib INTERFACE ASIO_STANDALONE)
 
   if(${DEPENDS_CONAN})
     set(CONAN_EXTRA_REQUIRES "asio/[>=1.14.0]")
@@ -69,43 +72,19 @@ if(NOT TARGET asio_lib)
   endif()
 endif()
 
-add_executable(rpc_test "rpc.test.cpp")
-target_link_libraries(rpc_test PRIVATE rpc_hpp catch2_lib asio_lib)
+add_executable(rpc_benchmark "benchmark.cpp" "client.hpp" "test_structs.hpp")
+target_link_libraries(rpc_benchmark PRIVATE rpc_hpp catch2_lib asio_lib)
 
 if(${BUILD_ADAPTER_BOOST_JSON})
-  target_link_libraries(rpc_test PRIVATE boost_json_adapter)
+  target_link_libraries(rpc_benchmark PRIVATE boost_json_adapter)
 endif()
 
 if(${BUILD_ADAPTER_NJSON})
-  target_link_libraries(rpc_test PRIVATE njson_adapter)
+  target_link_libraries(rpc_benchmark PRIVATE njson_adapter)
 endif()
 
 if(${BUILD_ADAPTER_RAPIDJSON})
-  target_link_libraries(rpc_test PRIVATE rpdjson_adapter)
+  target_link_libraries(rpc_benchmark PRIVATE rpdjson_adapter)
 endif()
 
-if(CODE_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-  target_link_libraries(rpc_test PRIVATE coverage_config)
-endif()
-
-target_compile_options(rpc_test PRIVATE ${FULL_WARNING})
-catch_discover_tests(rpc_test)
-
-find_package(Threads REQUIRED)
-
-add_executable(test_server "rpc.server.cpp")
-target_link_libraries(test_server PRIVATE rpc_hpp asio_lib Threads::Threads)
-
-if(${BUILD_ADAPTER_BOOST_JSON})
-  target_link_libraries(test_server PRIVATE boost_json_adapter)
-endif()
-
-if(${BUILD_ADAPTER_NJSON})
-  target_link_libraries(test_server PRIVATE njson_adapter)
-endif()
-
-if(${BUILD_ADAPTER_RAPIDJSON})
-  target_link_libraries(test_server PRIVATE rpdjson_adapter)
-endif()
-
-target_compile_options(test_server PRIVATE ${FULL_WARNING})
+target_compile_options(rpc_benchmark PRIVATE ${FULL_WARNING})
