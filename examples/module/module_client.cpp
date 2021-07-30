@@ -29,7 +29,7 @@ int main(int argc, char* argv[])
             // Trivial function example
             {
                 funcName = "Sum";
-                const auto pack = client.call_func<int>("Sum", 1, 2);
+                const auto pack = client.template call_func<int>("Sum", 1, 2);
                 printf("Sum(1, 2) == %d\n", pack.get_result());
             }
 
@@ -38,8 +38,8 @@ int main(int argc, char* argv[])
                 funcName = "AddOneToEach";
                 std::vector<int> vec{ 1, 2, 3, 4, 5 };
 
-                const auto pack = client.call_func<void>("AddOneToEach", vec);
-                const auto vec2 = pack.get_arg<0>();
+                const auto pack = client.template call_func<void>("AddOneToEach", vec);
+                const auto vec2 = pack.template get_arg<0>();
                 printf("AddOneToEach({ 1, 2, 3, 4, 5 }) == {");
 
                 for (size_t i = 0; i < vec2.size() - 1; ++i)
@@ -55,9 +55,9 @@ int main(int argc, char* argv[])
                 funcName = "GetName";
                 std::string mod_name;
 
-                const auto pack = client.call_func<std::string>("GetName", mod_name);
+                const auto pack = client.template call_func<std::string>("GetName", mod_name);
 
-                printf("GetName() == \"%s\"\n", pack.get_arg<0>().c_str());
+                printf("GetName() == \"%s\"\n", pack.template get_arg<0>().c_str());
             }
 
             return EXIT_SUCCESS;

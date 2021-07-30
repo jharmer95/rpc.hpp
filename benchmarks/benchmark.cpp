@@ -60,7 +60,8 @@ TEST_CASE("By Value (simple)", "[value][simple][cached]")
 
     BENCHMARK("rpc.hpp (asio::tcp, njson)")
     {
-        test = GetClient<njson_adapter>().call_func<uint64_t>("Fibonacci", 20).get_result();
+        test =
+            GetClient<njson_adapter>().template call_func<uint64_t>("Fibonacci", 20).get_result();
     };
 
     REQUIRE(expected == test);
@@ -70,7 +71,9 @@ TEST_CASE("By Value (simple)", "[value][simple][cached]")
 
     BENCHMARK("rpc.hpp (asio::tcp, rapidjson)")
     {
-        test = GetClient<rapidjson_adapter>().call_func<uint64_t>("Fibonacci", 20).get_result();
+        test = GetClient<rapidjson_adapter>()
+                   .template call_func<uint64_t>("Fibonacci", 20)
+                   .get_result();
     };
 
     REQUIRE(expected == test);
@@ -81,7 +84,8 @@ TEST_CASE("By Value (simple)", "[value][simple][cached]")
 
     BENCHMARK("rpc.hpp (asio::tcp, Boost.JSON)")
     {
-        test = GetClient<bjson_adapter>().call_func<uint64_t>("Fibonacci", 20).get_result();
+        test =
+            GetClient<bjson_adapter>().template call_func<uint64_t>("Fibonacci", 20).get_result();
     };
 
     REQUIRE(expected == test);
@@ -102,7 +106,9 @@ TEST_CASE("By Value (complex)", "[value][complex][cached]")
         cx.name = "Franklin D. Roosevelt";
         cx.vals = { 0, 1, 4, 6, 7, 8, 11, 15, 17, 22, 25, 26 };
 
-        test = GetClient<njson_adapter>().call_func<std::string>("HashComplex", cx).get_result();
+        test = GetClient<njson_adapter>()
+                   .template call_func<std::string>("HashComplex", cx)
+                   .get_result();
     };
 
     REQUIRE_THAT(expected, Catch::Matchers::Equals(test));
@@ -119,8 +125,9 @@ TEST_CASE("By Value (complex)", "[value][complex][cached]")
         cx.name = "Franklin D. Roosevelt";
         cx.vals = { 0, 1, 4, 6, 7, 8, 11, 15, 17, 22, 25, 26 };
 
-        test =
-            GetClient<rapidjson_adapter>().call_func<std::string>("HashComplex", cx).get_result();
+        test = GetClient<rapidjson_adapter>()
+                   .template call_func<std::string>("HashComplex", cx)
+                   .get_result();
     };
 
     REQUIRE_THAT(expected, Catch::Matchers::Equals(test));
@@ -138,7 +145,9 @@ TEST_CASE("By Value (complex)", "[value][complex][cached]")
         cx.name = "Franklin D. Roosevelt";
         cx.vals = { 0, 1, 4, 6, 7, 8, 11, 15, 17, 22, 25, 26 };
 
-        test = GetClient<bjson_adapter>().call_func<std::string>("HashComplex", cx).get_result();
+        test = GetClient<bjson_adapter>()
+                   .template call_func<std::string>("HashComplex", cx)
+                   .get_result();
     };
 
     REQUIRE_THAT(expected, Catch::Matchers::Equals(test));
@@ -153,7 +162,7 @@ TEST_CASE("By Value (many)", "[value][many][cached]")
     BENCHMARK("rpc.hpp (asio::tcp, njson)")
     {
         test = GetClient<njson_adapter>()
-                   .call_func<double>("StdDev", 55.65, 125.325, 552.125, 12.767, 2599.6,
+                   .template call_func<double>("StdDev", 55.65, 125.325, 552.125, 12.767, 2599.6,
                        1245.125663, 9783.49, 125.12, 553.3333333333, 2266.1)
                    .get_result();
     };
@@ -166,7 +175,7 @@ TEST_CASE("By Value (many)", "[value][many][cached]")
     BENCHMARK("rpc.hpp (asio::tcp, rapidjson)")
     {
         test = GetClient<rapidjson_adapter>()
-                   .call_func<double>("StdDev", 55.65, 125.325, 552.125, 12.767, 2599.6,
+                   .template call_func<double>("StdDev", 55.65, 125.325, 552.125, 12.767, 2599.6,
                        1245.125663, 9783.49, 125.12, 553.3333333333, 2266.1)
                    .get_result();
     };
@@ -180,7 +189,7 @@ TEST_CASE("By Value (many)", "[value][many][cached]")
     BENCHMARK("rpc.hpp (asio::tcp, Boost.JSON)")
     {
         test = GetClient<bjson_adapter>()
-                   .call_func<double>("StdDev", 55.65, 125.325, 552.125, 12.767, 2599.6,
+                   .template call_func<double>("StdDev", 55.65, 125.325, 552.125, 12.767, 2599.6,
                        1245.125663, 9783.49, 125.12, 553.3333333333, 2266.1)
                    .get_result();
     };
@@ -405,7 +414,7 @@ TEST_CASE("With Container", "[container][cached]")
             9783.49, 125.12, 553.3333333333, 2266.1 };
 
         test = GetClient<njson_adapter>()
-                   .call_func<double>("AverageContainer<double>", vec)
+                   .template call_func<double>("AverageContainer<double>", vec)
                    .get_result();
     };
 
@@ -420,7 +429,7 @@ TEST_CASE("With Container", "[container][cached]")
             9783.49, 125.12, 553.3333333333, 2266.1 };
 
         test = GetClient<rapidjson_adapter>()
-                   .call_func<double>("AverageContainer<double>", vec)
+                   .template call_func<double>("AverageContainer<double>", vec)
                    .get_result();
     };
 #endif
@@ -434,7 +443,7 @@ TEST_CASE("With Container", "[container][cached]")
             9783.49, 125.12, 553.3333333333, 2266.1 };
 
         test = GetClient<bjson_adapter>()
-                   .call_func<double>("AverageContainer<double>", vec)
+                   .template call_func<double>("AverageContainer<double>", vec)
                    .get_result();
     };
 #endif
@@ -445,16 +454,18 @@ TEST_CASE("Sequential", "[sequential][cached]")
     BENCHMARK("rpc.hpp (asio::tcp, njson)")
     {
         auto vec = GetClient<njson_adapter>()
-                       .call_func<std::vector<uint64_t>>("RandInt", 5, 30, 1000)
+                       .template call_func<std::vector<uint64_t>>("RandInt", 5, 30, 1000)
                        .get_result();
 
         for (auto& val : vec)
         {
-            val = GetClient<njson_adapter>().call_func<uint64_t>("Fibonacci", val).get_result();
+            val = GetClient<njson_adapter>()
+                      .template call_func<uint64_t>("Fibonacci", val)
+                      .get_result();
         }
 
         return GetClient<njson_adapter>()
-            .call_func<double>("AverageContainer<uint64_t>", vec)
+            .template call_func<double>("AverageContainer<uint64_t>", vec)
             .get_result();
     };
 
@@ -462,16 +473,18 @@ TEST_CASE("Sequential", "[sequential][cached]")
     BENCHMARK("rpc.hpp (asio::tcp, rapidjson)")
     {
         auto vec = GetClient<rapidjson_adapter>()
-                       .call_func<std::vector<uint64_t>>("RandInt", 5, 30, 1000)
+                       .template call_func<std::vector<uint64_t>>("RandInt", 5, 30, 1000)
                        .get_result();
 
         for (auto& val : vec)
         {
-            val = GetClient<rapidjson_adapter>().call_func<uint64_t>("Fibonacci", val).get_result();
+            val = GetClient<rapidjson_adapter>()
+                      .template call_func<uint64_t>("Fibonacci", val)
+                      .get_result();
         }
 
         return GetClient<rapidjson_adapter>()
-            .call_func<double>("AverageContainer<uint64_t>", vec)
+            .template call_func<double>("AverageContainer<uint64_t>", vec)
             .get_result();
     };
 #endif
@@ -480,237 +493,22 @@ TEST_CASE("Sequential", "[sequential][cached]")
     BENCHMARK("rpc.hpp (asio::tcp, bjson)")
     {
         auto vec = GetClient<bjson_adapter>()
-                       .call_func<std::vector<uint64_t>>("RandInt", 5, 30, 1000)
+                       .template call_func<std::vector<uint64_t>>("RandInt", 5, 30, 1000)
                        .get_result();
 
         for (auto& val : vec)
         {
-            val = GetClient<bjson_adapter>().call_func<uint64_t>("Fibonacci", val).get_result();
+            val = GetClient<bjson_adapter>()
+                      .template call_func<uint64_t>("Fibonacci", val)
+                      .get_result();
         }
 
         return GetClient<bjson_adapter>()
-            .call_func<double>("AverageContainer<uint64_t>", vec)
+            .template call_func<double>("AverageContainer<uint64_t>", vec)
             .get_result();
     };
 #endif
 }
-
-#if defined(RPC_HPP_ENABLE_POINTERS)
-TEST_CASE("By Pointer (simple)", "[pointer][simple]")
-{
-    constexpr uint64_t expected = 10946ULL;
-    uint64_t test = 0;
-
-    BENCHMARK("rpc.hpp (asio::tcp, njson)")
-    {
-        uint64_t num = 20;
-        test = *GetClient<njson_adapter>().call_func("FibonacciPtr", &num).template get_arg<0>();
-    };
-
-    REQUIRE(expected == test);
-
-#    if defined(RPC_HPP_ENABLE_RAPIDJSON)
-    test = 0;
-
-    BENCHMARK("rpc.hpp (asio::tcp, rapidjson)")
-    {
-        uint64_t num = 20;
-        test =
-            *GetClient<rapidjson_adapter>().call_func("FibonacciPtr", &num).template get_arg<0>();
-    };
-
-    REQUIRE(expected == test);
-#    endif
-
-#    if defined(RPC_HPP_ENABLE_BOOST_JSON)
-    test = 0;
-
-    BENCHMARK("rpc.hpp (asio::tcp, Boost.JSON)")
-    {
-        uint64_t num = 20;
-        test = *GetClient<bjson_adapter>().call_func("FibonacciPtr", &num).template get_arg<0>();
-    };
-
-    REQUIRE(expected == test);
-#    endif
-}
-
-TEST_CASE("By Pointer (complex)", "[pointer][complex]")
-{
-    const std::string expected = "467365747274747d315a473a527073796c7e707b85";
-    std::string test;
-
-    BENCHMARK("rpc.hpp (asio::tcp, njson)")
-    {
-        ComplexObject cx;
-        cx.flag1 = false;
-        cx.flag2 = true;
-        cx.id = 24;
-        cx.name = "Franklin D. Roosevelt";
-        cx.vals = { 0, 1, 4, 6, 7, 8, 11, 15, 17, 22, 25, 26 };
-
-        char hash[256]{};
-
-        test = std::string(GetClient<njson_adapter>()
-                               .call_func("HashComplexPtr", &cx, hash)
-                               .template get_arg<1>());
-    };
-
-    REQUIRE_THAT(expected, Catch::Matchers::Equals(test));
-
-#    if defined(RPC_HPP_ENABLE_RAPIDJSON)
-    test = "";
-
-    BENCHMARK("rpc.hpp (asio::tcp, rapidjson)")
-    {
-        ComplexObject cx;
-        cx.flag1 = false;
-        cx.flag2 = true;
-        cx.id = 24;
-        cx.name = "Franklin D. Roosevelt";
-        cx.vals = { 0, 1, 4, 6, 7, 8, 11, 15, 17, 22, 25, 26 };
-
-        char hash[256]{};
-
-        test = std::string(GetClient<rapidjson_adapter>()
-                               .call_func("HashComplexPtr", &cx, hash)
-                               .template get_arg<1>());
-    };
-
-    REQUIRE_THAT(expected, Catch::Matchers::Equals(test));
-#    endif
-
-#    if defined(RPC_HPP_ENABLE_BOOST_JSON)
-    test = "";
-
-    BENCHMARK("rpc.hpp (asio::tcp, Boost.JSON)")
-    {
-        ComplexObject cx;
-        cx.flag1 = false;
-        cx.flag2 = true;
-        cx.id = 24;
-        cx.name = "Franklin D. Roosevelt";
-        cx.vals = { 0, 1, 4, 6, 7, 8, 11, 15, 17, 22, 25, 26 };
-
-        char hash[256]{};
-
-        test = std::string(GetClient<bjson_adapter>().call_func("HashComplexPtr", &cx, hash).get_arg
-                       < char*,
-                   1)
-            > ();
-    };
-
-    REQUIRE_THAT(expected, Catch::Matchers::Equals(test));
-#    endif
-}
-
-TEST_CASE("By Pointer (many)", "[pointer][many]")
-{
-    constexpr double expected = 313.2216436152;
-    double test = 1.0;
-
-    BENCHMARK("rpc.hpp (asio::tcp, njson)")
-    {
-        double n1 = 55.65;
-        double n2 = 125.325;
-        double n3 = 552.125;
-        double n4 = 12.767;
-        double n5 = 2599.6;
-        double n6 = 1245.125663;
-        double n7 = 9783.49;
-        double n8 = 125.12;
-        double n9 = 553.3333333333;
-        double n10 = 2266.1;
-
-        const auto pack = GetClient<njson_adapter>().call_func(
-            "SquareRootPtr", &n1, &n2, &n3, &n4, &n5, &n6, &n7, &n8, &n9, &n10);
-
-        n1 = *pack.template get_arg<0>();
-        n2 = *pack.template get_arg<1>();
-        n3 = *pack.template get_arg<2>();
-        n4 = *pack.template get_arg<3>();
-        n5 = *pack.template get_arg<4>();
-        n6 = *pack.template get_arg<5>();
-        n7 = *pack.template get_arg<6>();
-        n8 = *pack.template get_arg<7>();
-        n9 = *pack.template get_arg<8>();
-        n10 = *pack.template get_arg<9>();
-        test = n1 + n2 + n3 + n4 + n5 + n6 + n7 + n8 + n9 + n10;
-    };
-
-    REQUIRE_THAT(test, Catch::Matchers::WithinAbs(expected, 0.001));
-
-#    if defined(RPC_HPP_ENABLE_RAPIDJSON)
-    test = 1.0;
-
-    BENCHMARK("rpc.hpp (asio::tcp, rapidjson)")
-    {
-        double n1 = 55.65;
-        double n2 = 125.325;
-        double n3 = 552.125;
-        double n4 = 12.767;
-        double n5 = 2599.6;
-        double n6 = 1245.125663;
-        double n7 = 9783.49;
-        double n8 = 125.12;
-        double n9 = 553.3333333333;
-        double n10 = 2266.1;
-
-        const auto pack = GetClient<rapidjson_adapter>().call_func(
-            "SquareRootPtr", &n1, &n2, &n3, &n4, &n5, &n6, &n7, &n8, &n9, &n10);
-
-        n1 = *pack.template get_arg<0>();
-        n2 = *pack.template get_arg<1>();
-        n3 = *pack.template get_arg<2>();
-        n4 = *pack.template get_arg<3>();
-        n5 = *pack.template get_arg<4>();
-        n6 = *pack.template get_arg<5>();
-        n7 = *pack.template get_arg<6>();
-        n8 = *pack.template get_arg<7>();
-        n9 = *pack.template get_arg<8>();
-        n10 = *pack.template get_arg<9>();
-        test = n1 + n2 + n3 + n4 + n5 + n6 + n7 + n8 + n9 + n10;
-    };
-
-    REQUIRE_THAT(test, Catch::Matchers::WithinAbs(expected, 0.001));
-#    endif
-
-#    if defined(RPC_HPP_ENABLE_BOOST_JSON)
-    test = 1.0;
-
-    BENCHMARK("rpc.hpp (asio::tcp, Boost.JSON)")
-    {
-        double n1 = 55.65;
-        double n2 = 125.325;
-        double n3 = 552.125;
-        double n4 = 12.767;
-        double n5 = 2599.6;
-        double n6 = 1245.125663;
-        double n7 = 9783.49;
-        double n8 = 125.12;
-        double n9 = 553.3333333333;
-        double n10 = 2266.1;
-
-        const auto pack = GetClient<bjson_adapter>().call_func(
-            "SquareRootPtr", &n1, &n2, &n3, &n4, &n5, &n6, &n7, &n8, &n9, &n10);
-
-        n1 = *pack.template get_arg<0>();
-        n2 = *pack.template get_arg<1>();
-        n3 = *pack.template get_arg<2>();
-        n4 = *pack.template get_arg<3>();
-        n5 = *pack.template get_arg<4>();
-        n6 = *pack.template get_arg<5>();
-        n7 = *pack.template get_arg<6>();
-        n8 = *pack.template get_arg<7>();
-        n9 = *pack.template get_arg<8>();
-        n10 = *pack.template get_arg<9>();
-        test = n1 + n2 + n3 + n4 + n5 + n6 + n7 + n8 + n9 + n10;
-    };
-
-    REQUIRE_THAT(test, Catch::Matchers::WithinAbs(expected, 0.001));
-#    endif
-}
-#endif
 
 TEST_CASE("KillServer",
     "[!mayfail][value][simple][cached][ref][complex][sequential][pointer][many][container]")

@@ -49,7 +49,7 @@ template<typename Serial>
 void TestType()
 {
     auto& client = GetClient<Serial>();
-    const auto result = client.call_func<int>("SimpleSum", 1, 2).get_result();
+    const auto result = client.template call_func<int>("SimpleSum", 1, 2).get_result();
 
     REQUIRE(result == 3);
 }
@@ -122,7 +122,8 @@ using test_types_t = std::tuple<bjson_adapter>;
 TEMPLATE_LIST_TEST_CASE("StrLen", "", test_types_t)
 {
     auto& client = GetClient<TestType>();
-    const auto result = client.call_func<int>("StrLen", std::string("hello, world")).get_result();
+    const auto result =
+        client.template call_func<int>("StrLen", std::string("hello, world")).get_result();
 
     REQUIRE(result == 12);
 }
@@ -131,7 +132,8 @@ TEMPLATE_LIST_TEST_CASE("AddOneToEach", "", test_types_t)
 {
     auto& client = GetClient<TestType>();
     const std::vector<int> vec{ 2, 4, 6, 8 };
-    const auto result = client.call_func<std::vector<int>>("AddOneToEach", vec).get_result();
+    const auto result =
+        client.template call_func<std::vector<int>>("AddOneToEach", vec).get_result();
 
     REQUIRE(result.size() == vec.size());
 
@@ -162,7 +164,7 @@ TEMPLATE_LIST_TEST_CASE("Fibonacci", "", test_types_t)
     constexpr uint64_t expected = 10946ULL;
     auto& client = GetClient<TestType>();
 
-    const auto test = client.call_func<uint64_t>("Fibonacci", 20).get_result();
+    const auto test = client.template call_func<uint64_t>("Fibonacci", 20).get_result();
     REQUIRE(expected == test);
 }
 
@@ -183,8 +185,8 @@ TEMPLATE_LIST_TEST_CASE("StdDev", "", test_types_t)
     auto& client = GetClient<TestType>();
 
     const auto test = client
-                          .call_func<double>("StdDev", 55.65, 125.325, 552.125, 12.767, 2599.6,
-                              1245.125663, 9783.49, 125.12, 553.3333333333, 2266.1)
+                          .template call_func<double>("StdDev", 55.65, 125.325, 552.125, 12.767,
+                              2599.6, 1245.125663, 9783.49, 125.12, 553.3333333333, 2266.1)
                           .get_result();
 
     REQUIRE_THAT(test, Catch::Matchers::WithinRel(expected));
@@ -232,7 +234,8 @@ TEMPLATE_LIST_TEST_CASE("AverageContainer<double>", "", test_types_t)
     const std::vector<double> vec{ 55.65, 125.325, 552.125, 12.767, 2599.6, 1245.125663, 9783.49,
         125.12, 553.3333333333, 2266.1 };
 
-    const auto test = client.call_func<double>("AverageContainer<double>", vec).get_result();
+    const auto test =
+        client.template call_func<double>("AverageContainer<double>", vec).get_result();
 
     REQUIRE_THAT(test, Catch::Matchers::WithinAbs(expected, 0.001));
 }
@@ -249,7 +252,7 @@ TEMPLATE_LIST_TEST_CASE("HashComplex", "", test_types_t)
     cx.name = "Franklin D. Roosevelt";
     cx.vals = { 0, 1, 4, 6, 7, 8, 11, 15, 17, 22, 25, 26 };
 
-    const auto test = client.call_func<std::string>("HashComplex", cx).get_result();
+    const auto test = client.template call_func<std::string>("HashComplex", cx).get_result();
 
     REQUIRE_THAT(expected, Catch::Matchers::Equals(test));
 }
@@ -282,7 +285,7 @@ TEMPLATE_LIST_TEST_CASE("Function not found", "", test_types_t)
     const auto exp = [&client]()
     {
         [[maybe_unused]] auto _unused =
-            client.call_func<int>("FUNC_WHICH_DOES_NOT_EXIST").get_result();
+            client.template call_func<int>("FUNC_WHICH_DOES_NOT_EXIST").get_result();
     };
 
     REQUIRE_THROWS_WITH(exp(),
@@ -295,7 +298,7 @@ TEMPLATE_LIST_TEST_CASE("ThrowError", "", test_types_t)
     auto& client = GetClient<TestType>();
 
     const auto exp = [&client]()
-    { [[maybe_unused]] auto _unused = client.call_func<int>("ThrowError").get_result(); };
+    { [[maybe_unused]] auto _unused = client.template call_func<int>("ThrowError").get_result(); };
 
     REQUIRE_THROWS_WITH(exp(), "THIS IS A TEST ERROR!");
 }
