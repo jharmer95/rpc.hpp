@@ -54,7 +54,7 @@ endif()
 
 if(NOT TARGET asio_lib)
   add_library(asio_lib INTERFACE)
-  target_compile_definitions(test_asio_lib INTERFACE ASIO_STANDALONE)
+  target_compile_definitions(asio_lib INTERFACE ASIO_STANDALONE)
 
   if(${DEPENDS_CONAN})
     set(CONAN_EXTRA_REQUIRES "asio/[>=1.14.0]")
