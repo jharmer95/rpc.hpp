@@ -207,7 +207,7 @@ adapters::bjson_val pack_adapter<adapters::bjson_adapter>::serialize_pack(
     bjson::array args{};
 
     const auto& argTup = pack.get_args();
-    for_each_tuple(argTup, [&args](auto&& x) { push_arg(std::forward<decltype(x)>(x), args); });
+    details::for_each_tuple(argTup, [&args](auto&& x) { push_arg(std::forward<decltype(x)>(x), args); });
 
     ret_j["args"] = std::move(args);
     return ret_j;
