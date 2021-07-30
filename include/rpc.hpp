@@ -37,13 +37,23 @@
 
 #pragma once
 
+#if defined(RPC_HPP_DOXYGEN_GEN)
+///@brief Enables server-side caching abilities
+#    define RPC_HPP_ENABLE_SERVER_CACHE
+///@brief Indicates that rpc.hpp is being consumed by a client translation unit
+#    define RPC_HPP_CLIENT_IMPL
+///@brief Indicates that rpc.hpp is being consumed by a module (dynamically loaded .dll/.so) translation unit
+#    define RPC_HPP_MODULE_IMPL
+///@brief Indicates that rpc.hpp is being consumed by a server translation unit
+#    define RPC_HPP_SERVER_IMPL
+#endif
+
 #if !defined(RPC_HPP_CLIENT_IMPL) && !defined(RPC_HPP_SERVER_IMPL) && !defined(RPC_HPP_MODULE_IMPL)
 #    error At least one implementation type must be defined using 'RPC_HPP_{CLIENT, SERVER, MODULE}_IMPL'
 #endif
 
 #include <cstddef>     // for size_t
 #include <optional>    // for nullopt, optional
-#include <stdexcept>   // for runtime_error
 #include <string>      // for string
 #include <tuple>       // for tuple, forward_as_tuple
 #include <type_traits> // for declval, false_type, is_same, integral_constant
@@ -53,10 +63,13 @@
 #    include <unordered_map> // for unordered_map
 #endif
 
+///@brief Top-level namespace for rpc.hpp classes and functions
 namespace rpc
 {
+///@brief Namespace for implementation details, should not be used outside of the library
 namespace details
 {
+#if !defined(RPC_HPP_DOXYGEN_GEN)
     template<typename, typename T>
     struct is_serializable_base
     {
@@ -180,7 +193,7 @@ namespace details
 
     template<typename F, typename... Ts, size_t... Is>
     void for_each_tuple(
-        const std::tuple<Ts...>& tuple, const F& func, std::index_sequence<Is...> /*unused*/)
+        const std::tuple<Ts...>& tuple, const F& func, [[maybe_unused]] std::index_sequence<Is...>)
     {
         using expander = int[];
         (void)expander{ 0, ((void)func(std::get<Is>(tuple)), 0)... };
@@ -198,16 +211,10 @@ namespace details
     public:
         using args_t = std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...>;
 
-        virtual ~packed_func_base() = default;
-
         packed_func_base(std::string func_name, args_t&& args) noexcept
             : m_func_name(std::move(func_name)), m_args(std::move(args))
         {
         }
-
-        // Prevents slicing
-        packed_func_base& operator=(const packed_func_base&) = delete;
-        packed_func_base& operator=(packed_func_base&&) = delete;
 
         [[nodiscard]] std::string& get_func_name() & noexcept { return m_func_name; }
         [[nodiscard]] const std::string& get_func_name() const& noexcept { return m_func_name; }
@@ -220,7 +227,7 @@ namespace details
         void set_err_mesg(const std::string& mesg) & noexcept { m_err_mesg = mesg; }
         void set_err_mesg(std::string&& mesg) & noexcept { m_err_mesg = std::move(mesg); }
 
-        explicit virtual operator bool() const noexcept { return m_err_mesg.empty(); }
+        explicit operator bool() const noexcept { return m_err_mesg.empty(); }
 
         [[nodiscard]] args_t& get_args() & noexcept { return m_args; }
         [[nodiscard]] const args_t& get_args() const& noexcept { return m_args; }
@@ -246,72 +253,10 @@ namespace details
 
         void set_args(args_t&& args) & { m_args = std::move(args); }
 
-    protected:
-        packed_func_base(const packed_func_base&) = default;
-        packed_func_base(packed_func_base&&) noexcept = default;
-
     private:
         std::string m_func_name;
         std::string m_err_mesg{};
         args_t m_args;
-    };
-
-    template<typename R, typename... Args>
-    class packed_func final : public packed_func_base<Args...>
-    {
-    public:
-        using result_t = R;
-        using typename packed_func_base<Args...>::args_t;
-
-        packed_func(std::string func_name, std::optional<result_t> result, args_t args)
-            : packed_func_base<Args...>(std::move(func_name), std::move(args)),
-              m_result(std::move(result))
-        {
-        }
-
-        packed_func(const packed_func&) = default;
-        packed_func(packed_func&&) noexcept = default;
-        packed_func& operator=(const packed_func&) & = default;
-        packed_func& operator=(packed_func&&) & = default;
-
-        explicit operator bool() const noexcept override
-        {
-            return m_result.has_value() && packed_func_base<Args...>::operator bool();
-        }
-
-        [[nodiscard]] R get_result() const
-        {
-            if (m_result.has_value())
-            {
-                return m_result.value();
-            }
-
-            throw std::runtime_error(this->get_err_mesg());
-        }
-
-        void set_result(R value) & noexcept { m_result = std::move(value); }
-        void clear_result() & noexcept { m_result = std::nullopt; }
-
-    private:
-        std::optional<result_t> m_result{ std::nullopt };
-    };
-
-    template<typename... Args>
-    class packed_func<void, Args...> final : public packed_func_base<Args...>
-    {
-    public:
-        using result_t = void;
-        using typename packed_func_base<Args...>::args_t;
-
-        packed_func(std::string func_name, args_t args)
-            : packed_func_base<Args...>(std::move(func_name), std::move(args))
-        {
-        }
-
-        packed_func(const packed_func&) = default;
-        packed_func(packed_func&&) noexcept = default;
-        packed_func& operator=(const packed_func&) & = default;
-        packed_func& operator=(packed_func&&) & = default;
     };
 
     template<typename T_Serial, typename T_Bytes = std::string>
@@ -331,29 +276,139 @@ namespace details
         [[nodiscard]] static bytes_t to_bytes(serial_t&& serial_obj);
         [[nodiscard]] static serial_t from_bytes(bytes_t&& bytes);
     };
-
-    template<typename Serial>
-    class pack_adapter
-    {
-    public:
-        template<typename R, typename... Args>
-        [[nodiscard]] static typename Serial::serial_t serialize_pack(
-            const packed_func<R, Args...>& pack);
-
-        template<typename R, typename... Args>
-        [[nodiscard]] static packed_func<R, Args...> deserialize_pack(
-            const typename Serial::serial_t& serial_obj);
-
-        [[nodiscard]] static std::string get_func_name(const typename Serial::serial_t& serial_obj);
-        static void set_err_mesg(typename Serial::serial_t& serial_obj, std::string&& mesg);
-    };
+#endif
 } // namespace details
 
+///@brief Object representing a function call, including the function's name, arguments and result
+///
+///@tparam R Return type of the function
+///@tparam Args Variadic type(s) of the function's arguments
+template<typename R, typename... Args>
+class packed_func final : public details::packed_func_base<Args...>
+{
+public:
+    ///@brief Type alias for the return type
+    using result_t = R;
+
+    ///@brief Type alias for the argument type(s) in a tuple
+    using typename details::packed_func_base<Args...>::args_t;
+
+    ///@brief Constructs a packed_func
+    ///
+    ///@param func_name Function name
+    ///@param result Return value of the function (std::nullopt if not called yet or an error occurred)
+    ///@param args Tuple containing the argument(s)
+    packed_func(std::string func_name, std::optional<result_t> result, args_t args)
+        : details::packed_func_base<Args...>(std::move(func_name), std::move(args)),
+          m_result(std::move(result))
+    {
+    }
+
+    ///@brief Indicates if the packed_func holds a return value and no error occurred
+    ///
+    ///@note If an error occurred, the reason may be retrieved from the get_err_mesg() function
+    ///@return true A return value exists and no error occurred
+    ///@return false A return value does not exist AND/OR an error occurred
+    explicit operator bool() const noexcept
+    {
+        return m_result.has_value() && details::packed_func_base<Args...>::operator bool();
+    }
+
+    ///@brief Returns the result
+    ///
+    ///@note If the result is std::nullopt, an error most likely occurred and the reason can be retrieved from the get_err_mesg() function
+    ///@return std::optional<R> The result of the function call
+    std::optional<R> get_result() const noexcept { return m_result; }
+
+    ///@brief Sets the result to a value
+    ///
+    ///@param value The value to store as the result
+    void set_result(R value) & noexcept { m_result = std::move(value); }
+
+    ///@brief Clears the result stored (sets it back to std::nullopt)
+    void clear_result() & noexcept { m_result = std::nullopt; }
+
+private:
+    std::optional<result_t> m_result{ std::nullopt };
+};
+
+///@brief Object representing a void returning function call, including the function's name and arguments
+///
+///@tparam Args Variadic type(s) of the function's arguments
+template<typename... Args>
+class packed_func<void, Args...> final : public details::packed_func_base<Args...>
+{
+public:
+    ///@brief Type alias for the return type (void)
+    using result_t = void;
+
+    ///@brief Type alias for the argument type(s) in a tuple
+    using typename details::packed_func_base<Args...>::args_t;
+
+    ///@brief Constructs a packed_func
+    ///
+    ///@param func_name Function name
+    ///@param args Tuple containing the argument(s)
+    packed_func(std::string func_name, args_t args)
+        : details::packed_func_base<Args...>(std::move(func_name), std::move(args))
+    {
+    }
+};
+
+///@brief Class collecting several functions for interoperating between serial objects and a packed_func
+///
+///@tparam Serial serial_adapter type that controls how objects are serialized/deserialized
+template<typename Serial>
+class pack_adapter
+{
+public:
+    ///@brief Serializes a packed_func to a serial object
+    ///
+    ///@tparam R Return type of the packed_func
+    ///@tparam Args Variadic argument type(s) of the packed_func
+    ///@param pack packed_func to be serialized
+    ///@return Serial::serial_t Serial representation of the packed_func
+    template<typename R, typename... Args>
+    [[nodiscard]] static typename Serial::serial_t serialize_pack(
+        const packed_func<R, Args...>& pack);
+
+    ///@brief De-serializes a serial object to a packed_func
+    ///
+    ///@tparam R Return type of the packed_func
+    ///@tparam Args Variadic argument type(s) of the packed_func
+    ///@param serial_obj Serial object to be serialized
+    ///@return packed_func<R, Args...> resulting packed_func
+    template<typename R, typename... Args>
+    [[nodiscard]] static packed_func<R, Args...> deserialize_pack(
+        const typename Serial::serial_t& serial_obj);
+
+    ///@brief Extracts the function name of a serialized function call
+    ///
+    ///@param serial_obj Serial object to be parsed
+    ///@return std::string Name of the contained function
+    [[nodiscard]] static std::string get_func_name(const typename Serial::serial_t& serial_obj);
+
+    ///@brief Sets the error message for the serialized function call
+    ///
+    ///@param serial_obj Serial object to be modified
+    ///@param mesg String to set as the error message
+    static void set_err_mesg(typename Serial::serial_t& serial_obj, std::string&& mesg);
+};
+
 #if defined(RPC_HPP_SERVER_IMPL) || defined(RPC_HPP_MODULE_IMPL)
+///@brief Namespace containing functions and classes only relevant to "server-side" implentations
+///
+///@note Is only compiled by defining either @ref RPC_HPP_SERVER_IMPL AND/OR @ref RPC_HPP_MODULE_IMPL
 namespace server
 {
+    ///@brief Runs the callback function and updates the result (and any changes to mutable arguments) in the packed_func
+    ///
+    ///@tparam R Return type of the callback function
+    ///@tparam Args Variadic argument type(s) for the function
+    ///@param func pointer to the callback function
+    ///@param pack packed_func representing the callback
     template<typename R, typename... Args>
-    void run_callback(R (*func)(Args...), details::packed_func<R, Args...>& pack)
+    void run_callback(R (*func)(Args...), packed_func<R, Args...>& pack)
     {
         auto args = pack.get_args();
 
@@ -370,9 +425,18 @@ namespace server
         }
     }
 
+    ///@brief Implementation component for the dispatch function
+    ///
+    ///@note This function must be implemented in ther server-side code, it is only a declaration in the library itself!
+    ///@tparam Serial serial_adapter type that controls how objects are serialized/deserialized
+    ///@param serial_obj Serial object used to represent the function call
     template<typename Serial>
     void dispatch_impl(typename Serial::serial_t& serial_obj);
 
+    ///@brief Parses the received serialized data and determines which function to call
+    ///
+    ///@tparam Serial serial_adapter type that controls how objects are serialized/deserialized
+    ///@param bytes Data to be parsed into/back out of a serial object
     template<typename Serial>
     void dispatch(typename Serial::bytes_t& bytes)
     {
@@ -384,20 +448,27 @@ namespace server
         }
         catch (const std::exception& ex)
         {
-            details::pack_adapter<Serial>::set_err_mesg(serial_obj, ex.what());
+            pack_adapter<Serial>::set_err_mesg(serial_obj, ex.what());
         }
 
         bytes = Serial::to_bytes(std::move(serial_obj));
     }
 
 #    if defined(RPC_HPP_SERVER_IMPL) && defined(RPC_HPP_ENABLE_SERVER_CACHE)
+    ///@brief Deserializes the serial object to a packed_func, calls the callback function, then serializes the result back to the serial object, using a server-side cache for performance.
+    ///
+    ///@note This feature is enabled by defining @ref RPC_HPP_ENABLE_SERVER_CACHE
+    ///@tparam Serial serial_adapter type that controls how objects are serialized/deserialized
+    ///@tparam R Return type of the callback function
+    ///@tparam Args Variadic argument type(s) for the function
+    ///@param func pointer to the callback function
+    ///@param serial_obj Serial representing the function call
     template<typename Serial, typename R, typename... Args>
     void dispatch_cached_func(R (*func)(Args...), typename Serial::serial_t& serial_obj)
     {
         static std::unordered_map<typename Serial::bytes_t, R> result_cache;
 
-        auto pack =
-            details::pack_adapter<Serial>::template deserialize_pack<R, Args...>(serial_obj);
+        auto pack = pack_adapter<Serial>::template deserialize_pack<R, Args...>(serial_obj);
 
         if constexpr (!std::is_void_v<R>)
         {
@@ -408,68 +479,95 @@ namespace server
             if (it != result_cache.end())
             {
                 pack.set_result(it->second);
-                serial_obj =
-                    details::pack_adapter<Serial>::template serialize_pack<R, Args...>(pack);
+                serial_obj = pack_adapter<Serial>::template serialize_pack<R, Args...>(pack);
 
                 return;
             }
 
             run_callback(func, pack);
-            result_cache[std::move(bytes)] = pack.get_result();
+            result_cache[std::move(bytes)] = pack.get_result().value();
         }
         else
         {
             run_callback(func, pack);
         }
 
-        serial_obj = details::pack_adapter<Serial>::template serialize_pack<R, Args...>(pack);
+        serial_obj = pack_adapter<Serial>::template serialize_pack<R, Args...>(pack);
     }
 #    endif
 
+    ///@brief Deserializes the serial object to a packed_func, calls the callback function, then serializes the result back to the serial object
+    ///
+    ///@tparam Serial serial_adapter type that controls how objects are serialized/deserialized
+    ///@tparam R Return type of the callback function
+    ///@tparam Args Variadic argument type(s) for the function
+    ///@param func pointer to the callback function
+    ///@param serial_obj Serial representing the function call
     template<typename Serial, typename R, typename... Args>
     void dispatch_func(R (*func)(Args...), typename Serial::serial_t& serial_obj)
     {
-        auto pack =
-            details::pack_adapter<Serial>::template deserialize_pack<R, Args...>(serial_obj);
+        auto pack = pack_adapter<Serial>::template deserialize_pack<R, Args...>(serial_obj);
 
         run_callback(func, pack);
-        serial_obj = details::pack_adapter<Serial>::template serialize_pack<R, Args...>(pack);
+        serial_obj = pack_adapter<Serial>::template serialize_pack<R, Args...>(pack);
     }
 } // namespace server
 #endif
 
 #if defined(RPC_HPP_CLIENT_IMPL)
+///@brief Namespace containing functions and classes only relevant to "client-side" implentations
+///
+///@note Is only compiled by defining @ref RPC_HPP_CLIENT_IMPL
 inline namespace client
 {
+    ///@brief Class defining an interface for calling into an RPC server or module
+    ///
+    ///@tparam Serial serial_adapter type that controls how objects are serialized/deserialized
     template<typename Serial>
     class client_interface
     {
     public:
         virtual ~client_interface() = default;
-        virtual void send(const typename Serial::bytes_t& bytes) = 0;
-        virtual typename Serial::bytes_t receive() = 0;
 
+        ///@brief Sends an RPC call request to a server, waits for a response, then returns the packed_func to get the results
+        ///
+        ///@tparam R Return type of the remote function to call
+        ///@tparam Args Variadic argument type(s) of the remote function to call
+        ///@param func_name Name of the remote function to call
+        ///@param args Argument(s) for the remote function
+        ///@return packed_func<R, Args...> packed_func representation of the called function, including results, arguments, AND/OR server error messages
         template<typename R = void, typename... Args>
-        details::packed_func<R, Args...> call_func(std::string&& func_name, Args&&... args)
+        packed_func<R, Args...> call_func(std::string&& func_name, Args&&... args)
         {
             if constexpr (std::is_void_v<R>)
             {
-                const details::packed_func<void, Args...> pack(
+                const packed_func<void, Args...> pack(
                     std::move(func_name), std::forward_as_tuple(args...));
 
-                send(Serial::to_bytes(details::pack_adapter<Serial>::serialize_pack(pack)));
+                send(Serial::to_bytes(pack_adapter<Serial>::serialize_pack(pack)));
             }
             else
             {
-                const details::packed_func<R, Args...> pack(
+                const packed_func<R, Args...> pack(
                     std::move(func_name), std::nullopt, std::forward_as_tuple(args...));
 
-                send(Serial::to_bytes(details::pack_adapter<Serial>::serialize_pack(pack)));
+                send(Serial::to_bytes(pack_adapter<Serial>::serialize_pack(pack)));
             }
 
-            return details::pack_adapter<Serial>::template deserialize_pack<R, Args...>(
+            return pack_adapter<Serial>::template deserialize_pack<R, Args...>(
                 Serial::from_bytes(receive()));
         }
+
+    protected:
+        ///@brief Sends serialized data to a server or module
+        ///
+        ///@param bytes Serialized data to be sent
+        virtual void send(const typename Serial::bytes_t& bytes) = 0;
+
+        ///@brief Receives serialized data from a server or module
+        ///
+        ///@return Serial::bytes_t Received serialized data
+        virtual typename Serial::bytes_t receive() = 0;
     };
 } // namespace client
 #endif

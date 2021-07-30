@@ -1,5 +1,6 @@
 var searchData=
 [
-  ['end_21',['end',['../classrpc_1_1details_1_1dyn__array.html#aad28d6ec95a6c7c6bdf754b1f295abb6',1,'rpc::details::dyn_array::end() noexcept'],['../classrpc_1_1details_1_1dyn__array.html#a4a64a96f2295be127b612cbf2490e2df',1,'rpc::details::dyn_array::end() const noexcept']]],
-  ['extract_5ffunc_5fname_22',['extract_func_name',['../classrpc_1_1serial__adapter.html#a19a53fbf642c86dac08d642e6fece10a',1,'rpc::serial_adapter']]]
+  ['pack_5fadapter_11',['pack_adapter',['../classrpc_1_1pack__adapter.html',1,'rpc']]],
+  ['packed_5ffunc_12',['packed_func',['../classrpc_1_1packed__func.html#aef4285a1e20b28b275ccf3947ed65d31',1,'rpc::packed_func::packed_func()'],['../classrpc_1_1packed__func_3_01void_00_01_args_8_8_8_01_4.html#a6d8d040cbd7755f7491887ba0fa9bc6f',1,'rpc::packed_func&lt; void, Args... &gt;::packed_func()'],['../classrpc_1_1packed__func.html',1,'rpc::packed_func&lt; R, Args &gt;']]],
+  ['packed_5ffunc_3c_20void_2c_20args_2e_2e_2e_20_3e_13',['packed_func&lt; void, Args... &gt;',['../classrpc_1_1packed__func_3_01void_00_01_args_8_8_8_01_4.html',1,'rpc']]]
 ];

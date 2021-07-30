@@ -1,4 +1,4 @@
 <map id="rpc::packed_func&lt; R, Args &gt;" name="rpc::packed_func&lt; R, Args &gt;">
-<area shape="rect" id="node1" title="Class reprensenting a function call including its name, result, and parameters." alt="" coords="10,80,157,121"/>
-<area shape="rect" id="node2" href="$classrpc_1_1packed__func__base.html" title="Polymorphic base class for packed_func." alt="" coords="5,5,161,32"/>
+<area shape="rect" id="node1" title="Object representing a function call, including the function&#39;s name, arguments and result." alt="" coords="5,95,152,136"/>
+<area shape="rect" id="node2" title=" " alt="" coords="8,5,149,47"/>
 </map>

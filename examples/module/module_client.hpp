@@ -50,10 +50,10 @@ public:
         }
     }
 
+private:
     void send(const std::string& mesg) override { m_result = m_func(mesg); }
     std::string receive() override { return m_result; }
 
-private:
     module_t m_module;
     remote_func_type m_func;
     std::string m_result;

@@ -30,7 +30,7 @@ int main(int argc, char* argv[])
             {
                 funcName = "Sum";
                 const auto pack = client.template call_func<int>("Sum", 1, 2);
-                printf("Sum(1, 2) == %d\n", pack.get_result());
+                printf("Sum(1, 2) == %d\n", pack.get_result().value());
             }
 
             // Example of calling w/ references

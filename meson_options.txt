@@ -3,5 +3,5 @@ option('build_adapter_njson', type : 'boolean', value : false)
 option('build_adapter_rapidjson', type : 'boolean', value : false)
 
 option('build_examples', type : 'boolean', value : false)
-option('build_benchmarks', type : 'boolean', value : false)
+option('build_benchmark', type : 'boolean', value : false)
 option('build_testing', type : 'boolean', value : false)

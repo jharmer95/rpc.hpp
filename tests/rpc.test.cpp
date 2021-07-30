@@ -51,7 +51,8 @@ void TestType()
     auto& client = GetClient<Serial>();
     const auto result = client.template call_func<int>("SimpleSum", 1, 2).get_result();
 
-    REQUIRE(result == 3);
+    REQUIRE(result.has_value());
+    REQUIRE(result.value() == 3);
 }
 
 #if defined(RPC_HPP_ENABLE_NJSON)
@@ -125,7 +126,8 @@ TEMPLATE_LIST_TEST_CASE("StrLen", "", test_types_t)
     const auto result =
         client.template call_func<int>("StrLen", std::string("hello, world")).get_result();
 
-    REQUIRE(result == 12);
+    REQUIRE(result.has_value());
+    REQUIRE(result.value() == 12);
 }
 
 TEMPLATE_LIST_TEST_CASE("AddOneToEach", "", test_types_t)
@@ -135,11 +137,15 @@ TEMPLATE_LIST_TEST_CASE("AddOneToEach", "", test_types_t)
     const auto result =
         client.template call_func<std::vector<int>>("AddOneToEach", vec).get_result();
 
-    REQUIRE(result.size() == vec.size());
+    REQUIRE(result.has_value());
 
-    for (size_t i = 0; i < result.size(); ++i)
+    const auto& val = result.value();
+
+    REQUIRE(val.size() == vec.size());
+
+    for (size_t i = 0; i < val.size(); ++i)
     {
-        REQUIRE(result[i] == vec[i] + 1);
+        REQUIRE(val[i] == vec[i] + 1);
     }
 }
 
@@ -165,7 +171,9 @@ TEMPLATE_LIST_TEST_CASE("Fibonacci", "", test_types_t)
     auto& client = GetClient<TestType>();
 
     const auto test = client.template call_func<uint64_t>("Fibonacci", 20).get_result();
-    REQUIRE(expected == test);
+
+    REQUIRE(test.has_value());
+    REQUIRE(expected == test.value());
 }
 
 TEMPLATE_LIST_TEST_CASE("FibonacciRef", "", test_types_t)
@@ -189,7 +197,8 @@ TEMPLATE_LIST_TEST_CASE("StdDev", "", test_types_t)
                               2599.6, 1245.125663, 9783.49, 125.12, 553.3333333333, 2266.1)
                           .get_result();
 
-    REQUIRE_THAT(test, Catch::Matchers::WithinRel(expected));
+    REQUIRE(test.has_value());
+    REQUIRE_THAT(test.value(), Catch::Matchers::WithinRel(expected));
 }
 
 TEMPLATE_LIST_TEST_CASE("SquareRootRef", "", test_types_t)
@@ -237,7 +246,8 @@ TEMPLATE_LIST_TEST_CASE("AverageContainer<double>", "", test_types_t)
     const auto test =
         client.template call_func<double>("AverageContainer<double>", vec).get_result();
 
-    REQUIRE_THAT(test, Catch::Matchers::WithinAbs(expected, 0.001));
+    REQUIRE(test.has_value());
+    REQUIRE_THAT(test.value(), Catch::Matchers::WithinAbs(expected, 0.001));
 }
 
 TEMPLATE_LIST_TEST_CASE("HashComplex", "", test_types_t)
@@ -254,7 +264,8 @@ TEMPLATE_LIST_TEST_CASE("HashComplex", "", test_types_t)
 
     const auto test = client.template call_func<std::string>("HashComplex", cx).get_result();
 
-    REQUIRE_THAT(expected, Catch::Matchers::Equals(test));
+    REQUIRE(test.has_value());
+    REQUIRE_THAT(expected, Catch::Matchers::Equals(test.value()));
 }
 
 TEMPLATE_LIST_TEST_CASE("HashComplexRef", "", test_types_t)
@@ -284,8 +295,12 @@ TEMPLATE_LIST_TEST_CASE("Function not found", "", test_types_t)
 
     const auto exp = [&client]()
     {
-        [[maybe_unused]] auto _unused =
-            client.template call_func<int>("FUNC_WHICH_DOES_NOT_EXIST").get_result();
+        const auto pack = client.template call_func<int>("FUNC_WHICH_DOES_NOT_EXIST");
+
+        if (!pack.get_result().has_value())
+        {
+            throw std::runtime_error(pack.get_err_mesg());
+        }
     };
 
     REQUIRE_THROWS_WITH(exp(),
@@ -298,7 +313,14 @@ TEMPLATE_LIST_TEST_CASE("ThrowError", "", test_types_t)
     auto& client = GetClient<TestType>();
 
     const auto exp = [&client]()
-    { [[maybe_unused]] auto _unused = client.template call_func<int>("ThrowError").get_result(); };
+    {
+        const auto pack = client.template call_func<int>("ThrowError");
+
+        if (!pack.get_result().has_value())
+        {
+            throw std::runtime_error(pack.get_err_mesg());
+        }
+    };
 
     REQUIRE_THROWS_WITH(exp(), "THIS IS A TEST ERROR!");
 }

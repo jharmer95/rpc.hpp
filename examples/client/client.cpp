@@ -24,7 +24,7 @@ int main(int argc, char* argv[])
         {
             currentFuncName = "Sum";
             const auto pack = client.template call_func<int>("Sum", 1, 2);
-            printf("Sum(1, 2) == %d\n", pack.get_result());
+            printf("Sum(1, 2) == %d\n", pack.get_result().value());
         }
 
         // Example of calling w/ references
@@ -49,17 +49,17 @@ int main(int argc, char* argv[])
             currentFuncName = "GetTypeName<int>";
             auto pack1 = client.template call_func<std::string>("GetTypeName<int>");
 
-            printf("GetTypeName<int>() == \"%s\"\n", pack1.get_result().c_str());
+            printf("GetTypeName<int>() == \"%s\"\n", pack1.get_result().value().c_str());
 
             currentFuncName = "GetTypeName<double>";
             auto pack2 = client.template call_func<std::string>("GetTypeName<double>");
 
-            printf("GetTypeName<double>() == \"%s\"\n", pack2.get_result().c_str());
+            printf("GetTypeName<double>() == \"%s\"\n", pack2.get_result().value().c_str());
 
             currentFuncName = "GetTypeName<std::string>";
             auto pack3 = client.template call_func<std::string>("GetTypeName<std::string>");
 
-            printf("GetTypeName<std::string>() == \"%s\"\n", pack3.get_result().c_str());
+            printf("GetTypeName<std::string>() == \"%s\"\n", pack3.get_result().value().c_str());
         }
 
         // Now shutdown the server

@@ -18,6 +18,12 @@ public:
         asio::connect(m_socket, m_resolver.resolve(host, port));
     }
 
+    std::string getIP() const
+    {
+        return m_socket.remote_endpoint().address().to_string();
+    }
+
+private:
     void send(const std::string& mesg) override
     {
         asio::write(m_socket, asio::buffer(mesg, mesg.size()));
@@ -29,12 +35,6 @@ public:
         return std::string(m_buffer, m_buffer + numBytes);
     }
 
-    std::string getIP() const
-    {
-        return m_socket.remote_endpoint().address().to_string();
-    }
-
-private:
     asio::io_context m_io{};
     tcp::socket m_socket;
     tcp::resolver m_resolver;

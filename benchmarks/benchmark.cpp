@@ -60,8 +60,10 @@ TEST_CASE("By Value (simple)", "[value][simple][cached]")
 
     BENCHMARK("rpc.hpp (asio::tcp, njson)")
     {
-        test =
-            GetClient<njson_adapter>().template call_func<uint64_t>("Fibonacci", 20).get_result();
+        test = GetClient<njson_adapter>()
+                   .template call_func<uint64_t>("Fibonacci", 20)
+                   .get_result()
+                   .value();
     };
 
     REQUIRE(expected == test);
@@ -73,7 +75,8 @@ TEST_CASE("By Value (simple)", "[value][simple][cached]")
     {
         test = GetClient<rapidjson_adapter>()
                    .template call_func<uint64_t>("Fibonacci", 20)
-                   .get_result();
+                   .get_result()
+                   .value();
     };
 
     REQUIRE(expected == test);
@@ -84,8 +87,10 @@ TEST_CASE("By Value (simple)", "[value][simple][cached]")
 
     BENCHMARK("rpc.hpp (asio::tcp, Boost.JSON)")
     {
-        test =
-            GetClient<bjson_adapter>().template call_func<uint64_t>("Fibonacci", 20).get_result();
+        test = GetClient<bjson_adapter>()
+                   .template call_func<uint64_t>("Fibonacci", 20)
+                   .get_result()
+                   .value();
     };
 
     REQUIRE(expected == test);
@@ -108,7 +113,8 @@ TEST_CASE("By Value (complex)", "[value][complex][cached]")
 
         test = GetClient<njson_adapter>()
                    .template call_func<std::string>("HashComplex", cx)
-                   .get_result();
+                   .get_result()
+                   .value();
     };
 
     REQUIRE_THAT(expected, Catch::Matchers::Equals(test));
@@ -127,7 +133,8 @@ TEST_CASE("By Value (complex)", "[value][complex][cached]")
 
         test = GetClient<rapidjson_adapter>()
                    .template call_func<std::string>("HashComplex", cx)
-                   .get_result();
+                   .get_result()
+                   .value();
     };
 
     REQUIRE_THAT(expected, Catch::Matchers::Equals(test));
@@ -147,7 +154,8 @@ TEST_CASE("By Value (complex)", "[value][complex][cached]")
 
         test = GetClient<bjson_adapter>()
                    .template call_func<std::string>("HashComplex", cx)
-                   .get_result();
+                   .get_result()
+                   .value();
     };
 
     REQUIRE_THAT(expected, Catch::Matchers::Equals(test));
@@ -164,7 +172,8 @@ TEST_CASE("By Value (many)", "[value][many][cached]")
         test = GetClient<njson_adapter>()
                    .template call_func<double>("StdDev", 55.65, 125.325, 552.125, 12.767, 2599.6,
                        1245.125663, 9783.49, 125.12, 553.3333333333, 2266.1)
-                   .get_result();
+                   .get_result()
+                   .value();
     };
 
     REQUIRE_THAT(test, Catch::Matchers::WithinRel(expected));
@@ -177,7 +186,8 @@ TEST_CASE("By Value (many)", "[value][many][cached]")
         test = GetClient<rapidjson_adapter>()
                    .template call_func<double>("StdDev", 55.65, 125.325, 552.125, 12.767, 2599.6,
                        1245.125663, 9783.49, 125.12, 553.3333333333, 2266.1)
-                   .get_result();
+                   .get_result()
+                   .value();
     };
 
     REQUIRE_THAT(test, Catch::Matchers::WithinRel(expected));
@@ -191,7 +201,8 @@ TEST_CASE("By Value (many)", "[value][many][cached]")
         test = GetClient<bjson_adapter>()
                    .template call_func<double>("StdDev", 55.65, 125.325, 552.125, 12.767, 2599.6,
                        1245.125663, 9783.49, 125.12, 553.3333333333, 2266.1)
-                   .get_result();
+                   .get_result()
+                   .value();
     };
 
     REQUIRE_THAT(test, Catch::Matchers::WithinRel(expected));
@@ -415,7 +426,8 @@ TEST_CASE("With Container", "[container][cached]")
 
         test = GetClient<njson_adapter>()
                    .template call_func<double>("AverageContainer<double>", vec)
-                   .get_result();
+                   .get_result()
+                   .value();
     };
 
     REQUIRE_THAT(test, Catch::Matchers::WithinAbs(expected, 0.001));
@@ -430,7 +442,8 @@ TEST_CASE("With Container", "[container][cached]")
 
         test = GetClient<rapidjson_adapter>()
                    .template call_func<double>("AverageContainer<double>", vec)
-                   .get_result();
+                   .get_result()
+                   .value();
     };
 #endif
 
@@ -444,7 +457,8 @@ TEST_CASE("With Container", "[container][cached]")
 
         test = GetClient<bjson_adapter>()
                    .template call_func<double>("AverageContainer<double>", vec)
-                   .get_result();
+                   .get_result()
+                   .value();
     };
 #endif
 }
@@ -455,18 +469,21 @@ TEST_CASE("Sequential", "[sequential][cached]")
     {
         auto vec = GetClient<njson_adapter>()
                        .template call_func<std::vector<uint64_t>>("RandInt", 5, 30, 1000)
-                       .get_result();
+                       .get_result()
+                       .value();
 
         for (auto& val : vec)
         {
             val = GetClient<njson_adapter>()
                       .template call_func<uint64_t>("Fibonacci", val)
-                      .get_result();
+                      .get_result()
+                      .value();
         }
 
         return GetClient<njson_adapter>()
             .template call_func<double>("AverageContainer<uint64_t>", vec)
-            .get_result();
+            .get_result()
+            .value();
     };
 
 #if defined(RPC_HPP_ENABLE_RAPIDJSON)
@@ -474,18 +491,21 @@ TEST_CASE("Sequential", "[sequential][cached]")
     {
         auto vec = GetClient<rapidjson_adapter>()
                        .template call_func<std::vector<uint64_t>>("RandInt", 5, 30, 1000)
-                       .get_result();
+                       .get_result()
+                       .value();
 
         for (auto& val : vec)
         {
             val = GetClient<rapidjson_adapter>()
                       .template call_func<uint64_t>("Fibonacci", val)
-                      .get_result();
+                      .get_result()
+                      .value();
         }
 
         return GetClient<rapidjson_adapter>()
             .template call_func<double>("AverageContainer<uint64_t>", vec)
-            .get_result();
+            .get_result()
+            .value();
     };
 #endif
 
@@ -494,18 +514,21 @@ TEST_CASE("Sequential", "[sequential][cached]")
     {
         auto vec = GetClient<bjson_adapter>()
                        .template call_func<std::vector<uint64_t>>("RandInt", 5, 30, 1000)
-                       .get_result();
+                       .get_result()
+                       .value();
 
         for (auto& val : vec)
         {
             val = GetClient<bjson_adapter>()
                       .template call_func<uint64_t>("Fibonacci", val)
-                      .get_result();
+                      .get_result()
+                      .value();
         }
 
         return GetClient<bjson_adapter>()
             .template call_func<double>("AverageContainer<uint64_t>", vec)
-            .get_result();
+            .get_result()
+            .value();
     };
 #endif
 }

@@ -168,10 +168,11 @@ if(${GENERATE_DOXYGEN})
   find_package(Doxygen OPTIONAL_COMPONENTS dot)
 
   if(DOXYGEN_FOUND)
+    set(DOXYGEN_PREDEFINED __cplusplus RPC_HPP_DOXYGEN_GEN)
     set(DOXYGEN_GENERATE_HTML YES)
     set(DOXYGEN_GENERATE_LATEX NO)
     set(DOXYGEN_HTML_OUTPUT "docs")
-    set(DOXYGEN_EXCLUDE_PATTERNS "*/tests/*")
+    set(DOXYGEN_EXCLUDE_PATTERNS */tests/* */examples/* */benchmarks/* *.py)
     set(DOXYGEN_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}")
     set(DOXYGEN_USE_MDFILE_AS_MAINPAGE "README.md")
     doxygen_add_docs(docs ${PROJECT_SOURCE_DIR}

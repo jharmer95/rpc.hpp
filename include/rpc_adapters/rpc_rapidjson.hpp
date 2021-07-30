@@ -212,7 +212,7 @@ inline adapters::rapidjson_doc adapters::rapidjson_adapter::from_bytes(std::stri
 
 template<>
 template<typename R, typename... Args>
-adapters::rapidjson_doc details::pack_adapter<adapters::rapidjson_adapter>::serialize_pack(
+adapters::rapidjson_doc pack_adapter<adapters::rapidjson_adapter>::serialize_pack(
     const packed_func<R, Args...>& pack)
 {
     using namespace adapters;
@@ -231,15 +231,15 @@ adapters::rapidjson_doc details::pack_adapter<adapters::rapidjson_adapter>::seri
         {
             if constexpr (std::is_arithmetic_v<R>)
             {
-                result.Set<R>(pack.get_result());
+                result.Set<R>(pack.get_result().value());
             }
             else if constexpr (std::is_same_v<R, std::string>)
             {
-                result.SetString(pack.get_result().c_str(), alloc);
+                result.SetString(pack.get_result().value().c_str(), alloc);
             }
             else if constexpr (details::is_container_v<R>)
             {
-                const R container = pack.get_result();
+                const R container = pack.get_result().value();
                 result.SetArray();
 
                 for (const auto& val : container)
@@ -249,12 +249,14 @@ adapters::rapidjson_doc details::pack_adapter<adapters::rapidjson_adapter>::seri
             }
             else if constexpr (details::is_serializable_v<rapidjson_adapter, R>)
             {
-                rapidjson_doc tmp = R::template serialize<rapidjson_adapter>(pack.get_result());
+                rapidjson_doc tmp =
+                    R::template serialize<rapidjson_adapter>(pack.get_result().value());
                 result.CopyFrom(tmp, alloc);
             }
             else
             {
-                rapidjson_doc tmp = rapidjson_adapter::template serialize<R>(pack.get_result());
+                rapidjson_doc tmp =
+                    rapidjson_adapter::template serialize<R>(pack.get_result().value());
                 result.CopyFrom(tmp, alloc);
             }
         }
@@ -270,7 +272,7 @@ adapters::rapidjson_doc details::pack_adapter<adapters::rapidjson_adapter>::seri
     args.SetArray();
 
     const auto& argTup = pack.get_args();
-    for_each_tuple(
+    details::for_each_tuple(
         argTup, [&args, &alloc](auto&& x) { push_arg(std::forward<decltype(x)>(x), args, alloc); });
 
     d.AddMember("args", args, alloc);
@@ -279,8 +281,8 @@ adapters::rapidjson_doc details::pack_adapter<adapters::rapidjson_adapter>::seri
 
 template<>
 template<typename R, typename... Args>
-details::packed_func<R, Args...> details::pack_adapter<
-    adapters::rapidjson_adapter>::deserialize_pack(const adapters::rapidjson_doc& serial_obj)
+packed_func<R, Args...> pack_adapter<adapters::rapidjson_adapter>::deserialize_pack(
+    const adapters::rapidjson_doc& serial_obj)
 {
     using namespace adapters;
 
@@ -374,14 +376,14 @@ details::packed_func<R, Args...> details::pack_adapter<
 }
 
 template<>
-inline std::string details::pack_adapter<adapters::rapidjson_adapter>::get_func_name(
+inline std::string pack_adapter<adapters::rapidjson_adapter>::get_func_name(
     const adapters::rapidjson_doc& serial_obj)
 {
     return serial_obj["func_name"].GetString();
 }
 
 template<>
-inline void details::pack_adapter<adapters::rapidjson_adapter>::set_err_mesg(
+inline void pack_adapter<adapters::rapidjson_adapter>::set_err_mesg(
     adapters::rapidjson_doc& serial_obj, std::string&& mesg)
 {
     auto& alloc = serial_obj.GetAllocator();

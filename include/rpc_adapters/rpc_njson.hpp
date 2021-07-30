@@ -1,3 +1,40 @@
+///@file rpc_adapters/rpc_njson.hpp
+///@author Jackson Harmer (jharmer95@gmail.com)
+///@brief Implementation of adapting nlohmann's JSON library (https://github.com/nlohmann/json)
+///@version 0.5.1
+///
+///@copyright
+///BSD 3-Clause License
+///
+///Copyright (c) 2020-2021, Jackson Harmer
+///All rights reserved.
+///
+///Redistribution and use in source and binary forms, with or without
+///modification, are permitted provided that the following conditions are met:
+///
+///1. Redistributions of source code must retain the above copyright notice, this
+///   list of conditions and the following disclaimer.
+///
+///2. Redistributions in binary form must reproduce the above copyright notice,
+///   this list of conditions and the following disclaimer in the documentation
+///   and/or other materials provided with the distribution.
+///
+///3. Neither the name of the copyright holder nor the names of its
+///   contributors may be used to endorse or promote products derived from
+///   this software without specific prior written permission.
+///
+///THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+///AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+///IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+///DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+///FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+///DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+///SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+///CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+///OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+///OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+///
+
 #pragma once
 
 #if !defined(RPC_HPP_ENABLE_NJSON)
@@ -109,7 +146,7 @@ inline adapters::njson adapters::njson_adapter::from_bytes(std::string&& bytes)
 
 template<>
 template<typename R, typename... Args>
-adapters::njson details::pack_adapter<adapters::njson_adapter>::serialize_pack(
+adapters::njson pack_adapter<adapters::njson_adapter>::serialize_pack(
     const packed_func<R, Args...>& pack)
 {
     using namespace adapters;
@@ -121,7 +158,7 @@ adapters::njson details::pack_adapter<adapters::njson_adapter>::serialize_pack(
     auto arg_arr = njson::array();
 
     const auto& argTup = pack.get_args();
-    for_each_tuple(
+    details::for_each_tuple(
         argTup, [&arg_arr](auto&& x) { push_arg(std::forward<decltype(x)>(x), arg_arr); });
 
     obj["args"] = std::move(arg_arr);
@@ -134,7 +171,7 @@ adapters::njson details::pack_adapter<adapters::njson_adapter>::serialize_pack(
     {
         if constexpr (!std::is_void_v<R>)
         {
-            obj["result"] = pack.get_result();
+            obj["result"] = pack.get_result().value();
         }
     }
 
@@ -143,7 +180,7 @@ adapters::njson details::pack_adapter<adapters::njson_adapter>::serialize_pack(
 
 template<>
 template<typename R, typename... Args>
-details::packed_func<R, Args...> details::pack_adapter<adapters::njson_adapter>::deserialize_pack(
+packed_func<R, Args...> pack_adapter<adapters::njson_adapter>::deserialize_pack(
     const adapters::njson& serial_obj)
 {
     using namespace adapters;
@@ -183,14 +220,14 @@ details::packed_func<R, Args...> details::pack_adapter<adapters::njson_adapter>:
 }
 
 template<>
-inline std::string details::pack_adapter<adapters::njson_adapter>::get_func_name(
+inline std::string pack_adapter<adapters::njson_adapter>::get_func_name(
     const adapters::njson& serial_obj)
 {
     return serial_obj["func_name"];
 }
 
 template<>
-inline void details::pack_adapter<adapters::njson_adapter>::set_err_mesg(
+inline void pack_adapter<adapters::njson_adapter>::set_err_mesg(
     adapters::njson& serial_obj, std::string&& mesg)
 {
     serial_obj["err_mesg"] = std::move(mesg);
