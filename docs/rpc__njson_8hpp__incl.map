@@ -1,11 +1,12 @@
 <map id="include/rpc_adapters/rpc_njson.hpp" name="include/rpc_adapters/rpc_njson.hpp">
-<area shape="rect" id="node1" title="Implementation of adapting nlohmann/json (https://github.com/nlohmann/json)" alt="" coords="314,5,457,47"/>
-<area shape="rect" id="node2" href="$rpc_8hpp.html" title="Header&#45;only library for serialized RPC usage." alt="" coords="232,95,309,121"/>
-<area shape="rect" id="node8" title=" " alt="" coords="397,169,451,196"/>
-<area shape="rect" id="node9" title=" " alt="" coords="423,95,553,121"/>
-<area shape="rect" id="node3" title=" " alt="" coords="5,169,48,196"/>
-<area shape="rect" id="node4" title=" " alt="" coords="73,169,127,196"/>
-<area shape="rect" id="node5" title=" " alt="" coords="152,169,219,196"/>
-<area shape="rect" id="node6" title=" " alt="" coords="243,169,298,196"/>
-<area shape="rect" id="node7" title=" " alt="" coords="323,169,373,196"/>
+<area shape="rect" id="node1" title="Implementation of adapting nlohmann&#39;s JSON library (https://github.com/nlohmann/json)" alt="" coords="282,5,425,47"/>
+<area shape="rect" id="node2" href="$rpc_8hpp.html" title="Header&#45;only library for serialized RPC usage." alt="" coords="251,95,328,121"/>
+<area shape="rect" id="node10" title=" " alt="" coords="352,95,483,121"/>
+<area shape="rect" id="node3" title=" " alt="" coords="5,169,69,196"/>
+<area shape="rect" id="node4" title=" " alt="" coords="93,169,160,196"/>
+<area shape="rect" id="node5" title=" " alt="" coords="185,169,239,196"/>
+<area shape="rect" id="node6" title=" " alt="" coords="264,169,315,196"/>
+<area shape="rect" id="node7" title=" " alt="" coords="339,169,421,196"/>
+<area shape="rect" id="node8" title=" " alt="" coords="445,169,499,196"/>
+<area shape="rect" id="node9" title=" " alt="" coords="523,169,634,196"/>
 </map>

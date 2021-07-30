@@ -1,7 +1,6 @@
 ///@file rpc.test.cpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Unit test source file for rpc.hpp
-///@version 0.4.1
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -35,47 +34,32 @@
 ///OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ///
 
-#include <catch2/catch.hpp>
-
-#if defined(RPC_HPP_ENABLE_NJSON)
-#    include "rpc_adapters/rpc_njson.hpp"
-
-using rpc::adapters::njson_adapter;
-#endif
-
-#if defined(RPC_HPP_ENABLE_RAPIDJSON)
-#    include "rpc_adapters/rpc_rapidjson.hpp"
-
-using rpc::adapters::rapidjson_adapter;
-#endif
-
-#if defined(RPC_HPP_ENABLE_BOOST_JSON)
-#    include "rpc_adapters/rpc_boost_json.hpp"
-
-using rpc::adapters::bjson_adapter;
-#endif
+#define CATCH_CONFIG_MAIN
+#define RPC_HPP_CLIENT_IMPL
 
 #include "rpc.client.hpp"
 #include "test_structs.hpp"
 
+#include <catch2/catch.hpp>
+
 template<typename Serial>
-TestClient& GetClient();
+TestClient<Serial>& GetClient();
 
 template<typename Serial>
 void TestType()
 {
     auto& client = GetClient<Serial>();
-    const auto result =
-        rpc::client::call_func<njson_adapter, int>(client, "SimpleSum", 1, 2).get_result();
+    const auto result = client.template call_func<int>("SimpleSum", 1, 2).get_result();
 
-    REQUIRE(result == 3);
+    REQUIRE(result.has_value());
+    REQUIRE(result.value() == 3);
 }
 
 #if defined(RPC_HPP_ENABLE_NJSON)
 template<>
-TestClient& GetClient<njson_adapter>()
+TestClient<njson_adapter>& GetClient()
 {
-    static TestClient client("127.0.0.1", "5000");
+    static TestClient<njson_adapter> client("127.0.0.1", "5000");
     return client;
 }
 
@@ -87,9 +71,9 @@ TEST_CASE("NJSON")
 
 #if defined(RPC_HPP_ENABLE_RAPIDJSON)
 template<>
-TestClient& GetClient<rapidjson_adapter>()
+TestClient<rapidjson_adapter>& GetClient()
 {
-    static TestClient client("127.0.0.1", "5001");
+    static TestClient<rapidjson_adapter> client("127.0.0.1", "5001");
     return client;
 }
 
@@ -101,9 +85,9 @@ TEST_CASE("RAPIDJSON")
 
 #if defined(RPC_HPP_ENABLE_BOOST_JSON)
 template<>
-TestClient& GetClient<bjson_adapter>()
+TestClient<bjson_adapter>& GetClient()
 {
-    static TestClient client("127.0.0.1", "5002");
+    static TestClient<bjson_adapter> client("127.0.0.1", "5002");
     return client;
 }
 
@@ -140,9 +124,10 @@ TEMPLATE_LIST_TEST_CASE("StrLen", "", test_types_t)
 {
     auto& client = GetClient<TestType>();
     const auto result =
-        rpc::call_func<TestType, int>(client, "StrLen", std::string("hello, world")).get_result();
+        client.template call_func<int>("StrLen", std::string("hello, world")).get_result();
 
-    REQUIRE(result == 12);
+    REQUIRE(result.has_value());
+    REQUIRE(result.value() == 12);
 }
 
 TEMPLATE_LIST_TEST_CASE("AddOneToEach", "", test_types_t)
@@ -150,13 +135,17 @@ TEMPLATE_LIST_TEST_CASE("AddOneToEach", "", test_types_t)
     auto& client = GetClient<TestType>();
     const std::vector<int> vec{ 2, 4, 6, 8 };
     const auto result =
-        rpc::call_func<TestType, std::vector<int>>(client, "AddOneToEach", vec).get_result();
+        client.template call_func<std::vector<int>>("AddOneToEach", vec).get_result();
 
-    REQUIRE(result.size() == vec.size());
+    REQUIRE(result.has_value());
 
-    for (size_t i = 0; i < result.size(); ++i)
+    const auto& val = result.value();
+
+    REQUIRE(val.size() == vec.size());
+
+    for (size_t i = 0; i < val.size(); ++i)
     {
-        REQUIRE(result[i] == vec[i] + 1);
+        REQUIRE(val[i] == vec[i] + 1);
     }
 }
 
@@ -164,7 +153,7 @@ TEMPLATE_LIST_TEST_CASE("AddOneToEachRef", "", test_types_t)
 {
     auto& client = GetClient<TestType>();
     const std::vector<int> vec{ 2, 4, 6, 8 };
-    const auto pack = rpc::call_func<TestType>(client, "AddOneToEachRef", vec);
+    const auto pack = client.call_func("AddOneToEachRef", vec);
 
     const auto vec2 = pack.template get_arg<0>();
 
@@ -181,8 +170,10 @@ TEMPLATE_LIST_TEST_CASE("Fibonacci", "", test_types_t)
     constexpr uint64_t expected = 10946ULL;
     auto& client = GetClient<TestType>();
 
-    const auto test = rpc::call_func<TestType, uint64_t>(client, "Fibonacci", 20).get_result();
-    REQUIRE(expected == test);
+    const auto test = client.template call_func<uint64_t>("Fibonacci", 20).get_result();
+
+    REQUIRE(test.has_value());
+    REQUIRE(expected == test.value());
 }
 
 TEMPLATE_LIST_TEST_CASE("FibonacciRef", "", test_types_t)
@@ -191,7 +182,7 @@ TEMPLATE_LIST_TEST_CASE("FibonacciRef", "", test_types_t)
     auto& client = GetClient<TestType>();
 
     uint64_t num = 20ULL;
-    const auto test = rpc::call_func<TestType>(client, "FibonacciRef", num).template get_arg<0>();
+    const auto test = client.call_func("FibonacciRef", num).template get_arg<0>();
 
     REQUIRE(expected == test);
 }
@@ -201,11 +192,13 @@ TEMPLATE_LIST_TEST_CASE("StdDev", "", test_types_t)
     constexpr double expected = 3313.695594785;
     auto& client = GetClient<TestType>();
 
-    const auto test = rpc::call_func<TestType, double>(client, "StdDev", 55.65, 125.325, 552.125,
-        12.767, 2599.6, 1245.125663, 9783.49, 125.12, 553.3333333333, 2266.1)
+    const auto test = client
+                          .template call_func<double>("StdDev", 55.65, 125.325, 552.125, 12.767,
+                              2599.6, 1245.125663, 9783.49, 125.12, 553.3333333333, 2266.1)
                           .get_result();
 
-    REQUIRE_THAT(test, Catch::Matchers::WithinRel(expected));
+    REQUIRE(test.has_value());
+    REQUIRE_THAT(test.value(), Catch::Matchers::WithinRel(expected));
 }
 
 TEMPLATE_LIST_TEST_CASE("SquareRootRef", "", test_types_t)
@@ -224,8 +217,7 @@ TEMPLATE_LIST_TEST_CASE("SquareRootRef", "", test_types_t)
     double n9 = 553.3333333333;
     double n10 = 2266.1;
 
-    const auto pack =
-        rpc::call_func<TestType>(client, "SquareRootRef", n1, n2, n3, n4, n5, n6, n7, n8, n9, n10);
+    const auto pack = client.call_func("SquareRootRef", n1, n2, n3, n4, n5, n6, n7, n8, n9, n10);
 
     n1 = pack.template get_arg<0>();
     n2 = pack.template get_arg<1>();
@@ -252,9 +244,10 @@ TEMPLATE_LIST_TEST_CASE("AverageContainer<double>", "", test_types_t)
         125.12, 553.3333333333, 2266.1 };
 
     const auto test =
-        rpc::call_func<TestType, double>(client, "AverageContainer<double>", vec).get_result();
+        client.template call_func<double>("AverageContainer<double>", vec).get_result();
 
-    REQUIRE_THAT(test, Catch::Matchers::WithinAbs(expected, 0.001));
+    REQUIRE(test.has_value());
+    REQUIRE_THAT(test.value(), Catch::Matchers::WithinAbs(expected, 0.001));
 }
 
 TEMPLATE_LIST_TEST_CASE("HashComplex", "", test_types_t)
@@ -269,9 +262,10 @@ TEMPLATE_LIST_TEST_CASE("HashComplex", "", test_types_t)
     cx.name = "Franklin D. Roosevelt";
     cx.vals = { 0, 1, 4, 6, 7, 8, 11, 15, 17, 22, 25, 26 };
 
-    const auto test = rpc::call_func<TestType, std::string>(client, "HashComplex", cx).get_result();
+    const auto test = client.template call_func<std::string>("HashComplex", cx).get_result();
 
-    REQUIRE_THAT(expected, Catch::Matchers::Equals(test));
+    REQUIRE(test.has_value());
+    REQUIRE_THAT(expected, Catch::Matchers::Equals(test.value()));
 }
 
 TEMPLATE_LIST_TEST_CASE("HashComplexRef", "", test_types_t)
@@ -290,7 +284,7 @@ TEMPLATE_LIST_TEST_CASE("HashComplexRef", "", test_types_t)
     std::string test{};
 
     // re-assign string to arg<1>
-    test = rpc::call_func<TestType>(client, "HashComplexRef", cx, test).template get_arg<1>();
+    test = client.call_func("HashComplexRef", cx, test).template get_arg<1>();
 
     REQUIRE_THAT(expected, Catch::Matchers::Equals(test));
 }
@@ -299,9 +293,14 @@ TEMPLATE_LIST_TEST_CASE("Function not found", "", test_types_t)
 {
     auto& client = GetClient<TestType>();
 
-    const auto exp = [&client]() {
-        [[maybe_unused]] auto _unused =
-            rpc::call_func<TestType, int>(client, "FUNC_WHICH_DOES_NOT_EXIST").get_result();
+    const auto exp = [&client]()
+    {
+        const auto pack = client.template call_func<int>("FUNC_WHICH_DOES_NOT_EXIST");
+
+        if (!pack.get_result().has_value())
+        {
+            throw std::runtime_error(pack.get_err_mesg());
+        }
     };
 
     REQUIRE_THROWS_WITH(exp(),
@@ -313,9 +312,14 @@ TEMPLATE_LIST_TEST_CASE("ThrowError", "", test_types_t)
 {
     auto& client = GetClient<TestType>();
 
-    const auto exp = [&client]() {
-        [[maybe_unused]] auto _unused =
-            rpc::call_func<TestType, int>(client, "ThrowError").get_result();
+    const auto exp = [&client]()
+    {
+        const auto pack = client.template call_func<int>("ThrowError");
+
+        if (!pack.get_result().has_value())
+        {
+            throw std::runtime_error(pack.get_err_mesg());
+        }
     };
 
     REQUIRE_THROWS_WITH(exp(), "THIS IS A TEST ERROR!");
@@ -327,7 +331,7 @@ TEST_CASE("KillServer", "[!mayfail]")
 
     try
     {
-        rpc::call_func<njson_adapter>(client, "KillServer");
+        client.call_func("KillServer");
     }
     catch (...)
     {

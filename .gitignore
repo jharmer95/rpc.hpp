@@ -50,6 +50,7 @@ build/
 build-*/
 temp/
 /vs19/rpc_server/bus.txt
+out/
 
 # Cross and Native build files for Meson
 *_build.txt

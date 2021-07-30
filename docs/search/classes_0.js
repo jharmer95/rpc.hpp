@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['bool_5fpack_67',['bool_pack',['../structrpc_1_1details_1_1bool__pack.html',1,'rpc::details']]]
+  ['client_5finterface_43',['client_interface',['../classrpc_1_1client_1_1client__interface.html',1,'rpc::client::client_interface&lt; Serial &gt;'],['../classrpc_1_1client_1_1client__interface.html',1,'rpc::client_interface&lt; Serial &gt;']]]
 ];

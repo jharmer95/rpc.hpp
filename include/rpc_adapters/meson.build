@@ -1,19 +1,49 @@
-if get_option('build_njson_adapter')
+# BSD 3-Clause License
+#
+# Copyright (c) 2020-2021, Jackson Harmer
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this
+#    list of conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+#
+# 3. Neither the name of the copyright holder nor the names of its
+#    contributors may be used to endorse or promote products derived from
+#    this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+if get_option('build_adapter_boost_json')
+    boost_json_dep = dependency('boost', version : '>=1.75.0')
+    boost_json_adapter_dep = declare_dependency(dependencies : [rpc_hpp_dep, boost_json_dep])
+    add_project_arguments('-DRPC_HPP_BOOST_JSON_ENABLED', language : 'cpp')
+endif
+
+if get_option('build_adapter_njson')
     njson_dep = dependency('nlohmann_json', version : '>=3.9.0')
     njson_adapter_dep = declare_dependency(dependencies : [rpc_hpp_dep, njson_dep])
     add_project_arguments(['-DRPC_HPP_NJSON_ENABLED', '-DRPC_HPP_NLOHMANN_SERIAL_TYPE=1'], language : 'cpp')
 endif
 
-if get_option('build_rapidjson_adapter')
+if get_option('build_adapter_rapidjson')
     rapidjson_dep = dependency('rapidjson', version : '>=1.1.0')
     rapidjson_adapter_dep = declare_dependency(dependencies : [rpc_hpp_dep, rapidjson_dep])
     add_project_arguments('-DRPC_HPP_RAPIDJSON_ENABLED', language : 'cpp')
-endif
-
-if get_option('build_boost_json_adapter')
-    boost_json_dep = dependency('boost', version : '>=1.75.0')
-    boost_json_adapter_dep = declare_dependency(dependencies : [rpc_hpp_dep, boost_json_dep])
-    add_project_arguments('-DRPC_HPP_BOOST_JSON_ENABLED', language : 'cpp')
 endif
 
 adapter_list = ['rpc_njson.hpp', 'rpc_rapidjson.hpp', 'rpc_boost_json.hpp']

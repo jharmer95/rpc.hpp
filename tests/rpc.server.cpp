@@ -1,7 +1,6 @@
 ///@file rpc.server.cpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
-///@brief Example implementation of an RPC server
-///@version 0.4.1
+///@brief Implementation of an RPC server for testing
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -35,7 +34,38 @@
 ///OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ///
 
+#define RPC_HPP_SERVER_IMPL
+#define RPC_HPP_ENABLE_SERVER_CACHE
+
+#include "test_structs.hpp"
+
 #include <asio.hpp>
+
+#if defined(RPC_HPP_ENABLE_NJSON)
+#    include <rpc_adapters/rpc_njson.hpp>
+
+using rpc::adapters::njson;
+using rpc::adapters::njson_adapter;
+#endif
+
+#if defined(RPC_HPP_ENABLE_RAPIDJSON)
+#    include <rpc_adapters/rpc_rapidjson.hpp>
+
+using rpc::adapters::rapidjson_adapter;
+using rpc::adapters::rapidjson_doc;
+using rpc::adapters::rapidjson_val;
+#endif
+
+#if defined(RPC_HPP_ENABLE_BOOST_JSON)
+#    include <rpc_adapters/rpc_boost_json.hpp>
+
+namespace bjson = boost::json;
+using rpc::adapters::bjson_adapter;
+using rpc::adapters::bjson_obj;
+using rpc::adapters::bjson_val;
+#endif
+
+#include <rpc_dispatch_helper.hpp>
 
 #include <cmath>
 #include <condition_variable>
@@ -45,35 +75,6 @@
 #include <mutex>
 #include <sstream>
 #include <thread>
-
-#define RPC_HPP_ENABLE_SERVER_CACHE
-
-#if defined(RPC_HPP_ENABLE_NJSON)
-#    include "rpc_adapters/rpc_njson.hpp"
-
-using rpc::adapters::njson;
-using rpc::adapters::njson_adapter;
-#endif
-
-#if defined(RPC_HPP_ENABLE_RAPIDJSON)
-#    include "rpc_adapters/rpc_rapidjson.hpp"
-
-using rpc::adapters::rapidjson_adapter;
-using rpc::adapters::rapidjson_doc;
-using rpc::adapters::rapidjson_val;
-#endif
-
-#if defined(RPC_HPP_ENABLE_BOOST_JSON)
-#    include "rpc_adapters/rpc_boost_json.hpp"
-
-namespace bjson = boost::json;
-using rpc::adapters::bjson_adapter;
-using rpc::adapters::bjson_obj;
-using rpc::adapters::bjson_val;
-#endif
-
-#include "rpc_dispatch_helper.hpp"
-#include "test_structs.hpp"
 
 using asio::ip::tcp;
 
@@ -382,7 +383,7 @@ void HashComplexRef(ComplexObject& cx, std::string& hashStr)
 template<typename Serial>
 void rpc::server::dispatch_impl(typename Serial::serial_t& serial_obj)
 {
-    const auto func_name = details::pack_adapter<Serial>::get_func_name(serial_obj);
+    const auto func_name = pack_adapter<Serial>::get_func_name(serial_obj);
 
     RPC_ATTACH_FUNCS(KillServer, ThrowError, SimpleSum, AddOneToEachRef, ReadMessageRef,
         WriteMessageRef, ReadMessageVec, WriteMessageVec, ClearBus, FibonacciRef, SquareRootRef,

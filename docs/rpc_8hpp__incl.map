@@ -1,9 +1,10 @@
 <map id="include/rpc.hpp" name="include/rpc.hpp">
-<area shape="rect" id="node1" title="Header&#45;only library for serialized RPC usage." alt="" coords="173,5,283,32"/>
-<area shape="rect" id="node2" title=" " alt="" coords="5,80,48,107"/>
-<area shape="rect" id="node3" title=" " alt="" coords="73,80,127,107"/>
-<area shape="rect" id="node4" title=" " alt="" coords="152,80,219,107"/>
-<area shape="rect" id="node5" title=" " alt="" coords="243,80,298,107"/>
-<area shape="rect" id="node6" title=" " alt="" coords="323,80,373,107"/>
-<area shape="rect" id="node7" title=" " alt="" coords="397,80,451,107"/>
+<area shape="rect" id="node1" title="Header&#45;only library for serialized RPC usage." alt="" coords="234,5,345,32"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,80,69,107"/>
+<area shape="rect" id="node3" title=" " alt="" coords="93,80,160,107"/>
+<area shape="rect" id="node4" title=" " alt="" coords="185,80,239,107"/>
+<area shape="rect" id="node5" title=" " alt="" coords="264,80,315,107"/>
+<area shape="rect" id="node6" title=" " alt="" coords="339,80,421,107"/>
+<area shape="rect" id="node7" title=" " alt="" coords="445,80,499,107"/>
+<area shape="rect" id="node8" title=" " alt="" coords="523,80,634,107"/>
 </map>

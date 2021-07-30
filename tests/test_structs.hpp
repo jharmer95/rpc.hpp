@@ -1,7 +1,6 @@
 ///@file test_structs.hpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Structures/classes for use with rpc.hpp unit tests
-///@version 0.4.1
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -38,14 +37,14 @@
 #pragma once
 
 #if defined(RPC_HPP_ENABLE_NJSON)
-#    include "rpc_adapters/rpc_njson.hpp"
+#    include <rpc_adapters/rpc_njson.hpp>
 
 using rpc::adapters::njson;
 using rpc::adapters::njson_adapter;
 #endif
 
 #if defined(RPC_HPP_ENABLE_RAPIDJSON)
-#    include "rpc_adapters/rpc_rapidjson.hpp"
+#    include <rpc_adapters/rpc_rapidjson.hpp>
 
 using rpc::adapters::rapidjson_adapter;
 using rpc::adapters::rapidjson_doc;
@@ -53,7 +52,7 @@ using rpc::adapters::rapidjson_val;
 #endif
 
 #if defined(RPC_HPP_ENABLE_BOOST_JSON)
-#    include "rpc_adapters/rpc_boost_json.hpp"
+#    include <rpc_adapters/rpc_boost_json.hpp>
 
 namespace bjson = boost::json;
 using rpc::adapters::bjson_adapter;

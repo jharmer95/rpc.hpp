@@ -1,5 +1,6 @@
 <map id="include/rpc.hpp" name="include/rpc.hpp">
-<area shape="rect" id="node1" title="Header&#45;only library for serialized RPC usage." alt="" coords="104,5,215,32"/>
-<area shape="rect" id="node2" href="$rpc__njson_8hpp.html" title="Implementation of adapting nlohmann/json (https://github.com/nlohmann/json)" alt="" coords="5,80,148,121"/>
-<area shape="rect" id="node3" href="$rpc__rapidjson_8hpp.html" title="Implementation of adapting rapidjson (https://github.com/Tencent/rapidjson)" alt="" coords="172,80,315,121"/>
+<area shape="rect" id="node1" title="Header&#45;only library for serialized RPC usage." alt="" coords="188,5,299,32"/>
+<area shape="rect" id="node2" href="$rpc__boost__json_8hpp.html" title="Implementation of adapting Boost.JSON (https://github.com/boostorg/json)" alt="" coords="5,80,148,121"/>
+<area shape="rect" id="node3" href="$rpc__njson_8hpp.html" title="Implementation of adapting nlohmann&#39;s JSON library (https://github.com/nlohmann/json)" alt="" coords="172,80,315,121"/>
+<area shape="rect" id="node4" href="$rpc__rapidjson_8hpp.html" title="Implementation of adapting rapidjson (https://github.com/Tencent/rapidjson)" alt="" coords="339,80,481,121"/>
 </map>
