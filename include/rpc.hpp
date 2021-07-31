@@ -54,6 +54,7 @@
 
 #include <cstddef>     // for size_t
 #include <optional>    // for nullopt, optional
+#include <stdexcept>   // for runtime_error
 #include <string>      // for string
 #include <tuple>       // for tuple, forward_as_tuple
 #include <type_traits> // for declval, false_type, is_same, integral_constant
@@ -205,6 +206,35 @@ namespace details
         for_each_tuple(tuple, func, std::make_index_sequence<sizeof...(Ts)>());
     }
 
+#    if defined(RPC_HPP_CLIENT_IMPL)
+    template<typename... Args, size_t... Is>
+    void tuple_bind(const std::tuple<Args...>& dest,
+        const std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...>& src,
+        std::index_sequence<Is...>)
+    {
+        using expander = int[];
+        (void)expander{ 0,
+            (
+                (void)[](auto&& x, std::remove_cv_t<std::remove_reference_t<decltype(x)>> y)
+                {
+                    if constexpr (
+                        std::is_reference_v<
+                            decltype(x)> && !std::is_const_v<std::remove_reference_t<decltype(x)>>)
+                    {
+                        x = y;
+                    }
+                }(std::get<Is>(dest), std::get<Is>(src)),
+                0)... };
+    }
+
+    template<typename... Args>
+    void tuple_bind(const std::tuple<Args...>& dest,
+        const std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...>& src)
+    {
+        tuple_bind(dest, src, std::make_index_sequence<sizeof...(Args)>());
+    }
+#    endif
+
     template<typename... Args>
     class packed_func_base
     {
@@ -314,11 +344,20 @@ public:
         return m_result.has_value() && details::packed_func_base<Args...>::operator bool();
     }
 
-    ///@brief Returns the result
+    ///@brief Returns the result, throwing with the error message if it does not exist
     ///
-    ///@note If the result is std::nullopt, an error most likely occurred and the reason can be retrieved from the get_err_mesg() function
-    ///@return std::optional<R> The result of the function call
-    std::optional<R> get_result() const noexcept { return m_result; }
+    ///@return R The result of the function call
+    R get_result() const
+    {
+        if (m_result.has_value())
+        {
+            return m_result.value();
+        }
+        else
+        {
+            throw std::runtime_error(this->get_err_mesg());
+        }
+    }
 
     ///@brief Sets the result to a value
     ///
@@ -485,7 +524,7 @@ namespace server
             }
 
             run_callback(func, pack);
-            result_cache[std::move(bytes)] = pack.get_result().value();
+            result_cache[std::move(bytes)] = pack.get_result();
         }
         else
         {
@@ -529,33 +568,46 @@ inline namespace client
     public:
         virtual ~client_interface() = default;
 
-        ///@brief Sends an RPC call request to a server, waits for a response, then returns the packed_func to get the results
+        ///@brief Sends an RPC call request to a server, waits for a response, then returns the result
         ///
         ///@tparam R Return type of the remote function to call
         ///@tparam Args Variadic argument type(s) of the remote function to call
         ///@param func_name Name of the remote function to call
         ///@param args Argument(s) for the remote function
-        ///@return packed_func<R, Args...> packed_func representation of the called function, including results, arguments, AND/OR server error messages
+        ///@return R Result of the function call, will throw with server's error message if the result does not exist
         template<typename R = void, typename... Args>
-        packed_func<R, Args...> call_func(std::string&& func_name, Args&&... args)
+        R call_func(std::string&& func_name, Args&&... args)
         {
+            packed_func<R, Args...> pack = [&]
+            {
+                if constexpr (std::is_void_v<R>)
+                {
+                    return packed_func<void, Args...>{ std::move(func_name),
+                        std::forward_as_tuple(args...) };
+                }
+                else
+                {
+                    return packed_func<R, Args...>{ std::move(func_name), std::nullopt,
+                        std::forward_as_tuple(args...) };
+                }
+            }();
+
+            send(Serial::to_bytes(pack_adapter<Serial>::serialize_pack(pack)));
+
+            pack = pack_adapter<Serial>::template deserialize_pack<R, Args...>(
+                Serial::from_bytes(receive()));
+
+            // Assign values back to any (non-const) reference members
+            details::tuple_bind(std::forward_as_tuple(args...), pack.get_args());
+
             if constexpr (std::is_void_v<R>)
             {
-                const packed_func<void, Args...> pack(
-                    std::move(func_name), std::forward_as_tuple(args...));
-
-                send(Serial::to_bytes(pack_adapter<Serial>::serialize_pack(pack)));
+                return;
             }
             else
             {
-                const packed_func<R, Args...> pack(
-                    std::move(func_name), std::nullopt, std::forward_as_tuple(args...));
-
-                send(Serial::to_bytes(pack_adapter<Serial>::serialize_pack(pack)));
+                return pack.get_result();
             }
-
-            return pack_adapter<Serial>::template deserialize_pack<R, Args...>(
-                Serial::from_bytes(receive()));
         }
 
     protected:

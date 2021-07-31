@@ -231,15 +231,15 @@ adapters::rapidjson_doc pack_adapter<adapters::rapidjson_adapter>::serialize_pac
         {
             if constexpr (std::is_arithmetic_v<R>)
             {
-                result.Set<R>(pack.get_result().value());
+                result.Set<R>(pack.get_result());
             }
             else if constexpr (std::is_same_v<R, std::string>)
             {
-                result.SetString(pack.get_result().value().c_str(), alloc);
+                result.SetString(pack.get_result().c_str(), alloc);
             }
             else if constexpr (details::is_container_v<R>)
             {
-                const R container = pack.get_result().value();
+                const R container = pack.get_result();
                 result.SetArray();
 
                 for (const auto& val : container)
@@ -249,14 +249,12 @@ adapters::rapidjson_doc pack_adapter<adapters::rapidjson_adapter>::serialize_pac
             }
             else if constexpr (details::is_serializable_v<rapidjson_adapter, R>)
             {
-                rapidjson_doc tmp =
-                    R::template serialize<rapidjson_adapter>(pack.get_result().value());
+                rapidjson_doc tmp = R::template serialize<rapidjson_adapter>(pack.get_result());
                 result.CopyFrom(tmp, alloc);
             }
             else
             {
-                rapidjson_doc tmp =
-                    rapidjson_adapter::template serialize<R>(pack.get_result().value());
+                rapidjson_doc tmp = rapidjson_adapter::template serialize<R>(pack.get_result());
                 result.CopyFrom(tmp, alloc);
             }
         }

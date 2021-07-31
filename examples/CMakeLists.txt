@@ -40,8 +40,10 @@ if(NOT TARGET RpcHpp::rpc_hpp)
 endif()
 
 if(NOT TARGET asio_lib)
+  find_package(Threads REQUIRED)
   add_library(asio_lib INTERFACE)
   target_compile_definitions(asio_lib INTERFACE ASIO_STANDALONE)
+  target_link_libraries(asio_lib INTERFACE Threads::Threads)
 
   if(${DEPENDS_CONAN})
     set(CONAN_EXTRA_REQUIRES "asio/[>=1.14.0]")
@@ -56,10 +58,8 @@ if(NOT TARGET asio_lib)
   endif()
 endif()
 
-find_package(Threads REQUIRED)
-
 add_executable(rpc_server "server/server.cpp")
-target_link_libraries(rpc_server PRIVATE rpc_hpp asio_lib Threads::Threads njson_adapter)
+target_link_libraries(rpc_server PRIVATE rpc_hpp asio_lib njson_adapter)
 target_compile_options(rpc_server PRIVATE ${FULL_WARNING})
 
 add_executable(rpc_client "client/client.cpp")

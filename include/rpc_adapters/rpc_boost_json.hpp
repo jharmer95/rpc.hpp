@@ -181,12 +181,12 @@ adapters::bjson_val pack_adapter<adapters::bjson_adapter>::serialize_pack(
         {
             if constexpr (std::is_arithmetic_v<R> || std::is_same_v<R, std::string>)
             {
-                result = pack.get_result().value();
+                result = pack.get_result();
             }
             else if constexpr (details::is_container_v<R>)
             {
                 result = bjson::array{};
-                const auto container = pack.get_result().value();
+                const auto container = pack.get_result();
 
                 for (const auto& val : container)
                 {
@@ -195,11 +195,11 @@ adapters::bjson_val pack_adapter<adapters::bjson_adapter>::serialize_pack(
             }
             else if constexpr (details::is_serializable_v<bjson_adapter, R>)
             {
-                result = R::template serialize<bjson_adapter>(pack.get_result().value());
+                result = R::template serialize<bjson_adapter>(pack.get_result());
             }
             else
             {
-                result = bjson_adapter::template serialize<R>(pack.get_result().value());
+                result = bjson_adapter::template serialize<R>(pack.get_result());
             }
         }
     }
@@ -207,7 +207,8 @@ adapters::bjson_val pack_adapter<adapters::bjson_adapter>::serialize_pack(
     bjson::array args{};
 
     const auto& argTup = pack.get_args();
-    details::for_each_tuple(argTup, [&args](auto&& x) { push_arg(std::forward<decltype(x)>(x), args); });
+    details::for_each_tuple(
+        argTup, [&args](auto&& x) { push_arg(std::forward<decltype(x)>(x), args); });
 
     ret_j["args"] = std::move(args);
     return ret_j;

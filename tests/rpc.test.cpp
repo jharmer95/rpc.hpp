@@ -49,10 +49,9 @@ template<typename Serial>
 void TestType()
 {
     auto& client = GetClient<Serial>();
-    const auto result = client.template call_func<int>("SimpleSum", 1, 2).get_result();
+    const auto result = client.template call_func<int>("SimpleSum", 1, 2);
 
-    REQUIRE(result.has_value());
-    REQUIRE(result.value() == 3);
+    REQUIRE(result == 3);
 }
 
 #if defined(RPC_HPP_ENABLE_NJSON)
@@ -123,29 +122,22 @@ using test_types_t = std::tuple<bjson_adapter>;
 TEMPLATE_LIST_TEST_CASE("StrLen", "", test_types_t)
 {
     auto& client = GetClient<TestType>();
-    const auto result =
-        client.template call_func<int>("StrLen", std::string("hello, world")).get_result();
+    const auto result = client.template call_func<int>("StrLen", std::string("hello, world"));
 
-    REQUIRE(result.has_value());
-    REQUIRE(result.value() == 12);
+    REQUIRE(result == 12);
 }
 
 TEMPLATE_LIST_TEST_CASE("AddOneToEach", "", test_types_t)
 {
     auto& client = GetClient<TestType>();
     const std::vector<int> vec{ 2, 4, 6, 8 };
-    const auto result =
-        client.template call_func<std::vector<int>>("AddOneToEach", vec).get_result();
+    const auto result = client.template call_func<std::vector<int>>("AddOneToEach", vec);
 
-    REQUIRE(result.has_value());
+    REQUIRE(result.size() == vec.size());
 
-    const auto& val = result.value();
-
-    REQUIRE(val.size() == vec.size());
-
-    for (size_t i = 0; i < val.size(); ++i)
+    for (size_t i = 0; i < result.size(); ++i)
     {
-        REQUIRE(val[i] == vec[i] + 1);
+        REQUIRE(result[i] == vec[i] + 1);
     }
 }
 
@@ -153,15 +145,14 @@ TEMPLATE_LIST_TEST_CASE("AddOneToEachRef", "", test_types_t)
 {
     auto& client = GetClient<TestType>();
     const std::vector<int> vec{ 2, 4, 6, 8 };
-    const auto pack = client.call_func("AddOneToEachRef", vec);
-
-    const auto vec2 = pack.template get_arg<0>();
+    std::vector<int> vec2{ 1, 3, 5, 7 };
+    client.call_func("AddOneToEachRef", vec2);
 
     REQUIRE(vec2.size() == vec.size());
 
     for (size_t i = 0; i < vec2.size(); ++i)
     {
-        REQUIRE(vec2[i] == vec[i] + 1);
+        REQUIRE(vec2[i] == vec[i]);
     }
 }
 
@@ -170,10 +161,9 @@ TEMPLATE_LIST_TEST_CASE("Fibonacci", "", test_types_t)
     constexpr uint64_t expected = 10946ULL;
     auto& client = GetClient<TestType>();
 
-    const auto test = client.template call_func<uint64_t>("Fibonacci", 20).get_result();
+    const auto test = client.template call_func<uint64_t>("Fibonacci", 20);
 
-    REQUIRE(test.has_value());
-    REQUIRE(expected == test.value());
+    REQUIRE(expected == test);
 }
 
 TEMPLATE_LIST_TEST_CASE("FibonacciRef", "", test_types_t)
@@ -181,8 +171,8 @@ TEMPLATE_LIST_TEST_CASE("FibonacciRef", "", test_types_t)
     constexpr uint64_t expected = 10946ULL;
     auto& client = GetClient<TestType>();
 
-    uint64_t num = 20ULL;
-    const auto test = client.call_func("FibonacciRef", num).template get_arg<0>();
+    uint64_t test = 20ULL;
+    client.call_func("FibonacciRef", test);
 
     REQUIRE(expected == test);
 }
@@ -192,13 +182,10 @@ TEMPLATE_LIST_TEST_CASE("StdDev", "", test_types_t)
     constexpr double expected = 3313.695594785;
     auto& client = GetClient<TestType>();
 
-    const auto test = client
-                          .template call_func<double>("StdDev", 55.65, 125.325, 552.125, 12.767,
-                              2599.6, 1245.125663, 9783.49, 125.12, 553.3333333333, 2266.1)
-                          .get_result();
+    const auto test = client.template call_func<double>("StdDev", 55.65, 125.325, 552.125, 12.767,
+        2599.6, 1245.125663, 9783.49, 125.12, 553.3333333333, 2266.1);
 
-    REQUIRE(test.has_value());
-    REQUIRE_THAT(test.value(), Catch::Matchers::WithinRel(expected));
+    REQUIRE_THAT(test, Catch::Matchers::WithinRel(expected));
 }
 
 TEMPLATE_LIST_TEST_CASE("SquareRootRef", "", test_types_t)
@@ -217,18 +204,7 @@ TEMPLATE_LIST_TEST_CASE("SquareRootRef", "", test_types_t)
     double n9 = 553.3333333333;
     double n10 = 2266.1;
 
-    const auto pack = client.call_func("SquareRootRef", n1, n2, n3, n4, n5, n6, n7, n8, n9, n10);
-
-    n1 = pack.template get_arg<0>();
-    n2 = pack.template get_arg<1>();
-    n3 = pack.template get_arg<2>();
-    n4 = pack.template get_arg<3>();
-    n5 = pack.template get_arg<4>();
-    n6 = pack.template get_arg<5>();
-    n7 = pack.template get_arg<6>();
-    n8 = pack.template get_arg<7>();
-    n9 = pack.template get_arg<8>();
-    n10 = pack.template get_arg<9>();
+    client.call_func("SquareRootRef", n1, n2, n3, n4, n5, n6, n7, n8, n9, n10);
 
     const auto test = n1 + n2 + n3 + n4 + n5 + n6 + n7 + n8 + n9 + n10;
 
@@ -243,11 +219,9 @@ TEMPLATE_LIST_TEST_CASE("AverageContainer<double>", "", test_types_t)
     const std::vector<double> vec{ 55.65, 125.325, 552.125, 12.767, 2599.6, 1245.125663, 9783.49,
         125.12, 553.3333333333, 2266.1 };
 
-    const auto test =
-        client.template call_func<double>("AverageContainer<double>", vec).get_result();
+    const auto test = client.template call_func<double>("AverageContainer<double>", vec);
 
-    REQUIRE(test.has_value());
-    REQUIRE_THAT(test.value(), Catch::Matchers::WithinAbs(expected, 0.001));
+    REQUIRE_THAT(test, Catch::Matchers::WithinAbs(expected, 0.001));
 }
 
 TEMPLATE_LIST_TEST_CASE("HashComplex", "", test_types_t)
@@ -262,10 +236,9 @@ TEMPLATE_LIST_TEST_CASE("HashComplex", "", test_types_t)
     cx.name = "Franklin D. Roosevelt";
     cx.vals = { 0, 1, 4, 6, 7, 8, 11, 15, 17, 22, 25, 26 };
 
-    const auto test = client.template call_func<std::string>("HashComplex", cx).get_result();
+    const auto test = client.template call_func<std::string>("HashComplex", cx);
 
-    REQUIRE(test.has_value());
-    REQUIRE_THAT(expected, Catch::Matchers::Equals(test.value()));
+    REQUIRE_THAT(expected, Catch::Matchers::Equals(test));
 }
 
 TEMPLATE_LIST_TEST_CASE("HashComplexRef", "", test_types_t)
@@ -284,7 +257,7 @@ TEMPLATE_LIST_TEST_CASE("HashComplexRef", "", test_types_t)
     std::string test{};
 
     // re-assign string to arg<1>
-    test = client.call_func("HashComplexRef", cx, test).template get_arg<1>();
+    client.call_func("HashComplexRef", cx, test);
 
     REQUIRE_THAT(expected, Catch::Matchers::Equals(test));
 }
@@ -294,14 +267,7 @@ TEMPLATE_LIST_TEST_CASE("Function not found", "", test_types_t)
     auto& client = GetClient<TestType>();
 
     const auto exp = [&client]()
-    {
-        const auto pack = client.template call_func<int>("FUNC_WHICH_DOES_NOT_EXIST");
-
-        if (!pack.get_result().has_value())
-        {
-            throw std::runtime_error(pack.get_err_mesg());
-        }
-    };
+    { [[maybe_unused]] int _unused = client.template call_func<int>("FUNC_WHICH_DOES_NOT_EXIST"); };
 
     REQUIRE_THROWS_WITH(exp(),
         Catch::Matchers::Equals(
@@ -313,14 +279,7 @@ TEMPLATE_LIST_TEST_CASE("ThrowError", "", test_types_t)
     auto& client = GetClient<TestType>();
 
     const auto exp = [&client]()
-    {
-        const auto pack = client.template call_func<int>("ThrowError");
-
-        if (!pack.get_result().has_value())
-        {
-            throw std::runtime_error(pack.get_err_mesg());
-        }
-    };
+    { [[maybe_unused]] int _unused = client.template call_func<int>("ThrowError"); };
 
     REQUIRE_THROWS_WITH(exp(), "THIS IS A TEST ERROR!");
 }

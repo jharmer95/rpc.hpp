@@ -117,7 +117,7 @@ int main(int argc, char* argv[])
         return EXIT_FAILURE;
     }
 
-    const uint16_t port_num = strtoul(argv[1], nullptr, 10);
+    const auto port_num = static_cast<uint16_t>(strtoul(argv[1], nullptr, 10));
 
     try
     {

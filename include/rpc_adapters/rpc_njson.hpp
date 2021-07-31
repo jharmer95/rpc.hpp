@@ -171,7 +171,7 @@ adapters::njson pack_adapter<adapters::njson_adapter>::serialize_pack(
     {
         if constexpr (!std::is_void_v<R>)
         {
-            obj["result"] = pack.get_result().value();
+            obj["result"] = pack.get_result();
         }
     }
 

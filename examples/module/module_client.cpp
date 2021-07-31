@@ -29,8 +29,8 @@ int main(int argc, char* argv[])
             // Trivial function example
             {
                 funcName = "Sum";
-                const auto pack = client.template call_func<int>("Sum", 1, 2);
-                printf("Sum(1, 2) == %d\n", pack.get_result().value());
+                const auto result = client.template call_func<int>("Sum", 1, 2);
+                printf("Sum(1, 2) == %d\n", result);
             }
 
             // Example of calling w/ references
@@ -38,16 +38,15 @@ int main(int argc, char* argv[])
                 funcName = "AddOneToEach";
                 std::vector<int> vec{ 1, 2, 3, 4, 5 };
 
-                const auto pack = client.template call_func<void>("AddOneToEach", vec);
-                const auto vec2 = pack.template get_arg<0>();
+                client.template call_func<void>("AddOneToEach", vec);
                 printf("AddOneToEach({ 1, 2, 3, 4, 5 }) == {");
 
-                for (size_t i = 0; i < vec2.size() - 1; ++i)
+                for (size_t i = 0; i < vec.size() - 1; ++i)
                 {
-                    printf(" %d,", vec2[i]);
+                    printf(" %d,", vec[i]);
                 }
 
-                printf("%d }\n", vec2.back());
+                printf("%d }\n", vec.back());
             }
 
             // Local storage return
@@ -55,9 +54,9 @@ int main(int argc, char* argv[])
                 funcName = "GetName";
                 std::string mod_name;
 
-                const auto pack = client.template call_func<std::string>("GetName", mod_name);
+                client.template call_func("GetName", mod_name);
 
-                printf("GetName() == \"%s\"\n", pack.template get_arg<0>().c_str());
+                printf("GetName() == \"%s\"\n", mod_name.c_str());
             }
 
             return EXIT_SUCCESS;

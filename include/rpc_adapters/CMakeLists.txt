@@ -38,7 +38,6 @@ if(${BUILD_ADAPTER_BOOST_JSON})
                              INTERFACE "${PROJECT_SOURCE_DIR}/include")
   target_compile_definitions(boost_json_adapter
                              INTERFACE RPC_HPP_ENABLE_BOOST_JSON)
-  target_link_libraries(boost_json_adapter INTERFACE ${CMAKE_THREAD_LIBS_INIT})
 
   if(${DEPENDS_CONAN})
     set(CONAN_EXTRA_REQUIRES boost/[>=1.75.0])
@@ -46,9 +45,8 @@ if(${BUILD_ADAPTER_BOOST_JSON})
     target_include_directories(boost_json_adapter SYSTEM
                                INTERFACE ${CONAN_INCLUDE_DIRS_BOOST})
   elseif(${DEPENDS_VCPKG})
-    find_package(Boost 1.75.0 REQUIRED)
-    target_include_directories(boost_json_adapter SYSTEM
-                               INTERFACE ${Boost_INCLUDE_DIRS})
+    find_package(Boost 1.75.0 REQUIRED COMPONENTS json)
+    target_link_libraries(boost_json_adapter INTERFACE Boost::headers Boost::json)
   else()
     find_path(boost_json_path boost/json/src.hpp)
     target_include_directories(boost_json_adapter SYSTEM
@@ -64,7 +62,6 @@ if(${BUILD_ADAPTER_NJSON})
   target_include_directories(njson_adapter
                              INTERFACE "${PROJECT_SOURCE_DIR}/include")
   target_compile_definitions(njson_adapter INTERFACE RPC_HPP_ENABLE_NJSON)
-  target_link_libraries(njson_adapter INTERFACE ${CMAKE_THREAD_LIBS_INIT})
 
   if(${DEPENDS_CONAN})
     set(CONAN_EXTRA_REQUIRES nlohmann_json/[>=3.9.0])
@@ -87,7 +84,6 @@ if(${BUILD_ADAPTER_RAPIDJSON})
   target_include_directories(rpdjson_adapter
                              INTERFACE "${PROJECT_SOURCE_DIR}/include")
   target_compile_definitions(rpdjson_adapter INTERFACE RPC_HPP_ENABLE_RAPIDJSON)
-  target_link_libraries(rpdjson_adapter INTERFACE ${CMAKE_THREAD_LIBS_INIT})
 
   if(${DEPENDS_CONAN})
     set(CONAN_EXTRA_REQUIRES rapidjson/[>=1.1.0])

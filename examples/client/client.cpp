@@ -23,8 +23,8 @@ int main(int argc, char* argv[])
         // Trivial function example
         {
             currentFuncName = "Sum";
-            const auto pack = client.template call_func<int>("Sum", 1, 2);
-            printf("Sum(1, 2) == %d\n", pack.get_result().value());
+            const auto result = client.template call_func<int>("Sum", 1, 2);
+            printf("Sum(1, 2) == %d\n", result);
         }
 
         // Example of calling w/ references
@@ -32,34 +32,33 @@ int main(int argc, char* argv[])
             currentFuncName = "AddOneToEach";
             std::vector<int> vec{ 1, 2, 3, 4, 5 };
 
-            const auto pack = client.template call_func<void>("AddOneToEach", vec);
-            const auto vec2 = pack.template get_arg<0>();
+            client.template call_func<void>("AddOneToEach", vec);
             printf("AddOneToEach({ 1, 2, 3, 4, 5 }) == {");
 
-            for (size_t i = 0; i < vec2.size() - 1; ++i)
+            for (size_t i = 0; i < vec.size() - 1; ++i)
             {
-                printf(" %d,", vec2[i]);
+                printf(" %d,", vec[i]);
             }
 
-            printf("%d }\n", vec2.back());
+            printf("%d }\n", vec.back());
         }
 
         // Template function example
         {
             currentFuncName = "GetTypeName<int>";
-            auto pack1 = client.template call_func<std::string>("GetTypeName<int>");
+            auto result = client.template call_func<std::string>("GetTypeName<int>");
 
-            printf("GetTypeName<int>() == \"%s\"\n", pack1.get_result().value().c_str());
+            printf("GetTypeName<int>() == \"%s\"\n", result.c_str());
 
             currentFuncName = "GetTypeName<double>";
-            auto pack2 = client.template call_func<std::string>("GetTypeName<double>");
+            result = client.template call_func<std::string>("GetTypeName<double>");
 
-            printf("GetTypeName<double>() == \"%s\"\n", pack2.get_result().value().c_str());
+            printf("GetTypeName<double>() == \"%s\"\n", result.c_str());
 
             currentFuncName = "GetTypeName<std::string>";
-            auto pack3 = client.template call_func<std::string>("GetTypeName<std::string>");
+            result = client.template call_func<std::string>("GetTypeName<std::string>");
 
-            printf("GetTypeName<std::string>() == \"%s\"\n", pack3.get_result().value().c_str());
+            printf("GetTypeName<std::string>() == \"%s\"\n", result.c_str());
         }
 
         // Now shutdown the server

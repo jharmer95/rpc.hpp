@@ -25,7 +25,7 @@ void AddOneToEach(std::vector<int>& vec)
 
 void GetName(std::string& name_out)
 {
-    name_out = std::string{ MODULE_NAME };
+    name_out.assign(MODULE_NAME);
 }
 
 RPC_DEFAULT_DISPATCH(Sum, AddOneToEach, GetName)
