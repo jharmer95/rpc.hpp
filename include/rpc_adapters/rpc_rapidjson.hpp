@@ -174,25 +174,7 @@ namespace adapters
 } // namespace adapters
 
 template<>
-inline std::string adapters::rapidjson_adapter::to_bytes(const adapters::rapidjson_doc& serial_obj)
-{
-    rapidjson::StringBuffer buffer;
-    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
-    serial_obj.Accept(writer);
-    return buffer.GetString();
-}
-
-template<>
-inline adapters::rapidjson_doc adapters::rapidjson_adapter::from_bytes(const std::string& bytes)
-{
-    adapters::rapidjson_doc d;
-    d.SetObject();
-    d.Parse(bytes.c_str());
-    return d;
-}
-
-template<>
-inline std::string adapters::rapidjson_adapter::to_bytes(adapters::rapidjson_doc&& serial_obj)
+inline std::string adapters::rapidjson_adapter::to_bytes(adapters::rapidjson_doc serial_obj)
 {
     rapidjson::StringBuffer buffer;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
@@ -201,7 +183,7 @@ inline std::string adapters::rapidjson_adapter::to_bytes(adapters::rapidjson_doc
 }
 
 template<>
-inline adapters::rapidjson_doc adapters::rapidjson_adapter::from_bytes(std::string&& bytes)
+inline adapters::rapidjson_doc adapters::rapidjson_adapter::from_bytes(std::string bytes)
 {
     adapters::rapidjson_doc d;
     d.SetObject();
@@ -268,7 +250,7 @@ adapters::rapidjson_doc pack_adapter<adapters::rapidjson_adapter>::serialize_pac
     rapidjson_val args;
     args.SetArray();
 
-    const auto& argTup = pack.get_args();
+    const auto argTup = pack.get_args();
     details::for_each_tuple(
         argTup, [&args, &alloc](auto&& x) { push_arg(std::forward<decltype(x)>(x), args, alloc); });
 
@@ -381,7 +363,7 @@ inline std::string pack_adapter<adapters::rapidjson_adapter>::get_func_name(
 
 template<>
 inline void pack_adapter<adapters::rapidjson_adapter>::set_err_mesg(
-    adapters::rapidjson_doc& serial_obj, std::string&& mesg)
+    adapters::rapidjson_doc& serial_obj, std::string mesg)
 {
     auto& alloc = serial_obj.GetAllocator();
 

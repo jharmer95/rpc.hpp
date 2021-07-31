@@ -130,25 +130,13 @@ namespace adapters
 } // namespace adapters
 
 template<>
-inline std::string adapters::bjson_adapter::to_bytes(const adapters::bjson_val& serial_obj)
-{
-    return adapters::bjson::serialize(serial_obj);
-}
-
-template<>
-inline adapters::bjson_val adapters::bjson_adapter::from_bytes(const std::string& bytes)
-{
-    return adapters::bjson::parse(bytes);
-}
-
-template<>
-inline std::string adapters::bjson_adapter::to_bytes(adapters::bjson_val&& serial_obj)
+inline std::string adapters::bjson_adapter::to_bytes(adapters::bjson_val serial_obj)
 {
     return adapters::bjson::serialize(std::move(serial_obj));
 }
 
 template<>
-inline adapters::bjson_val adapters::bjson_adapter::from_bytes(std::string&& bytes)
+inline adapters::bjson_val adapters::bjson_adapter::from_bytes(std::string bytes)
 {
     return adapters::bjson::parse(std::move(bytes));
 }
@@ -307,7 +295,7 @@ inline std::string pack_adapter<adapters::bjson_adapter>::get_func_name(
 
 template<>
 inline void pack_adapter<adapters::bjson_adapter>::set_err_mesg(
-    adapters::bjson_val& serial_obj, std::string&& mesg)
+    adapters::bjson_val& serial_obj, std::string mesg)
 {
     assert(serial_obj.is_object());
     auto& obj = serial_obj.as_object();

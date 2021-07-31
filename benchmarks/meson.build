@@ -30,23 +30,24 @@
 
 asio_dep = dependency('asio')
 catch2_dep = dependency('catch2', version : ['>2.10.0', '<3.0.0'])
+thread_dep = dependency('threads')
 
-bench_dependencies = [rpc_hpp_dep, asio_dep, catch2_dep]
+bench_dependencies = [rpc_hpp_dep, asio_dep, catch2_dep, thread_dep]
 bench_defines = []
 
 if get_option('build_adapter_boost_json')
     bench_dependencies += [boost_json_adapter_dep]
-    bench_defines += [-DRPC_HPP_ENABLE_BOOST_JSON]
+    bench_defines += ['-DRPC_HPP_ENABLE_BOOST_JSON']
 endif
 
 if get_option('build_adapter_njson')
     bench_dependencies += [njson_adapter_dep]
-    bench_defines += [-DRPC_HPP_ENABLE_NJSON]
+    bench_defines += ['-DRPC_HPP_ENABLE_NJSON']
 endif
 
 if get_option('build_adapter_rapidjson')
     bench_dependencies += [rapidjson_adapter_dep]
-    bench_defines += [-DRPC_HPP_ENABLE_RAPIDJSON]
+    bench_defines += ['-DRPC_HPP_ENABLE_RAPIDJSON']
 endif
 
 rpc_bench_exe = executable('rpc_benchmark', 'benchmark.cpp', dependencies : bench_dependencies, install : false, cpp_args : [project_warnings, bench_defines])

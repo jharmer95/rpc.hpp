@@ -37,16 +37,14 @@ public:
         asio::write(m_socket, asio::buffer(mesg, mesg.size()));
     }
 
+    // nodiscard because data is lost after receive
     [[nodiscard]] typename Serial::bytes_t receive() override
     {
         const auto numBytes = m_socket.read_some(asio::buffer(m_buffer, 64U * 1024UL));
         return std::string(m_buffer, m_buffer + numBytes);
     }
 
-    [[nodiscard]] std::string getIP() const
-    {
-        return m_socket.remote_endpoint().address().to_string();
-    }
+    std::string getIP() const { return m_socket.remote_endpoint().address().to_string(); }
 
 private:
     asio::io_context m_io{};

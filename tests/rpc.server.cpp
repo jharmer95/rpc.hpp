@@ -83,7 +83,7 @@ static bool RUNNING = false;
 static std::mutex MUTEX;
 static std::condition_variable cv;
 
-[[noreturn]] void ThrowError()
+[[noreturn]] void ThrowError() noexcept(false)
 {
     throw std::runtime_error("THIS IS A TEST ERROR!");
 }

@@ -221,7 +221,7 @@ namespace details
                         std::is_reference_v<
                             decltype(x)> && !std::is_const_v<std::remove_reference_t<decltype(x)>>)
                     {
-                        x = y;
+                        x = std::move(y);
                     }
                 }(std::get<Is>(dest), std::get<Is>(src)),
                 0)... };
@@ -241,47 +241,26 @@ namespace details
     public:
         using args_t = std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...>;
 
-        packed_func_base(std::string func_name, args_t&& args) noexcept
+        packed_func_base(std::string func_name, args_t args)
             : m_func_name(std::move(func_name)), m_args(std::move(args))
         {
         }
 
-        [[nodiscard]] std::string& get_func_name() & noexcept { return m_func_name; }
-        [[nodiscard]] const std::string& get_func_name() const& noexcept { return m_func_name; }
-        [[nodiscard]] std::string get_func_name() && noexcept { return std::move(m_func_name); }
+        std::string get_err_mesg() const { return m_err_mesg; }
+        std::string get_func_name() const { return m_func_name; }
 
-        [[nodiscard]] std::string& get_err_mesg() & noexcept { return m_err_mesg; }
-        [[nodiscard]] const std::string& get_err_mesg() const& noexcept { return m_err_mesg; }
-        [[nodiscard]] std::string get_err_mesg() && noexcept { return std::move(m_err_mesg); }
+        void set_err_mesg(const std::string& mesg) & { m_err_mesg = mesg; }
 
-        void set_err_mesg(const std::string& mesg) & noexcept { m_err_mesg = mesg; }
-        void set_err_mesg(std::string&& mesg) & noexcept { m_err_mesg = std::move(mesg); }
+        explicit operator bool() const { return m_err_mesg.empty(); }
 
-        explicit operator bool() const noexcept { return m_err_mesg.empty(); }
-
-        [[nodiscard]] args_t& get_args() & noexcept { return m_args; }
-        [[nodiscard]] const args_t& get_args() const& noexcept { return m_args; }
-        [[nodiscard]] args_t get_args() && noexcept { return std::move(m_args); }
+        args_t get_args() const { return m_args; }
+        void set_args(const args_t& args) & { m_args = args; }
 
         template<size_t Index>
-        auto& get_arg() &
+        auto get_arg() const
         {
             return std::get<Index>(m_args);
         }
-
-        template<size_t Index>
-        const auto& get_arg() const&
-        {
-            return std::get<Index>(m_args);
-        }
-
-        template<size_t Index>
-        auto get_arg() &&
-        {
-            return std::move(std::get<Index>(m_args));
-        }
-
-        void set_args(args_t&& args) & { m_args = std::move(args); }
 
     private:
         std::string m_func_name;
@@ -296,15 +275,13 @@ namespace details
         using bytes_t = T_Bytes;
 
         template<typename T>
-        [[nodiscard]] static serial_t serialize(const T& val);
+        static serial_t serialize(const T& val);
 
         template<typename T>
-        [[nodiscard]] static T deserialize(const serial_t& serial_obj);
+        static T deserialize(const serial_t& serial_obj);
 
-        [[nodiscard]] static bytes_t to_bytes(const serial_t& serial_obj);
-        [[nodiscard]] static serial_t from_bytes(const bytes_t& bytes);
-        [[nodiscard]] static bytes_t to_bytes(serial_t&& serial_obj);
-        [[nodiscard]] static serial_t from_bytes(bytes_t&& bytes);
+        static serial_t from_bytes(bytes_t bytes);
+        static bytes_t to_bytes(serial_t serial_obj);
     };
 #endif
 } // namespace details
@@ -339,7 +316,7 @@ public:
     ///@note If an error occurred, the reason may be retrieved from the get_err_mesg() function
     ///@return true A return value exists and no error occurred
     ///@return false A return value does not exist AND/OR an error occurred
-    explicit operator bool() const noexcept
+    explicit operator bool() const
     {
         return m_result.has_value() && details::packed_func_base<Args...>::operator bool();
     }
@@ -362,10 +339,10 @@ public:
     ///@brief Sets the result to a value
     ///
     ///@param value The value to store as the result
-    void set_result(R value) & noexcept { m_result = std::move(value); }
+    void set_result(const R& value) & { m_result = value; }
 
     ///@brief Clears the result stored (sets it back to std::nullopt)
-    void clear_result() & noexcept { m_result = std::nullopt; }
+    void clear_result() & { m_result = std::nullopt; }
 
 private:
     std::optional<result_t> m_result{ std::nullopt };
@@ -408,8 +385,7 @@ public:
     ///@param pack packed_func to be serialized
     ///@return Serial::serial_t Serial representation of the packed_func
     template<typename R, typename... Args>
-    [[nodiscard]] static typename Serial::serial_t serialize_pack(
-        const packed_func<R, Args...>& pack);
+    static typename Serial::serial_t serialize_pack(const packed_func<R, Args...>& pack);
 
     ///@brief De-serializes a serial object to a packed_func
     ///
@@ -418,20 +394,19 @@ public:
     ///@param serial_obj Serial object to be serialized
     ///@return packed_func<R, Args...> resulting packed_func
     template<typename R, typename... Args>
-    [[nodiscard]] static packed_func<R, Args...> deserialize_pack(
-        const typename Serial::serial_t& serial_obj);
+    static packed_func<R, Args...> deserialize_pack(const typename Serial::serial_t& serial_obj);
 
     ///@brief Extracts the function name of a serialized function call
     ///
     ///@param serial_obj Serial object to be parsed
     ///@return std::string Name of the contained function
-    [[nodiscard]] static std::string get_func_name(const typename Serial::serial_t& serial_obj);
+    static std::string get_func_name(const typename Serial::serial_t& serial_obj);
 
     ///@brief Sets the error message for the serialized function call
     ///
     ///@param serial_obj Serial object to be modified
     ///@param mesg String to set as the error message
-    static void set_err_mesg(typename Serial::serial_t& serial_obj, std::string&& mesg);
+    static void set_err_mesg(typename Serial::serial_t& serial_obj, std::string mesg);
 };
 
 #if defined(RPC_HPP_SERVER_IMPL) || defined(RPC_HPP_MODULE_IMPL)
@@ -511,7 +486,7 @@ namespace server
 
         if constexpr (!std::is_void_v<R>)
         {
-            auto bytes = Serial::to_bytes(serial_obj);
+            auto bytes = Serial::to_bytes(std::move(serial_obj));
 
             const auto it = result_cache.find(bytes);
 
@@ -576,7 +551,7 @@ inline namespace client
         ///@param args Argument(s) for the remote function
         ///@return R Result of the function call, will throw with server's error message if the result does not exist
         template<typename R = void, typename... Args>
-        R call_func(std::string&& func_name, Args&&... args)
+        R call_func(std::string func_name, Args&&... args)
         {
             packed_func<R, Args...> pack = [&]
             {

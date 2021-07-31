@@ -74,7 +74,7 @@ struct TestMessage
     int data[256]{};
     uint8_t data_sz{};
 
-    [[nodiscard]] bool operator==(const TestMessage& other) const noexcept
+    bool operator==(const TestMessage& other) const
     {
         if (flag1 != other.flag1 || flag2 != other.flag2 || id != other.id
             || data_sz != other.data_sz)

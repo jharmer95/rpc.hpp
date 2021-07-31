@@ -68,10 +68,7 @@ public:
         asio::connect(m_socket, m_resolver.resolve(host, port));
     }
 
-    [[nodiscard]] std::string getIP() const
-    {
-        return m_socket.remote_endpoint().address().to_string();
-    }
+    std::string getIP() const { return m_socket.remote_endpoint().address().to_string(); }
 
 private:
     void send(const typename Serial::bytes_t& mesg) override
@@ -79,6 +76,7 @@ private:
         asio::write(m_socket, asio::buffer(mesg, mesg.size()));
     }
 
+    // nodiscard because data is lost after receive
     [[nodiscard]] typename Serial::bytes_t receive() override
     {
         const auto numBytes = m_socket.read_some(asio::buffer(m_buffer, 64U * 1024UL));

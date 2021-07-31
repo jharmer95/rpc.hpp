@@ -29,8 +29,9 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 asio_dep = dependency('asio')
+thread_dep = dependency('threads')
 
-ex_dependencies = [rpc_hpp_dep, asio_dep]
+ex_dependencies = [rpc_hpp_dep]
 ex_defines = []
 
 if get_option('build_adapter_boost_json')
@@ -56,8 +57,8 @@ endif
 
 thread_dep = dependency('threads')
 
-rpc_server_exe = executable('rpc_server', 'server/server.cpp', dependencies : [ex_dependencies, thread_dep], install : false, cpp_args : [project_warnings, ex_defines])
-rpc_client_exe = executable('rpc_client', 'client/client.cpp', dependencies : [ex_dependencies, thread_dep], install : false, cpp_args : [project_warnings, ex_defines])
+rpc_server_exe = executable('rpc_server', 'server/server.cpp', dependencies : [ex_dependencies, asio_dep, thread_dep], install : false, cpp_args : [project_warnings, ex_defines])
+rpc_client_exe = executable('rpc_client', 'client/client.cpp', dependencies : [ex_dependencies, asio_dep, thread_dep], install : false, cpp_args : [project_warnings, ex_defines])
 
 rpc_module_dll = shared_module('rpc_module', 'module/module.cpp', dependencies : ex_dependencies, install : false, cpp_args : [project_warnings, ex_defines, '-DRPC_HPP_EXPORT'])
 rpc_module_exe = executable('rpc_module_client', 'module/module_client.cpp', dependencies : [ex_dependencies, dl_dep], install : false, cpp_args : [project_warnings, ex_defines])
