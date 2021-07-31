@@ -1,7 +1,6 @@
 ///@file rpc_adapters/rpc_rapidjson.hpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Implementation of adapting rapidjson (https://github.com/Tencent/rapidjson)
-///@version 0.5.1
 ///
 ///@copyright
 ///BSD 3-Clause License

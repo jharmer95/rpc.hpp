@@ -22,7 +22,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">rpc.hpp
-   &#160;<span id="projectnumber">0.5.1</span>
+   &#160;<span id="projectnumber">0.6.1</span>
    </div>
    <div id="projectbrief">Simple RPC Header-Only Library</div>
   </td>
@@ -83,19 +83,19 @@ $(function() {
 <div class="dynheader">
 Inheritance diagram for rpc::packed_func&lt; R, Args &gt;:</div>
 <div class="dyncontent">
-<div class="center"><img src="classrpc_1_1packed__func__inherit__graph.png" border="0" usemap="#arpc_1_1packed__func_3_01_r_00_01_args_01_4_inherit__map" alt="Inheritance graph"/></div>
-<map name="arpc_1_1packed__func_3_01_r_00_01_args_01_4_inherit__map" id="arpc_1_1packed__func_3_01_r_00_01_args_01_4_inherit__map">
-<area shape="rect" title="Object representing a function call, including the function&#39;s name, arguments and result." alt="" coords="5,95,152,136"/>
-<area shape="rect" title=" " alt="" coords="8,5,149,47"/>
+<div class="center"><img src="classrpc_1_1packed__func__inherit__graph.png" border="0" usemap="#arpc_1_1packed__func_3_01R_00_01Args_01_4_inherit__map" alt="Inheritance graph"/></div>
+<map name="arpc_1_1packed__func_3_01R_00_01Args_01_4_inherit__map" id="arpc_1_1packed__func_3_01R_00_01Args_01_4_inherit__map">
+<area shape="rect" title="Object representing a function call, including the function&#39;s name, arguments and result." alt="" coords="5,95,164,136"/>
+<area shape="rect" title=" " alt="" coords="7,5,162,47"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <div class="dynheader">
 Collaboration diagram for rpc::packed_func&lt; R, Args &gt;:</div>
 <div class="dyncontent">
-<div class="center"><img src="classrpc_1_1packed__func__coll__graph.png" border="0" usemap="#arpc_1_1packed__func_3_01_r_00_01_args_01_4_coll__map" alt="Collaboration graph"/></div>
-<map name="arpc_1_1packed__func_3_01_r_00_01_args_01_4_coll__map" id="arpc_1_1packed__func_3_01_r_00_01_args_01_4_coll__map">
-<area shape="rect" title="Object representing a function call, including the function&#39;s name, arguments and result." alt="" coords="5,95,152,136"/>
-<area shape="rect" title=" " alt="" coords="8,5,149,47"/>
+<div class="center"><img src="classrpc_1_1packed__func__coll__graph.png" border="0" usemap="#arpc_1_1packed__func_3_01R_00_01Args_01_4_coll__map" alt="Collaboration graph"/></div>
+<map name="arpc_1_1packed__func_3_01R_00_01Args_01_4_coll__map" id="arpc_1_1packed__func_3_01R_00_01Args_01_4_coll__map">
+<area shape="rect" title="Object representing a function call, including the function&#39;s name, arguments and result." alt="" coords="5,95,164,136"/>
+<area shape="rect" title=" " alt="" coords="7,5,162,47"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
@@ -114,9 +114,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:abcf985cd2837b469f3d21711006ec8d2"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrpc_1_1packed__func.html#abcf985cd2837b469f3d21711006ec8d2">operator bool</a> () const noexcept</td></tr>
 <tr class="memdesc:abcf985cd2837b469f3d21711006ec8d2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Indicates if the <a class="el" href="classrpc_1_1packed__func.html" title="Object representing a function call, including the function&#39;s name, arguments and result.">packed_func</a> holds a return value and no error occurred.  <a href="classrpc_1_1packed__func.html#abcf985cd2837b469f3d21711006ec8d2">More...</a><br /></td></tr>
 <tr class="separator:abcf985cd2837b469f3d21711006ec8d2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a311339dcb9ca64b84d6403af49e7795e"><td class="memItemLeft" align="right" valign="top">std::optional&lt; R &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrpc_1_1packed__func.html#a311339dcb9ca64b84d6403af49e7795e">get_result</a> () const noexcept</td></tr>
-<tr class="memdesc:a311339dcb9ca64b84d6403af49e7795e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the result.  <a href="classrpc_1_1packed__func.html#a311339dcb9ca64b84d6403af49e7795e">More...</a><br /></td></tr>
-<tr class="separator:a311339dcb9ca64b84d6403af49e7795e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a806c046cd6e9f2301da0a37c78f8e2d7"><td class="memItemLeft" align="right" valign="top">R&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrpc_1_1packed__func.html#a806c046cd6e9f2301da0a37c78f8e2d7">get_result</a> () const</td></tr>
+<tr class="memdesc:a806c046cd6e9f2301da0a37c78f8e2d7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the result, throwing with the error message if it does not exist.  <a href="classrpc_1_1packed__func.html#a806c046cd6e9f2301da0a37c78f8e2d7">More...</a><br /></td></tr>
+<tr class="separator:a806c046cd6e9f2301da0a37c78f8e2d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a23fa2909f7504dac7284316901d900ce"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrpc_1_1packed__func.html#a23fa2909f7504dac7284316901d900ce">set_result</a> (R value) &amp;noexcept</td></tr>
 <tr class="memdesc:a23fa2909f7504dac7284316901d900ce"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the result to a value.  <a href="classrpc_1_1packed__func.html#a23fa2909f7504dac7284316901d900ce">More...</a><br /></td></tr>
 <tr class="separator:a23fa2909f7504dac7284316901d900ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -193,8 +193,8 @@ template&lt;typename R , typename... Args&gt; </div>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="a311339dcb9ca64b84d6403af49e7795e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a311339dcb9ca64b84d6403af49e7795e">&#9670;&nbsp;</a></span>get_result()</h2>
+<a id="a806c046cd6e9f2301da0a37c78f8e2d7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a806c046cd6e9f2301da0a37c78f8e2d7">&#9670;&nbsp;</a></span>get_result()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -205,7 +205,7 @@ template&lt;typename R , typename... Args&gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">std::optional&lt;R&gt; <a class="el" href="classrpc_1_1packed__func.html">rpc::packed_func</a>&lt; R, Args &gt;::get_result </td>
+          <td class="memname">R <a class="el" href="classrpc_1_1packed__func.html">rpc::packed_func</a>&lt; R, Args &gt;::get_result </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -213,14 +213,13 @@ template&lt;typename R , typename... Args&gt; </div>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">noexcept</span></span>  </td>
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
 
-<p>Returns the result. </p>
-<dl class="section note"><dt>Note</dt><dd>If the result is std::nullopt, an error most likely occurred and the reason can be retrieved from the get_err_mesg() function </dd></dl>
-<dl class="section return"><dt>Returns</dt><dd>std::optional&lt;R&gt; The result of the function call </dd></dl>
+<p>Returns the result, throwing with the error message if it does not exist. </p>
+<dl class="section return"><dt>Returns</dt><dd>R The result of the function call </dd></dl>
 
 </div>
 </div>

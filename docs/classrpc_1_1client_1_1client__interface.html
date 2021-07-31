@@ -22,7 +22,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">rpc.hpp
-   &#160;<span id="projectnumber">0.5.1</span>
+   &#160;<span id="projectnumber">0.6.1</span>
    </div>
    <div id="projectbrief">Simple RPC Header-Only Library</div>
   </td>
@@ -83,10 +83,10 @@ $(function() {
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a8876a832fbc2488d16bcdb12401c7d29"><td class="memTemplParams" colspan="2">template&lt;typename R  = void, typename... Args&gt; </td></tr>
-<tr class="memitem:a8876a832fbc2488d16bcdb12401c7d29"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classrpc_1_1packed__func.html">packed_func</a>&lt; R, Args... &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classrpc_1_1client_1_1client__interface.html#a8876a832fbc2488d16bcdb12401c7d29">call_func</a> (std::string &amp;&amp;func_name, Args &amp;&amp;... args)</td></tr>
-<tr class="memdesc:a8876a832fbc2488d16bcdb12401c7d29"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sends an RPC call request to a server, waits for a response, then returns the <a class="el" href="classrpc_1_1packed__func.html" title="Object representing a function call, including the function&#39;s name, arguments and result.">packed_func</a> to get the results.  <a href="classrpc_1_1client_1_1client__interface.html#a8876a832fbc2488d16bcdb12401c7d29">More...</a><br /></td></tr>
-<tr class="separator:a8876a832fbc2488d16bcdb12401c7d29"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a61ef1336c96e7c6a4740391665b1c198"><td class="memTemplParams" colspan="2">template&lt;typename R  = void, typename... Args&gt; </td></tr>
+<tr class="memitem:a61ef1336c96e7c6a4740391665b1c198"><td class="memTemplItemLeft" align="right" valign="top">R&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classrpc_1_1client_1_1client__interface.html#a61ef1336c96e7c6a4740391665b1c198">call_func</a> (std::string &amp;&amp;func_name, Args &amp;&amp;... args)</td></tr>
+<tr class="memdesc:a61ef1336c96e7c6a4740391665b1c198"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sends an RPC call request to a server, waits for a response, then returns the result.  <a href="classrpc_1_1client_1_1client__interface.html#a61ef1336c96e7c6a4740391665b1c198">More...</a><br /></td></tr>
+<tr class="separator:a61ef1336c96e7c6a4740391665b1c198"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-methods"></a>
 Protected Member Functions</h2></td></tr>
@@ -109,8 +109,8 @@ class rpc::client::client_interface&lt; Serial &gt;</h3>
   </dd>
 </dl>
 </div><h2 class="groupheader">Member Function Documentation</h2>
-<a id="a8876a832fbc2488d16bcdb12401c7d29"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8876a832fbc2488d16bcdb12401c7d29">&#9670;&nbsp;</a></span>call_func()</h2>
+<a id="a61ef1336c96e7c6a4740391665b1c198"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a61ef1336c96e7c6a4740391665b1c198">&#9670;&nbsp;</a></span>call_func()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -123,7 +123,7 @@ template&lt;typename R  = void, typename... Args&gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classrpc_1_1packed__func.html">packed_func</a>&lt;R, Args...&gt; <a class="el" href="classrpc_1_1client_1_1client__interface.html">rpc::client::client_interface</a>&lt; Serial &gt;::call_func </td>
+          <td class="memname">R <a class="el" href="classrpc_1_1client_1_1client__interface.html">rpc::client::client_interface</a>&lt; Serial &gt;::call_func </td>
           <td>(</td>
           <td class="paramtype">std::string &amp;&amp;&#160;</td>
           <td class="paramname"><em>func_name</em>, </td>
@@ -147,7 +147,7 @@ template&lt;typename R  = void, typename... Args&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p>Sends an RPC call request to a server, waits for a response, then returns the <a class="el" href="classrpc_1_1packed__func.html" title="Object representing a function call, including the function&#39;s name, arguments and result.">packed_func</a> to get the results. </p>
+<p>Sends an RPC call request to a server, waits for a response, then returns the result. </p>
 <dl class="tparams"><dt>Template Parameters</dt><dd>
   <table class="tparams">
     <tr><td class="paramname">R</td><td>Return type of the remote function to call </td></tr>
@@ -162,7 +162,7 @@ template&lt;typename R  = void, typename... Args&gt; </div>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>packed_func&lt;R, Args...&gt; <a class="el" href="classrpc_1_1packed__func.html" title="Object representing a function call, including the function&#39;s name, arguments and result.">packed_func</a> representation of the called function, including results, arguments, AND/OR server error messages </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>R Result of the function call, will throw with server's error message if the result does not exist </dd></dl>
 
 </div>
 </div>

@@ -3,7 +3,7 @@ var searchData=
   ['client_14',['client',['../namespacerpc_1_1client.html',1,'rpc']]],
   ['details_15',['details',['../namespacerpc_1_1details.html',1,'rpc']]],
   ['receive_16',['receive',['../classrpc_1_1client_1_1client__interface.html#ac183a72ae42949d1995d919e248909bd',1,'rpc::client::client_interface']]],
-  ['result_5ft_17',['result_t',['../classrpc_1_1packed__func.html#ae2485fe8827883a17c8c8e6d8876c510',1,'rpc::packed_func::result_t()'],['../classrpc_1_1packed__func_3_01void_00_01_args_8_8_8_01_4.html#a8b8df53d5d47247870a289ff077d3b09',1,'rpc::packed_func&lt; void, Args... &gt;::result_t()']]],
+  ['result_5ft_17',['result_t',['../classrpc_1_1packed__func_3_01void_00_01Args_8_8_8_01_4.html#a8b8df53d5d47247870a289ff077d3b09',1,'rpc::packed_func&lt; void, Args... &gt;::result_t()'],['../classrpc_1_1packed__func.html#ae2485fe8827883a17c8c8e6d8876c510',1,'rpc::packed_func::result_t()']]],
   ['rpc_18',['rpc',['../namespacerpc.html',1,'']]],
   ['rpc_2ehpp_19',['rpc.hpp',['../rpc_8hpp.html',1,'']]],
   ['rpc_5falias_5fcached_5ffunc_20',['RPC_ALIAS_CACHED_FUNC',['../rpc__dispatch__helper_8hpp.html#a3d26fb2bdbdaf4a07cb3db322438a535',1,'rpc_dispatch_helper.hpp']]],
