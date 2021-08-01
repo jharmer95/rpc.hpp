@@ -193,7 +193,7 @@ namespace details
     inline constexpr bool is_container_v = is_container<C>::value;
 
     template<typename F, typename... Ts, size_t... Is>
-    void for_each_tuple(
+    constexpr void for_each_tuple(
         const std::tuple<Ts...>& tuple, const F& func, [[maybe_unused]] std::index_sequence<Is...>)
     {
         using expander = int[];
@@ -201,14 +201,14 @@ namespace details
     }
 
     template<typename F, typename... Ts>
-    void for_each_tuple(const std::tuple<Ts...>& tuple, const F& func)
+    constexpr void for_each_tuple(const std::tuple<Ts...>& tuple, const F& func)
     {
         for_each_tuple(tuple, func, std::make_index_sequence<sizeof...(Ts)>());
     }
 
 #    if defined(RPC_HPP_CLIENT_IMPL)
     template<typename... Args, size_t... Is>
-    void tuple_bind(const std::tuple<Args...>& dest,
+    constexpr void tuple_bind(const std::tuple<Args...>& dest,
         const std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...>& src,
         std::index_sequence<Is...>)
     {
@@ -228,7 +228,7 @@ namespace details
     }
 
     template<typename... Args>
-    void tuple_bind(const std::tuple<Args...>& dest,
+    constexpr void tuple_bind(const std::tuple<Args...>& dest,
         const std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...>& src)
     {
         tuple_bind(dest, src, std::make_index_sequence<sizeof...(Args)>());
