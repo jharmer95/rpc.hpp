@@ -34,13 +34,13 @@
 ///OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ///
 
-#define CATCH_CONFIG_MAIN
+#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #define RPC_HPP_CLIENT_IMPL
 
 #include "rpc.client.hpp"
 #include "test_structs.hpp"
 
-#include <catch2/catch.hpp>
+#include <doctest/doctest.h>
 
 template<typename Serial>
 TestClient<Serial>& GetClient();
@@ -49,10 +49,9 @@ template<typename Serial>
 void TestType()
 {
     auto& client = GetClient<Serial>();
-    const auto result = client.template call_func<int>("SimpleSum", 1, 2).get_result();
+    const auto result = client.template call_func<int>("SimpleSum", 1, 2);
 
-    REQUIRE(result.has_value());
-    REQUIRE(result.value() == 3);
+    REQUIRE(result == 3);
 }
 
 #if defined(RPC_HPP_ENABLE_NJSON)
@@ -98,110 +97,111 @@ TEST_CASE("BOOST_JSON")
 #endif
 
 // TODO: Clean this up somehow
-#if defined(RPC_HPP_ENABLE_NJSON)
-#    if defined(RPC_HPP_ENABLE_RAPIDJSON)
-#        if defined(RPC_HPP_ENABLE_BOOST_JSON)
-using test_types_t = std::tuple<njson_adapter, rapidjson_adapter, bjson_adapter>;
-#        else
-using test_types_t = std::tuple<njson_adapter, rapidjson_adapter>;
-#        endif
-#    elif defined(RPC_HPP_ENABLE_BOOST_JSON)
-using test_types_t = std::tuple<njson_adapter, bjson_adapter>;
+#if defined(RPC_HPP_ENABLE_BOOST_JSON)
+#    if defined(TEST_USE_COMMA)
+#        define TEST_BOOST_JSON_T , bjson_adapter
 #    else
-using test_types_t = std::tuple<njson_adapter>;
+#        define TEST_BOOST_JSON_T bjson_adapter
+#        define TEST_USE_COMMA
 #    endif
-#elif defined(RPC_HPP_ENABLE_RAPIDJSON)
-#    if defined(RPC_HPP_ENABLE_BOOST_JSON)
-using test_types_t = std::tuple<rapidjson_adapter, bjson_adapter>;
-#    else
-using test_types_t = std::tuple<rapidjson_adapter>;
-#    endif
-#elif defined(RPC_HPP_ENABLE_BOOST_JSON)
-using test_types_t = std::tuple<bjson_adapter>;
+#else
+#    define TEST_BOOST_JSON_T
 #endif
 
-TEMPLATE_LIST_TEST_CASE("StrLen", "", test_types_t)
+#if defined(RPC_HPP_ENABLE_NJSON)
+#    if defined(TEST_USE_COMMA)
+#        define TEST_NJSON_T , njson_adapter
+#    else
+#        define TEST_NJSON_T njson_adapter
+#        define TEST_USE_COMMA
+#    endif
+#else
+#    define TEST_NJSON_T
+#endif
+
+#if defined(RPC_HPP_ENABLE_RAPIDJSON)
+#    if defined(TEST_USE_COMMA)
+#        define TEST_RAPIDJSON_T , rapidjson_adapter
+#    else
+#        define TEST_RAPIDJSON_T rapidjson_adapter
+#        define TEST_USE_COMMA
+#    endif
+#else
+#    define TEST_RAPIDJSON_T
+#endif
+
+#define RPC_TEST_TYPES TEST_BOOST_JSON_T TEST_NJSON_T TEST_RAPIDJSON_T
+
+TEST_CASE_TEMPLATE("StrLen", TestType, RPC_TEST_TYPES)
 {
     auto& client = GetClient<TestType>();
-    const auto result =
-        client.template call_func<int>("StrLen", std::string("hello, world")).get_result();
+    const auto result = client.template call_func<int>("StrLen", std::string("hello, world"));
 
-    REQUIRE(result.has_value());
-    REQUIRE(result.value() == 12);
+    REQUIRE(result == 12);
 }
 
-TEMPLATE_LIST_TEST_CASE("AddOneToEach", "", test_types_t)
+TEST_CASE_TEMPLATE("AddOneToEach", TestType, RPC_TEST_TYPES)
 {
     auto& client = GetClient<TestType>();
     const std::vector<int> vec{ 2, 4, 6, 8 };
-    const auto result =
-        client.template call_func<std::vector<int>>("AddOneToEach", vec).get_result();
+    const auto result = client.template call_func<std::vector<int>>("AddOneToEach", vec);
 
-    REQUIRE(result.has_value());
+    REQUIRE(result.size() == vec.size());
 
-    const auto& val = result.value();
-
-    REQUIRE(val.size() == vec.size());
-
-    for (size_t i = 0; i < val.size(); ++i)
+    for (size_t i = 0; i < result.size(); ++i)
     {
-        REQUIRE(val[i] == vec[i] + 1);
+        REQUIRE(result[i] == vec[i] + 1);
     }
 }
 
-TEMPLATE_LIST_TEST_CASE("AddOneToEachRef", "", test_types_t)
+TEST_CASE_TEMPLATE("AddOneToEachRef", TestType, RPC_TEST_TYPES)
 {
     auto& client = GetClient<TestType>();
     const std::vector<int> vec{ 2, 4, 6, 8 };
-    const auto pack = client.call_func("AddOneToEachRef", vec);
-
-    const auto vec2 = pack.template get_arg<0>();
+    std::vector<int> vec2{ 1, 3, 5, 7 };
+    client.call_func("AddOneToEachRef", vec2);
 
     REQUIRE(vec2.size() == vec.size());
 
     for (size_t i = 0; i < vec2.size(); ++i)
     {
-        REQUIRE(vec2[i] == vec[i] + 1);
+        REQUIRE(vec2[i] == vec[i]);
     }
 }
 
-TEMPLATE_LIST_TEST_CASE("Fibonacci", "", test_types_t)
+TEST_CASE_TEMPLATE("Fibonacci", TestType, RPC_TEST_TYPES)
 {
     constexpr uint64_t expected = 10946ULL;
     auto& client = GetClient<TestType>();
 
-    const auto test = client.template call_func<uint64_t>("Fibonacci", 20).get_result();
-
-    REQUIRE(test.has_value());
-    REQUIRE(expected == test.value());
-}
-
-TEMPLATE_LIST_TEST_CASE("FibonacciRef", "", test_types_t)
-{
-    constexpr uint64_t expected = 10946ULL;
-    auto& client = GetClient<TestType>();
-
-    uint64_t num = 20ULL;
-    const auto test = client.call_func("FibonacciRef", num).template get_arg<0>();
+    const auto test = client.template call_func<uint64_t>("Fibonacci", 20);
 
     REQUIRE(expected == test);
 }
 
-TEMPLATE_LIST_TEST_CASE("StdDev", "", test_types_t)
+TEST_CASE_TEMPLATE("FibonacciRef", TestType, RPC_TEST_TYPES)
+{
+    constexpr uint64_t expected = 10946ULL;
+    auto& client = GetClient<TestType>();
+
+    uint64_t test = 20ULL;
+    client.call_func("FibonacciRef", test);
+
+    REQUIRE(expected == test);
+}
+
+TEST_CASE_TEMPLATE("StdDev", TestType, RPC_TEST_TYPES)
 {
     constexpr double expected = 3313.695594785;
     auto& client = GetClient<TestType>();
 
-    const auto test = client
-                          .template call_func<double>("StdDev", 55.65, 125.325, 552.125, 12.767,
-                              2599.6, 1245.125663, 9783.49, 125.12, 553.3333333333, 2266.1)
-                          .get_result();
+    const auto test = client.template call_func<double>("StdDev", 55.65, 125.325, 552.125, 12.767,
+        2599.6, 1245.125663, 9783.49, 125.12, 553.3333333333, 2266.1);
 
-    REQUIRE(test.has_value());
-    REQUIRE_THAT(test.value(), Catch::Matchers::WithinRel(expected));
+    REQUIRE(test == doctest::Approx(expected));
 }
 
-TEMPLATE_LIST_TEST_CASE("SquareRootRef", "", test_types_t)
+TEST_CASE_TEMPLATE("SquareRootRef", TestType, RPC_TEST_TYPES)
 {
     constexpr double expected = 313.2216436152;
     auto& client = GetClient<TestType>();
@@ -217,25 +217,14 @@ TEMPLATE_LIST_TEST_CASE("SquareRootRef", "", test_types_t)
     double n9 = 553.3333333333;
     double n10 = 2266.1;
 
-    const auto pack = client.call_func("SquareRootRef", n1, n2, n3, n4, n5, n6, n7, n8, n9, n10);
-
-    n1 = pack.template get_arg<0>();
-    n2 = pack.template get_arg<1>();
-    n3 = pack.template get_arg<2>();
-    n4 = pack.template get_arg<3>();
-    n5 = pack.template get_arg<4>();
-    n6 = pack.template get_arg<5>();
-    n7 = pack.template get_arg<6>();
-    n8 = pack.template get_arg<7>();
-    n9 = pack.template get_arg<8>();
-    n10 = pack.template get_arg<9>();
+    client.call_func("SquareRootRef", n1, n2, n3, n4, n5, n6, n7, n8, n9, n10);
 
     const auto test = n1 + n2 + n3 + n4 + n5 + n6 + n7 + n8 + n9 + n10;
 
-    REQUIRE_THAT(test, Catch::Matchers::WithinAbs(expected, 0.001));
+    REQUIRE(test == doctest::Approx(expected).epsilon(0.001));
 }
 
-TEMPLATE_LIST_TEST_CASE("AverageContainer<double>", "", test_types_t)
+TEST_CASE_TEMPLATE("AverageContainer<double>", TestType, RPC_TEST_TYPES)
 {
     constexpr double expected = 1731.8635996333;
     auto& client = GetClient<TestType>();
@@ -243,14 +232,12 @@ TEMPLATE_LIST_TEST_CASE("AverageContainer<double>", "", test_types_t)
     const std::vector<double> vec{ 55.65, 125.325, 552.125, 12.767, 2599.6, 1245.125663, 9783.49,
         125.12, 553.3333333333, 2266.1 };
 
-    const auto test =
-        client.template call_func<double>("AverageContainer<double>", vec).get_result();
+    const auto test = client.template call_func<double>("AverageContainer<double>", vec);
 
-    REQUIRE(test.has_value());
-    REQUIRE_THAT(test.value(), Catch::Matchers::WithinAbs(expected, 0.001));
+    REQUIRE(test == doctest::Approx(expected).epsilon(0.001));
 }
 
-TEMPLATE_LIST_TEST_CASE("HashComplex", "", test_types_t)
+TEST_CASE_TEMPLATE("HashComplex", TestType, RPC_TEST_TYPES)
 {
     const std::string expected = "467365747274747d315a473a527073796c7e707b85";
     auto& client = GetClient<TestType>();
@@ -262,13 +249,12 @@ TEMPLATE_LIST_TEST_CASE("HashComplex", "", test_types_t)
     cx.name = "Franklin D. Roosevelt";
     cx.vals = { 0, 1, 4, 6, 7, 8, 11, 15, 17, 22, 25, 26 };
 
-    const auto test = client.template call_func<std::string>("HashComplex", cx).get_result();
+    const auto test = client.template call_func<std::string>("HashComplex", cx);
 
-    REQUIRE(test.has_value());
-    REQUIRE_THAT(expected, Catch::Matchers::Equals(test.value()));
+    REQUIRE(expected == test);
 }
 
-TEMPLATE_LIST_TEST_CASE("HashComplexRef", "", test_types_t)
+TEST_CASE_TEMPLATE("HashComplexRef", TestType, RPC_TEST_TYPES)
 {
     const std::string expected = "467365747274747d315a473a527073796c7e707b85";
     auto& client = GetClient<TestType>();
@@ -284,48 +270,32 @@ TEMPLATE_LIST_TEST_CASE("HashComplexRef", "", test_types_t)
     std::string test{};
 
     // re-assign string to arg<1>
-    test = client.call_func("HashComplexRef", cx, test).template get_arg<1>();
+    client.call_func("HashComplexRef", cx, test);
 
-    REQUIRE_THAT(expected, Catch::Matchers::Equals(test));
+    REQUIRE(expected == test);
 }
 
-TEMPLATE_LIST_TEST_CASE("Function not found", "", test_types_t)
+TEST_CASE_TEMPLATE("Function not found", TestType, RPC_TEST_TYPES)
 {
     auto& client = GetClient<TestType>();
 
     const auto exp = [&client]()
-    {
-        const auto pack = client.template call_func<int>("FUNC_WHICH_DOES_NOT_EXIST");
+    { [[maybe_unused]] int _unused = client.template call_func<int>("FUNC_WHICH_DOES_NOT_EXIST"); };
 
-        if (!pack.get_result().has_value())
-        {
-            throw std::runtime_error(pack.get_err_mesg());
-        }
-    };
-
-    REQUIRE_THROWS_WITH(exp(),
-        Catch::Matchers::Equals(
-            "RPC error: Called function: \"FUNC_WHICH_DOES_NOT_EXIST\" not found!"));
+    REQUIRE_THROWS_WITH(exp(), "RPC error: Called function: \"FUNC_WHICH_DOES_NOT_EXIST\" not found!");
 }
 
-TEMPLATE_LIST_TEST_CASE("ThrowError", "", test_types_t)
+TEST_CASE_TEMPLATE("ThrowError", TestType, RPC_TEST_TYPES)
 {
     auto& client = GetClient<TestType>();
 
     const auto exp = [&client]()
-    {
-        const auto pack = client.template call_func<int>("ThrowError");
-
-        if (!pack.get_result().has_value())
-        {
-            throw std::runtime_error(pack.get_err_mesg());
-        }
-    };
+    { [[maybe_unused]] int _unused = client.template call_func<int>("ThrowError"); };
 
     REQUIRE_THROWS_WITH(exp(), "THIS IS A TEST ERROR!");
 }
 
-TEST_CASE("KillServer", "[!mayfail]")
+TEST_CASE("KillServer")
 {
     auto& client = GetClient<njson_adapter>();
 

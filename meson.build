@@ -29,7 +29,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 project('rpc.hpp', 'cpp',
-    version : '0.5.1',
+    version : '0.6.1',
     license : 'BSD-3-Clause',
     default_options : [
         'cpp_std=c++17',
@@ -120,14 +120,17 @@ if get_option('build_adapter_boost_json') or get_option('build_adapter_njson') o
     subdir('include/rpc_adapters')
 endif
 
-if get_option('build_benchmark')
-    subdir('benchmarks')
-endif
-
 if get_option('build_examples')
     subdir('examples')
 endif
 
 if get_option('build_testing')
     subdir('tests')
+endif
+
+if get_option('build_benchmark')
+    if not get_option('build_testing')
+        error('Tests must be enabled for benchmarking!')
+    endif
+    subdir('benchmarks')
 endif

@@ -29,33 +29,36 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 asio_dep = dependency('asio')
+thread_dep = dependency('threads')
 
-ex_dependencies = [rpc_hpp_dep, asio_dep]
+ex_dependencies = [rpc_hpp_dep]
 ex_defines = []
 
 if get_option('build_adapter_boost_json')
     ex_dependencies += [boost_json_adapter_dep]
-    ex_defines += [-DRPC_HPP_ENABLE_BOOST_JSON]
+    ex_defines += ['-DRPC_HPP_ENABLE_BOOST_JSON']
 endif
 
 if get_option('build_adapter_njson')
     ex_dependencies += [njson_adapter_dep]
-    ex_defines += [-DRPC_HPP_ENABLE_NJSON]
+    ex_defines += ['-DRPC_HPP_ENABLE_NJSON']
 endif
 
 if get_option('build_adapter_rapidjson')
     ex_dependencies += [rapidjson_adapter_dep]
-    ex_defines += [-DRPC_HPP_ENABLE_RAPIDJSON]
+    ex_defines += ['-DRPC_HPP_ENABLE_RAPIDJSON']
 endif
 
-if host.machine.system() == 'linux'
-    dl_dep = cc.find_library('dl', required: false)
+if host_machine.system() == 'linux'
+    dl_dep = meson.get_compiler('cpp').find_library('dl', required: false)
 else
     dl_dep = dependency('', required: false)
 endif
 
-rpc_server_exe = executable('rpc_server', 'server/server.cpp', dependencies : [ex_dependencies, thread_dep], install : false, cpp_args : [project_warnings, ex_defines])
-rpc_client_exe = executable('rpc_client', 'client/client.cpp', dependencies : ex_dependencies, install : false, cpp_args : [project_warnings, ex_defines])
+thread_dep = dependency('threads')
 
-rpc_module_dll = shared_module('rpc_module', 'module/module.cpp', dependencies : ex_dependencies, install : false, cpp_args : [project_warnings, ex_defines, -DRPC_HPP_EXPORT])
+rpc_server_exe = executable('rpc_server', 'server/server.cpp', dependencies : [ex_dependencies, asio_dep, thread_dep], install : false, cpp_args : [project_warnings, ex_defines])
+rpc_client_exe = executable('rpc_client', 'client/client.cpp', dependencies : [ex_dependencies, asio_dep, thread_dep], install : false, cpp_args : [project_warnings, ex_defines])
+
+rpc_module_dll = shared_module('rpc_module', 'module/module.cpp', dependencies : ex_dependencies, install : false, cpp_args : [project_warnings, ex_defines, '-DRPC_HPP_EXPORT'])
 rpc_module_exe = executable('rpc_module_client', 'module/module_client.cpp', dependencies : [ex_dependencies, dl_dep], install : false, cpp_args : [project_warnings, ex_defines])

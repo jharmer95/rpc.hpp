@@ -29,29 +29,28 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 asio_dep = dependency('asio')
-catch2_dep = dependency('catch2', version : ['>2.10.0', '<3.0.0'])
+doctest_dep = dependency('doctest', version : ['>=2.4'])
+thread_dep = dependency('threads')
 
-test_dependencies = [rpc_hpp_dep, asio_dep, catch2_dep]
+test_dependencies = [rpc_hpp_dep, asio_dep, doctest_dep, thread_dep]
 test_defines = []
 
 if get_option('build_adapter_boost_json')
     test_dependencies += [boost_json_adapter_dep]
-    test_defines += [-DRPC_HPP_ENABLE_BOOST_JSON]
+    test_defines += ['-DRPC_HPP_ENABLE_BOOST_JSON']
 endif
 
 if get_option('build_adapter_njson')
     test_dependencies += [njson_adapter_dep]
-    test_defines += [-DRPC_HPP_ENABLE_NJSON]
+    test_defines += ['-DRPC_HPP_ENABLE_NJSON']
 endif
 
 if get_option('build_adapter_rapidjson')
     test_dependencies += [rapidjson_adapter_dep]
-    test_defines += [-DRPC_HPP_ENABLE_RAPIDJSON]
+    test_defines += ['-DRPC_HPP_ENABLE_RAPIDJSON']
 endif
 
 rpc_test_exe = executable('rpc_test', 'rpc.test.cpp', dependencies : test_dependencies, install : false, cpp_args : [project_warnings, test_defines])
 test('rpc_test', rpc_test_exe)
 
-thread_dep = dependency('threads')
-
-test_server_exe = executable('test_server', 'rpc.server.cpp', dependencies : [test_dependencies, thread_dep], install : false, cpp_args : [project_warnings, test_defines])
+test_server_exe = executable('test_server', 'rpc.server.cpp', dependencies : test_dependencies, install : false, cpp_args : [project_warnings, test_defines])

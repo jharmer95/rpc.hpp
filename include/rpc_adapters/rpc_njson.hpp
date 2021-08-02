@@ -1,7 +1,6 @@
 ///@file rpc_adapters/rpc_njson.hpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Implementation of adapting nlohmann's JSON library (https://github.com/nlohmann/json)
-///@version 0.5.1
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -121,25 +120,13 @@ namespace adapters
 } // namespace adapters
 
 template<>
-inline std::string adapters::njson_adapter::to_bytes(const adapters::njson& serial_obj)
-{
-    return serial_obj.dump();
-}
-
-template<>
-inline adapters::njson adapters::njson_adapter::from_bytes(const std::string& bytes)
-{
-    return adapters::njson::parse(bytes);
-}
-
-template<>
-inline std::string adapters::njson_adapter::to_bytes(adapters::njson&& serial_obj)
+inline std::string adapters::njson_adapter::to_bytes(adapters::njson serial_obj)
 {
     return std::move(serial_obj).dump();
 }
 
 template<>
-inline adapters::njson adapters::njson_adapter::from_bytes(std::string&& bytes)
+inline adapters::njson adapters::njson_adapter::from_bytes(std::string bytes)
 {
     return adapters::njson::parse(std::move(bytes));
 }
@@ -157,7 +144,7 @@ adapters::njson pack_adapter<adapters::njson_adapter>::serialize_pack(
 
     auto arg_arr = njson::array();
 
-    const auto& argTup = pack.get_args();
+    const auto argTup = pack.get_args();
     details::for_each_tuple(
         argTup, [&arg_arr](auto&& x) { push_arg(std::forward<decltype(x)>(x), arg_arr); });
 
@@ -171,7 +158,7 @@ adapters::njson pack_adapter<adapters::njson_adapter>::serialize_pack(
     {
         if constexpr (!std::is_void_v<R>)
         {
-            obj["result"] = pack.get_result().value();
+            obj["result"] = pack.get_result();
         }
     }
 
@@ -185,7 +172,7 @@ packed_func<R, Args...> pack_adapter<adapters::njson_adapter>::deserialize_pack(
 {
     using namespace adapters;
 
-    unsigned i = 0;
+    [[maybe_unused]] unsigned i = 0;
 
     typename packed_func<R, Args...>::args_t args{ parse_arg<Args>(serial_obj["args"], i)... };
 
@@ -228,7 +215,7 @@ inline std::string pack_adapter<adapters::njson_adapter>::get_func_name(
 
 template<>
 inline void pack_adapter<adapters::njson_adapter>::set_err_mesg(
-    adapters::njson& serial_obj, std::string&& mesg)
+    adapters::njson& serial_obj, std::string mesg)
 {
     serial_obj["err_mesg"] = std::move(mesg);
 }

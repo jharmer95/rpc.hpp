@@ -23,6 +23,6 @@ var searchData=
   ['rpc_5fmulti_5falias_5ffunc_34',['RPC_MULTI_ALIAS_FUNC',['../rpc__dispatch__helper_8hpp.html#a946963e302f5510f1459de088880a28f',1,'rpc_dispatch_helper.hpp']]],
   ['rpc_5fnjson_2ehpp_35',['rpc_njson.hpp',['../rpc__njson_8hpp.html',1,'']]],
   ['rpc_5frapidjson_2ehpp_36',['rpc_rapidjson.hpp',['../rpc__rapidjson_8hpp.html',1,'']]],
-  ['run_5fcallback_37',['run_callback',['../namespacerpc_1_1server.html#aa8dfa6764d97f2af25cb30018e880d29',1,'rpc::server']]],
+  ['run_5fcallback_37',['run_callback',['../classrpc_1_1server_1_1server__interface.html#ac5d9e8286cff4d1c0183f8bf089ab8aa',1,'rpc::server::server_interface']]],
   ['server_38',['server',['../namespacerpc_1_1server.html',1,'rpc']]]
 ];

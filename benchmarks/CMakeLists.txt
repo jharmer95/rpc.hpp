@@ -56,8 +56,10 @@ if(NOT TARGET catch2_lib)
 endif()
 
 if(NOT TARGET asio_lib)
+  find_package(Threads REQUIRED)
   add_library(asio_lib INTERFACE)
   target_compile_definitions(asio_lib INTERFACE ASIO_STANDALONE)
+  target_link_libraries(asio_lib INTERFACE Threads::Threads)
 
   if(${DEPENDS_CONAN})
     set(CONAN_EXTRA_REQUIRES "asio/[>=1.14.0]")
@@ -72,7 +74,8 @@ if(NOT TARGET asio_lib)
   endif()
 endif()
 
-add_executable(rpc_benchmark "benchmark.cpp" "client.hpp" "test_structs.hpp")
+add_executable(rpc_benchmark benchmark.cpp)
+target_include_directories(rpc_benchmark PRIVATE ../tests)
 target_link_libraries(rpc_benchmark PRIVATE rpc_hpp catch2_lib asio_lib)
 
 if(${BUILD_ADAPTER_BOOST_JSON})

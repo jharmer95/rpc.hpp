@@ -1,5 +1,10 @@
 #pragma once
 
+#include <rpc_adapters/rpc_njson.hpp>
+
+using rpc::adapters::njson;
+using rpc::adapters::njson_adapter;
+
 #include <string>
 #include <vector>
 
@@ -17,11 +22,19 @@
 #    define DLL_PRIVATE __attribute__((visibility("hidden")))
 #endif
 
+// C++ private functions
+DLL_PRIVATE int Sum(int n1, int n2);
+DLL_PRIVATE void AddOneToEach(std::vector<int>& vec);
+DLL_PRIVATE void GetName(std::string& name_out);
+
 extern "C"
 {
-    DLL_PRIVATE int Sum(int n1, int n2);
-    DLL_PRIVATE void AddOneToEach(std::vector<int>& vec);
-    DLL_PRIVATE void GetName(std::string& name_out);
-
-    DLL_PUBLIC std::string RunRemoteFunc(const std::string& json_str);
+    // C-Compatible way to run plugin functions dynamically
+    DLL_PUBLIC int RunRemoteFunc(char* json_str, size_t json_buf_len);
 }
+
+class RpcModule : public rpc::server_interface<njson_adapter>
+{
+private:
+    void dispatch_impl(njson& serial_obj) override;
+};

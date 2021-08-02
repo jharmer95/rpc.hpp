@@ -1,7 +1,6 @@
 ///@file rpc_adapters/rpc_boost_json.hpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Implementation of adapting Boost.JSON (https://github.com/boostorg/json)
-///@version 0.5.1
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -131,25 +130,13 @@ namespace adapters
 } // namespace adapters
 
 template<>
-inline std::string adapters::bjson_adapter::to_bytes(const adapters::bjson_val& serial_obj)
-{
-    return adapters::bjson::serialize(serial_obj);
-}
-
-template<>
-inline adapters::bjson_val adapters::bjson_adapter::from_bytes(const std::string& bytes)
-{
-    return adapters::bjson::parse(bytes);
-}
-
-template<>
-inline std::string adapters::bjson_adapter::to_bytes(adapters::bjson_val&& serial_obj)
+inline std::string adapters::bjson_adapter::to_bytes(adapters::bjson_val serial_obj)
 {
     return adapters::bjson::serialize(std::move(serial_obj));
 }
 
 template<>
-inline adapters::bjson_val adapters::bjson_adapter::from_bytes(std::string&& bytes)
+inline adapters::bjson_val adapters::bjson_adapter::from_bytes(std::string bytes)
 {
     return adapters::bjson::parse(std::move(bytes));
 }
@@ -181,12 +168,12 @@ adapters::bjson_val pack_adapter<adapters::bjson_adapter>::serialize_pack(
         {
             if constexpr (std::is_arithmetic_v<R> || std::is_same_v<R, std::string>)
             {
-                result = pack.get_result().value();
+                result = pack.get_result();
             }
             else if constexpr (details::is_container_v<R>)
             {
                 result = bjson::array{};
-                const auto container = pack.get_result().value();
+                const auto container = pack.get_result();
 
                 for (const auto& val : container)
                 {
@@ -195,11 +182,11 @@ adapters::bjson_val pack_adapter<adapters::bjson_adapter>::serialize_pack(
             }
             else if constexpr (details::is_serializable_v<bjson_adapter, R>)
             {
-                result = R::template serialize<bjson_adapter>(pack.get_result().value());
+                result = R::template serialize<bjson_adapter>(pack.get_result());
             }
             else
             {
-                result = bjson_adapter::template serialize<R>(pack.get_result().value());
+                result = bjson_adapter::template serialize<R>(pack.get_result());
             }
         }
     }
@@ -207,7 +194,8 @@ adapters::bjson_val pack_adapter<adapters::bjson_adapter>::serialize_pack(
     bjson::array args{};
 
     const auto& argTup = pack.get_args();
-    details::for_each_tuple(argTup, [&args](auto&& x) { push_arg(std::forward<decltype(x)>(x), args); });
+    details::for_each_tuple(
+        argTup, [&args](auto&& x) { push_arg(std::forward<decltype(x)>(x), args); });
 
     ret_j["args"] = std::move(args);
     return ret_j;
@@ -222,7 +210,7 @@ packed_func<R, Args...> pack_adapter<adapters::bjson_adapter>::deserialize_pack(
 
     assert(serial_obj.is_object());
     const auto& obj = serial_obj.as_object();
-    unsigned i = 0;
+    [[maybe_unused]] unsigned i = 0;
 
     auto& args_val = obj.at("args");
 
@@ -307,7 +295,7 @@ inline std::string pack_adapter<adapters::bjson_adapter>::get_func_name(
 
 template<>
 inline void pack_adapter<adapters::bjson_adapter>::set_err_mesg(
-    adapters::bjson_val& serial_obj, std::string&& mesg)
+    adapters::bjson_val& serial_obj, std::string mesg)
 {
     assert(serial_obj.is_object());
     auto& obj = serial_obj.as_object();

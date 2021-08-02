@@ -1,7 +1,6 @@
 ///@file rpc_adapters/rpc_rapidjson.hpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Implementation of adapting rapidjson (https://github.com/Tencent/rapidjson)
-///@version 0.5.1
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -175,25 +174,7 @@ namespace adapters
 } // namespace adapters
 
 template<>
-inline std::string adapters::rapidjson_adapter::to_bytes(const adapters::rapidjson_doc& serial_obj)
-{
-    rapidjson::StringBuffer buffer;
-    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
-    serial_obj.Accept(writer);
-    return buffer.GetString();
-}
-
-template<>
-inline adapters::rapidjson_doc adapters::rapidjson_adapter::from_bytes(const std::string& bytes)
-{
-    adapters::rapidjson_doc d;
-    d.SetObject();
-    d.Parse(bytes.c_str());
-    return d;
-}
-
-template<>
-inline std::string adapters::rapidjson_adapter::to_bytes(adapters::rapidjson_doc&& serial_obj)
+inline std::string adapters::rapidjson_adapter::to_bytes(adapters::rapidjson_doc serial_obj)
 {
     rapidjson::StringBuffer buffer;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
@@ -202,7 +183,7 @@ inline std::string adapters::rapidjson_adapter::to_bytes(adapters::rapidjson_doc
 }
 
 template<>
-inline adapters::rapidjson_doc adapters::rapidjson_adapter::from_bytes(std::string&& bytes)
+inline adapters::rapidjson_doc adapters::rapidjson_adapter::from_bytes(std::string bytes)
 {
     adapters::rapidjson_doc d;
     d.SetObject();
@@ -231,15 +212,15 @@ adapters::rapidjson_doc pack_adapter<adapters::rapidjson_adapter>::serialize_pac
         {
             if constexpr (std::is_arithmetic_v<R>)
             {
-                result.Set<R>(pack.get_result().value());
+                result.Set<R>(pack.get_result());
             }
             else if constexpr (std::is_same_v<R, std::string>)
             {
-                result.SetString(pack.get_result().value().c_str(), alloc);
+                result.SetString(pack.get_result().c_str(), alloc);
             }
             else if constexpr (details::is_container_v<R>)
             {
-                const R container = pack.get_result().value();
+                const R container = pack.get_result();
                 result.SetArray();
 
                 for (const auto& val : container)
@@ -249,14 +230,12 @@ adapters::rapidjson_doc pack_adapter<adapters::rapidjson_adapter>::serialize_pac
             }
             else if constexpr (details::is_serializable_v<rapidjson_adapter, R>)
             {
-                rapidjson_doc tmp =
-                    R::template serialize<rapidjson_adapter>(pack.get_result().value());
+                rapidjson_doc tmp = R::template serialize<rapidjson_adapter>(pack.get_result());
                 result.CopyFrom(tmp, alloc);
             }
             else
             {
-                rapidjson_doc tmp =
-                    rapidjson_adapter::template serialize<R>(pack.get_result().value());
+                rapidjson_doc tmp = rapidjson_adapter::template serialize<R>(pack.get_result());
                 result.CopyFrom(tmp, alloc);
             }
         }
@@ -271,7 +250,7 @@ adapters::rapidjson_doc pack_adapter<adapters::rapidjson_adapter>::serialize_pac
     rapidjson_val args;
     args.SetArray();
 
-    const auto& argTup = pack.get_args();
+    const auto argTup = pack.get_args();
     details::for_each_tuple(
         argTup, [&args, &alloc](auto&& x) { push_arg(std::forward<decltype(x)>(x), args, alloc); });
 
@@ -286,7 +265,7 @@ packed_func<R, Args...> pack_adapter<adapters::rapidjson_adapter>::deserialize_p
 {
     using namespace adapters;
 
-    unsigned i = 0;
+    [[maybe_unused]] unsigned i = 0;
 
     typename packed_func<R, Args...>::args_t args{ parse_arg<Args>(serial_obj["args"], i)... };
 
@@ -384,7 +363,7 @@ inline std::string pack_adapter<adapters::rapidjson_adapter>::get_func_name(
 
 template<>
 inline void pack_adapter<adapters::rapidjson_adapter>::set_err_mesg(
-    adapters::rapidjson_doc& serial_obj, std::string&& mesg)
+    adapters::rapidjson_doc& serial_obj, std::string mesg)
 {
     auto& alloc = serial_obj.GetAllocator();
 

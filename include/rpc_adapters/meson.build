@@ -41,7 +41,7 @@ if get_option('build_adapter_njson')
 endif
 
 if get_option('build_adapter_rapidjson')
-    rapidjson_dep = dependency('rapidjson', version : '>=1.1.0')
+    rapidjson_dep = dependency('RapidJSON', version : '>=1.1.0')
     rapidjson_adapter_dep = declare_dependency(dependencies : [rpc_hpp_dep, rapidjson_dep])
     add_project_arguments('-DRPC_HPP_RAPIDJSON_ENABLED', language : 'cpp')
 endif
