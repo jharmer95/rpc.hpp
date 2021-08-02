@@ -117,9 +117,7 @@ with open(fname, "w") as f:
 
     f.write("RPC_FE_0)(ACTION, __VA_ARGS__))\n")
 
-    f.write(
-        "#define RPC_FOR_EACH2(ACTION, ...) EXPAND(RPC_GET_MACRO(_0, __VA_ARGS__, "
-    )
+    f.write("#define RPC_FOR_EACH2(ACTION, ...) EXPAND(RPC_GET_MACRO(_0, __VA_ARGS__, ")
 
     for x in reversed(range(1, num_iters + 1)):
         f.write(f"RPC_FE2_{x}, ")
@@ -127,39 +125,55 @@ with open(fname, "w") as f:
     f.write("RPC_FE2_0)(ACTION, __VA_ARGS__))\n")
     f.write("#endif\n\n")
 
-    f.write("///@brief Attaches function (provided by FUNCNAME) to the server dispatch function\n")
     f.write(
-        "#define RPC_ATTACH_FUNC(FUNCNAME) if (func_name == #FUNCNAME) { return dispatch_func<Serial>(FUNCNAME, serial_obj); }\n\n"
+        "///@brief Attaches function (provided by FUNCNAME) to the server dispatch function\n"
+    )
+    f.write(
+        "#define RPC_ATTACH_FUNC(FUNCNAME) if (func_name == #FUNCNAME) { return this->dispatch_func(FUNCNAME, serial_obj); }\n\n"
     )
     f.write("///@brief Attaches multiple functions to the server dispatch function\n")
     f.write(
         "#define RPC_ATTACH_FUNCS(FUNCNAME, ...) EXPAND(RPC_FOR_EACH(RPC_ATTACH_FUNC, FUNCNAME, __VA_ARGS__))\n\n"
     )
-    f.write("///@brief Attaches function (provided by FUNCNAME) to the server dispatch funciton with server-side caching\n")
     f.write(
-        "#define RPC_ATTACH_CACHED_FUNC(FUNCNAME) if (func_name == #FUNCNAME) { return dispatch_cached_func<Serial>(FUNCNAME, serial_obj); }\n\n"
+        "///@brief Attaches function (provided by FUNCNAME) to the server dispatch funciton with server-side caching\n"
     )
-    f.write("///@brief Attaches multiple functions to the server dispatch function with server-side caching\n")
+    f.write(
+        "#define RPC_ATTACH_CACHED_FUNC(FUNCNAME) if (func_name == #FUNCNAME) { return this->dispatch_cached_func(FUNCNAME, serial_obj); }\n\n"
+    )
+    f.write(
+        "///@brief Attaches multiple functions to the server dispatch function with server-side caching\n"
+    )
     f.write(
         "#define RPC_ATTACH_CACHED_FUNCS(FUNCNAME, ...) EXPAND(RPC_FOR_EACH(RPC_ATTACH_CACHED_FUNC, FUNCNAME, __VA_ARGS__))\n\n"
     )
-    f.write("///@brief Attaches function (provided by FUNCNAME) to the server dispatch function with a different function name (provided by FUNC_ALIAS)\n")
     f.write(
-        "#define RPC_ALIAS_FUNC(FUNCNAME, FUNC_ALIAS) if (func_name == #FUNC_ALIAS) { return dispatch_func<Serial>(FUNCNAME, serial_obj); }\n\n"
+        "///@brief Attaches function (provided by FUNCNAME) to the server dispatch function with a different function name (provided by FUNC_ALIAS)\n"
     )
-    f.write("///@brief Attaches function (provided by FUNCNAME) to the server dispatch function with multiple different function names\n")
+    f.write(
+        "#define RPC_ALIAS_FUNC(FUNCNAME, FUNC_ALIAS) if (func_name == #FUNC_ALIAS) { return this->dispatch_func(FUNCNAME, serial_obj); }\n\n"
+    )
+    f.write(
+        "///@brief Attaches function (provided by FUNCNAME) to the server dispatch function with multiple different function names\n"
+    )
     f.write(
         "#define RPC_MULTI_ALIAS_FUNC(FUNCNAME, FUNC_ALIAS,...) EXPAND(RPC_FOR_EACH2(RPC_ALIAS_FUNC, FUNCNAME, FUNC_ALIAS, __VA_ARGS__))\n\n"
     )
-    f.write("///@brief Attaches function (provided by FUNCNAME) to the server dispatch function with a different function name (provided by FUNC_ALIAS) and server-side caching\n")
     f.write(
-        "#define RPC_ALIAS_CACHED_FUNC(FUNCNAME, FUNC_ALIAS) if (func_name == #FUNC_ALIAS) { return dispatch_cached_func<Serial>(FUNCNAME, serial_obj); }\n\n"
+        "///@brief Attaches function (provided by FUNCNAME) to the server dispatch function with a different function name (provided by FUNC_ALIAS) and server-side caching\n"
     )
-    f.write("///@brief Attaches function (provided by FUNCNAME) to the server dispatch function with multiple different function names and server-side caching\n")
+    f.write(
+        "#define RPC_ALIAS_CACHED_FUNC(FUNCNAME, FUNC_ALIAS) if (func_name == #FUNC_ALIAS) { return this->dispatch_cached_func(FUNCNAME, serial_obj); }\n\n"
+    )
+    f.write(
+        "///@brief Attaches function (provided by FUNCNAME) to the server dispatch function with multiple different function names and server-side caching\n"
+    )
     f.write(
         "#define RPC_MULTI_ALIAS_CACHED_FUNC(FUNCNAME, FUNC_ALIAS,...) EXPAND(RPC_FOR_EACH2(RPC_ALIAS_CACHED_FUNC, FUNCNAME, FUNC_ALIAS, __VA_ARGS__))\n\n"
     )
-    f.write("///@brief Implements the @ref rpc::server::dispatch_impl function for you and attaches the listed functions\n")
     f.write(
-        '#define RPC_DEFAULT_DISPATCH(FUNCNAME, ...) EXPAND(template<typename Serial> void rpc::server::dispatch_impl(typename Serial::serial_t& serial_obj) { const auto func_name = pack_adapter<Serial>::get_func_name(serial_obj); RPC_ATTACH_FUNCS(FUNCNAME, __VA_ARGS__) throw std::runtime_error("RPC error: Called function: \"" + func_name + "\" not found!");})\n'
+        "///@brief Implements the @ref rpc::server::dispatch_impl function for you and attaches the listed functions\n"
+    )
+    f.write(
+        '#define RPC_DEFAULT_DISPATCH(FUNCNAME, ...) EXPAND(const auto func_name = rpc::pack_adapter<adapter_t>::get_func_name(serial_obj); RPC_ATTACH_FUNCS(FUNCNAME, __VA_ARGS__) throw std::runtime_error("RPC error: Called function: "" + func_name + "" not found!");)\n'
     )

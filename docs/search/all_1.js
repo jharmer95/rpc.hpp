@@ -1,8 +1,8 @@
 var searchData=
 [
   ['deserialize_5fpack_3',['deserialize_pack',['../classrpc_1_1pack__adapter.html#a3b42b493777bc20d6973ad082b9d29f2',1,'rpc::pack_adapter']]],
-  ['dispatch_4',['dispatch',['../namespacerpc_1_1server.html#a8e407518de8e5bf510ac074f9faab451',1,'rpc::server']]],
-  ['dispatch_5fcached_5ffunc_5',['dispatch_cached_func',['../namespacerpc_1_1server.html#a322ded68bbd57aefad5d3fa87fa96081',1,'rpc::server']]],
-  ['dispatch_5ffunc_6',['dispatch_func',['../namespacerpc_1_1server.html#a496883d9898bdb1d1e2cdd34da3e5f96',1,'rpc::server']]],
-  ['dispatch_5fimpl_7',['dispatch_impl',['../namespacerpc_1_1server.html#af8bf495aa39154685fc568340f50f3dc',1,'rpc::server']]]
+  ['dispatch_4',['dispatch',['../classrpc_1_1server_1_1server__interface.html#a8052947e620688b4b2bde4dabfa0c8f0',1,'rpc::server::server_interface']]],
+  ['dispatch_5fcached_5ffunc_5',['dispatch_cached_func',['../classrpc_1_1server_1_1server__interface.html#a9043fffe7bdcbb3681f6fd26eb048507',1,'rpc::server::server_interface']]],
+  ['dispatch_5ffunc_6',['dispatch_func',['../classrpc_1_1server_1_1server__interface.html#a3c4b127d19f2c7b96d9518e57f0a93ce',1,'rpc::server::server_interface']]],
+  ['dispatch_5fimpl_7',['dispatch_impl',['../classrpc_1_1server_1_1server__interface.html#a301cab7ee170a066603b9e655c5f2d43',1,'rpc::server::server_interface']]]
 ];

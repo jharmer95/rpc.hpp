@@ -82,7 +82,7 @@ $(function() {
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="define-members"></a>
 Macros</h2></td></tr>
 <tr class="memitem:a8c550cde657b130fbf88587ec4c8807a"><td class="memItemLeft" align="right" valign="top"><a id="a8c550cde657b130fbf88587ec4c8807a"></a>
-#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rpc__dispatch__helper_8hpp.html#a8c550cde657b130fbf88587ec4c8807a">RPC_ATTACH_FUNC</a>(FUNCNAME)&#160;&#160;&#160;if (func_name == #FUNCNAME) { return dispatch_func&lt;Serial&gt;(FUNCNAME, serial_obj); }</td></tr>
+#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rpc__dispatch__helper_8hpp.html#a8c550cde657b130fbf88587ec4c8807a">RPC_ATTACH_FUNC</a>(FUNCNAME)&#160;&#160;&#160;if (func_name == #FUNCNAME) { return this-&gt;dispatch_func(FUNCNAME, serial_obj); }</td></tr>
 <tr class="memdesc:a8c550cde657b130fbf88587ec4c8807a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Attaches function (provided by FUNCNAME) to the server dispatch function. <br /></td></tr>
 <tr class="separator:a8c550cde657b130fbf88587ec4c8807a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac5e4f21a2987e073f9009cf683c1c34e"><td class="memItemLeft" align="right" valign="top"><a id="ac5e4f21a2987e073f9009cf683c1c34e"></a>
@@ -90,7 +90,7 @@ Macros</h2></td></tr>
 <tr class="memdesc:ac5e4f21a2987e073f9009cf683c1c34e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Attaches multiple functions to the server dispatch function. <br /></td></tr>
 <tr class="separator:ac5e4f21a2987e073f9009cf683c1c34e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1fd97337976f1caa9eb2e40d4783a981"><td class="memItemLeft" align="right" valign="top"><a id="a1fd97337976f1caa9eb2e40d4783a981"></a>
-#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rpc__dispatch__helper_8hpp.html#a1fd97337976f1caa9eb2e40d4783a981">RPC_ATTACH_CACHED_FUNC</a>(FUNCNAME)&#160;&#160;&#160;if (func_name == #FUNCNAME) { return dispatch_cached_func&lt;Serial&gt;(FUNCNAME, serial_obj); }</td></tr>
+#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rpc__dispatch__helper_8hpp.html#a1fd97337976f1caa9eb2e40d4783a981">RPC_ATTACH_CACHED_FUNC</a>(FUNCNAME)&#160;&#160;&#160;if (func_name == #FUNCNAME) { return this-&gt;dispatch_cached_func(FUNCNAME, serial_obj); }</td></tr>
 <tr class="memdesc:a1fd97337976f1caa9eb2e40d4783a981"><td class="mdescLeft">&#160;</td><td class="mdescRight">Attaches function (provided by FUNCNAME) to the server dispatch funciton with server-side caching. <br /></td></tr>
 <tr class="separator:a1fd97337976f1caa9eb2e40d4783a981"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab2f290069829c2a1888c6bdf879f80de"><td class="memItemLeft" align="right" valign="top"><a id="ab2f290069829c2a1888c6bdf879f80de"></a>
@@ -98,7 +98,7 @@ Macros</h2></td></tr>
 <tr class="memdesc:ab2f290069829c2a1888c6bdf879f80de"><td class="mdescLeft">&#160;</td><td class="mdescRight">Attaches multiple functions to the server dispatch function with server-side caching. <br /></td></tr>
 <tr class="separator:ab2f290069829c2a1888c6bdf879f80de"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a53c1701bdc48f45cf816f719c31c459d"><td class="memItemLeft" align="right" valign="top"><a id="a53c1701bdc48f45cf816f719c31c459d"></a>
-#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rpc__dispatch__helper_8hpp.html#a53c1701bdc48f45cf816f719c31c459d">RPC_ALIAS_FUNC</a>(FUNCNAME,  FUNC_ALIAS)&#160;&#160;&#160;if (func_name == #FUNC_ALIAS) { return dispatch_func&lt;Serial&gt;(FUNCNAME, serial_obj); }</td></tr>
+#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rpc__dispatch__helper_8hpp.html#a53c1701bdc48f45cf816f719c31c459d">RPC_ALIAS_FUNC</a>(FUNCNAME,  FUNC_ALIAS)&#160;&#160;&#160;if (func_name == #FUNC_ALIAS) { return this-&gt;dispatch_func(FUNCNAME, serial_obj); }</td></tr>
 <tr class="memdesc:a53c1701bdc48f45cf816f719c31c459d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Attaches function (provided by FUNCNAME) to the server dispatch function with a different function name (provided by FUNC_ALIAS) <br /></td></tr>
 <tr class="separator:a53c1701bdc48f45cf816f719c31c459d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a946963e302f5510f1459de088880a28f"><td class="memItemLeft" align="right" valign="top"><a id="a946963e302f5510f1459de088880a28f"></a>
@@ -106,7 +106,7 @@ Macros</h2></td></tr>
 <tr class="memdesc:a946963e302f5510f1459de088880a28f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Attaches function (provided by FUNCNAME) to the server dispatch function with multiple different function names. <br /></td></tr>
 <tr class="separator:a946963e302f5510f1459de088880a28f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3d26fb2bdbdaf4a07cb3db322438a535"><td class="memItemLeft" align="right" valign="top"><a id="a3d26fb2bdbdaf4a07cb3db322438a535"></a>
-#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rpc__dispatch__helper_8hpp.html#a3d26fb2bdbdaf4a07cb3db322438a535">RPC_ALIAS_CACHED_FUNC</a>(FUNCNAME,  FUNC_ALIAS)&#160;&#160;&#160;if (func_name == #FUNC_ALIAS) { return dispatch_cached_func&lt;Serial&gt;(FUNCNAME, serial_obj); }</td></tr>
+#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rpc__dispatch__helper_8hpp.html#a3d26fb2bdbdaf4a07cb3db322438a535">RPC_ALIAS_CACHED_FUNC</a>(FUNCNAME,  FUNC_ALIAS)&#160;&#160;&#160;if (func_name == #FUNC_ALIAS) { return this-&gt;dispatch_cached_func(FUNCNAME, serial_obj); }</td></tr>
 <tr class="memdesc:a3d26fb2bdbdaf4a07cb3db322438a535"><td class="mdescLeft">&#160;</td><td class="mdescRight">Attaches function (provided by FUNCNAME) to the server dispatch function with a different function name (provided by FUNC_ALIAS) and server-side caching. <br /></td></tr>
 <tr class="separator:a3d26fb2bdbdaf4a07cb3db322438a535"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3538fd2178d5c87d931cec226063e956"><td class="memItemLeft" align="right" valign="top"><a id="a3538fd2178d5c87d931cec226063e956"></a>
@@ -114,8 +114,8 @@ Macros</h2></td></tr>
 <tr class="memdesc:a3538fd2178d5c87d931cec226063e956"><td class="mdescLeft">&#160;</td><td class="mdescRight">Attaches function (provided by FUNCNAME) to the server dispatch function with multiple different function names and server-side caching. <br /></td></tr>
 <tr class="separator:a3538fd2178d5c87d931cec226063e956"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af644f9b75ee44bf766427b50557dce70"><td class="memItemLeft" align="right" valign="top"><a id="af644f9b75ee44bf766427b50557dce70"></a>
-#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rpc__dispatch__helper_8hpp.html#af644f9b75ee44bf766427b50557dce70">RPC_DEFAULT_DISPATCH</a>(FUNCNAME, ...)&#160;&#160;&#160;EXPAND(template&lt;typename Serial&gt; void <a class="el" href="namespacerpc_1_1server.html#af8bf495aa39154685fc568340f50f3dc">rpc::server::dispatch_impl</a>(typename Serial::serial_t&amp; serial_obj) { const auto func_name = pack_adapter&lt;Serial&gt;::get_func_name(serial_obj); <a class="el" href="rpc__dispatch__helper_8hpp.html#ac5e4f21a2987e073f9009cf683c1c34e">RPC_ATTACH_FUNCS</a>(FUNCNAME, __VA_ARGS__) throw std::runtime_error(&quot;RPC error: Called function: &quot;&quot; + func_name + &quot;&quot; not found!&quot;);})</td></tr>
-<tr class="memdesc:af644f9b75ee44bf766427b50557dce70"><td class="mdescLeft">&#160;</td><td class="mdescRight">Implements the <a class="el" href="namespacerpc_1_1server.html#af8bf495aa39154685fc568340f50f3dc">rpc::server::dispatch_impl</a> function for you and attaches the listed functions. <br /></td></tr>
+#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rpc__dispatch__helper_8hpp.html#af644f9b75ee44bf766427b50557dce70">RPC_DEFAULT_DISPATCH</a>(FUNCNAME, ...)&#160;&#160;&#160;EXPAND(const auto func_name = <a class="el" href="classrpc_1_1pack__adapter.html">rpc::pack_adapter</a>&lt;adapter_t&gt;::get_func_name(serial_obj); <a class="el" href="rpc__dispatch__helper_8hpp.html#ac5e4f21a2987e073f9009cf683c1c34e">RPC_ATTACH_FUNCS</a>(FUNCNAME, __VA_ARGS__) throw std::runtime_error(&quot;RPC error: Called function: &quot;&quot; + func_name + &quot;&quot; not found!&quot;);)</td></tr>
+<tr class="memdesc:af644f9b75ee44bf766427b50557dce70"><td class="mdescLeft">&#160;</td><td class="mdescRight">Implements the rpc::server::dispatch_impl function for you and attaches the listed functions. <br /></td></tr>
 <tr class="separator:af644f9b75ee44bf766427b50557dce70"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>

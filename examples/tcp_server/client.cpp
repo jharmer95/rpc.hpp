@@ -2,7 +2,7 @@
 
 #include "client.hpp"
 
-#include <cstdio>
+#include <iostream>
 #include <stdexcept>
 #include <string>
 
@@ -10,7 +10,7 @@ int main(int argc, char* argv[])
 {
     if (argc < 3)
     {
-        fprintf(stderr, "USAGE: rpc_client <server_ipv4> <port_num>\n");
+        std::cerr << "USAGE: rpc_client <server_ipv4> <port_num>\n";
         return EXIT_FAILURE;
     }
 
@@ -24,7 +24,7 @@ int main(int argc, char* argv[])
         {
             currentFuncName = "Sum";
             const auto result = client.template call_func<int>("Sum", 1, 2);
-            printf("Sum(1, 2) == %d\n", result);
+            std::cout << "Sum(1, 2) == " << result << '\n';
         }
 
         // Example of calling w/ references
@@ -33,14 +33,14 @@ int main(int argc, char* argv[])
             std::vector<int> vec{ 1, 2, 3, 4, 5 };
 
             client.template call_func<void>("AddOneToEach", vec);
-            printf("AddOneToEach({ 1, 2, 3, 4, 5 }) == {");
+            std::cout << "AddOneToEach({ 1, 2, 3, 4, 5 }) == {";
 
             for (size_t i = 0; i < vec.size() - 1; ++i)
             {
-                printf(" %d,", vec[i]);
+                std::cout << ' ' << vec[i] << ", ";
             }
 
-            printf("%d }\n", vec.back());
+            std::cout << ' ' << vec.back() << " }\n";
         }
 
         // Template function example
@@ -48,31 +48,31 @@ int main(int argc, char* argv[])
             currentFuncName = "GetTypeName<int>";
             auto result = client.template call_func<std::string>("GetTypeName<int>");
 
-            printf("GetTypeName<int>() == \"%s\"\n", result.c_str());
+            std::cout << "GetTypeName<int>() == \"" << result << "\"\n";
 
             currentFuncName = "GetTypeName<double>";
             result = client.template call_func<std::string>("GetTypeName<double>");
 
-            printf("GetTypeName<double>() == \"%s\"\n", result.c_str());
+            std::cout << "GetTypeName<double>() == \"" << result << "\"\n";
 
             currentFuncName = "GetTypeName<std::string>";
             result = client.template call_func<std::string>("GetTypeName<std::string>");
 
-            printf("GetTypeName<std::string>() == \"%s\"\n", result.c_str());
+            std::cout << "GetTypeName<std::string>() == \"" << result << "\"\n";
         }
 
         // Now shutdown the server
         {
             currentFuncName = "KillServer";
             client.call_func("KillServer");
-            printf("Server shutdown remotely...\n");
+            std::cout << "Server shutdown remotely...\n";
         }
 
         return EXIT_SUCCESS;
     }
     catch (const std::exception& ex)
     {
-        fprintf(stderr, "Call to '%s' failed, reason: %s\n", currentFuncName.c_str(), ex.what());
+        std::cerr << "Call to '" << currentFuncName << "' failed, reason: " << ex.what() << '\n';
         return EXIT_FAILURE;
     }
 }

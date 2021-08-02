@@ -3,7 +3,7 @@ var searchData=
   ['client_14',['client',['../namespacerpc_1_1client.html',1,'rpc']]],
   ['details_15',['details',['../namespacerpc_1_1details.html',1,'rpc']]],
   ['receive_16',['receive',['../classrpc_1_1client_1_1client__interface.html#ac183a72ae42949d1995d919e248909bd',1,'rpc::client::client_interface']]],
-  ['result_5ft_17',['result_t',['../classrpc_1_1packed__func_3_01void_00_01Args_8_8_8_01_4.html#a8b8df53d5d47247870a289ff077d3b09',1,'rpc::packed_func&lt; void, Args... &gt;::result_t()'],['../classrpc_1_1packed__func.html#ae2485fe8827883a17c8c8e6d8876c510',1,'rpc::packed_func::result_t()']]],
+  ['result_5ft_17',['result_t',['../classrpc_1_1packed__func.html#ae2485fe8827883a17c8c8e6d8876c510',1,'rpc::packed_func::result_t()'],['../classrpc_1_1packed__func_3_01void_00_01_args_8_8_8_01_4.html#a8b8df53d5d47247870a289ff077d3b09',1,'rpc::packed_func&lt; void, Args... &gt;::result_t()']]],
   ['rpc_18',['rpc',['../namespacerpc.html',1,'']]],
   ['rpc_2ehpp_19',['rpc.hpp',['../rpc_8hpp.html',1,'']]],
   ['rpc_5falias_5fcached_5ffunc_20',['RPC_ALIAS_CACHED_FUNC',['../rpc__dispatch__helper_8hpp.html#a3d26fb2bdbdaf4a07cb3db322438a535',1,'rpc_dispatch_helper.hpp']]],
@@ -23,6 +23,6 @@ var searchData=
   ['rpc_5fmulti_5falias_5ffunc_34',['RPC_MULTI_ALIAS_FUNC',['../rpc__dispatch__helper_8hpp.html#a946963e302f5510f1459de088880a28f',1,'rpc_dispatch_helper.hpp']]],
   ['rpc_5fnjson_2ehpp_35',['rpc_njson.hpp',['../rpc__njson_8hpp.html',1,'']]],
   ['rpc_5frapidjson_2ehpp_36',['rpc_rapidjson.hpp',['../rpc__rapidjson_8hpp.html',1,'']]],
-  ['run_5fcallback_37',['run_callback',['../namespacerpc_1_1server.html#aa8dfa6764d97f2af25cb30018e880d29',1,'rpc::server']]],
+  ['run_5fcallback_37',['run_callback',['../classrpc_1_1server_1_1server__interface.html#ac5d9e8286cff4d1c0183f8bf089ab8aa',1,'rpc::server::server_interface']]],
   ['server_38',['server',['../namespacerpc_1_1server.html',1,'rpc']]]
 ];

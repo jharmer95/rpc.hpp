@@ -2,20 +2,20 @@
 
 #include "module.hpp"
 
-#include <rpc_adapters/rpc_njson.hpp>
 #include <rpc_dispatch_helper.hpp>
 
-using rpc::adapters::njson;
-using rpc::adapters::njson_adapter;
+#include <cstring>
 
 constexpr auto MODULE_NAME{ "rpc_module" };
 
-int Sum(int n1, int n2)
+static RpcModule rpc_mod;
+
+inline int Sum(int n1, int n2)
 {
     return n1 + n2;
 }
 
-void AddOneToEach(std::vector<int>& vec)
+inline void AddOneToEach(std::vector<int>& vec)
 {
     for (auto& n : vec)
     {
@@ -23,18 +23,26 @@ void AddOneToEach(std::vector<int>& vec)
     }
 }
 
-void GetName(std::string& name_out)
+inline void GetName(std::string& name_out)
 {
     name_out.assign(MODULE_NAME);
 }
 
-RPC_DEFAULT_DISPATCH(Sum, AddOneToEach, GetName)
-
-std::string RunRemoteFunc(const std::string& json_str)
+void RpcModule::dispatch_impl(njson& serial_obj)
 {
-    std::string input = json_str;
+    RPC_DEFAULT_DISPATCH(Sum, AddOneToEach, GetName)
+}
 
-    rpc::server::dispatch<njson_adapter>(input);
+int RunRemoteFunc(char* const json_str, const size_t json_buf_len)
+{
+    std::string input{json_str};
+    rpc_mod.dispatch(input);
 
-    return input;
+    if (input.size() >= json_buf_len)
+    {
+        return 1;
+    }
+
+    strcpy_s(json_str, json_buf_len, input.c_str());
+    return 0;
 }

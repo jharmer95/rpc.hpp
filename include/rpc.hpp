@@ -413,118 +413,123 @@ public:
 ///@brief Namespace containing functions and classes only relevant to "server-side" implentations
 ///
 ///@note Is only compiled by defining either @ref RPC_HPP_SERVER_IMPL AND/OR @ref RPC_HPP_MODULE_IMPL
-namespace server
+inline namespace server
 {
-    ///@brief Runs the callback function and updates the result (and any changes to mutable arguments) in the packed_func
-    ///
-    ///@tparam R Return type of the callback function
-    ///@tparam Args Variadic argument type(s) for the function
-    ///@param func pointer to the callback function
-    ///@param pack packed_func representing the callback
-    template<typename R, typename... Args>
-    void run_callback(R (*func)(Args...), packed_func<R, Args...>& pack)
-    {
-        auto args = pack.get_args();
-
-        if constexpr (std::is_void_v<R>)
-        {
-            std::apply(func, args);
-            pack.set_args(std::move(args));
-        }
-        else
-        {
-            auto result = std::apply(func, args);
-            pack.set_result(std::move(result));
-            pack.set_args(std::move(args));
-        }
-    }
-
-    ///@brief Implementation component for the dispatch function
-    ///
-    ///@note This function must be implemented in ther server-side code, it is only a declaration in the library itself!
-    ///@tparam Serial serial_adapter type that controls how objects are serialized/deserialized
-    ///@param serial_obj Serial object used to represent the function call
-    template<typename Serial>
-    void dispatch_impl(typename Serial::serial_t& serial_obj);
-
-    ///@brief Parses the received serialized data and determines which function to call
+    ///@brief Class defining an interface for serving functions via RPC
     ///
     ///@tparam Serial serial_adapter type that controls how objects are serialized/deserialized
-    ///@param bytes Data to be parsed into/back out of a serial object
     template<typename Serial>
-    void dispatch(typename Serial::bytes_t& bytes)
+    class server_interface
     {
-        auto serial_obj = Serial::from_bytes(std::move(bytes));
+    public:
+        using adapter_t = Serial;
 
-        try
-        {
-            dispatch_impl<Serial>(serial_obj);
-        }
-        catch (const std::exception& ex)
-        {
-            pack_adapter<Serial>::set_err_mesg(serial_obj, ex.what());
-        }
+        virtual ~server_interface() = default;
 
-        bytes = Serial::to_bytes(std::move(serial_obj));
-    }
+        ///@brief Runs the callback function and updates the result (and any changes to mutable arguments) in the packed_func
+        ///
+        ///@tparam R Return type of the callback function
+        ///@tparam Args Variadic argument type(s) for the function
+        ///@param func pointer to the callback function
+        ///@param pack packed_func representing the callback
+        template<typename R, typename... Args>
+        static void run_callback(R (*func)(Args...), packed_func<R, Args...>& pack)
+        {
+            auto args = pack.get_args();
+
+            if constexpr (std::is_void_v<R>)
+            {
+                std::apply(func, args);
+                pack.set_args(std::move(args));
+            }
+            else
+            {
+                auto result = std::apply(func, args);
+                pack.set_result(std::move(result));
+                pack.set_args(std::move(args));
+            }
+        }
 
 #    if defined(RPC_HPP_SERVER_IMPL) && defined(RPC_HPP_ENABLE_SERVER_CACHE)
-    ///@brief Deserializes the serial object to a packed_func, calls the callback function, then serializes the result back to the serial object, using a server-side cache for performance.
-    ///
-    ///@note This feature is enabled by defining @ref RPC_HPP_ENABLE_SERVER_CACHE
-    ///@tparam Serial serial_adapter type that controls how objects are serialized/deserialized
-    ///@tparam R Return type of the callback function
-    ///@tparam Args Variadic argument type(s) for the function
-    ///@param func pointer to the callback function
-    ///@param serial_obj Serial representing the function call
-    template<typename Serial, typename R, typename... Args>
-    void dispatch_cached_func(R (*func)(Args...), typename Serial::serial_t& serial_obj)
-    {
-        static std::unordered_map<typename Serial::bytes_t, R> result_cache;
-
-        auto pack = pack_adapter<Serial>::template deserialize_pack<R, Args...>(serial_obj);
-
-        if constexpr (!std::is_void_v<R>)
+        ///@brief Deserializes the serial object to a packed_func, calls the callback function, then serializes the result back to the serial object, using a server-side cache for performance.
+        ///
+        ///@note This feature is enabled by defining @ref RPC_HPP_ENABLE_SERVER_CACHE
+        ///@tparam R Return type of the callback function
+        ///@tparam Args Variadic argument type(s) for the function
+        ///@param func pointer to the callback function
+        ///@param serial_obj Serial representing the function call
+        template<typename R, typename... Args>
+        static void dispatch_cached_func(R (*func)(Args...), typename Serial::serial_t& serial_obj)
         {
-            auto bytes = Serial::to_bytes(std::move(serial_obj));
+            static std::unordered_map<typename Serial::bytes_t, R> result_cache;
 
-            const auto it = result_cache.find(bytes);
+            auto pack = pack_adapter<Serial>::template deserialize_pack<R, Args...>(serial_obj);
 
-            if (it != result_cache.end())
+            if constexpr (!std::is_void_v<R>)
             {
-                pack.set_result(it->second);
-                serial_obj = pack_adapter<Serial>::template serialize_pack<R, Args...>(pack);
+                auto bytes = Serial::to_bytes(std::move(serial_obj));
 
-                return;
+                const auto it = result_cache.find(bytes);
+
+                if (it != result_cache.end())
+                {
+                    pack.set_result(it->second);
+                    serial_obj = pack_adapter<Serial>::template serialize_pack<R, Args...>(pack);
+
+                    return;
+                }
+
+                run_callback(func, pack);
+                result_cache[std::move(bytes)] = pack.get_result();
+            }
+            else
+            {
+                run_callback(func, pack);
             }
 
-            run_callback(func, pack);
-            result_cache[std::move(bytes)] = pack.get_result();
+            serial_obj = pack_adapter<Serial>::template serialize_pack<R, Args...>(pack);
         }
-        else
-        {
-            run_callback(func, pack);
-        }
-
-        serial_obj = pack_adapter<Serial>::template serialize_pack<R, Args...>(pack);
-    }
 #    endif
 
-    ///@brief Deserializes the serial object to a packed_func, calls the callback function, then serializes the result back to the serial object
-    ///
-    ///@tparam Serial serial_adapter type that controls how objects are serialized/deserialized
-    ///@tparam R Return type of the callback function
-    ///@tparam Args Variadic argument type(s) for the function
-    ///@param func pointer to the callback function
-    ///@param serial_obj Serial representing the function call
-    template<typename Serial, typename R, typename... Args>
-    void dispatch_func(R (*func)(Args...), typename Serial::serial_t& serial_obj)
-    {
-        auto pack = pack_adapter<Serial>::template deserialize_pack<R, Args...>(serial_obj);
+        ///@brief Deserializes the serial object to a packed_func, calls the callback function, then serializes the result back to the serial object
+        ///
+        ///@tparam R Return type of the callback function
+        ///@tparam Args Variadic argument type(s) for the function
+        ///@param func pointer to the callback function
+        ///@param serial_obj Serial representing the function call
+        template<typename R, typename... Args>
+        static void dispatch_func(R (*func)(Args...), typename Serial::serial_t& serial_obj)
+        {
+            auto pack = pack_adapter<Serial>::template deserialize_pack<R, Args...>(serial_obj);
 
-        run_callback(func, pack);
-        serial_obj = pack_adapter<Serial>::template serialize_pack<R, Args...>(pack);
-    }
+            run_callback(func, pack);
+            serial_obj = pack_adapter<Serial>::template serialize_pack<R, Args...>(pack);
+        }
+
+        ///@brief Implementation component for the dispatch function
+        ///
+        ///@param serial_obj Serial object used to represent the function call
+        virtual void dispatch_impl(typename Serial::serial_t& serial_obj) = 0;
+
+        ///@brief Parses the received serialized data and determines which function to call
+        ///
+        ///@param bytes Data to be parsed into/back out of a serial object
+        void dispatch(typename Serial::bytes_t& bytes)
+        {
+            auto serial_obj = Serial::from_bytes(std::move(bytes));
+
+            try
+            {
+                dispatch_impl(serial_obj);
+            }
+            catch (const std::exception& ex)
+            {
+                pack_adapter<Serial>::set_err_mesg(serial_obj, ex.what());
+            }
+
+            bytes = Serial::to_bytes(std::move(serial_obj));
+        }
+    };
 } // namespace server
 #endif
 
