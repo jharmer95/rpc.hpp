@@ -23,8 +23,8 @@ jobs:
           sudo apt install cmake ninja-build gcc clang
       - name: Install vcpkg dependencies
         run: |
-          /usr/local/share/vcpkg install asio catch2 doctest nlohmann-json rapidjson
-          /usr/local/share/vcpkg integrate install
+          /usr/local/share/vcpkg/vcpkg install asio catch2 doctest nlohmann-json rapidjson
+          /usr/local/share/vcpkg/vcpkg integrate install
       - name: Build with CMake
         run: |
           mkdir build
