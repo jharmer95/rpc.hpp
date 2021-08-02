@@ -265,7 +265,7 @@ packed_func<R, Args...> pack_adapter<adapters::rapidjson_adapter>::deserialize_p
 {
     using namespace adapters;
 
-    unsigned i = 0;
+    [[maybe_unused]] unsigned i = 0;
 
     typename packed_func<R, Args...>::args_t args{ parse_arg<Args>(serial_obj["args"], i)... };
 

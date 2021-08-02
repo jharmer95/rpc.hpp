@@ -172,7 +172,7 @@ packed_func<R, Args...> pack_adapter<adapters::njson_adapter>::deserialize_pack(
 {
     using namespace adapters;
 
-    unsigned i = 0;
+    [[maybe_unused]] unsigned i = 0;
 
     typename packed_func<R, Args...>::args_t args{ parse_arg<Args>(serial_obj["args"], i)... };
 

@@ -210,7 +210,7 @@ packed_func<R, Args...> pack_adapter<adapters::bjson_adapter>::deserialize_pack(
 
     assert(serial_obj.is_object());
     const auto& obj = serial_obj.as_object();
-    unsigned i = 0;
+    [[maybe_unused]] unsigned i = 0;
 
     auto& args_val = obj.at("args");
 
