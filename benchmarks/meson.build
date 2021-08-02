@@ -50,7 +50,7 @@ if get_option('build_adapter_rapidjson')
     bench_defines += ['-DRPC_HPP_ENABLE_RAPIDJSON']
 endif
 
-rpc_bench_exe = executable('rpc_benchmark', 'benchmark.cpp', dependencies : bench_dependencies, install : false, cpp_args : [project_warnings, bench_defines])
+rpc_bench_exe = executable('rpc_benchmark', 'benchmark.cpp', include_directories : '../tests', dependencies : bench_dependencies, install : false, cpp_args : [project_warnings, bench_defines])
 
 if get_option('buildtype') in ['debugoptimized', 'release']
     benchmark('rpc_benchmark', rpc_bench_exe, args : ['--benchmark-samples 20'], timeout : 90)

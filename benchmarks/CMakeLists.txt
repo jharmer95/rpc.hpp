@@ -74,7 +74,8 @@ if(NOT TARGET asio_lib)
   endif()
 endif()
 
-add_executable(rpc_benchmark "benchmark.cpp" "client.hpp" "test_structs.hpp")
+add_executable(rpc_benchmark benchmark.cpp)
+target_include_directories(rpc_benchmark PRIVATE ../tests)
 target_link_libraries(rpc_benchmark PRIVATE rpc_hpp catch2_lib asio_lib)
 
 if(${BUILD_ADAPTER_BOOST_JSON})

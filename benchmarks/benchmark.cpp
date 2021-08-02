@@ -2,7 +2,7 @@
 #define CATCH_CONFIG_MAIN
 #define RPC_HPP_CLIENT_IMPL
 
-#include "client.hpp"
+#include "rpc.client.hpp"
 #include "test_structs.hpp"
 
 #include <catch2/catch.hpp>

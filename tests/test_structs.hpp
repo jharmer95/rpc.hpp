@@ -66,26 +66,6 @@ using rpc::adapters::bjson_val;
 #include <cstring>
 #include <string>
 
-struct TestMessage
-{
-    bool flag1{};
-    bool flag2{};
-    int id{};
-    int data[256]{};
-    uint8_t data_sz{};
-
-    bool operator==(const TestMessage& other) const
-    {
-        if (flag1 != other.flag1 || flag2 != other.flag2 || id != other.id
-            || data_sz != other.data_sz)
-        {
-            return false;
-        }
-
-        return std::memcmp(data, other.data, data_sz) == 0;
-    }
-};
-
 struct ComplexObject
 {
     int id{};
@@ -96,38 +76,6 @@ struct ComplexObject
 };
 
 #if defined(RPC_HPP_ENABLE_NJSON)
-template<>
-template<>
-inline njson njson_adapter::serialize(const TestMessage& val)
-{
-    njson obj_j;
-    obj_j["flag1"] = val.flag1;
-    obj_j["flag2"] = val.flag2;
-    obj_j["id"] = val.id;
-    obj_j["data"] = njson::array();
-    obj_j["data_sz"] = val.data_sz;
-
-    for (uint8_t i = 0; i < val.data_sz; ++i)
-    {
-        obj_j["data"].push_back(val.data[i]);
-    }
-
-    return obj_j;
-}
-
-template<>
-template<>
-inline TestMessage njson_adapter::deserialize(const njson& serial_obj)
-{
-    TestMessage mesg;
-    mesg.flag1 = serial_obj["flag1"].get<bool>();
-    mesg.flag2 = serial_obj["flag2"].get<bool>();
-    mesg.id = serial_obj["id"].get<int>();
-    mesg.data_sz = serial_obj["data_sz"].get<uint8_t>();
-    std::copy_n(serial_obj["data"].begin(), mesg.data_sz, mesg.data);
-    return mesg;
-}
-
 template<>
 template<>
 inline njson njson_adapter::serialize(const ComplexObject& val)
@@ -167,70 +115,6 @@ inline ComplexObject njson_adapter::deserialize(const njson& serial_obj)
 #endif
 
 #if defined(RPC_HPP_ENABLE_RAPIDJSON)
-template<>
-template<>
-inline rapidjson_doc rapidjson_adapter::serialize(const TestMessage& val)
-{
-    rapidjson_doc d;
-    d.SetObject();
-    auto& alloc = d.GetAllocator();
-
-    rapidjson_val flag1_v;
-    flag1_v.SetBool(val.flag1);
-    d.AddMember("flag1", flag1_v, alloc);
-
-    rapidjson_val flag2_v;
-    flag2_v.SetBool(val.flag2);
-    d.AddMember("flag2", flag2_v, alloc);
-
-    rapidjson_val id_v;
-    id_v.SetInt(val.id);
-    d.AddMember("id", id_v, alloc);
-
-    rapidjson_val data_sz_v;
-    data_sz_v.SetUint(val.data_sz);
-    d.AddMember("data_sz", data_sz_v, alloc);
-
-    rapidjson_val data_v;
-    data_v.SetArray();
-
-    for (uint8_t i = 0; i < val.data_sz; ++i)
-    {
-        data_v.PushBack(val.data[i], alloc);
-    }
-
-    d.AddMember("data", data_v, alloc);
-    return d;
-}
-
-template<>
-template<>
-inline TestMessage rapidjson_adapter::deserialize(const rapidjson_doc& serial_obj)
-{
-    TestMessage obj;
-    const auto flag1_v = serial_obj.FindMember("flag1");
-    obj.flag1 = flag1_v->value.GetBool();
-
-    const auto flag2_v = serial_obj.FindMember("flag2");
-    obj.flag2 = flag2_v->value.GetBool();
-
-    const auto id_v = serial_obj.FindMember("id");
-    obj.id = id_v->value.GetInt();
-
-    const auto data_sz_v = serial_obj.FindMember("data_sz");
-    obj.data_sz = static_cast<uint8_t>(data_sz_v->value.GetUint());
-
-    const auto data_v = serial_obj.FindMember("data");
-    const auto& arr = data_v->value.GetArray();
-
-    for (unsigned i = 0; i < obj.data_sz; ++i)
-    {
-        obj.data[i] = arr[i].GetInt();
-    }
-
-    return obj;
-}
-
 template<>
 template<>
 inline rapidjson_doc rapidjson_adapter::serialize(const ComplexObject& val)
@@ -298,45 +182,6 @@ inline ComplexObject rapidjson_adapter::deserialize(const rapidjson_doc& serial_
 #endif
 
 #if defined(RPC_HPP_ENABLE_BOOST_JSON)
-template<>
-template<>
-inline bjson_val bjson_adapter::serialize(const TestMessage& val)
-{
-    bjson_obj obj_j;
-    obj_j["flag1"] = val.flag1;
-    obj_j["flag2"] = val.flag2;
-    obj_j["id"] = val.id;
-    obj_j["data"] = bjson::array{};
-    auto& data = obj_j["data"].as_array();
-    obj_j["data_sz"] = val.data_sz;
-
-    for (uint8_t i = 0; i < val.data_sz; ++i)
-    {
-        data.push_back(val.data[i]);
-    }
-
-    return obj_j;
-}
-
-template<>
-template<>
-inline TestMessage bjson_adapter::deserialize(const bjson_val& serial_obj)
-{
-    TestMessage mesg;
-    mesg.flag1 = serial_obj.at("flag1").get_bool();
-    mesg.flag2 = serial_obj.at("flag2").get_bool();
-    mesg.id = static_cast<int>(serial_obj.at("id").get_int64());
-    mesg.data_sz = static_cast<uint8_t>(serial_obj.at("data_sz").get_int64());
-    const auto& data = serial_obj.at("data").as_array();
-
-    for (uint8_t i = 0; i < mesg.data_sz; ++i)
-    {
-        mesg.data[i] = static_cast<int>(data[i].get_int64());
-    }
-
-    return mesg;
-}
-
 template<>
 template<>
 inline bjson_val bjson_adapter::serialize(const ComplexObject& val)

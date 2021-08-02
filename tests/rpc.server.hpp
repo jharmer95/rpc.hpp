@@ -30,11 +30,6 @@ constexpr int SimpleSum(const int n1, const int n2)
 size_t StrLen(std::string str);
 std::vector<int> AddOneToEach(std::vector<int> vec);
 void AddOneToEachRef(std::vector<int>& vec);
-int ReadMessageRef(TestMessage& mesg);
-int WriteMessageRef(const TestMessage& mesg);
-int ReadMessageVec(std::vector<TestMessage>& vec, int& num_mesgs);
-int WriteMessageVec(std::vector<TestMessage> vec);
-void ClearBus();
 uint64_t Fibonacci(uint64_t number);
 void FibonacciRef(uint64_t& number);
 double Average(double n1, double n2, double n3, double n4, double n5, double n6, double n7,
@@ -114,9 +109,8 @@ private:
     {
         const auto func_name = rpc::pack_adapter<Serial>::get_func_name(serial_obj);
 
-        RPC_ATTACH_FUNCS(KillServer, ThrowError, SimpleSum, AddOneToEachRef, ReadMessageRef,
-            WriteMessageRef, ReadMessageVec, WriteMessageVec, ClearBus, FibonacciRef, SquareRootRef,
-            GenRandInts, HashComplexRef)
+        RPC_ATTACH_FUNCS(KillServer, ThrowError, SimpleSum, AddOneToEachRef, FibonacciRef,
+            SquareRootRef, GenRandInts, HashComplexRef)
 
         RPC_ATTACH_CACHED_FUNCS(SimpleSum, StrLen, AddOneToEach, Fibonacci, Average, StdDev,
             AverageContainer<uint64_t>, AverageContainer<double>, HashComplex)
