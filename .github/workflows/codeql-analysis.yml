@@ -14,9 +14,23 @@ name: "CodeQL"
 on:
   push:
     branches: [ main ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '**/.clang-format'
+      - '**/.clang-tidy'
+      - '**/LICENSE'
+      - '**/.gitignore'
   pull_request:
     # The branches below must be a subset of the branches above
     branches: [ main ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '**/.clang-format'
+      - '**/.clang-tidy'
+      - '**/LICENSE'
+      - '**/.gitignore'
   schedule:
     - cron: '37 15 * * 1'
 
