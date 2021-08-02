@@ -4,9 +4,23 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '**/.clang-format'
+      - '**/.clang-tidy'
+      - '**/LICENSE'
+      - '**/.gitignore'
   pull_request:
     branches:
       - main
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '**/.clang-format'
+      - '**/.clang-tidy'
+      - '**/LICENSE'
+      - '**/.gitignore'
 jobs:
   build:
     name: Build and test
