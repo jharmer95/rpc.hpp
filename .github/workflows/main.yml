@@ -17,28 +17,19 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Install Python 3.8
-        uses: actions/setup-python@v2
-        with:
-          python-version: 3.8
       - name: Install CMake and compilers
         run: |
           sudo apt update
           sudo apt install cmake ninja-build gcc clang
-      - name: Install Conan
+      - name: Install vcpkg dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install wheel setuptools
-          pip install conan
-          export PATH=$PATH:/home/runner/.local/bin
-          echo $PATH
-          conan --version
-          sudo ln -s ~/.local/bin/conan /usr/local/bin/conan
+          /usr/local/share/vcpkg install asio catch2 doctest nlohmann-json rapidjson
+          /usr/local/share/vcpkg integrate install
       - name: Build with CMake
         run: |
           mkdir build
           cd build
-          cmake .. -G Ninja -DBUILD_ADAPTER_NJSON=ON -DBUILD_ADAPTER_RAPIDJSON=ON -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER=${{ matrix.compiler }} -DDEPENDS_CONAN=ON
+          cmake .. -G Ninja -DBUILD_ADAPTER_NJSON=ON -DBUILD_ADAPTER_RAPIDJSON=ON -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=${{ matrix.compiler }} -DCMAKE_CXX_FLAGS="-fuse-ld=gold" -DCMAKE_TOOLCHAIN_FILE=/usr/local/share/vcpkg/scripts/buildsystems/vcpkg.cmake -DDEPENDS_VCPKG=ON
           ninja
       - name: Run unit tests
         run: |
