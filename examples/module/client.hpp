@@ -14,8 +14,6 @@ using module_t = HMODULE;
 #    define FreeLibrary(X) dlclose(X)
 #    define GetProcAddress(X, Y) dlsym(X, Y)
 #    define LoadLibrary(X) dlopen(X, RTLD_LOCAL | RTLD_LAZY)
-
-#    define strcpy_s(X, Y) strcpy(X, Y)
 using module_t = void*;
 #endif
 

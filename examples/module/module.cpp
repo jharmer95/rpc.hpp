@@ -35,7 +35,7 @@ void RpcModule::dispatch_impl(njson& serial_obj)
 
 int RunRemoteFunc(char* const json_str, const size_t json_buf_len)
 {
-    std::string input{json_str};
+    std::string input{ json_str };
     rpc_mod.dispatch(input);
 
     if (input.size() >= json_buf_len)
@@ -43,6 +43,11 @@ int RunRemoteFunc(char* const json_str, const size_t json_buf_len)
         return 1;
     }
 
+#if defined(_WIN32)
     strcpy_s(json_str, json_buf_len, input.c_str());
+
+#elif defined(__unix__)
+    strcpy(json_str, input.c_str());
+#endif
     return 0;
 }

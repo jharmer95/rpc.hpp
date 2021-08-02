@@ -20,7 +20,6 @@ using rpc::adapters::njson_adapter;
 #elif defined(__unix__)
 #    define DLL_PUBLIC __attribute__((visibility("default")))
 #    define DLL_PRIVATE __attribute__((visibility("hidden")))
-#    define strcpy_s(X, Y) strcpy(X, Y)
 #endif
 
 // C++ private functions

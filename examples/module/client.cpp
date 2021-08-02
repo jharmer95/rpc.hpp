@@ -42,7 +42,14 @@ void RpcClient::send(const std::string& mesg)
     }
 
     char buf[BUF_SZ];
+
+#if defined(_WIN32)
     strcpy_s(buf, mesg.c_str());
+
+#elif defined(__unix__)
+    strcpy(buf, mesg.c_str());
+#endif
+
     const auto result = m_func(buf, BUF_SZ);
 
     if (result == 1)
