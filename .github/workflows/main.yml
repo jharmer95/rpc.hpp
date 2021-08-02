@@ -44,4 +44,4 @@ jobs:
         run: |
           cd build/tests
           ls -l
-          ./bin/test_server & ctest
+          ./test_server & ctest
