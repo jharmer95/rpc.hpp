@@ -32,6 +32,10 @@ if(NOT TARGET RpcHpp::rpc_hpp)
   message(FATAL_ERROR "RpcHpp::rpc_hpp alias not set. Please generate CMake from the root directory")
 endif()
 
+include(CTest)
+include(doctest)
+enable_testing()
+
 if(NOT TARGET doctest_lib)
   add_library(doctest_lib INTERFACE)
 
@@ -67,10 +71,6 @@ if(NOT TARGET asio_lib)
   endif()
 endif()
 
-include(CTest)
-include(doctest)
-enable_testing()
-
 add_executable(rpc_test "rpc.test.cpp")
 target_link_libraries(rpc_test PRIVATE rpc_hpp doctest_lib asio_lib)
 
@@ -91,7 +91,7 @@ if(CODE_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
 endif()
 
 target_compile_options(rpc_test PRIVATE ${FULL_WARNING})
-doctest_discover_tests(rpc_test)
+doctest_discover_tests(rpc_test ADD_LABELS 0)
 
 find_package(Threads REQUIRED)
 
