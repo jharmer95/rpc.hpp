@@ -208,14 +208,14 @@ namespace details
 
 #    if defined(RPC_HPP_CLIENT_IMPL)
     template<typename... Args, size_t... Is>
-    constexpr void tuple_bind(const std::tuple<Args...>& dest,
+    constexpr void tuple_bind(
         const std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...>& src,
-        std::index_sequence<Is...>)
+        std::index_sequence<Is...>, Args&&... dest)
     {
         using expander = int[];
         (void)expander{ 0,
             (
-                (void)[](auto&& x, std::remove_cv_t<std::remove_reference_t<decltype(x)>> y)
+                (void)[](auto&& x, auto&& y)
                 {
                     if constexpr (
                         std::is_reference_v<
@@ -223,15 +223,15 @@ namespace details
                     {
                         x = std::move(y);
                     }
-                }(std::get<Is>(dest), std::get<Is>(src)),
+                }(dest, std::get<Is>(src)),
                 0)... };
     }
 
     template<typename... Args>
-    constexpr void tuple_bind(const std::tuple<Args...>& dest,
-        const std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...>& src)
+    constexpr void tuple_bind(
+        const std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...>& src, Args&&... dest)
     {
-        tuple_bind(dest, src, std::make_index_sequence<sizeof...(Args)>());
+        tuple_bind(src, std::make_index_sequence<sizeof...(Args)>(), std::forward<Args>(dest)...);
     }
 #    endif
 
@@ -573,7 +573,7 @@ inline namespace client
                 Serial::from_bytes(receive()));
 
             // Assign values back to any (non-const) reference members
-            details::tuple_bind(std::forward_as_tuple(args...), pack.get_args());
+            details::tuple_bind(pack.get_args(), std::forward<Args>(args)...);
 
             if constexpr (std::is_void_v<R>)
             {
