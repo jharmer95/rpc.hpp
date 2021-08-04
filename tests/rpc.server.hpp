@@ -20,13 +20,7 @@ using asio::ip::tcp;
 // Forward declares
 [[noreturn]] void ThrowError() noexcept(false);
 void KillServer() noexcept;
-
-// cached
-constexpr int SimpleSum(const int n1, const int n2)
-{
-    return n1 + n2;
-}
-
+int SimpleSum(int n1, int n2);
 size_t StrLen(std::string str);
 std::vector<int> AddOneToEach(std::vector<int> vec);
 void AddOneToEachRef(std::vector<int>& vec);
@@ -63,18 +57,19 @@ public:
 
     [[noreturn]] void Run()
     {
+        constexpr size_t BUF_SZ = 16 * 1024;
+        std::array<char, BUF_SZ> data_buf;
+
         while (true)
         {
             tcp::socket sock = m_accept.accept();
-            constexpr auto BUFFER_SZ = 64U * 1024UL;
-            const auto data = std::make_unique<uint8_t[]>(BUFFER_SZ);
 
             try
             {
                 while (true)
                 {
                     asio::error_code error;
-                    const size_t len = sock.read_some(asio::buffer(data.get(), BUFFER_SZ), error);
+                    const size_t len = sock.read_some(asio::buffer(data_buf), error);
 
                     if (error == asio::error::eof)
                     {
@@ -87,14 +82,14 @@ public:
                         throw asio::system_error(error);
                     }
 
-                    typename Serial::bytes_t bytes(data.get(), data.get() + len);
+                    typename Serial::bytes_t bytes{ data_buf.data(), len };
                     this->dispatch(bytes);
 
 #if !defined(NDEBUG)
                     std::cout << "Return message: \"" << bytes << "\"\n";
 #endif
 
-                    write(sock, asio::buffer(bytes, bytes.size()));
+                    write(sock, asio::buffer(bytes));
                 }
             }
             catch (const std::exception& ex)
@@ -110,10 +105,10 @@ private:
         const auto func_name = rpc::pack_adapter<Serial>::get_func_name(serial_obj);
 
         RPC_ATTACH_FUNCS(KillServer, ThrowError, SimpleSum, AddOneToEachRef, FibonacciRef,
-            SquareRootRef, GenRandInts, HashComplexRef)
+            SquareRootRef, GenRandInts, HashComplex, HashComplexRef, StrLen)
 
-        RPC_ATTACH_CACHED_FUNCS(SimpleSum, StrLen, AddOneToEach, Fibonacci, Average, StdDev,
-            AverageContainer<uint64_t>, AverageContainer<double>, HashComplex)
+        RPC_ATTACH_CACHED_FUNCS(AddOneToEach, Fibonacci, Average, StdDev,
+            AverageContainer<uint64_t>, AverageContainer<double>)
 
         throw std::runtime_error("RPC error: Called function: \"" + func_name + "\" not found!");
     }

@@ -2,11 +2,10 @@
 
 #include "client.hpp"
 
-#include <rpc_adapters/rpc_njson.hpp>
-
+#include <cstdlib>
 #include <iostream>
 #include <stdexcept>
-#include <string>
+#include <utility>
 #include <vector>
 
 using rpc::adapters::njson;
@@ -80,7 +79,7 @@ int main(int argc, char* argv[])
             {
                 funcName = "Sum";
 
-                const auto result = client.template call_func<int>("Sum", 1, 2);
+                const auto result = client.call_func<int>("Sum", 1, 2);
                 std::cout << "Sum(1, 2) == " << result << '\n';
             }
 

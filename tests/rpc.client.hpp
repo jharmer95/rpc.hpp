@@ -63,7 +63,6 @@ class TestClient final : public rpc::client_interface<Serial>
 {
 public:
     TestClient(const std::string_view host, const std::string_view port)
-        : m_socket(m_io), m_resolver(m_io)
     {
         asio::connect(m_socket, m_resolver.resolve(host, port));
     }
@@ -73,18 +72,20 @@ public:
 private:
     void send(const typename Serial::bytes_t& mesg) override
     {
-        asio::write(m_socket, asio::buffer(mesg, mesg.size()));
+        asio::write(m_socket, asio::buffer(mesg));
     }
 
     // nodiscard because data is lost after receive
     [[nodiscard]] typename Serial::bytes_t receive() override
     {
-        const auto numBytes = m_socket.read_some(asio::buffer(m_buffer, 64U * 1024UL));
-        return std::string(m_buffer, m_buffer + numBytes);
+        const auto numBytes = m_socket.read_some(asio::buffer(m_buffer));
+        return typename Serial::bytes_t{ m_buffer.data(), numBytes };
     }
 
+    static constexpr size_t BUF_SZ = 16 * 1024;
+
     asio::io_context m_io{};
-    tcp::socket m_socket;
-    tcp::resolver m_resolver;
-    uint8_t m_buffer[64U * 1024UL]{};
+    tcp::resolver m_resolver{ m_io };
+    tcp::socket m_socket{ m_io };
+    std::array<char, BUF_SZ> m_buffer{};
 };

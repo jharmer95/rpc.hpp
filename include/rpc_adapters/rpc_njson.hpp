@@ -54,13 +54,13 @@ namespace adapters
     template<typename T>
     void push_arg(T&& arg, njson& arg_arr)
     {
-        using no_ref_t = std::remove_cv_t<std::remove_reference_t<T>>;
+        using no_ref_t = std::remove_cvref_t<T>;
 
-        if constexpr (std::is_arithmetic_v<no_ref_t> || std::is_same_v<no_ref_t, std::string>)
+        if constexpr (details::arithmetic<no_ref_t> || std::same_as<no_ref_t, std::string>)
         {
             arg_arr.push_back(std::forward<T>(arg));
         }
-        else if constexpr (details::is_container_v<no_ref_t>)
+        else if constexpr (details::container<no_ref_t>)
         {
             njson arr = njson::array();
 
@@ -71,7 +71,7 @@ namespace adapters
 
             arg_arr.push_back(std::move(arr));
         }
-        else if constexpr (details::is_serializable_v<njson_adapter, no_ref_t>)
+        else if constexpr (details::serializable<no_ref_t, njson_adapter>)
         {
             arg_arr.push_back(no_ref_t::template serialize<njson_adapter>(std::forward<T>(arg)));
         }
@@ -82,17 +82,17 @@ namespace adapters
     }
 
     template<typename T>
-    std::remove_cv_t<std::remove_reference_t<T>> parse_arg(const njson& arg_arr, unsigned& index)
+    std::remove_cvref_t<T> parse_arg(const njson& arg_arr, unsigned& index)
     {
-        using no_ref_t = std::remove_cv_t<std::remove_reference_t<T>>;
+        using no_ref_t = std::remove_cvref_t<T>;
 
         const auto& arg = arg_arr.is_array() ? arg_arr[index++] : arg_arr;
 
-        if constexpr (std::is_arithmetic_v<no_ref_t> || std::is_same_v<no_ref_t, std::string>)
+        if constexpr (details::arithmetic<no_ref_t> || std::same_as<no_ref_t, std::string>)
         {
             return arg.get<no_ref_t>();
         }
-        else if constexpr (details::is_container_v<no_ref_t>)
+        else if constexpr (details::container<no_ref_t>)
         {
             using value_t = typename no_ref_t::value_type;
 
@@ -108,7 +108,7 @@ namespace adapters
 
             return container;
         }
-        else if constexpr (details::is_serializable_v<njson_adapter, no_ref_t>)
+        else if constexpr (details::serializable<no_ref_t, njson_adapter>)
         {
             return no_ref_t::template deserialize<njson_adapter>(arg);
         }

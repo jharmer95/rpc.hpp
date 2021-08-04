@@ -198,8 +198,8 @@ if(${DEPENDS_CONAN})
     message(FATAL_ERROR "Using both vcpkg and Conan is not supported!")
   endif()
 
-  set(CONAN_EXTRA_REQUIRES "")
-  set(CONAN_EXTRA_OPTIONS "")
+  set(CONAN_EXTRA_REQUIRES)
+  set(CONAN_EXTRA_OPTIONS)
   include(cmake/Conan.cmake)
 endif()
 
@@ -214,7 +214,7 @@ target_include_directories(rpc_hpp
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
-target_compile_features(rpc_hpp INTERFACE cxx_std_17)
+target_compile_features(rpc_hpp INTERFACE cxx_std_20)
 
 # ==== Target Installation ====
 

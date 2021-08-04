@@ -14,13 +14,14 @@ using module_t = HMODULE;
 #    define FreeLibrary(X) dlclose(X)
 #    define GetProcAddress(X, Y) dlsym(X, Y)
 #    define LoadLibrary(X) dlopen(X, RTLD_LOCAL | RTLD_LAZY)
+
 using module_t = void*;
 #endif
 
 #include <rpc_adapters/rpc_njson.hpp>
 
-#include <stdexcept>
 #include <string>
+#include <utility>
 
 using rpc::adapters::njson_adapter;
 

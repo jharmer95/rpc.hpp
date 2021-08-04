@@ -52,6 +52,7 @@
 #    error At least one implementation type must be defined using 'RPC_HPP_{CLIENT, SERVER, MODULE}_IMPL'
 #endif
 
+#include <concepts>
 #include <cstddef>     // for size_t
 #include <optional>    // for nullopt, optional
 #include <stdexcept>   // for runtime_error
@@ -71,128 +72,27 @@ namespace rpc
 namespace details
 {
 #if !defined(RPC_HPP_DOXYGEN_GEN)
-    template<typename, typename T>
-    struct is_serializable_base
-    {
-        static_assert(std::integral_constant<T, false>::value,
-            "Second template parameter needs to be of function type");
+    template<typename Value, typename Serial>
+    concept serializable = requires(Serial ser, Value obj) {
+        { Value::serialize(obj) } -> std::same_as<Serial>;
+        { Value::deserialize(ser) } -> std::same_as<Value>;
     };
 
-    template<typename C, typename R, typename... Args>
-    struct is_serializable_base<C, R(Args...)>
-    {
-    private:
-        template<typename T>
-        static constexpr auto check(T*) noexcept ->
-            typename std::is_same<decltype(std::declval<T>().serialize(std::declval<Args>()...)),
-                R>::type;
+    template<typename T>
+    concept container = requires(T cont) {
+        typename T::iterator;
+        typename T::value_type;
+        typename T::size_type;
 
-        template<typename>
-        static constexpr std::false_type check(...) noexcept;
-
-        using type = decltype(check<C>(nullptr));
-
-    public:
-        static constexpr bool value = type::value;
+        { cont.begin() } -> std::same_as<typename T::iterator>;
+        { cont.end() } -> std::same_as<typename T::iterator>;
+        { cont.size() } -> std::same_as<typename T::size_type>;
     };
 
-    template<typename, typename T>
-    struct is_deserializable_base
-    {
-        static_assert(std::integral_constant<T, false>::value,
-            "Second template parameter needs to be of function type");
-    };
+    template<typename T>
+    concept arithmetic = std::is_arithmetic_v<T>;
 
-    template<typename C, typename R, typename... Args>
-    struct is_deserializable_base<C, R(Args...)>
-    {
-    private:
-        template<typename T>
-        static constexpr auto check(T*) noexcept ->
-            typename std::is_same<decltype(std::declval<T>().deserialize(std::declval<Args>()...)),
-                R>::type;
-
-        template<typename>
-        static constexpr std::false_type check(...) noexcept;
-
-        using type = decltype(check<C>(nullptr));
-
-    public:
-        static constexpr bool value = type::value;
-    };
-
-    template<typename Serial, typename Value>
-    struct is_serializable
-        : std::integral_constant<bool,
-              is_serializable_base<Value, typename Serial::serial_t(const Value&)>::value
-                  && is_deserializable_base<Value, Value(const typename Serial::serial_t&)>::value>
-    {
-    };
-
-    template<typename Serial, typename Value>
-    inline constexpr bool is_serializable_v = is_serializable<Serial, Value>::value;
-
-    template<typename C>
-    struct has_begin
-    {
-    private:
-        template<typename T>
-        static constexpr auto check(T*) noexcept ->
-            typename std::is_same<decltype(std::declval<T>().begin()), typename T::iterator>::type;
-
-        template<typename>
-        static constexpr std::false_type check(...) noexcept;
-
-        using type = decltype(check<C>(nullptr));
-
-    public:
-        static constexpr bool value = type::value;
-    };
-
-    template<typename C>
-    struct has_end
-    {
-    private:
-        template<typename T>
-        static constexpr auto check(T*) noexcept ->
-            typename std::is_same<decltype(std::declval<T>().end()), typename T::iterator>::type;
-
-        template<typename>
-        static constexpr std::false_type check(...) noexcept;
-
-        using type = decltype(check<C>(nullptr));
-
-    public:
-        static constexpr bool value = type::value;
-    };
-
-    template<typename C>
-    struct has_size
-    {
-    private:
-        template<typename T>
-        static constexpr auto check(T*) noexcept ->
-            typename std::is_same<decltype(std::declval<T>().size()), size_t>::type;
-
-        template<typename>
-        static constexpr std::false_type check(...) noexcept;
-
-        using type = decltype(check<C>(nullptr));
-
-    public:
-        static constexpr bool value = type::value;
-    };
-
-    template<typename C>
-    struct is_container : std::integral_constant<bool,
-                              has_size<C>::value && has_begin<C>::value && has_end<C>::value>
-    {
-    };
-
-    template<typename C>
-    inline constexpr bool is_container_v = is_container<C>::value;
-
-    template<typename F, typename... Ts, size_t... Is>
+    template<typename F, typename... Ts, size_t... Is> requires (std::regular_invocable<F, Ts> && ...)
     constexpr void for_each_tuple(
         const std::tuple<Ts...>& tuple, const F& func, [[maybe_unused]] std::index_sequence<Is...>)
     {
@@ -200,7 +100,7 @@ namespace details
         (void)expander{ 0, ((void)func(std::get<Is>(tuple)), 0)... };
     }
 
-    template<typename F, typename... Ts>
+    template<typename F, typename... Ts> requires (std::regular_invocable<F, Ts> && ...)
     constexpr void for_each_tuple(const std::tuple<Ts...>& tuple, const F& func)
     {
         for_each_tuple(tuple, func, std::make_index_sequence<sizeof...(Ts)>());
@@ -209,7 +109,7 @@ namespace details
 #    if defined(RPC_HPP_CLIENT_IMPL)
     template<typename... Args, size_t... Is>
     constexpr void tuple_bind(
-        const std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...>& src,
+        const std::tuple<std::remove_cvref_t<Args>...>& src,
         std::index_sequence<Is...>, Args&&... dest)
     {
         using expander = int[];
@@ -229,7 +129,7 @@ namespace details
 
     template<typename... Args>
     constexpr void tuple_bind(
-        const std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...>& src, Args&&... dest)
+        const std::tuple<std::remove_cvref_t<Args>...>& src, Args&&... dest)
     {
         tuple_bind(src, std::make_index_sequence<sizeof...(Args)>(), std::forward<Args>(dest)...);
     }
@@ -239,7 +139,7 @@ namespace details
     class packed_func_base
     {
     public:
-        using args_t = std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...>;
+        using args_t = std::tuple<std::remove_cvref_t<Args>...>;
 
         packed_func_base(std::string func_name, args_t args)
             : m_func_name(std::move(func_name)), m_args(std::move(args))
@@ -450,47 +350,6 @@ inline namespace server
             }
         }
 
-#    if defined(RPC_HPP_SERVER_IMPL) && defined(RPC_HPP_ENABLE_SERVER_CACHE)
-        ///@brief Deserializes the serial object to a packed_func, calls the callback function, then serializes the result back to the serial object, using a server-side cache for performance.
-        ///
-        ///@note This feature is enabled by defining @ref RPC_HPP_ENABLE_SERVER_CACHE
-        ///@tparam R Return type of the callback function
-        ///@tparam Args Variadic argument type(s) for the function
-        ///@param func pointer to the callback function
-        ///@param serial_obj Serial representing the function call
-        template<typename R, typename... Args>
-        static void dispatch_cached_func(R (*func)(Args...), typename Serial::serial_t& serial_obj)
-        {
-            static std::unordered_map<typename Serial::bytes_t, R> result_cache;
-
-            auto pack = pack_adapter<Serial>::template deserialize_pack<R, Args...>(serial_obj);
-
-            if constexpr (!std::is_void_v<R>)
-            {
-                auto bytes = Serial::to_bytes(std::move(serial_obj));
-
-                const auto it = result_cache.find(bytes);
-
-                if (it != result_cache.end())
-                {
-                    pack.set_result(it->second);
-                    serial_obj = pack_adapter<Serial>::template serialize_pack<R, Args...>(pack);
-
-                    return;
-                }
-
-                run_callback(func, pack);
-                result_cache[std::move(bytes)] = pack.get_result();
-            }
-            else
-            {
-                run_callback(func, pack);
-            }
-
-            serial_obj = pack_adapter<Serial>::template serialize_pack<R, Args...>(pack);
-        }
-#    endif
-
         ///@brief Deserializes the serial object to a packed_func, calls the callback function, then serializes the result back to the serial object
         ///
         ///@tparam R Return type of the callback function
@@ -505,6 +364,40 @@ inline namespace server
             run_callback(func, pack);
             serial_obj = pack_adapter<Serial>::template serialize_pack<R, Args...>(pack);
         }
+
+#    if defined(RPC_HPP_SERVER_IMPL) && defined(RPC_HPP_ENABLE_SERVER_CACHE)
+        ///@brief Deserializes the serial object to a packed_func, calls the callback function, then serializes the result back to the serial object, using a server-side cache for performance.
+        ///
+        ///@note This feature is enabled by defining @ref RPC_HPP_ENABLE_SERVER_CACHE
+        ///@tparam R Return type of the callback function
+        ///@tparam Args Variadic argument type(s) for the function
+        ///@param func pointer to the callback function
+        ///@param serial_obj Serial representing the function call
+        template<typename R, typename... Args> requires(!std::is_void_v<R>
+            && ((!std::is_reference_v<Args> && ...)
+                || (std::is_const_v<std::remove_reference_t<Args>> && ...)))
+        static void dispatch_cached_func(R(*func)(Args...), typename Serial::serial_t& serial_obj)
+        {
+            static std::unordered_map<typename Serial::bytes_t, R> result_cache{};
+            auto pack = pack_adapter<Serial>::template deserialize_pack<R, Args...>(serial_obj);
+            auto bytes = Serial::to_bytes(std::move(serial_obj));
+
+            const auto it = result_cache.find(bytes);
+
+            if (it != result_cache.end())
+            {
+                pack.set_result(it->second);
+                serial_obj = pack_adapter<Serial>::template serialize_pack<R, Args...>(pack);
+
+                return;
+            }
+
+            run_callback(func, pack);
+            result_cache[std::move(bytes)] = pack.get_result();
+
+            serial_obj = pack_adapter<Serial>::template serialize_pack<R, Args...>(pack);
+        }
+#    endif
 
         ///@brief Implementation component for the dispatch function
         ///

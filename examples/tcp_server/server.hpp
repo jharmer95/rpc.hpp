@@ -14,7 +14,7 @@ using rpc::adapters::njson_adapter;
 class RpcServer : public rpc::server_interface<njson_adapter>
 {
 public:
-    RpcServer(asio::io_context& io, uint16_t port) : m_io(io), m_port(port) {}
+    RpcServer(uint16_t port) : m_port(port) {}
 
     void Run();
     void Stop() { m_running = false; }
@@ -22,7 +22,7 @@ public:
 private:
     void dispatch_impl(njson& serial_obj) override;
 
-    asio::io_context& m_io;
     std::atomic<bool> m_running{ false };
     uint16_t m_port;
+    asio::io_context m_io{};
 };

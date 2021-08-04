@@ -115,7 +115,7 @@
 #define RPC_ATTACH_FUNCS(FUNCNAME, ...) EXPAND(RPC_FOR_EACH(RPC_ATTACH_FUNC, FUNCNAME, __VA_ARGS__))
 
 ///@brief Attaches function (provided by FUNCNAME) to the server dispatch funciton with server-side caching
-#define RPC_ATTACH_CACHED_FUNC(FUNCNAME) if (func_name == #FUNCNAME) { return this->dispatch_cached_func(FUNCNAME, serial_obj); }
+#define RPC_ATTACH_CACHED_FUNC(FUNCNAME) if (func_name == #FUNCNAME) { return this->dispatch_func(FUNCNAME, serial_obj); }
 
 ///@brief Attaches multiple functions to the server dispatch function with server-side caching
 #define RPC_ATTACH_CACHED_FUNCS(FUNCNAME, ...) EXPAND(RPC_FOR_EACH(RPC_ATTACH_CACHED_FUNC, FUNCNAME, __VA_ARGS__))
@@ -127,7 +127,7 @@
 #define RPC_MULTI_ALIAS_FUNC(FUNCNAME, FUNC_ALIAS,...) EXPAND(RPC_FOR_EACH2(RPC_ALIAS_FUNC, FUNCNAME, FUNC_ALIAS, __VA_ARGS__))
 
 ///@brief Attaches function (provided by FUNCNAME) to the server dispatch function with a different function name (provided by FUNC_ALIAS) and server-side caching
-#define RPC_ALIAS_CACHED_FUNC(FUNCNAME, FUNC_ALIAS) if (func_name == #FUNC_ALIAS) { return this->dispatch_cached_func(FUNCNAME, serial_obj); }
+#define RPC_ALIAS_CACHED_FUNC(FUNCNAME, FUNC_ALIAS) if (func_name == #FUNC_ALIAS) { return this->dispatch_func(FUNCNAME, serial_obj); }
 
 ///@brief Attaches function (provided by FUNCNAME) to the server dispatch function with multiple different function names and server-side caching
 #define RPC_MULTI_ALIAS_CACHED_FUNC(FUNCNAME, FUNC_ALIAS,...) EXPAND(RPC_FOR_EACH2(RPC_ALIAS_CACHED_FUNC, FUNCNAME, FUNC_ALIAS, __VA_ARGS__))

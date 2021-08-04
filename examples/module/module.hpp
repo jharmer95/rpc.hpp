@@ -2,9 +2,7 @@
 
 #include <rpc_adapters/rpc_njson.hpp>
 
-using rpc::adapters::njson;
-using rpc::adapters::njson_adapter;
-
+#include <cstddef>
 #include <string>
 #include <vector>
 
@@ -22,6 +20,9 @@ using rpc::adapters::njson_adapter;
 #    define DLL_PRIVATE __attribute__((visibility("hidden")))
 #endif
 
+using rpc::adapters::njson;
+using rpc::adapters::njson_adapter;
+
 // C++ private functions
 DLL_PRIVATE int Sum(int n1, int n2);
 DLL_PRIVATE void AddOneToEach(std::vector<int>& vec);
@@ -33,7 +34,7 @@ extern "C"
     DLL_PUBLIC int RunRemoteFunc(char* json_str, size_t json_buf_len);
 }
 
-class RpcModule : public rpc::server_interface<njson_adapter>
+class DLL_PRIVATE RpcModule : public rpc::server_interface<njson_adapter>
 {
 private:
     void dispatch_impl(njson& serial_obj) override;

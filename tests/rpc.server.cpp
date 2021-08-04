@@ -90,7 +90,11 @@ inline void KillServer() noexcept
     cv.notify_one();
 }
 
-// cached
+inline int SimpleSum(int n1, int n2)
+{
+    return n1 + n2;
+}
+
 inline size_t StrLen(std::string str)
 {
     return std::move(str).size();
@@ -184,7 +188,6 @@ std::vector<uint64_t> GenRandInts(const uint64_t min, const uint64_t max, const 
     return vec;
 }
 
-// cached
 std::string HashComplex(const ComplexObject& cx)
 {
     std::stringstream hash;

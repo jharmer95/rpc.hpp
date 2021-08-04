@@ -2,9 +2,11 @@
 
 #include "client.hpp"
 
+#include <cstdlib>
+#include <exception>
 #include <iostream>
-#include <stdexcept>
 #include <string>
+#include <vector>
 
 int main(int argc, char* argv[])
 {
@@ -23,7 +25,7 @@ int main(int argc, char* argv[])
         // Trivial function example
         {
             currentFuncName = "Sum";
-            const auto result = client.template call_func<int>("Sum", 1, 2);
+            int result = client.call_func<int>("Sum", 1, 2);
             std::cout << "Sum(1, 2) == " << result << '\n';
         }
 
@@ -32,7 +34,7 @@ int main(int argc, char* argv[])
             currentFuncName = "AddOneToEach";
             std::vector<int> vec{ 1, 2, 3, 4, 5 };
 
-            client.template call_func<void>("AddOneToEach", vec);
+            client.call_func("AddOneToEach", vec);
             std::cout << "AddOneToEach({ 1, 2, 3, 4, 5 }) == {";
 
             for (size_t i = 0; i < vec.size() - 1; ++i)
@@ -46,17 +48,17 @@ int main(int argc, char* argv[])
         // Template function example
         {
             currentFuncName = "GetTypeName<int>";
-            auto result = client.template call_func<std::string>("GetTypeName<int>");
+            auto result = client.call_func<std::string>("GetTypeName<int>");
 
             std::cout << "GetTypeName<int>() == \"" << result << "\"\n";
 
             currentFuncName = "GetTypeName<double>";
-            result = client.template call_func<std::string>("GetTypeName<double>");
+            result = client.call_func<std::string>("GetTypeName<double>");
 
             std::cout << "GetTypeName<double>() == \"" << result << "\"\n";
 
             currentFuncName = "GetTypeName<std::string>";
-            result = client.template call_func<std::string>("GetTypeName<std::string>");
+            result = client.call_func<std::string>("GetTypeName<std::string>");
 
             std::cout << "GetTypeName<std::string>() == \"" << result << "\"\n";
         }

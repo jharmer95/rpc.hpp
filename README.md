@@ -35,6 +35,7 @@ For more examples see [examples](examples)
 server.cpp
 
 ```C++
+// Indicate that we are implementing a server in this .cpp file
 #define RPC_HPP_SERVER_IMPL
 #define RPC_HPP_ENABLE_NJSON
 
@@ -63,23 +64,24 @@ public:
 	{
 	    // initialize server...
 	}
-	
+
 	// ...
-	
+
 	void Run()
 	{
 	    std::string data;
-		
+
 		// Get data from client...
-		
+
 		dispatch(data);
-		
+
 		// Send data back to client...
 	}
-	
+
 private:
     void dispatch_impl(njson& serial_obj) override
 	{
+	   // Helper variadic macro
 	   RPC_DEFAULT_DISPATCH(Add, AppendStr)
 	}
 };
@@ -87,7 +89,7 @@ private:
 int main()
 {
 	RpcServer my_server{"address"};
-	
+
 	while (true)
 	{
 		my_server.Run();
@@ -98,6 +100,7 @@ int main()
 client.cpp
 
 ```C++
+// Indicate that we are implementing a client in this .cpp file
 #define RPC_HPP_CLIENT_IMPL
 #define RPC_HPP_ENABLE_NJSON
 
@@ -132,11 +135,13 @@ private:
 
 int main()
 {
-	RpcClient my_client{ "address" };
+	RpcClient my_client{ "fake address" };
 
-	const auto result = my_client.template call_func<int>("Sum", 1, 2);
+	// Need to inform the compiler what the return type is via template argument
+	const auto result = my_client.call_func<int>("Sum", 1, 2);
 	assert(result == 3);
 
+	// Can also call a function that takes parameters by reference
 	std::string str{ "Hello" };
 	my_client.call_func("AppendStr", str, " world!");
 	assert(str == "Hello world!");

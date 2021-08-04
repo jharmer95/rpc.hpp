@@ -4,12 +4,15 @@
 
 #include <rpc_dispatch_helper.hpp>
 
+#include <array>
+#include <cstdint>
 #include <cstdlib>
 #include <exception>
 #include <iostream>
 #include <memory>
 #include <string>
 #include <thread>
+#include <vector>
 
 using asio::ip::tcp;
 using rpc::adapters::njson_adapter;
@@ -22,6 +25,8 @@ inline void KillServer()
     P_SERVER->Stop();
 }
 
+// Note: constexpr is more or less pointless for this example,
+// but shows that you could use the const-evaluated version on the server and the non const-evaluated remotely
 constexpr int Sum(int n1, int n2)
 {
     return n1 + n2;
@@ -43,22 +48,23 @@ std::string GetTypeName()
 
 void RpcServer::Run()
 {
+    // Define a maximum buffer size for receiving data from client, keeping it small for this example
+    constexpr size_t BUFFER_SZ = 256;
+    std::array<char, BUFFER_SZ> data_buf{};
+
     m_running = true;
 
     while (m_running)
     {
         tcp::acceptor acc(m_io, tcp::endpoint(tcp::v4(), m_port));
         tcp::socket sock = acc.accept();
-        constexpr auto BUFFER_SZ = 128;
-
-        uint8_t data[BUFFER_SZ];
 
         try
         {
             while (true)
             {
                 asio::error_code error;
-                const size_t len = sock.read_some(asio::buffer(data, BUFFER_SZ), error);
+                const auto len = sock.read_some(asio::buffer(data_buf), error);
 
                 if (error == asio::error::eof)
                 {
@@ -71,10 +77,10 @@ void RpcServer::Run()
                     throw asio::system_error(error);
                 }
 
-                std::string bytes(data, data + len);
+                std::string bytes(data_buf.data(), len);
                 dispatch(bytes);
 
-                write(sock, asio::buffer(bytes, bytes.size()));
+                write(sock, asio::buffer(bytes));
             }
         }
         catch (const std::exception& ex)
@@ -105,9 +111,7 @@ int main(int argc, char* argv[])
 
     try
     {
-        asio::io_context io_context{};
-
-        P_SERVER = std::make_unique<RpcServer>(io_context, port_num);
+        P_SERVER = std::make_unique<RpcServer>(port_num);
 
         std::thread server_thread{ &RpcServer::Run, P_SERVER.get() };
         std::cout << "Running server on port: " << port_num << "...\n";

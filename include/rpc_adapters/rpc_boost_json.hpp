@@ -58,17 +58,17 @@ namespace adapters
     template<typename T>
     void push_arg(T&& arg, bjson::array& arg_arr)
     {
-        using no_ref_t = std::remove_cv_t<std::remove_reference_t<T>>;
+        using no_ref_t = std::remove_cvref_tT>;
 
-        if constexpr (std::is_arithmetic_v<no_ref_t>)
+        if constexpr (details::arithmetic<no_ref_t>)
         {
             arg_arr.push_back(std::forward<T>(arg));
         }
-        else if constexpr (std::is_same_v<no_ref_t, std::string>)
+        else if constexpr (std::same_as<no_ref_t, std::string>)
         {
             arg_arr.push_back(bjson::string{ arg.c_str() });
         }
-        else if constexpr (details::is_container_v<no_ref_t>)
+        else if constexpr (details::container<no_ref_t>)
         {
             bjson::array arr;
 
@@ -79,7 +79,7 @@ namespace adapters
 
             arg_arr.push_back(arr);
         }
-        else if constexpr (details::is_serializable_v<bjson_adapter, no_ref_t>)
+        else if constexpr (details::serializable<bjson_adapter, no_ref_t>)
         {
             arg_arr.push_back(no_ref_t::template serialize<bjson_adapter>(std::forward<T>(arg)));
         }
@@ -90,18 +90,18 @@ namespace adapters
     }
 
     template<typename T>
-    std::remove_cv_t<std::remove_reference_t<T>> parse_arg(
+    std::remove_cvref_t<T> parse_arg(
         const bjson_val& arg_arr, unsigned& index)
     {
-        using no_ref_t = std::remove_cv_t<std::remove_reference_t<T>>;
+        using no_ref_t = std::remove_cvref_t<T>;
 
         const auto& arg = arg_arr.is_array() ? arg_arr.as_array().at(index++) : arg_arr;
 
-        if constexpr (std::is_arithmetic_v<no_ref_t> || std::is_same_v<no_ref_t, std::string>)
+        if constexpr (details::arithmetic<no_ref_t> || std::same_as<no_ref_t, std::string>)
         {
             return bjson::value_to<no_ref_t>(arg);
         }
-        else if constexpr (details::is_container_v<no_ref_t>)
+        else if constexpr (details::container<no_ref_t>)
         {
             using value_t = typename no_ref_t::value_type;
 
@@ -118,7 +118,7 @@ namespace adapters
 
             return container;
         }
-        else if constexpr (details::is_serializable_v<bjson_adapter, no_ref_t>)
+        else if constexpr (details::serializable<bjson_adapter, no_ref_t>)
         {
             return no_ref_t::template deserialize<bjson_adapter>(arg);
         }
@@ -166,11 +166,11 @@ adapters::bjson_val pack_adapter<adapters::bjson_adapter>::serialize_pack(
 
         if (pack)
         {
-            if constexpr (std::is_arithmetic_v<R> || std::is_same_v<R, std::string>)
+            if constexpr (details::arithmetic<R> || std::same_as<R, std::string>)
             {
                 result = pack.get_result();
             }
-            else if constexpr (details::is_container_v<R>)
+            else if constexpr (details::container<R>)
             {
                 result = bjson::array{};
                 const auto container = pack.get_result();
@@ -180,7 +180,7 @@ adapters::bjson_val pack_adapter<adapters::bjson_adapter>::serialize_pack(
                     result.as_array().push_back(val);
                 }
             }
-            else if constexpr (details::is_serializable_v<bjson_adapter, R>)
+            else if constexpr (details::serializable<bjson_adapter, R>)
             {
                 result = R::template serialize<bjson_adapter>(pack.get_result());
             }
@@ -233,17 +233,17 @@ packed_func<R, Args...> pack_adapter<adapters::bjson_adapter>::deserialize_pack(
         {
             const auto& result = obj.at("result");
 
-            if constexpr (std::is_arithmetic_v<R>)
+            if constexpr (details::arithmetic<R>)
             {
                 return packed_func<R, Args...>(obj.at("func_name").get_string().c_str(),
                     bjson::value_to<R>(result), std::move(args));
             }
-            else if constexpr (std::is_same_v<R, std::string>)
+            else if constexpr (std::same_as<R, std::string>)
             {
                 return packed_func<R, Args...>(obj.at("func_name").get_string().c_str(),
                     result.get_string().c_str(), std::move(args));
             }
-            else if constexpr (details::is_container_v<R>)
+            else if constexpr (details::container<R>)
             {
                 using value_t = typename R::value_type;
 
@@ -261,7 +261,7 @@ packed_func<R, Args...> pack_adapter<adapters::bjson_adapter>::deserialize_pack(
                 return packed_func<R, Args...>(
                     obj.at("func_name").get_string().c_str(), container, std::move(args));
             }
-            else if constexpr (details::is_serializable_v<bjson_adapter, R>)
+            else if constexpr (details::serializable<bjson_adapter, R>)
             {
                 return packed_func<R, Args...>(obj.at("func_name").get_string().c_str(),
                     R::template deserialize<bjson_adapter>(result), std::move(args));
