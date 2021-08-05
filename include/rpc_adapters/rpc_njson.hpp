@@ -82,11 +82,11 @@ namespace adapters
     }
 
     template<typename T>
-    std::remove_cvref_t<T> parse_arg(const njson& arg_arr, unsigned& index)
+    std::remove_cvref_t<T> parse_arg(const njson& arg_arr, unsigned index)
     {
         using no_ref_t = std::remove_cvref_t<T>;
 
-        const auto& arg = arg_arr.is_array() ? arg_arr[index++] : arg_arr;
+        const auto& arg = arg_arr.is_array() ? arg_arr[index] : arg_arr;
 
         if constexpr (details::arithmetic<no_ref_t> || std::same_as<no_ref_t, std::string>)
         {
@@ -133,8 +133,7 @@ inline adapters::njson adapters::njson_adapter::from_bytes(std::string bytes)
 
 template<>
 template<typename R, typename... Args>
-adapters::njson pack_adapter<adapters::njson_adapter>::serialize_pack(
-    const packed_func<R, Args...>& pack)
+adapters::njson pack_adapter<adapters::njson_adapter>::serialize_pack(const packed_func<R, Args...>& pack)
 {
     using namespace adapters;
 
@@ -145,8 +144,7 @@ adapters::njson pack_adapter<adapters::njson_adapter>::serialize_pack(
     auto arg_arr = njson::array();
 
     const auto argTup = pack.get_args();
-    details::for_each_tuple(
-        argTup, [&arg_arr](auto&& x) { push_arg(std::forward<decltype(x)>(x), arg_arr); });
+    details::for_each_tuple(argTup, [&arg_arr]<typename T>(T&& x) { push_arg(std::forward<T>(x), arg_arr); });
 
     obj["args"] = std::move(arg_arr);
 
@@ -167,14 +165,13 @@ adapters::njson pack_adapter<adapters::njson_adapter>::serialize_pack(
 
 template<>
 template<typename R, typename... Args>
-packed_func<R, Args...> pack_adapter<adapters::njson_adapter>::deserialize_pack(
-    const adapters::njson& serial_obj)
+packed_func<R, Args...> pack_adapter<adapters::njson_adapter>::deserialize_pack(const adapters::njson& serial_obj)
 {
     using namespace adapters;
 
-    [[maybe_unused]] unsigned i = 0;
+    unsigned i = 0;
 
-    typename packed_func<R, Args...>::args_t args{ parse_arg<Args>(serial_obj["args"], i)... };
+    typename packed_func<R, Args...>::args_t args{ parse_arg<Args>(serial_obj["args"], i++)... };
 
     if constexpr (std::is_void_v<R>)
     {
@@ -191,8 +188,7 @@ packed_func<R, Args...> pack_adapter<adapters::njson_adapter>::deserialize_pack(
     {
         if (serial_obj.contains("result") && !serial_obj["result"].is_null())
         {
-            return packed_func<R, Args...>(
-                serial_obj["func_name"], serial_obj["result"].get<R>(), std::move(args));
+            return packed_func<R, Args...>(serial_obj["func_name"], serial_obj["result"].get<R>(), std::move(args));
         }
 
         packed_func<R, Args...> pack(serial_obj["func_name"], std::nullopt, std::move(args));
@@ -207,15 +203,13 @@ packed_func<R, Args...> pack_adapter<adapters::njson_adapter>::deserialize_pack(
 }
 
 template<>
-inline std::string pack_adapter<adapters::njson_adapter>::get_func_name(
-    const adapters::njson& serial_obj)
+inline std::string pack_adapter<adapters::njson_adapter>::get_func_name(const adapters::njson& serial_obj)
 {
     return serial_obj["func_name"];
 }
 
 template<>
-inline void pack_adapter<adapters::njson_adapter>::set_err_mesg(
-    adapters::njson& serial_obj, std::string mesg)
+inline void pack_adapter<adapters::njson_adapter>::set_err_mesg(adapters::njson& serial_obj, std::string mesg)
 {
     serial_obj["err_mesg"] = std::move(mesg);
 }

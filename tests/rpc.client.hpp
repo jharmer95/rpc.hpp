@@ -70,13 +70,9 @@ public:
     std::string getIP() const { return m_socket.remote_endpoint().address().to_string(); }
 
 private:
-    void send(const typename Serial::bytes_t& mesg) override
-    {
-        asio::write(m_socket, asio::buffer(mesg));
-    }
+    void send(const typename Serial::bytes_t& mesg) override { asio::write(m_socket, asio::buffer(mesg)); }
 
-    // nodiscard because data is lost after receive
-    [[nodiscard]] typename Serial::bytes_t receive() override
+    [[nodiscard("Data is lost after receive is called")]] typename Serial::bytes_t receive() override
     {
         const auto numBytes = m_socket.read_some(asio::buffer(m_buffer));
         return typename Serial::bytes_t{ m_buffer.data(), numBytes };

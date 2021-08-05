@@ -72,7 +72,7 @@ using rpc::adapters::bjson_val;
 #include <thread>
 #include <utility>
 
-static bool RUNNING = false;
+constinit bool RUNNING = false;
 static std::mutex MUTEX;
 static std::condition_variable cv;
 

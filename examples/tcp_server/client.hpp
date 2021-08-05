@@ -24,7 +24,7 @@ public:
 private:
     void send(const std::string& mesg) override { asio::write(m_socket, asio::buffer(mesg)); }
 
-    std::string receive() override
+    [[nodiscard("Data is lost after receive is called")]] std::string receive() override
     {
         const auto numBytes = m_socket.read_some(asio::buffer(m_buffer));
         return std::string{ m_buffer.data(), numBytes };

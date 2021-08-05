@@ -52,14 +52,15 @@
 #    error At least one implementation type must be defined using 'RPC_HPP_{CLIENT, SERVER, MODULE}_IMPL'
 #endif
 
-#include <concepts>
+#include <concepts>    // for regular_invocable, same_as
 #include <cstddef>     // for size_t
+#include <exception>   // for exception
 #include <optional>    // for nullopt, optional
 #include <stdexcept>   // for runtime_error
 #include <string>      // for string
-#include <tuple>       // for tuple, forward_as_tuple
-#include <type_traits> // for declval, false_type, is_same, integral_constant
-#include <utility>     // for move, index_sequence, make_index_sequence
+#include <tuple>       // for forward_as_tuple, get, tuple
+#include <type_traits> // for is_const_v, is_reference_v, is_void_v, remove_cvref_t, remove_reference_t
+#include <utility>     // for forward, index_sequence, make_index_sequence, move
 
 #if defined(RPC_HPP_SERVER_IMPL) && defined(RPC_HPP_ENABLE_SERVER_CACHE)
 #    include <unordered_map> // for unordered_map
@@ -72,14 +73,18 @@ namespace rpc
 namespace details
 {
 #if !defined(RPC_HPP_DOXYGEN_GEN)
+    // clang-format off
+
     template<typename Value, typename Serial>
-    concept serializable = requires(Serial ser, Value obj) {
+    concept serializable = requires(Serial ser, Value obj)
+    {
         { Value::serialize(obj) } -> std::same_as<Serial>;
         { Value::deserialize(ser) } -> std::same_as<Value>;
     };
 
     template<typename T>
-    concept container = requires(T cont) {
+    concept container = requires(T cont)
+    {
         typename T::iterator;
         typename T::value_type;
         typename T::size_type;
@@ -92,7 +97,8 @@ namespace details
     template<typename T>
     concept arithmetic = std::is_arithmetic_v<T>;
 
-    template<typename F, typename... Ts, size_t... Is> requires (std::regular_invocable<F, Ts> && ...)
+    template<typename F, typename... Ts, size_t... Is>
+        requires(std::regular_invocable<F, Ts>&&...)
     constexpr void for_each_tuple(
         const std::tuple<Ts...>& tuple, const F& func, [[maybe_unused]] std::index_sequence<Is...>)
     {
@@ -100,7 +106,8 @@ namespace details
         (void)expander{ 0, ((void)func(std::get<Is>(tuple)), 0)... };
     }
 
-    template<typename F, typename... Ts> requires (std::regular_invocable<F, Ts> && ...)
+    template<typename F, typename... Ts>
+        requires(std::regular_invocable<F, Ts>&&...)
     constexpr void for_each_tuple(const std::tuple<Ts...>& tuple, const F& func)
     {
         for_each_tuple(tuple, func, std::make_index_sequence<sizeof...(Ts)>());
@@ -109,17 +116,14 @@ namespace details
 #    if defined(RPC_HPP_CLIENT_IMPL)
     template<typename... Args, size_t... Is>
     constexpr void tuple_bind(
-        const std::tuple<std::remove_cvref_t<Args>...>& src,
-        std::index_sequence<Is...>, Args&&... dest)
+        const std::tuple<std::remove_cvref_t<Args>...>& src, std::index_sequence<Is...>, Args&&... dest)
     {
         using expander = int[];
         (void)expander{ 0,
             (
-                (void)[](auto&& x, auto&& y)
+                (void)[]<typename T>(T&& x, std::remove_cvref_t<T> y)
                 {
-                    if constexpr (
-                        std::is_reference_v<
-                            decltype(x)> && !std::is_const_v<std::remove_reference_t<decltype(x)>>)
+                    if constexpr (std::is_reference_v<T> && !std::is_const_v<std::remove_reference_t<T>>)
                     {
                         x = std::move(y);
                     }
@@ -128,11 +132,12 @@ namespace details
     }
 
     template<typename... Args>
-    constexpr void tuple_bind(
-        const std::tuple<std::remove_cvref_t<Args>...>& src, Args&&... dest)
+    constexpr void tuple_bind(const std::tuple<std::remove_cvref_t<Args>...>& src, Args&&... dest)
     {
         tuple_bind(src, std::make_index_sequence<sizeof...(Args)>(), std::forward<Args>(dest)...);
     }
+
+    // clang-format on
 #    endif
 
     template<typename... Args>
@@ -206,8 +211,7 @@ public:
     ///@param result Return value of the function (std::nullopt if not called yet or an error occurred)
     ///@param args Tuple containing the argument(s)
     packed_func(std::string func_name, std::optional<result_t> result, args_t args)
-        : details::packed_func_base<Args...>(std::move(func_name), std::move(args)),
-          m_result(std::move(result))
+        : details::packed_func_base<Args...>(std::move(func_name), std::move(args)), m_result(std::move(result))
     {
     }
 
@@ -366,6 +370,8 @@ inline namespace server
         }
 
 #    if defined(RPC_HPP_SERVER_IMPL) && defined(RPC_HPP_ENABLE_SERVER_CACHE)
+        // clang-format off
+        
         ///@brief Deserializes the serial object to a packed_func, calls the callback function, then serializes the result back to the serial object, using a server-side cache for performance.
         ///
         ///@note This feature is enabled by defining @ref RPC_HPP_ENABLE_SERVER_CACHE
@@ -397,6 +403,8 @@ inline namespace server
 
             serial_obj = pack_adapter<Serial>::template serialize_pack<R, Args...>(pack);
         }
+
+        // clang-format on
 #    endif
 
         ///@brief Implementation component for the dispatch function
@@ -455,8 +463,7 @@ inline namespace client
             {
                 if constexpr (std::is_void_v<R>)
                 {
-                    return packed_func<void, Args...>{ std::move(func_name),
-                        std::forward_as_tuple(args...) };
+                    return packed_func<void, Args...>{ std::move(func_name), std::forward_as_tuple(args...) };
                 }
                 else
                 {
@@ -467,8 +474,7 @@ inline namespace client
 
             send(Serial::to_bytes(pack_adapter<Serial>::serialize_pack(pack)));
 
-            pack = pack_adapter<Serial>::template deserialize_pack<R, Args...>(
-                Serial::from_bytes(receive()));
+            pack = pack_adapter<Serial>::template deserialize_pack<R, Args...>(Serial::from_bytes(receive()));
 
             // Assign values back to any (non-const) reference members
             details::tuple_bind(pack.get_args(), std::forward<Args>(args)...);

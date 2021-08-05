@@ -113,11 +113,11 @@ namespace adapters
 
     template<typename T>
     std::remove_cvref_t<T> parse_arg(
-        const rapidjson_val& arg_arr, unsigned& index)
+        const rapidjson_val& arg_arr, unsigned index)
     {
         using no_ref_t = std::remove_cvref_t<T>;
 
-        const rapidjson_val& arg = arg_arr.IsArray() ? arg_arr.GetArray()[index++] : arg_arr;
+        const rapidjson_val& arg = arg_arr.IsArray() ? arg_arr.GetArray()[index] : arg_arr;
 
         if constexpr (std::same_as<no_ref_t, std::string>)
         {
@@ -263,9 +263,9 @@ packed_func<R, Args...> pack_adapter<adapters::rapidjson_adapter>::deserialize_p
 {
     using namespace adapters;
 
-    [[maybe_unused]] unsigned i = 0;
+    unsigned i = 0;
 
-    typename packed_func<R, Args...>::args_t args{ parse_arg<Args>(serial_obj["args"], i)... };
+    typename packed_func<R, Args...>::args_t args{ parse_arg<Args>(serial_obj["args"], i++)... };
 
     if constexpr (std::is_void_v<R>)
     {

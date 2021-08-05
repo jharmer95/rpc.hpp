@@ -91,11 +91,11 @@ namespace adapters
 
     template<typename T>
     std::remove_cvref_t<T> parse_arg(
-        const bjson_val& arg_arr, unsigned& index)
+        const bjson_val& arg_arr, unsigned index)
     {
         using no_ref_t = std::remove_cvref_t<T>;
 
-        const auto& arg = arg_arr.is_array() ? arg_arr.as_array().at(index++) : arg_arr;
+        const auto& arg = arg_arr.is_array() ? arg_arr.as_array().at(index) : arg_arr;
 
         if constexpr (details::arithmetic<no_ref_t> || std::same_as<no_ref_t, std::string>)
         {
@@ -210,11 +210,11 @@ packed_func<R, Args...> pack_adapter<adapters::bjson_adapter>::deserialize_pack(
 
     assert(serial_obj.is_object());
     const auto& obj = serial_obj.as_object();
-    [[maybe_unused]] unsigned i = 0;
+    unsigned i = 0;
 
     auto& args_val = obj.at("args");
 
-    typename packed_func<R, Args...>::args_t args{ parse_arg<Args>(args_val, i)... };
+    typename packed_func<R, Args...>::args_t args{ parse_arg<Args>(args_val, i++)... };
 
     if constexpr (std::is_void_v<R>)
     {
