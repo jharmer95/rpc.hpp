@@ -19,7 +19,7 @@ assignees: jharmer95
 <!-- if you have some ideas on how this can actually be done put them here -->
 
 ## Desired Outcome
-<!-- describe the outcome you'd like to see here as well as provide some code/pseduocode to indicate the usage or API of your request -->
+<!-- describe the outcome you'd like to see here as well as provide some code/pseudocode to indicate the usage or API of your request -->
 
 ## Other Details
 <!-- feel free to put any other details here -->
