@@ -45,26 +45,12 @@
 template<typename Serial>
 TestClient<Serial>& GetClient();
 
-template<typename Serial>
-void TestType()
-{
-    auto& client = GetClient<Serial>();
-    const auto result = client.template call_func<int>("SimpleSum", 1, 2);
-
-    REQUIRE(result == 3);
-}
-
 #if defined(RPC_HPP_ENABLE_NJSON)
 template<>
 TestClient<njson_adapter>& GetClient()
 {
     static TestClient<njson_adapter> client("127.0.0.1", "5000");
     return client;
-}
-
-TEST_CASE("NJSON")
-{
-    TestType<njson_adapter>();
 }
 #endif
 
@@ -75,11 +61,6 @@ TestClient<rapidjson_adapter>& GetClient()
     static TestClient<rapidjson_adapter> client("127.0.0.1", "5001");
     return client;
 }
-
-TEST_CASE("RAPIDJSON")
-{
-    TestType<rapidjson_adapter>();
-}
 #endif
 
 #if defined(RPC_HPP_ENABLE_BOOST_JSON)
@@ -89,12 +70,46 @@ TestClient<bjson_adapter>& GetClient()
     static TestClient<bjson_adapter> client("127.0.0.1", "5002");
     return client;
 }
-
-TEST_CASE("BOOST_JSON")
-{
-    TestType<bjson_adapter>();
-}
 #endif
+
+#if defined(_WIN32)
+#    define WIN32_LEAN_AND_MEAN
+#    include <Windows.h>
+
+PROCESS_INFORMATION pi;
+
+#elif defined(__unix__)
+#    include <unistd.h>
+
+pid_t pid;
+#endif
+
+TEST_CASE("RunServer")
+{
+#if defined(_WIN32)
+    STARTUPINFO si;
+
+    ZeroMemory(&si, sizeof(si));
+    si.cb = sizeof(si);
+    ZeroMemory(&pi, sizeof(pi));
+
+    char command[] = "test_server.exe";
+
+    REQUIRE(
+        CreateProcess(nullptr, command, nullptr, nullptr, false, 0, nullptr, nullptr, &si, &pi));
+
+#elif defined(__unix__)
+    pid = fork();
+    REQUIRE(pid >= 0);
+
+    if (pid == 0)
+    {
+        int ret = execlp("test_server", "test_server", nullptr);
+        REQUIRE(ret == 0);
+        exit(0);
+    }
+#endif
+}
 
 // TODO: Clean this up somehow
 #if defined(RPC_HPP_ENABLE_BOOST_JSON)
@@ -282,7 +297,8 @@ TEST_CASE_TEMPLATE("Function not found", TestType, RPC_TEST_TYPES)
     const auto exp = [&client]()
     { [[maybe_unused]] int _unused = client.template call_func<int>("FUNC_WHICH_DOES_NOT_EXIST"); };
 
-    REQUIRE_THROWS_WITH(exp(), "RPC error: Called function: \"FUNC_WHICH_DOES_NOT_EXIST\" not found!");
+    REQUIRE_THROWS_WITH(
+        exp(), "RPC error: Called function: \"FUNC_WHICH_DOES_NOT_EXIST\" not found!");
 }
 
 TEST_CASE_TEMPLATE("ThrowError", TestType, RPC_TEST_TYPES)
@@ -307,5 +323,16 @@ TEST_CASE("KillServer")
     {
     }
 
-    REQUIRE_THROWS(TestType<njson_adapter>());
+#if defined(_WIN32)
+    WaitForSingleObject(pi.hProcess, INFINITE);
+
+    // Close process and thread handles.
+    CloseHandle(pi.hProcess);
+    CloseHandle(pi.hThread);
+
+#elif defined(__unix__)
+    int status;
+    waitpid(pid, &status, WNOHANG);
+    REQUIRE(WIFEXITED(status));
+#endif
 }

@@ -53,6 +53,45 @@ TestClient<bjson_adapter>& GetClient()
 }
 #endif
 
+#if defined(_WIN32)
+#    define WIN32_LEAN_AND_MEAN
+#    include <Windows.h>
+
+PROCESS_INFORMATION pi;
+
+#elif defined(__unix__)
+#    include <unistd.h>
+
+pid_t pid;
+#endif
+
+TEST_CASE("RunServer")
+{
+#if defined(_WIN32)
+    STARTUPINFO si;
+
+    ZeroMemory(&si, sizeof(si));
+    si.cb = sizeof(si);
+    ZeroMemory(&pi, sizeof(pi));
+
+    char command[] = "tests\\test_server.exe";
+
+    REQUIRE(
+        CreateProcess(nullptr, command, nullptr, nullptr, false, 0, nullptr, nullptr, &si, &pi));
+
+#elif defined(__unix__)
+    pid = fork();
+    REQUIRE(pid >= 0);
+
+    if (pid == 0)
+    {
+        int ret = execlp("tests/test_server", "tests/test_server", nullptr);
+        REQUIRE(ret == 0);
+        exit(0);
+    }
+#endif
+}
+
 TEST_CASE("By Value (simple)", "[value][simple][cached]")
 {
     constexpr uint64_t expected = 10946ULL;
@@ -451,4 +490,17 @@ TEST_CASE("KillServer",
     catch (...)
     {
     }
+
+#if defined(_WIN32)
+    WaitForSingleObject(pi.hProcess, INFINITE);
+
+    // Close process and thread handles.
+    CloseHandle(pi.hProcess);
+    CloseHandle(pi.hThread);
+
+#elif defined(__unix__)
+    int status;
+    waitpid(pid, &status, WNOHANG);
+    REQUIRE(WIFEXITED(status));
+#endif
 }
