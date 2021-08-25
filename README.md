@@ -3,23 +3,23 @@
 # rpc.hpp
 
 A simple header-only library for supporting remote procedure calls using a variety of extensible
-features
+features.
 
 ## License
 
-`rpc.hpp` is licensed under the [BSD 3-Clause License](LICENSE)
+`rpc.hpp` is licensed under the [BSD 3-Clause License](LICENSE).
 
 ## Features
 
-- Cross-platform
-  - Supports every major compiler/operating system
-- Modern
-  - Utilizes features like C++17's [`constexpr if`](https://en.cppreference.com/w/cpp/language/if)
-- Type safe support for various types
-  - Supports most built-in/STL types out of the box
-  - Users can create serialization methods for their own custom types
-- Easy to use
-- Extensible support via "adapters"
+- Cross-platform.
+  - Supports every major compiler/operating system.
+- Modern.
+  - Utilizes features like C++17's [`constexpr if`](https://en.cppreference.com/w/cpp/language/if).
+- Type-safe support for various types.
+  - Supports most built-in/STL types out of the box.
+  - Users can create serialization methods for their own custom types.
+- Easy to use.
+- Extensible support via "adapters".
   - Currently supported:
     - [nlohmann-json](https://github.com/nlohmann/json)
     - [rapidjson](https://github.com/Tencent/rapidjson)
@@ -27,11 +27,11 @@ features
 
 ## Documentation
 
-See Doxygen docs [here](https://jharmer95.github.io/rpc.hpp/)
+See Doxygen docs [here](https://jharmer95.github.io/rpc.hpp/).
 
 ## Basic Example
 
-For more examples see [examples](examples)
+For more examples see [examples](examples).
 
 server.cpp
 
@@ -64,20 +64,20 @@ public:
 	{
 	    // initialize server...
 	}
-	
+
 	// ...
-	
+
 	void Run()
 	{
 	    std::string data;
-		
+
 		// Get data from client...
-		
+
 		dispatch(data);
-		
+
 		// Send data back to client...
 	}
-	
+
 private:
     void dispatch_impl(njson& serial_obj) override
 	{
@@ -88,7 +88,7 @@ private:
 int main()
 {
 	RpcServer my_server{"address"};
-	
+
 	while (true)
 	{
 		my_server.Run();

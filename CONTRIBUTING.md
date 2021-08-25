@@ -25,7 +25,7 @@ Before submitting a new issue, please go through the following steps:
     popularity/demand for this issue.
   - Even if your issue is not _exactly_ the same, it may be more beneficial to provide some extra
     context or details for your situation via a comment vs. a new issue.
-    - Sometimes it easier to understand the scope of an issue this way and can allow for one patch
+    - Sometimes it's easier to understand the scope of an issue this way and can allow for one patch
     to be made instead of multiple
 
 Please stick to using one of the provided templates to ensure that issues are consistent.
@@ -57,7 +57,7 @@ Some features of the library are:
 
 ## Possible Implementation
 <!-- if you have some ideas on how this can actually be done put them here -->
-- Create an additional header: `rpc_adatpers/rpc_some_serial_lib.hpp`
+- Create an additional header: `rpc_adapters/rpc_some_serial_lib.hpp`
 
 ## Desired Outcome
 <!-- describe the outcome you'd like to see here as well as provide some
@@ -131,235 +131,35 @@ Using example code, compile with Clang 12 or newer with `-D RPC_HPP_ENABLE_RAPID
      feel free to fork and submit a PR once this bug report is submitted -->
 ```
 
+## Forking the Project
+
+To make changes to the project, you should first fork the project on GitHub. This makes it easy to
+work on your own copy of the project without having to worry about creating a lot of branches. You
+may work on the `main` branch of your fork, though it is recommended that you create a new branch
+for each change you are trying to fix, that way, you can keep your copy of `main` up-to-date with
+upstream. You may merge this branch back into your `main` branch prior to submitting a pull request.
+
 ## Contributing Code
 
 `rpc.hpp` welcomes code contributions from anyone of any skill level or
 background.
 
-Contributors must agree to the (code of conduct)[CODE_OF_CONDUCT.md] and
+Contributors must agree to the [code of conduct](CODE_OF_CONDUCT.md) and
 additionally, should follow the guidelines provided in this section to ensure
 their changes are reviewed and accepted.
 
-### Setting Up Your Environment
+### Setting Up Your Build Environment
 
-While `rpc.hpp` is a header-only library, the project relies on using a buildsystem to
-perform certain tasks.
-It is therefore required that CMake (version 3.12 or newer) is installed on your machine and
-available on your `$PATH` to build the project.
+Please refer to the [Installation Guide](./INSTALL.md#setting-up-your-environment) for details
+on getting your build environment set up and compiling the project and its tests.
 
-Additionally, `rpc.hpp` requires at least one C++ compiler that fully supports C++17 or newer:
+### Running Tests
 
-**Linux/macOS/BSD**
+To build and run the tests, see [Running Tests](./INSTALL.md#running-tests) from the Installation
+Guide.
 
-- `gcc` >= 7
-- `clang` >= 5
-
-**Windows**
-
-- MSVC (`cl.exe`) >= 19.14 (Visual Studio 2017 15.7 or newer)
-
-On Windows you will have to install Visual Studio 2017 or newer.
-You may install the full IDE with the C++ "Workload" selected or simply install the
-[standalone build tools](https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2019)
-instead.
-
-These development dependencies can be installed in the following ways, depending on your operating
-system (replace `gcc` w/ `clang` if desired):
-
-**Arch / Manjaro**
-
-```shell
-$ sudo pacman -S gcc cmake ninja
-```
-
-**CentOS 7 / RHEL 7**
-
-```shell
-$ sudo dnf install devtoolset-10-gcc cmake ninja-build
-```
-
-**CentOS 8+ / Fedora 33+ / RHEL 8+**
-
-```shell
-$ sudo dnf install gcc cmake ninja-build
-```
-
-**Debian 10+ / PopOS/Ubuntu 18.04+**
-
-```shell
-$ sudo apt install gcc cmake ninja-build
-```
-
-**FreeBSD 12+**
-
-```shell
-# pkg install cmake ninja
-```
-
-**OpenSUSE / SLES**
-
-```shell
-$ sudo zypper install gcc cmake ninja
-```
-
-**Windows - Chocolatey**
-
-```powershell
-> choco install cmake ninja
-```
-
-**Windows - Scoop**
-
-```powershell
-> scoop install cmake ninja
-```
-
-#### Library Dependencies
-
-While not strictly _required_, the adapter headers are considered a core part
-of the library and therefore should build without issue after any code change,
-and should be tested.
-
-(NOTE: if the community ends up creating a lot of adapters, this may change)
-
----
-
-The libraries needed to build the current adapters are:
-
-- [nlohmann/json](https://github.com/nlohmann/json) >= 3.9.0
-- [rapidjson](https://github.com/tencent/rapidjson) >= 1.1.0
-- [Boost.JSON](https://www.boost.org/doc/libs/1_77_0/libs/json/doc/html/index.html) >= 1.75.0
-
-For building the unit tests, there are additional libraries required:
-
-- [asio](http://think-async.com/Asio) >= 1.14
-- [doctest](https://github.com/onqtam/doctest) >= 2.4
-
-Building the benchmarks also requires one library:
-
-- [catch2](https://github.com/catchorg/Catch2) >= 2.11 < 3.0
-
-These dependencies can be installed in one of three ways:
-
-1. Installing manually from source, binary, or system package manager
-2. Install via [vcpkg](https://github.com/Microsoft/vcpkg)
-3. Auto-install via [Conan](https://conan.io)
-
-##### Setting up `vcpkg`
-
-1. In a terminal, navigate to the location where `vcpkg` should be installed
-(`$HOME` is fine for most)
-2. Clone the `vcpkg` project and enter the source directory
-
-```shell
-$ git clone https://github.com/Microsoft/vcpkg
-```
-
-```shell
-$ cd vcpkg
-```
-
-3. "Bootstrap" `vcpkg`
-
-**Linux/macOS/BSD**
-
-```shell
-$ ./bootstrap-vcpkg.sh
-```
-
-**Windows**
-
-```powershell
-> .\bootstrap-vcpkg.bat
-```
-
-4. Add `vcpkg` to your path (optional)
-5. Integrate your vcpkg installation into CMake/Visual Studio
-
-```shell
-$ vcpkg integrate install
-```
-
-6. Install dependencies
-
-```shell
-$ vcpkg install catch2 doctest nlohmann-json rapidjson boost-json
-```
-
-##### Setting up Conan
-
-1. Make sure you have Python 3 and pip installed.
-  - It is recommended to install and use `pipx` rather than `pip` for installing applications like
-  Conan, however
-2. Install Conan
-
-  - With pipx (preferred)
-
-  ```shell
-  $ pipx install conan
-  ```
-
-  - With pip
-
-  ```shell
-  $ pip install --user conan
-  ```
-
-### Building the Project
-
-1. Enter the top-level directory of the project
-2. Create the build directory
-
-```shell
-$ mkdir build
-```
-
-3. Configure the project
-
-```shell
-$ cmake -B build -G Ninja -D BUILD_ADAPTER_BOOST_JSON -D BUILD_ADAPTER_NJSON -D BUILD_ADAPTER_RAPIDJSON -D BUILD_TESTING
-```
-
-NOTE: The above command can be altered based on your needs:
-
-- In this example, the "Ninja" generator is used as it is fast, but `-G Ninja` may be omitted to
-use the system default make system
-- With this example, all three adapters are to be built. By omitting one or more, they will not be
-built (example: `-D BUILD_ADAPTER_BOOST_JSON` could be omitted)
-  - `BUILD_ADAPTER_NJSON` is required for testing
-- If using Conan to auto-install dependencies, make sure to set its option (add `-D DEPENDS_CONAN`)
-- If using vcpkg to manage dependencies, make sure to set its option (add `-D DEPENDS_VCPKG`)
-  - You may also need to provide CMake with a vcpkg toolchain file:
-  (`-D CMAKE_TOOLCHAIN_FILE="/path/to/vcpkg/scripts/buildsystems/vcpkg.cmake"`)
-- See [Build Options](#build-options) for more details on these and other configuration options
-
-4. Build the project
-
-```shell
-$ cmake --build build
-```
-
-#### Build Options
-
-| Option | Description |
-|--|--|
-| `BUILD_ADAPTER_BOOST_JSON` | Build the adapter for Boost.JSON |
-| `BUILD_ADAPTER_NJSON` | Build the adapter for nlohmann/json |
-| `BUILD_ADAPTER_RAPIDJSON` | Build the adapter for rapidjson |
-| `BUILD_BENCHMARK` | Build the benchmarking suite |
-| `BUILD_EXAMPLES` | Build the examples |
-| `BUILD_TESTING` | Build the testing tree |
-| `CODE_COVERAGE` | Enable coverage reporting |
-| `DEPENDS_CONAN` | Use Conan to manage C/C++ dependencies |
-| `DEPENDS_VCPKG` | User vcpkg to manage C/C++ dependencies |
-| `GENERATE_DOXYGEN` | Generate Doxygen documentation from comments |
-
-NOTE:
-
-- Only one or neither of `DEPENDS_CONAN` and `DEPENDS_VCPKG` may be defined
-- `BUILD_BENCHMARK` requires `BUILD_TESTING`
-- `GENERATE_DOXYGEN` and `CODE_COVERAGE` should only be defined when doing a documentation or
-coverage build, respectively
+NOTE: All tests must pass on CI for a PR to be accepted! These tests will be performed using both
+GCC and Clang on Ubuntu Linux.
 
 ### Code Conventions
 
@@ -377,7 +177,7 @@ before submitting a PR.
 
 In addition to this, there are a few naming conventions to stick to:
 
-##### Naming Variables
+##### Naming Convention
 
 The naming convention is very similar to that of the C++ standard library:
 
@@ -401,25 +201,134 @@ few exceptions:
 - `private`/`protected` non-static member variables should have a `m_` prefix
 - `private`/`protected` static member variables should have a `s_` prefix
 - Type aliases should have a `_t` suffix
-- Boolean variables should indicate what they are testing, (ex. `is_full`, `has_value`, `was_used`)
+- Boolean variables and boolean-returning functions should indicate what they are testing,
+(ex. `is_full`, `has_value()`, `was_used`)
   - Booleans should only be named in the _affirmative_ (**no** `is_not_empty`, `no_value`)
 
-### Running Tests
+#### Documentation Comments
 
-<!-- TODO -->
+All public variables, functions, namespaces, and types _must_ be documented using a Doxygen comment,
+where "public" means anything in the `rpc` namespace and its child namespaces, excluding things in the `details` namespace
+and `private`/`protected` members of classes/structs.
+
+The comment follows the [Doxygen spec](https://www.doxygen.nl/manual/docblocks.html), using the
+`///` style of comment.
+
+An example comment would look like:
+
+```C++
+///@brief Calculates the length of a given string.
+///
+/// Iterates through the string until a null character ('\0') is found.
+///@param str The string to find the length of.
+///@return size_t The length of the string.
+size_t GetStrLen(const char* str);
+```
+
+If documentation comments are added/changed/removed, the Doxygen docs should be re-generated. See
+[Generating Doxygen Docs](#generating-doxygen-docs) below for more information.
 
 ## Contributing Documentation
 
-<!-- TODO -->
+Documentation exists in two forms:
 
-### Documentation Style
+- In-code documentation via Doxygen
+- External Markdown documents
 
-<!-- TODO -->
+Both of these forms of documentation are important to ensure users and developers have an easy time
+working with the library and therefore should stay as clean and up-to-date as possible.
+
+### Generating Doxygen Docs
+
+If the documentation comments have been altered, a new set of Doxygen docs should be generated.
+
+You will need to make sure that the following components are installed on your machine:
+
+- `doxygen`
+- `graphviz`
+- `dot`
+
+NOTE: On some platforms, `dot` is installed as part of the `doxygen` package, and is not provided
+separately. If you have `doxygen` installed, it is usually safe to assume that `dot` is also
+installed.
+
+Once you have these tools installed you may proceed with the documentation generation:
+
+- First, empty the `docs` directory found under the project root directory.
+- Then, configure the CMake project such that `GENERATE_DOXYGEN` and all of the adapters are turned
+on.
+  - You may turn off all other options.
+- Next, run the command `cmake --build build --target docs` to generate the new documentation and
+populate the `docs` directory
+- Make sure to commit the changes to `docs`
 
 ## Committing Changes
 
-<!-- TODO -->
+When creating git commits, there are a few guidelines you should keep in mind:
+
+- To the best of your ability, try to address only one issue or add only one feature per commit.
+  - For example, a single commit should not "Fix bug #1234 and add cool new feature".
+- When writing commit messages, use the present-tense and imperative mood to describe the change(s).
+  - A good way to think about this is: if you added "This commit will" before your message, it would
+  be accurate and form a proper sentence.
+  - i.e. "Add logging" not "Adds logging" or "Added logging".
+- Specific issues may be referenced by their number, ex: "... fixes #123".
+  - When possible, please use a more detailed description of the issue or feature in the commit, you
+  may refer to the issue number later, in the body of the message. This will make it easier to find
+  where a specific change was made without having to reference the closed issue.
+- If a commit message can not fit in a single, 50 character sentence, it should be broken up into
+multiple lines with the following format:
+
+```markdown
+50 character or less summary
+
+Separated by an empty line, detailed description of the changes made as
+necessary, with lines limited to 72 characters.
+
+* Bullet points
+* Are
+* Acceptable
+```
 
 ## Submitting Pull Requests
 
-<!-- TODO -->
+To submit a pull request, make sure you are making your changes on a fork of the project. See
+[Forking the Project](#forking-the-project) for more details. Once you have finalized your changes,
+you may submit a pull request against your fork.
+
+Please make sure to provide adequate comments
+describing the changes made and the reasoning behind those changes. It really helps to have good
+commit messages.
+
+Also make sure to reference any issues that these changes may address (i.e. closes #123).
+
+If you know there are breaking or backwards-incompatible changes, **_please_** indicate this in the
+pull request comments and by tagging the PR with the `potentially-breaking` label.
+
+### Acceptance Criteria
+
+A few basic requirements will need to be made before _any_ PR is accepted:
+
+- All automated CI checks complete successfully
+- All new/modified source code files must be formatted with clang-format
+- If there are any changes to documentation comments, new documentation must be generated
+  - If new public functions/variables/types/namespaces are added, they must have documentation
+  comments
+- Example code must compile
+- If the API changes, external documentation must be updated
+- No new warnings may occur (must build with `-Werror`)
+
+If all these conditions are met, the code will be reviewed. Once the code has been reviewed on of
+the following may occur:
+
+- :heavy_check_mark: The merge will be accepted, a new version will be generated, and you will be
+notified.
+  - You may delete your fork/development branch at this time if you like.
+  - You will probably want to update your fork to pull in the changes from upstream.
+- :warning: The merge will require some additional work or discussion, with constructive comments
+provided.
+  - After receiving the notification, you can make the necessary alterations and push those changes.
+  to your fork. You will **not** need to submit a new PR, the push will update the existing PR
+  automatically.
+  - Once these new changes are received the review process will start over.
+- :x: The merge will be rejected with a detailed reason as to why.
