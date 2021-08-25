@@ -17,7 +17,7 @@ $ mkdir build
 ```
 
 ```shell
-$ cmake -B build -D BUILD_ADAPTER_BOOST_JSON -D BUILD_ADAPTER_NJSON -D BUILD_ADAPTER_RAPIDJSON
+$ cmake -B build -D BUILD_ADAPTER_BOOST_JSON=ON -D BUILD_ADAPTER_NJSON=ON -D BUILD_ADAPTER_RAPIDJSON=ON
 ```
 
 ```shell
@@ -209,7 +209,7 @@ $ mkdir build
 3. Configure the project
 
 ```shell
-$ cmake -B build -G Ninja -D BUILD_ADAPTER_BOOST_JSON -D BUILD_ADAPTER_NJSON -D BUILD_ADAPTER_RAPIDJSON -D BUILD_TESTING
+$ cmake -B build -G Ninja -D BUILD_ADAPTER_BOOST_JSON=ON -D BUILD_ADAPTER_NJSON=ON -D BUILD_ADAPTER_RAPIDJSON=ON -D BUILD_TESTING=ON
 ```
 
 NOTE: The above command can be altered based on your needs:
@@ -217,10 +217,10 @@ NOTE: The above command can be altered based on your needs:
 - In this example, the "Ninja" generator is used as it is fast, but `-G Ninja` may be omitted to
 use the system default make system
 - With this example, all three adapters are to be built. By omitting one or more, they will not be
-built (example: `-D BUILD_ADAPTER_BOOST_JSON` could be omitted)
+built (example: `-D BUILD_ADAPTER_BOOST_JSON=ON` could be omitted or set to `=OFF`)
   - `BUILD_ADAPTER_NJSON` is required for testing
-- If using Conan to auto-install dependencies, make sure to set its option (add `-D DEPENDS_CONAN`)
-- If using vcpkg to manage dependencies, make sure to set its option (add `-D DEPENDS_VCPKG`)
+- If using Conan to auto-install dependencies, make sure to set its option (add `-D DEPENDS_CONAN=ON`)
+- If using vcpkg to manage dependencies, make sure to set its option (add `-D DEPENDS_VCPKG=ON`)
   - You may also need to provide CMake with a vcpkg toolchain file:
   (`-D CMAKE_TOOLCHAIN_FILE="/path/to/vcpkg/scripts/buildsystems/vcpkg.cmake"`)
 - See [Build Options](#build-options) for more details on these and other configuration options
@@ -258,8 +258,12 @@ coverage build, respectively
 To build the tests, make sure your build environment is set up. Also make sure that the
 `BUILD_TESTING` option is set in your `CMakeCache.txt`.
 
+**NOTE:** The test server will have to be running for the tests to succeed. You could run it in a
+separate terminal session, or add `tests/test_server & ` at the beginning of the `ctest` command
+below. The tests will successfully kill the serer on completion.
+
 From the project _build_ directory run:
 
 ```shell
-$ ctest
+$ ctest --test-dir tests
 ```
