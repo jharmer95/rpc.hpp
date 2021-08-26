@@ -42,6 +42,10 @@
 
 #include <doctest/doctest.h>
 
+#include <chrono>
+#include <filesystem>
+#include <thread>
+
 template<typename Serial>
 TestClient<Serial>& GetClient();
 
@@ -76,12 +80,16 @@ TestClient<bjson_adapter>& GetClient()
 #    define WIN32_LEAN_AND_MEAN
 #    include <Windows.h>
 
-PROCESS_INFORMATION pi;
+static PROCESS_INFORMATION pi;
 
 #elif defined(__unix__)
+#    include <spawn.h>
+#    include <sys/types.h>
+#    include <sys/wait.h>
 #    include <unistd.h>
 
-pid_t pid;
+static pid_t pid;
+extern char** environ;
 #endif
 
 TEST_CASE("RunServer")
@@ -95,19 +103,18 @@ TEST_CASE("RunServer")
 
     char command[] = "test_server.exe";
 
-    REQUIRE(
-        CreateProcess(nullptr, command, nullptr, nullptr, false, 0, nullptr, nullptr, &si, &pi));
+    CreateProcess(nullptr, command, nullptr, nullptr, false, 0, nullptr, nullptr, &si, &pi);
+    std::this_thread::sleep_for(std::chrono::milliseconds(5));
 
 #elif defined(__unix__)
-    pid = fork();
-    REQUIRE(pid >= 0);
+    char exe_name[] = "test_server";
+    char* argv[] = { exe_name, nullptr };
+    const auto path = std::filesystem::read_symlink("/proc/self/exe").parent_path().append(exe_name);
 
-    if (pid == 0)
-    {
-        int ret = execlp("test_server", "test_server", nullptr);
-        REQUIRE(ret == 0);
-        exit(0);
-    }
+    posix_spawn(&pid, path.c_str(), nullptr, nullptr, argv, environ);
+    
+    // Give server a chance to start up
+    std::this_thread::sleep_for(std::chrono::milliseconds(5));
 #endif
 }
 
@@ -332,7 +339,6 @@ TEST_CASE("KillServer")
 
 #elif defined(__unix__)
     int status;
-    waitpid(pid, &status, WNOHANG);
-    REQUIRE(WIFEXITED(status));
+    waitpid(pid, &status, 0);
 #endif
 }

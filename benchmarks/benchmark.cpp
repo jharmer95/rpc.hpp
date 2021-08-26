@@ -7,6 +7,10 @@
 
 #include <catch2/catch.hpp>
 
+#include <chrono>
+#include <filesystem>
+#include <thread>
+
 #if defined(RPC_HPP_ENABLE_BOOST_JSON)
 #    include <rpc_adapters/rpc_boost_json.hpp>
 
@@ -57,12 +61,16 @@ TestClient<bjson_adapter>& GetClient()
 #    define WIN32_LEAN_AND_MEAN
 #    include <Windows.h>
 
-PROCESS_INFORMATION pi;
+static PROCESS_INFORMATION pi;
 
 #elif defined(__unix__)
+#    include <spawn.h>
+#    include <sys/types.h>
+#    include <sys/wait.h>
 #    include <unistd.h>
 
-pid_t pid;
+static pid_t pid;
+extern char** environ;
 #endif
 
 TEST_CASE("RunServer")
@@ -74,21 +82,20 @@ TEST_CASE("RunServer")
     si.cb = sizeof(si);
     ZeroMemory(&pi, sizeof(pi));
 
-    char command[] = "tests\\test_server.exe";
+    char command[] = "..\\tests\\test_server.exe";
 
-    REQUIRE(
-        CreateProcess(nullptr, command, nullptr, nullptr, false, 0, nullptr, nullptr, &si, &pi));
+    CreateProcess(nullptr, command, nullptr, nullptr, false, 0, nullptr, nullptr, &si, &pi);
+    std::this_thread::sleep_for(std::chrono::milliseconds(5));
 
 #elif defined(__unix__)
-    pid = fork();
-    REQUIRE(pid >= 0);
+    char exe_name[] = "test_server";
+    char* argv[] = { exe_name, nullptr };
+    const auto path = std::filesystem::read_symlink("/proc/self/exe").parent_path().parent_path().parent_path().append("tests/bin").append(exe_name);
 
-    if (pid == 0)
-    {
-        int ret = execlp("tests/test_server", "tests/test_server", nullptr);
-        REQUIRE(ret == 0);
-        exit(0);
-    }
+    posix_spawn(&pid, path.c_str(), nullptr, nullptr, argv, environ);
+    
+    // Give server a chance to start up
+    std::this_thread::sleep_for(std::chrono::milliseconds(5));
 #endif
 }
 
