@@ -185,20 +185,20 @@ TEST_CASE("By Value (many)", "[value][many][cached]")
 TEST_CASE("By Reference (simple)", "[ref][simple]")
 {
     constexpr uint64_t expected = 10946ULL;
-    uint64_t test = 20;
+    uint64_t test;
 
     BENCHMARK("rpc.hpp (asio::tcp, njson)")
     {
+        test = 20;
         GetClient<njson_adapter>().call_func("FibonacciRef", test);
     };
 
     REQUIRE(expected == test);
 
 #if defined(RPC_HPP_ENABLE_RAPIDJSON)
-    test = 20;
-
     BENCHMARK("rpc.hpp (asio::tcp, rapidjson)")
     {
+        test = 20;
         GetClient<rapidjson_adapter>().call_func("FibonacciRef", test);
     };
 #endif
@@ -206,10 +206,9 @@ TEST_CASE("By Reference (simple)", "[ref][simple]")
     REQUIRE(expected == test);
 
 #if defined(RPC_HPP_ENABLE_BOOST_JSON)
-    test = 20;
-
     BENCHMARK("rpc.hpp (asio::tcp, Boost.JSON)")
     {
+        test = 20;
         GetClient<bjson_adapter>().call_func("FibonacciRef", test);
     };
 
@@ -224,6 +223,7 @@ TEST_CASE("By Reference (complex)", "[ref][complex]")
 
     BENCHMARK("rpc.hpp (asio::tcp, njson)")
     {
+        test.clear();
         ComplexObject cx;
         cx.flag1 = false;
         cx.flag2 = true;
@@ -237,10 +237,9 @@ TEST_CASE("By Reference (complex)", "[ref][complex]")
     REQUIRE_THAT(expected, Catch::Matchers::Equals(test));
 
 #if defined(RPC_HPP_ENABLE_RAPIDJSON)
-    test.clear();
-
     BENCHMARK("rpc.hpp (asio::tcp, rapidjson)")
     {
+        test.clear();
         ComplexObject cx;
         cx.flag1 = false;
         cx.flag2 = true;
@@ -255,10 +254,9 @@ TEST_CASE("By Reference (complex)", "[ref][complex]")
 #endif
 
 #if defined(RPC_HPP_ENABLE_BOOST_JSON)
-    test.clear();
-
     BENCHMARK("rpc.hpp (asio::tcp, Boost.JSON)")
     {
+        test.clear();
         ComplexObject cx;
         cx.flag1 = false;
         cx.flag2 = true;
@@ -276,10 +274,11 @@ TEST_CASE("By Reference (complex)", "[ref][complex]")
 TEST_CASE("By Reference (many)", "[ref][many]")
 {
     constexpr double expected = 313.2216436152;
-    double test = 1.0;
+    double test;
 
     BENCHMARK("rpc.hpp (asio::tcp, njson)")
     {
+        test = 1.0;
         double n1 = 55.65;
         double n2 = 125.325;
         double n3 = 552.125;
@@ -300,10 +299,9 @@ TEST_CASE("By Reference (many)", "[ref][many]")
     REQUIRE_THAT(test, Catch::Matchers::WithinAbs(expected, 0.001));
 
 #if defined(RPC_HPP_ENABLE_RAPIDJSON)
-    test = 1.0;
-
     BENCHMARK("rpc.hpp (asio::tcp, rapidjson)")
     {
+        test = 1.0;
         double n1 = 55.65;
         double n2 = 125.325;
         double n3 = 552.125;
@@ -325,10 +323,9 @@ TEST_CASE("By Reference (many)", "[ref][many]")
 #endif
 
 #if defined(RPC_HPP_ENABLE_BOOST_JSON)
-    test = 1.0;
-
     BENCHMARK("rpc.hpp (asio::tcp, Boost.JSON)")
     {
+        test = 1.0;
         double n1 = 55.65;
         double n2 = 125.325;
         double n3 = 552.125;
