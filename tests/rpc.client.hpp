@@ -38,6 +38,12 @@
 
 #include <asio.hpp>
 
+#if defined(RPC_HPP_ENABLE_BITSERY)
+#    include <rpc_adapters/rpc_bitsery.hpp>
+
+using rpc::adapters::bitsery_adapter;
+#endif
+
 #if defined(RPC_HPP_ENABLE_BOOST_JSON)
 #    include <rpc_adapters/rpc_boost_json.hpp>
 
@@ -80,7 +86,7 @@ private:
     [[nodiscard]] typename Serial::bytes_t receive() override
     {
         const auto numBytes = m_socket.read_some(asio::buffer(m_buffer, 64U * 1024UL));
-        return std::string(m_buffer, m_buffer + numBytes);
+        return typename Serial::bytes_t{m_buffer, m_buffer + numBytes};
     }
 
     asio::io_context m_io{};

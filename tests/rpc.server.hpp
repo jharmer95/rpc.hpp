@@ -90,10 +90,6 @@ public:
                     typename Serial::bytes_t bytes(data.get(), data.get() + len);
                     this->dispatch(bytes);
 
-#if !defined(NDEBUG)
-                    std::cout << "Return message: \"" << bytes << "\"\n";
-#endif
-
                     write(sock, asio::buffer(bytes, bytes.size()));
                 }
             }
@@ -109,7 +105,7 @@ private:
     {
         const auto func_name = rpc::pack_adapter<Serial>::get_func_name(serial_obj);
 
-        RPC_ATTACH_FUNCS(KillServer, ThrowError, SimpleSum, AddOneToEachRef, FibonacciRef,
+        RPC_ATTACH_FUNCS(KillServer, ThrowError, AddOneToEachRef, FibonacciRef,
             SquareRootRef, GenRandInts, HashComplexRef)
 
         RPC_ATTACH_CACHED_FUNCS(SimpleSum, StrLen, AddOneToEach, Fibonacci, Average, StdDev,

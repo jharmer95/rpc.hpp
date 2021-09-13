@@ -489,6 +489,12 @@ inline namespace server
 
             serial_obj = pack_adapter<Serial>::template serialize_pack<R, Args...>(pack);
         }
+#    else
+        template<typename R, typename... Args>
+        static void dispatch_cached_func(R (*func)(Args...), typename Serial::serial_t& serial_obj)
+        {
+            dispatch_func(func, serial_obj);
+        }
 #    endif
 
         ///@brief Deserializes the serial object to a packed_func, calls the callback function, then serializes the result back to the serial object

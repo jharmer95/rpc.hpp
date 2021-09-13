@@ -42,6 +42,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # ==== Build Options ====
 
+option(BUILD_ADAPTER_BITSERY "Build the adapter for Bitsery" OFF)
 option(BUILD_ADAPTER_BOOST_JSON "Build the adapter for Boost.JSON" OFF)
 option(BUILD_ADAPTER_NJSON "Build the adapter for nlohmann/json" OFF)
 option(BUILD_ADAPTER_RAPIDJSON "Build the adapter for rapidjson" OFF)
@@ -107,6 +108,7 @@ if(CXX_MSVC)
       /w14906
       /w14928
       /we4834
+      /Zc:__cplusplus
       /bigobj
       -D_WIN32_WINNT=0x0A00)
   set(MIN_WARNING
@@ -115,6 +117,7 @@ if(CXX_MSVC)
       /external:W0
       /external:anglebrackets
       /wd4619
+      /Zc:__cplusplus
       /bigobj
       -D_WIN32_WINNT=0x0A00)
 elseif(CXX_GCC OR CXX_MINGW)
@@ -237,7 +240,7 @@ install(FILES include/rpc.hpp include/rpc_dispatch_helper.hpp
 
 # ==== Sub-Projects ====
 
-if(BUILD_ADAPTER_BOOST_JSON OR BUILD_ADAPTER_NJSON OR BUILD_ADAPTER_RAPIDJSON)
+if(BUILD_ADAPTER_BITSERY OR BUILD_ADAPTER_BOOST_JSON OR BUILD_ADAPTER_NJSON OR BUILD_ADAPTER_RAPIDJSON)
   message("Building rpc_adapters...")
   add_subdirectory(include/rpc_adapters)
 else()

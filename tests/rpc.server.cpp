@@ -63,6 +63,15 @@ using rpc::adapters::bjson_obj;
 using rpc::adapters::bjson_val;
 #endif
 
+#if defined(RPC_HPP_ENABLE_BITSERY)
+#    include <rpc_adapters/rpc_bitsery.hpp>
+
+using rpc::adapters::bitsery_adapter;
+using rpc::adapters::bit_buffer;
+using rpc::adapters::output_adapter;
+using rpc::adapters::input_adapter;
+#endif
+
 #include <algorithm>
 #include <cmath>
 #include <condition_variable>
@@ -246,6 +255,12 @@ int main()
         TestServer<bjson_adapter> bjson_server{ io_context, 5002U };
         std::thread(&TestServer<bjson_adapter>::Run, &bjson_server).detach();
         std::cout << "Running Boost.JSON server on port 5002...\n";
+#endif
+
+#if defined(RPC_HPP_ENABLE_BITSERY)
+        TestServer<bitsery_adapter> bitsery_server{ io_context, 5003U };
+        std::thread(&TestServer<bitsery_adapter>::Run, &bitsery_server).detach();
+        std::cout << "Running Bitsery server on port 5003...\n";
 #endif
 
         std::unique_lock<std::mutex> lk{ MUTEX };

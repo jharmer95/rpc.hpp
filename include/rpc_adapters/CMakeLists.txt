@@ -32,6 +32,31 @@ if (NOT TARGET RpcHpp::rpc_hpp)
   message(FATAL_ERROR "RpcHpp::rpc_hpp alias not set. Please generate CMake from the root directory")
 endif()
 
+if(${BUILD_ADAPTER_BITSERY})
+  add_library(bitsery_adapter INTERFACE)
+  target_include_directories(bitsery_adapter
+                             INTERFACE "${PROJECT_SOURCE_DIR}/include")
+  target_compile_definitions(bitsery_adapter
+                             INTERFACE RPC_HPP_ENABLE_BITSERY)
+
+  if(${DEPENDS_CONAN})
+    set(CONAN_EXTRA_REQUIRES bitsery/[>=5.2.0])
+    run_conan()
+    target_include_directories(bitsery_adapter SYSTEM
+                               INTERFACE ${CONAN_INCLUDE_DIRS_BOOST})
+  elseif(${DEPENDS_VCPKG})
+    find_package(Bitsery CONFIG REQUIRED)
+    target_link_libraries(bitsery_adapter INTERFACE Bitsery::bitsery)
+  else()
+    find_path(bitsery_path bitsery/bitsery.h)
+    target_include_directories(bitsery_adapter SYSTEM
+                               INTERFACE bitsery_path)
+  endif()
+
+  install(FILES "rpc_bitsery.hpp"
+          DESTINATION "${CMAKE_INSTALL_PREFIX}/include/rpc_adapters")
+endif()
+
 if(${BUILD_ADAPTER_BOOST_JSON})
   add_library(boost_json_adapter INTERFACE)
   target_include_directories(boost_json_adapter

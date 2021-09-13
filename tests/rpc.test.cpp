@@ -96,6 +96,20 @@ TEST_CASE("BOOST_JSON")
 }
 #endif
 
+#if defined(RPC_HPP_ENABLE_BITSERY)
+template<>
+TestClient<bitsery_adapter>& GetClient()
+{
+    static TestClient<bitsery_adapter> client("127.0.0.1", "5003");
+    return client;
+}
+
+TEST_CASE("BITSERY")
+{
+    TestType<bitsery_adapter>();
+}
+#endif
+
 // TODO: Clean this up somehow
 #if defined(RPC_HPP_ENABLE_BOOST_JSON)
 #    if defined(TEST_USE_COMMA)
