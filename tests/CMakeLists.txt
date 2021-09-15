@@ -74,6 +74,11 @@ endif()
 add_executable(rpc_test "rpc.test.cpp")
 target_link_libraries(rpc_test PRIVATE rpc_hpp doctest_lib asio_lib)
 
+if(${BUILD_ADAPTER_BITSERY})
+  target_link_libraries(rpc_test PRIVATE bitsery_adapter)
+  target_compile_definitions(rpc_test PRIVATE RPC_HPP_BITSERY_EXACT_SZ)
+endif()
+
 if(${BUILD_ADAPTER_BOOST_JSON})
   target_link_libraries(rpc_test PRIVATE boost_json_adapter)
 endif()
@@ -97,6 +102,11 @@ find_package(Threads REQUIRED)
 
 add_executable(test_server "rpc.server.cpp")
 target_link_libraries(test_server PRIVATE rpc_hpp asio_lib Threads::Threads)
+
+if(${BUILD_ADAPTER_BITSERY})
+  target_link_libraries(test_server PRIVATE bitsery_adapter)
+  target_compile_definitions(test_server PRIVATE RPC_HPP_BITSERY_EXACT_SZ)
+endif()
 
 if(${BUILD_ADAPTER_BOOST_JSON})
   target_link_libraries(test_server PRIVATE boost_json_adapter)

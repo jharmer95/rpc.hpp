@@ -42,8 +42,9 @@
 
 #include <doctest/doctest.h>
 
-template<typename Serial>
-TestClient<Serial>& GetClient();
+const uint64_t RPC_HPP_BITSERY_MAX_FUNC_NAME_SZ = 30;
+const uint64_t RPC_HPP_BITSERY_MAX_STR_SZ = 100;
+const uint64_t RPC_HPP_BITSERY_MAX_CONTAINER_SZ = 100;
 
 template<typename Serial>
 void TestType()
@@ -55,13 +56,6 @@ void TestType()
 }
 
 #if defined(RPC_HPP_ENABLE_NJSON)
-template<>
-TestClient<njson_adapter>& GetClient()
-{
-    static TestClient<njson_adapter> client("127.0.0.1", "5000");
-    return client;
-}
-
 TEST_CASE("NJSON")
 {
     TestType<njson_adapter>();
@@ -69,13 +63,6 @@ TEST_CASE("NJSON")
 #endif
 
 #if defined(RPC_HPP_ENABLE_RAPIDJSON)
-template<>
-TestClient<rapidjson_adapter>& GetClient()
-{
-    static TestClient<rapidjson_adapter> client("127.0.0.1", "5001");
-    return client;
-}
-
 TEST_CASE("RAPIDJSON")
 {
     TestType<rapidjson_adapter>();
@@ -83,20 +70,31 @@ TEST_CASE("RAPIDJSON")
 #endif
 
 #if defined(RPC_HPP_ENABLE_BOOST_JSON)
-template<>
-TestClient<bjson_adapter>& GetClient()
-{
-    static TestClient<bjson_adapter> client("127.0.0.1", "5002");
-    return client;
-}
-
 TEST_CASE("BOOST_JSON")
 {
     TestType<bjson_adapter>();
 }
 #endif
 
+#if defined(RPC_HPP_ENABLE_BITSERY)
+TEST_CASE("BITSERY")
+{
+    TestType<bitsery_adapter>();
+}
+#endif
+
 // TODO: Clean this up somehow
+#if defined(RPC_HPP_ENABLE_BITSERY)
+#    if defined(TEST_USE_COMMA)
+#        define TEST_BITSERY_T , bitsery_adapter
+#    else
+#        define TEST_BITSERY_T bitsery_adapter
+#        define TEST_USE_COMMA
+#    endif
+#else
+#    define TEST_BITSERY_T
+#endif
+
 #if defined(RPC_HPP_ENABLE_BOOST_JSON)
 #    if defined(TEST_USE_COMMA)
 #        define TEST_BOOST_JSON_T , bjson_adapter
@@ -130,12 +128,12 @@ TEST_CASE("BOOST_JSON")
 #    define TEST_RAPIDJSON_T
 #endif
 
-#define RPC_TEST_TYPES TEST_BOOST_JSON_T TEST_NJSON_T TEST_RAPIDJSON_T
+#define RPC_TEST_TYPES TEST_BITSERY_T TEST_BOOST_JSON_T TEST_NJSON_T TEST_RAPIDJSON_T
 
 TEST_CASE_TEMPLATE("StrLen", TestType, RPC_TEST_TYPES)
 {
     auto& client = GetClient<TestType>();
-    const auto result = client.template call_func<int>("StrLen", std::string("hello, world"));
+    const auto result = client.template call_func<size_t>("StrLen", std::string("hello, world"));
 
     REQUIRE(result == 12);
 }
@@ -171,20 +169,20 @@ TEST_CASE_TEMPLATE("AddOneToEachRef", TestType, RPC_TEST_TYPES)
 
 TEST_CASE_TEMPLATE("Fibonacci", TestType, RPC_TEST_TYPES)
 {
-    constexpr uint64_t expected = 10946ULL;
+    constexpr uint64_t expected = 10946UL;
     auto& client = GetClient<TestType>();
 
-    const auto test = client.template call_func<uint64_t>("Fibonacci", 20);
+    const auto test = client.template call_func<uint64_t>("Fibonacci", 20UL);
 
     REQUIRE(expected == test);
 }
 
 TEST_CASE_TEMPLATE("FibonacciRef", TestType, RPC_TEST_TYPES)
 {
-    constexpr uint64_t expected = 10946ULL;
+    constexpr uint64_t expected = 10946UL;
     auto& client = GetClient<TestType>();
 
-    uint64_t test = 20ULL;
+    uint64_t test = 20UL;
     client.call_func("FibonacciRef", test);
 
     REQUIRE(expected == test);
@@ -282,7 +280,8 @@ TEST_CASE_TEMPLATE("Function not found", TestType, RPC_TEST_TYPES)
     const auto exp = [&client]()
     { [[maybe_unused]] int _unused = client.template call_func<int>("FUNC_WHICH_DOES_NOT_EXIST"); };
 
-    REQUIRE_THROWS_WITH(exp(), "RPC error: Called function: \"FUNC_WHICH_DOES_NOT_EXIST\" not found!");
+    REQUIRE_THROWS_WITH(
+        exp(), "RPC error: Called function: \"FUNC_WHICH_DOES_NOT_EXIST\" not found!");
 }
 
 TEST_CASE_TEMPLATE("ThrowError", TestType, RPC_TEST_TYPES)
@@ -306,6 +305,4 @@ TEST_CASE("KillServer")
     catch (...)
     {
     }
-
-    REQUIRE_THROWS(TestType<njson_adapter>());
 }

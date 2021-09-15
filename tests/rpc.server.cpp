@@ -42,7 +42,6 @@
 #if defined(RPC_HPP_ENABLE_NJSON)
 #    include <rpc_adapters/rpc_njson.hpp>
 
-using rpc::adapters::njson;
 using rpc::adapters::njson_adapter;
 #endif
 
@@ -50,17 +49,22 @@ using rpc::adapters::njson_adapter;
 #    include <rpc_adapters/rpc_rapidjson.hpp>
 
 using rpc::adapters::rapidjson_adapter;
-using rpc::adapters::rapidjson_doc;
-using rpc::adapters::rapidjson_val;
 #endif
 
 #if defined(RPC_HPP_ENABLE_BOOST_JSON)
 #    include <rpc_adapters/rpc_boost_json.hpp>
 
-namespace bjson = boost::json;
 using rpc::adapters::bjson_adapter;
-using rpc::adapters::bjson_obj;
-using rpc::adapters::bjson_val;
+#endif
+
+#if defined(RPC_HPP_ENABLE_BITSERY)
+#    include <rpc_adapters/rpc_bitsery.hpp>
+
+using rpc::adapters::bitsery_adapter;
+
+const uint64_t RPC_HPP_BITSERY_MAX_FUNC_NAME_SZ = 30;
+const uint64_t RPC_HPP_BITSERY_MAX_STR_SZ = 100;
+const uint64_t RPC_HPP_BITSERY_MAX_CONTAINER_SZ = 100;
 #endif
 
 #include <algorithm>
@@ -246,6 +250,12 @@ int main()
         TestServer<bjson_adapter> bjson_server{ io_context, 5002U };
         std::thread(&TestServer<bjson_adapter>::Run, &bjson_server).detach();
         std::cout << "Running Boost.JSON server on port 5002...\n";
+#endif
+
+#if defined(RPC_HPP_ENABLE_BITSERY)
+        TestServer<bitsery_adapter> bitsery_server{ io_context, 5003U };
+        std::thread(&TestServer<bitsery_adapter>::Run, &bitsery_server).detach();
+        std::cout << "Running Bitsery server on port 5003...\n";
 #endif
 
         std::unique_lock<std::mutex> lk{ MUTEX };

@@ -8,6 +8,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <iomanip>
 #include <iostream>
 #include <memory>
 #include <numeric>
@@ -76,6 +77,20 @@ public:
                     asio::error_code error;
                     const size_t len = sock.read_some(asio::buffer(data.get(), BUFFER_SZ), error);
 
+#ifndef NDEBUG
+                    if constexpr (std::is_same_v<typename Serial::bytes_t, std::vector<uint8_t>>)
+                    {
+                        std::cout << "Received bytes: [";
+
+                        for (size_t i = 0; i < len; ++i)
+                        {
+                            std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<unsigned>(data[i]) << ' ';
+                        }
+
+                        std::cout <<"]\n";
+                    }
+#endif
+
                     if (error == asio::error::eof)
                     {
                         break;
@@ -87,11 +102,21 @@ public:
                         throw asio::system_error(error);
                     }
 
-                    typename Serial::bytes_t bytes(data.get(), data.get() + len);
+                    typename Serial::bytes_t bytes{data.get(), data.get() + len};
                     this->dispatch(bytes);
 
-#if !defined(NDEBUG)
-                    std::cout << "Return message: \"" << bytes << "\"\n";
+#ifndef NDEBUG
+                    if constexpr (std::is_same_v<typename Serial::bytes_t, std::vector<uint8_t>>)
+                    {
+                        std::cout << "Return bytes: [";
+
+                        for (const auto b : bytes)
+                        {
+                            std::cout << "0x" << std::hex << std::setw(2) << std::setfill('0') << static_cast<unsigned>(b) << ' ';
+                        }
+
+                        std::cout <<"]\n";
+                    }
 #endif
 
                     write(sock, asio::buffer(bytes, bytes.size()));
@@ -109,7 +134,7 @@ private:
     {
         const auto func_name = rpc::pack_adapter<Serial>::get_func_name(serial_obj);
 
-        RPC_ATTACH_FUNCS(KillServer, ThrowError, SimpleSum, AddOneToEachRef, FibonacciRef,
+        RPC_ATTACH_FUNCS(KillServer, ThrowError, AddOneToEachRef, FibonacciRef,
             SquareRootRef, GenRandInts, HashComplexRef)
 
         RPC_ATTACH_CACHED_FUNCS(SimpleSum, StrLen, AddOneToEach, Fibonacci, Average, StdDev,

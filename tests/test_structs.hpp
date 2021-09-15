@@ -36,6 +36,21 @@
 
 #pragma once
 
+#if defined(RPC_HPP_ENABLE_BITSERY)
+#    include <rpc_adapters/rpc_bitsery.hpp>
+
+using rpc::adapters::bitsery_adapter;
+#endif
+
+#if defined(RPC_HPP_ENABLE_BOOST_JSON)
+#    include <rpc_adapters/rpc_boost_json.hpp>
+
+namespace bjson = boost::json;
+using rpc::adapters::bjson_adapter;
+using rpc::adapters::bjson_obj;
+using rpc::adapters::bjson_val;
+#endif
+
 #if defined(RPC_HPP_ENABLE_NJSON)
 #    include <rpc_adapters/rpc_njson.hpp>
 
@@ -49,15 +64,6 @@ using rpc::adapters::njson_adapter;
 using rpc::adapters::rapidjson_adapter;
 using rpc::adapters::rapidjson_doc;
 using rpc::adapters::rapidjson_val;
-#endif
-
-#if defined(RPC_HPP_ENABLE_BOOST_JSON)
-#    include <rpc_adapters/rpc_boost_json.hpp>
-
-namespace bjson = boost::json;
-using rpc::adapters::bjson_adapter;
-using rpc::adapters::bjson_obj;
-using rpc::adapters::bjson_val;
 #endif
 
 #include <algorithm>
@@ -74,6 +80,70 @@ struct ComplexObject
     bool flag2{};
     std::array<uint8_t, 12> vals{};
 };
+
+#if defined(RPC_HPP_ENABLE_BITSERY)
+template<typename S>
+void serialize(S& s, ComplexObject& val)
+{
+    s.value4b(val.id);
+    s.text1b(val.name, 255);
+    s.value1b(val.flag1);
+    s.value1b(val.flag2);
+    s.container1b(val.vals);
+}
+#endif
+
+#if defined(RPC_HPP_ENABLE_BOOST_JSON)
+template<>
+template<>
+inline bjson_val bjson_adapter::serialize(const ComplexObject& val)
+{
+    bjson_obj obj_j;
+    obj_j["id"] = val.id;
+    obj_j["name"] = val.name;
+    obj_j["flag1"] = val.flag1;
+    obj_j["flag2"] = val.flag2;
+    bjson::array arr;
+
+    for (const auto v : val.vals)
+    {
+        arr.push_back(v);
+    }
+
+    obj_j["vals"] = std::move(arr);
+
+    return obj_j;
+}
+
+template<>
+template<>
+inline ComplexObject bjson_adapter::deserialize(const bjson_val& serial_obj)
+{
+    ComplexObject cx;
+    cx.id = static_cast<int>(serial_obj.at("id").get_int64());
+    cx.name = serial_obj.at("name").get_string().c_str();
+    cx.flag1 = serial_obj.at("flag1").get_bool();
+    cx.flag2 = serial_obj.at("flag2").get_bool();
+    const auto& vals = serial_obj.at("vals").as_array();
+
+    if (vals.size() > 12)
+    {
+        for (size_t i = 0; i < 12; ++i)
+        {
+            cx.vals[i] = static_cast<uint8_t>(vals[i].get_int64());
+        }
+    }
+    else
+    {
+        for (size_t i = 0; i < vals.size(); ++i)
+        {
+            cx.vals[i] = static_cast<uint8_t>(vals[i].get_int64());
+        }
+    }
+
+    return cx;
+}
+#endif
 
 #if defined(RPC_HPP_ENABLE_NJSON)
 template<>
@@ -178,57 +248,5 @@ inline ComplexObject rapidjson_adapter::deserialize(const rapidjson_doc& serial_
     }
 
     return obj;
-}
-#endif
-
-#if defined(RPC_HPP_ENABLE_BOOST_JSON)
-template<>
-template<>
-inline bjson_val bjson_adapter::serialize(const ComplexObject& val)
-{
-    bjson_obj obj_j;
-    obj_j["id"] = val.id;
-    obj_j["name"] = val.name;
-    obj_j["flag1"] = val.flag1;
-    obj_j["flag2"] = val.flag2;
-    bjson::array arr;
-
-    for (const auto v : val.vals)
-    {
-        arr.push_back(v);
-    }
-
-    obj_j["vals"] = std::move(arr);
-
-    return obj_j;
-}
-
-template<>
-template<>
-inline ComplexObject bjson_adapter::deserialize(const bjson_val& serial_obj)
-{
-    ComplexObject cx;
-    cx.id = static_cast<int>(serial_obj.at("id").get_int64());
-    cx.name = serial_obj.at("name").get_string().c_str();
-    cx.flag1 = serial_obj.at("flag1").get_bool();
-    cx.flag2 = serial_obj.at("flag2").get_bool();
-    const auto& vals = serial_obj.at("vals").as_array();
-
-    if (vals.size() > 12)
-    {
-        for (size_t i = 0; i < 12; ++i)
-        {
-            cx.vals[i] = static_cast<uint8_t>(vals[i].get_int64());
-        }
-    }
-    else
-    {
-        for (size_t i = 0; i < vals.size(); ++i)
-        {
-            cx.vals[i] = static_cast<uint8_t>(vals[i].get_int64());
-        }
-    }
-
-    return cx;
 }
 #endif

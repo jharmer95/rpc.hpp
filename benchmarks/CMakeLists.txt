@@ -78,6 +78,11 @@ add_executable(rpc_benchmark benchmark.cpp)
 target_include_directories(rpc_benchmark PRIVATE ../tests)
 target_link_libraries(rpc_benchmark PRIVATE rpc_hpp catch2_lib asio_lib)
 
+if(${BUILD_ADAPTER_BITSERY})
+  target_link_libraries(rpc_benchmark PRIVATE bitsery_adapter)
+  target_compile_definitions(rpc_benchmark PRIVATE RPC_HPP_BITSERY_EXACT_SZ)
+endif()
+
 if(${BUILD_ADAPTER_BOOST_JSON})
   target_link_libraries(rpc_benchmark PRIVATE boost_json_adapter)
 endif()
