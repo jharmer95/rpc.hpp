@@ -37,13 +37,13 @@ jobs:
           sudo apt install cmake ninja-build gcc clang
       - name: Install vcpkg dependencies
         run: |
-          /usr/local/share/vcpkg/vcpkg install asio catch2 doctest nlohmann-json rapidjson
+          /usr/local/share/vcpkg/vcpkg install asio bitsery catch2 doctest nlohmann-json rapidjson
           /usr/local/share/vcpkg/vcpkg integrate install
       - name: Build with CMake
         run: |
           mkdir build
           cd build
-          cmake .. -G Ninja -DBUILD_ADAPTER_NJSON=ON -DBUILD_ADAPTER_RAPIDJSON=ON -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=${{ matrix.compiler }} -DCMAKE_CXX_FLAGS="-fuse-ld=gold" -DCMAKE_TOOLCHAIN_FILE=/usr/local/share/vcpkg/scripts/buildsystems/vcpkg.cmake -DDEPENDS_VCPKG=ON
+          cmake .. -G Ninja -DBUILD_ADAPTER_BITSERY=ON -DBUILD_ADAPTER_NJSON=ON -DBUILD_ADAPTER_RAPIDJSON=ON -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=${{ matrix.compiler }} -DCMAKE_CXX_FLAGS="-fuse-ld=gold" -DCMAKE_TOOLCHAIN_FILE=/usr/local/share/vcpkg/scripts/buildsystems/vcpkg.cmake -DDEPENDS_VCPKG=ON
           ninja
       - name: Run unit tests
         run: |
