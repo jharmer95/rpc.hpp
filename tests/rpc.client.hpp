@@ -94,3 +94,40 @@ private:
     tcp::resolver m_resolver;
     uint8_t m_buffer[64U * 1024UL]{};
 };
+
+template<typename Serial>
+TestClient<Serial>& GetClient();
+
+template<>
+TestClient<njson_adapter>& GetClient()
+{
+    static TestClient<njson_adapter> client("127.0.0.1", "5000");
+    return client;
+}
+
+#if defined(RPC_HPP_ENABLE_RAPIDJSON)
+template<>
+TestClient<rapidjson_adapter>& GetClient()
+{
+    static TestClient<rapidjson_adapter> client("127.0.0.1", "5001");
+    return client;
+}
+#endif
+
+#if defined(RPC_HPP_ENABLE_BOOST_JSON)
+template<>
+TestClient<bjson_adapter>& GetClient()
+{
+    static TestClient<bjson_adapter> client("127.0.0.1", "5002");
+    return client;
+}
+#endif
+
+#if defined(RPC_HPP_ENABLE_BITSERY)
+template<>
+TestClient<bitsery_adapter>& GetClient()
+{
+    static TestClient<bitsery_adapter> client("127.0.0.1", "5003");
+    return client;
+}
+#endif
