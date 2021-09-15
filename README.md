@@ -24,6 +24,7 @@ features.
     - [nlohmann-json](https://github.com/nlohmann/json)
     - [rapidjson](https://github.com/Tencent/rapidjson)
     - [Boost.JSON](https://github.com/boostorg/json)
+    - [bitsery](https://github.com/fraillt/bitsery)
 
 ## Documentation
 
