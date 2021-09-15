@@ -42,6 +42,7 @@
 
 #include "../rpc.hpp"
 
+#include <limits>
 #include <bitsery/bitsery.h>
 #include <bitsery/adapter/buffer.h>
 #include <bitsery/ext/std_tuple.h>
@@ -176,13 +177,13 @@ namespace adapters
 
         if constexpr (std::is_arithmetic_v<R>)
         {
-            s.value<sizeof(R)>(o.result);
+            s.template value<sizeof(R)>(o.result);
         }
         else if constexpr (details::is_container_v<R>)
         {
             if constexpr (std::is_arithmetic_v<typename R::value_type>)
             {
-                s.container<sizeof(typename R::value_type)>(
+                s.template container<sizeof(typename R::value_type)>(
                     o.result, RPC_HPP_BITSERY_MAX_CONTAINER_SZ);
             }
             else
@@ -206,7 +207,7 @@ namespace adapters
                     if constexpr (std::is_arithmetic_v<T>)
                     {
 #if defined(RPC_HPP_BITSERY_EXACT_SZ)
-                        s.value<sizeof(val)>(val);
+                        s.template value<sizeof(val)>(val);
 #else
                         s.value8b(val);
 #endif
@@ -215,7 +216,7 @@ namespace adapters
                     {
                         if constexpr (std::is_arithmetic_v<typename T::value_type>)
                         {
-                            s.container<sizeof(typename T::value_type)>(
+                            s.template container<sizeof(typename T::value_type)>(
                                 val, RPC_HPP_BITSERY_MAX_CONTAINER_SZ);
                         }
                         else
@@ -358,7 +359,7 @@ packed_func<R, Args...> pack_adapter<adapters::bitsery_adapter>::deserialize_pac
 
     if (error != bitsery::ReaderError::NoError)
     {
-        const std::string error_mesg = [error]()
+        const std::string error_mesg = [error = error]()
         {
             switch (error)
             {

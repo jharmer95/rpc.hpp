@@ -169,20 +169,20 @@ TEST_CASE_TEMPLATE("AddOneToEachRef", TestType, RPC_TEST_TYPES)
 
 TEST_CASE_TEMPLATE("Fibonacci", TestType, RPC_TEST_TYPES)
 {
-    constexpr uint64_t expected = 10946ULL;
+    constexpr uint64_t expected = 10946UL;
     auto& client = GetClient<TestType>();
 
-    const auto test = client.template call_func<uint64_t>("Fibonacci", 20ULL);
+    const auto test = client.template call_func<uint64_t>("Fibonacci", 20UL);
 
     REQUIRE(expected == test);
 }
 
 TEST_CASE_TEMPLATE("FibonacciRef", TestType, RPC_TEST_TYPES)
 {
-    constexpr uint64_t expected = 10946ULL;
+    constexpr uint64_t expected = 10946UL;
     auto& client = GetClient<TestType>();
 
-    uint64_t test = 20ULL;
+    uint64_t test = 20UL;
     client.call_func("FibonacciRef", test);
 
     REQUIRE(expected == test);
@@ -305,6 +305,4 @@ TEST_CASE("KillServer")
     catch (...)
     {
     }
-
-    REQUIRE_THROWS(TestType<njson_adapter>());
 }
