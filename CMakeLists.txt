@@ -141,7 +141,8 @@ elseif(CXX_GCC OR CXX_MINGW)
       -Wlogical-op
       -Wduplicated-branches
       -Wduplicated-cond
-      -Wmisleading-indentation)
+      -Wmisleading-indentation
+      -Wmissing-field-initializers)
   set(MIN_WARNING -Wall)
   if(CXX_MINGW)
     list(APPEND FULL_WARNING -Wa,-mbig-obj)
@@ -161,7 +162,9 @@ elseif(CXX_CLANG)
       -Wno-documentation
       -Wno-documentation-unknown-command
       -Wno-weak-vtables
-      -Wno-reserved-id-macro)
+      -Wno-reserved-id-macro
+      -Wno-missing-braces
+      -Wno-covered-switch-default)
   set(MIN_WARNING -Wall)
 endif()
 

@@ -13,7 +13,7 @@ const uint64_t RPC_HPP_BITSERY_MAX_CONTAINER_SZ = 100;
 
 TEST_CASE("By Value (simple)", "[value][simple][cached]")
 {
-    constexpr uint64_t expected = 10946ULL;
+    constexpr uint64_t expected = 10946UL;
     uint64_t test = 1;
 
     BENCHMARK("rpc.hpp (asio::tcp, njson)")
@@ -183,8 +183,8 @@ TEST_CASE("By Value (many)", "[value][many][cached]")
 
 TEST_CASE("By Reference (simple)", "[ref][simple]")
 {
-    constexpr uint64_t expected = 10946ULL;
-    uint64_t test;
+    constexpr uint64_t expected = 10946UL;
+    uint64_t test = 20;
 
     BENCHMARK("rpc.hpp (asio::tcp, njson)")
     {

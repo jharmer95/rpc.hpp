@@ -136,16 +136,16 @@ namespace adapters
 
         pack_helper() = default;
 
-        pack_helper(std::string name, std::string err, R res, args_t args)
+        pack_helper(std::string name, std::string err, R res, args_t arg_tup)
             : func_name(std::move(name)), err_mesg(std::move(err)), result(std::move(res)),
-              args(std::move(args))
+              args(std::move(arg_tup))
         {
         }
 
-        std::string func_name;
-        std::string err_mesg;
-        R result;
-        args_t args;
+        std::string func_name{};
+        std::string err_mesg{};
+        R result{};
+        args_t args{};
     };
 
     template<typename... Args>
@@ -159,14 +159,14 @@ namespace adapters
 
         pack_helper() = default;
 
-        pack_helper(std::string name, std::string err, args_t args)
-            : func_name(std::move(name)), err_mesg(std::move(err)), args(std::move(args))
+        pack_helper(std::string name, std::string err, args_t arg_tup)
+            : func_name(std::move(name)), err_mesg(std::move(err)), args(std::move(arg_tup))
         {
         }
 
-        std::string func_name;
-        std::string err_mesg;
-        args_t args;
+        std::string func_name{};
+        std::string err_mesg{};
+        args_t args{};
     };
 
     template<typename S, typename R, typename... Args>
@@ -197,36 +197,36 @@ namespace adapters
         }
 
         s.ext(o.args,
-            bitsery::ext::StdTuple{ [](S& s, std::string& str)
-                { s.text1b(str, RPC_HPP_BITSERY_MAX_STR_SZ); },
+            bitsery::ext::StdTuple{ [](S& s2, std::string& str)
+                { s2.text1b(str, RPC_HPP_BITSERY_MAX_STR_SZ); },
                 // Fallback serializer for integers, floats, and enums
-                [](auto& s, auto& val)
+                [](auto& s2, auto& val)
                 {
                     using T = std::remove_cv_t<std::remove_reference_t<decltype(val)>>;
 
                     if constexpr (std::is_arithmetic_v<T>)
                     {
 #if defined(RPC_HPP_BITSERY_EXACT_SZ)
-                        s.template value<sizeof(val)>(val);
+                        s2.template value<sizeof(val)>(val);
 #else
-                        s.value8b(val);
+                        s2.value8b(val);
 #endif
                     }
                     else if constexpr (details::is_container_v<T>)
                     {
                         if constexpr (std::is_arithmetic_v<typename T::value_type>)
                         {
-                            s.template container<sizeof(typename T::value_type)>(
+                            s2.template container<sizeof(typename T::value_type)>(
                                 val, RPC_HPP_BITSERY_MAX_CONTAINER_SZ);
                         }
                         else
                         {
-                            s.container(val, RPC_HPP_BITSERY_MAX_CONTAINER_SZ);
+                            s2.container(val, RPC_HPP_BITSERY_MAX_CONTAINER_SZ);
                         }
                     }
                     else
                     {
-                        s.object(val);
+                        s2.object(val);
                     }
                 } });
     }
@@ -375,6 +375,7 @@ packed_func<R, Args...> pack_adapter<adapters::bitsery_adapter>::deserialize_pac
                 case bitsery::ReaderError::InvalidPointer:
                     return "an invalid pointer!";
 
+                case bitsery::ReaderError::NoError:
                 default:
                     return "extra data on the end!";
             }
@@ -392,32 +393,33 @@ inline std::string pack_adapter<adapters::bitsery_adapter>::get_func_name(
     const adapters::bit_buffer& serial_obj)
 {
     const uint8_t len = serial_obj.front();
-    return { serial_obj.begin() + 1, serial_obj.begin() + 1 + len };
+    return { serial_obj.begin() + 1, serial_obj.begin() + 1UL + len };
 }
 
 template<>
 inline void pack_adapter<adapters::bitsery_adapter>::set_err_mesg(
     adapters::bit_buffer& serial_obj, std::string mesg)
 {
+    // TODO: Support > 255 length
     const uint8_t name_len = serial_obj.front();
-    const uint8_t err_len = serial_obj.at(name_len + 1);
-    const uint8_t new_err_len = mesg.size();
+    const uint8_t err_len = serial_obj.at(name_len + 1UL);
+    const auto new_err_len = static_cast<uint8_t>(mesg.size());
 
     if (new_err_len > err_len)
     {
-        serial_obj.at(name_len + 1) = new_err_len;
-        serial_obj.insert(serial_obj.begin() + name_len + 2, new_err_len - err_len, 0);
+        serial_obj.at(name_len + 1UL) = new_err_len;
+        serial_obj.insert(serial_obj.begin() + name_len + 2UL, new_err_len - err_len, 0);
     }
     else if (new_err_len < err_len)
     {
-        serial_obj.at(name_len + 1) = new_err_len;
-        serial_obj.erase(serial_obj.begin() + name_len + 2,
-            serial_obj.begin() + name_len + 2 + (err_len - new_err_len));
+        serial_obj.at(name_len + 1UL) = new_err_len;
+        serial_obj.erase(serial_obj.begin() + name_len + 2UL,
+            serial_obj.begin() + name_len + 2UL + (err_len - new_err_len));
     }
 
-    for (uint8_t i = 0; i < new_err_len; ++i)
+    for (size_t i = 0; i < new_err_len; ++i)
     {
-        serial_obj.at(name_len + 2 + i) = static_cast<uint8_t>(mesg.at(i));
+        serial_obj.at(name_len + 2UL + i) = static_cast<uint8_t>(mesg.at(i));
     }
 }
 } // namespace rpc
