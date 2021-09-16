@@ -1,5 +1,42 @@
+///@file rpc.server.hpp
+///@author Jackson Harmer (jharmer95@gmail.com)
+///@brief Declarations and implementations of an RPC server for testing
+///
+///@copyright
+///BSD 3-Clause License
+///
+///Copyright (c) 2020-2021, Jackson Harmer
+///All rights reserved.
+///
+///Redistribution and use in source and binary forms, with or without
+///modification, are permitted provided that the following conditions are met:
+///
+///1. Redistributions of source code must retain the above copyright notice, this
+///   list of conditions and the following disclaimer.
+///
+///2. Redistributions in binary form must reproduce the above copyright notice,
+///   this list of conditions and the following disclaimer in the documentation
+///   and/or other materials provided with the distribution.
+///
+///3. Neither the name of the copyright holder nor the names of its
+///   contributors may be used to endorse or promote products derived from
+///   this software without specific prior written permission.
+///
+///THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+///AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+///IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+///DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+///FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+///DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+///SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+///CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+///OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+///OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+///
+
 #pragma once
 
+#include "static_funcs.hpp"
 #include "test_structs.hpp"
 
 #include <asio.hpp>
@@ -84,10 +121,11 @@ public:
 
                         for (size_t i = 0; i < len; ++i)
                         {
-                            std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<unsigned>(data[i]) << ' ';
+                            std::cout << std::hex << std::setw(2) << std::setfill('0')
+                                      << static_cast<unsigned>(data[i]) << ' ';
                         }
 
-                        std::cout <<"]\n";
+                        std::cout << "]\n";
                     }
 #endif
 
@@ -102,7 +140,7 @@ public:
                         throw asio::system_error(error);
                     }
 
-                    typename Serial::bytes_t bytes{data.get(), data.get() + len};
+                    typename Serial::bytes_t bytes{ data.get(), data.get() + len };
                     this->dispatch(bytes);
 
 #ifndef NDEBUG
@@ -112,10 +150,11 @@ public:
 
                         for (const auto b : bytes)
                         {
-                            std::cout << "0x" << std::hex << std::setw(2) << std::setfill('0') << static_cast<unsigned>(b) << ' ';
+                            std::cout << "0x" << std::hex << std::setw(2) << std::setfill('0')
+                                      << static_cast<unsigned>(b) << ' ';
                         }
 
-                        std::cout <<"]\n";
+                        std::cout << "]\n";
                     }
 #endif
 
@@ -134,11 +173,11 @@ private:
     {
         const auto func_name = rpc::pack_adapter<Serial>::get_func_name(serial_obj);
 
-        RPC_ATTACH_FUNCS(KillServer, ThrowError, AddOneToEachRef, FibonacciRef,
-            SquareRootRef, GenRandInts, HashComplexRef)
+        RPC_ATTACH_FUNCS(KillServer, ThrowError, AddOneToEachRef, FibonacciRef, SquareRootRef,
+            GenRandInts, HashComplexRef, AddOne)
 
         RPC_ATTACH_CACHED_FUNCS(SimpleSum, StrLen, AddOneToEach, Fibonacci, Average, StdDev,
-            AverageContainer<uint64_t>, AverageContainer<double>, HashComplex)
+            AverageContainer<uint64_t>, AverageContainer<double>, HashComplex, CountChars)
 
         throw std::runtime_error("RPC error: Called function: \"" + func_name + "\" not found!");
     }

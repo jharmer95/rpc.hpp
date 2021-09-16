@@ -596,6 +596,13 @@ inline namespace client
             }
         }
 
+        template<typename R, typename... Args>
+        R call_header_func_impl(
+            [[maybe_unused]] R (*func)(Args...), std::string func_name, Args&&... args)
+        {
+            return call_func<R, Args...>(std::move(func_name), std::forward<Args>(args)...);
+        }
+
     protected:
         ///@brief Sends serialized data to a server or module
         ///
@@ -607,6 +614,8 @@ inline namespace client
         ///@return Serial::bytes_t Received serialized data
         virtual typename Serial::bytes_t receive() = 0;
     };
+
+#    define call_header_func(FUNCNAME, ...) call_header_func_impl(FUNCNAME, #FUNCNAME, __VA_ARGS__)
 } // namespace client
 #endif
 } // namespace rpc

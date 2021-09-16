@@ -36,7 +36,7 @@
 
 #pragma once
 
-#if !defined(RPC_HPP_DOXYGEN_GEN)
+#if !defined(RPC_HPP_DOXYGEN_GEN) && (defined(RPC_HPP_SERVER_IMPL) || defined(RPC_HPP_MODULE_IMPL))
 #define EXPAND(x) x
 
 #define RPC_FE_0(WHAT)
@@ -108,6 +108,13 @@
 #define RPC_FOR_EACH2(ACTION, ...) EXPAND(RPC_GET_MACRO(_0, __VA_ARGS__, RPC_FE2_30, RPC_FE2_29, RPC_FE2_28, RPC_FE2_27, RPC_FE2_26, RPC_FE2_25, RPC_FE2_24, RPC_FE2_23, RPC_FE2_22, RPC_FE2_21, RPC_FE2_20, RPC_FE2_19, RPC_FE2_18, RPC_FE2_17, RPC_FE2_16, RPC_FE2_15, RPC_FE2_14, RPC_FE2_13, RPC_FE2_12, RPC_FE2_11, RPC_FE2_10, RPC_FE2_9, RPC_FE2_8, RPC_FE2_7, RPC_FE2_6, RPC_FE2_5, RPC_FE2_4, RPC_FE2_3, RPC_FE2_2, RPC_FE2_1, RPC_FE2_0)(ACTION, __VA_ARGS__))
 #endif
 
+#if defined(RPC_HPP_SERVER_IMPL) || defined(RPC_HPP_MODULE_IMPL)
+#    define RPC_HEADER_FUNC(RETURN, FUNCNAME, ...) extern RETURN (*FUNCNAME)(__VA_ARGS__)
+#elif defined(RPC_HPP_CLIENT_IMPL)
+#    define RPC_HEADER_FUNC(RETURN, FUNCNAME, ...) RETURN (*FUNCNAME)(__VA_ARGS__) = nullptr
+#endif
+
+#if defined(RPC_HPP_SERVER_IMPL) || defined(RPC_HPP_MODULE_IMPL)
 ///@brief Attaches function (provided by FUNCNAME) to the server dispatch function
 #define RPC_ATTACH_FUNC(FUNCNAME) if (func_name == #FUNCNAME) { return this->dispatch_func(FUNCNAME, serial_obj); }
 
@@ -134,3 +141,4 @@
 
 ///@brief Implements the @ref rpc::server::dispatch_impl function for you and attaches the listed functions
 #define RPC_DEFAULT_DISPATCH(FUNCNAME, ...) EXPAND(const auto func_name = rpc::pack_adapter<adapter_t>::get_func_name(serial_obj); RPC_ATTACH_FUNCS(FUNCNAME, __VA_ARGS__) throw std::runtime_error("RPC error: Called function: "" + func_name + "" not found!");)
+#endif

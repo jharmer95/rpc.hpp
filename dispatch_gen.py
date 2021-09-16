@@ -81,7 +81,9 @@ if len(sys.argv) > 1:
 with open(fname, "w") as f:
     f.write(f_header)
     f.write("#pragma once\n\n")
-    f.write("#if !defined(RPC_HPP_DOXYGEN_GEN)\n")
+    f.write(
+        "#if !defined(RPC_HPP_DOXYGEN_GEN) && (defined(RPC_HPP_SERVER_IMPL) || defined(RPC_HPP_MODULE_IMPL))\n"
+    )
     f.write("#define EXPAND(x) x\n\n")
 
     f.write("#define RPC_FE_0(WHAT)\n")
@@ -125,6 +127,17 @@ with open(fname, "w") as f:
     f.write("RPC_FE2_0)(ACTION, __VA_ARGS__))\n")
     f.write("#endif\n\n")
 
+    f.write("#if defined(RPC_HPP_SERVER_IMPL) || defined(RPC_HPP_MODULE_IMPL)\n")
+    f.write(
+        "#    define RPC_HEADER_FUNC(RETURN, FUNCNAME, ...) extern RETURN (*FUNCNAME)(__VA_ARGS__)\n"
+    )
+    f.write("#elif defined(RPC_HPP_CLIENT_IMPL)\n")
+    f.write(
+        "#    define RPC_HEADER_FUNC(RETURN, FUNCNAME, ...) RETURN (*FUNCNAME)(__VA_ARGS__) = nullptr"
+    )
+    f.write("#endif\n\n")
+
+    f.write("#if defined(RPC_HPP_SERVER_IMPL) || defined(RPC_HPP_MODULE_IMPL)\n")
     f.write(
         "///@brief Attaches function (provided by FUNCNAME) to the server dispatch function\n"
     )
@@ -177,3 +190,4 @@ with open(fname, "w") as f:
     f.write(
         '#define RPC_DEFAULT_DISPATCH(FUNCNAME, ...) EXPAND(const auto func_name = rpc::pack_adapter<adapter_t>::get_func_name(serial_obj); RPC_ATTACH_FUNCS(FUNCNAME, __VA_ARGS__) throw std::runtime_error("RPC error: Called function: "" + func_name + "" not found!");)\n'
     )
+    f.write("#endif")
