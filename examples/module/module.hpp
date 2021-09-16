@@ -2,7 +2,6 @@
 
 #include <rpc_adapters/rpc_njson.hpp>
 
-using rpc::adapters::njson;
 using rpc::adapters::njson_adapter;
 
 #include <string>
@@ -36,5 +35,5 @@ extern "C"
 class RpcModule : public rpc::server_interface<njson_adapter>
 {
 private:
-    void dispatch_impl(njson& serial_obj) override;
+    void dispatch_impl(rpc::adapters::njson::njson_t& serial_obj) override;
 };

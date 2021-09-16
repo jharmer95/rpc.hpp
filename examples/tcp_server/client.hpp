@@ -6,7 +6,6 @@
 #include <string>
 
 using asio::ip::tcp;
-using rpc::adapters::njson;
 using rpc::adapters::njson_adapter;
 
 class RpcClient : public rpc::client::client_interface<njson_adapter>

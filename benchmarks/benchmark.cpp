@@ -7,9 +7,11 @@
 
 #include <catch2/catch.hpp>
 
-const uint64_t RPC_HPP_BITSERY_MAX_FUNC_NAME_SZ = 30;
-const uint64_t RPC_HPP_BITSERY_MAX_STR_SZ = 100;
-const uint64_t RPC_HPP_BITSERY_MAX_CONTAINER_SZ = 100;
+#if defined(RPC_HPP_ENABLE_BITSERY)
+const uint64_t rpc::adapters::bitsery::config::max_func_name_size = 30;
+const uint64_t rpc::adapters::bitsery::config::max_string_size = 100;
+const uint64_t rpc::adapters::bitsery::config::max_container_size = 100;
+#endif
 
 TEST_CASE("By Value (simple)", "[value][simple][cached]")
 {
@@ -39,7 +41,7 @@ TEST_CASE("By Value (simple)", "[value][simple][cached]")
 
     BENCHMARK("rpc.hpp (asio::tcp, Boost.JSON)")
     {
-        test = GetClient<bjson_adapter>().template call_func<uint64_t>("Fibonacci", 20);
+        test = GetClient<boost_json_adapter>().template call_func<uint64_t>("Fibonacci", 20);
     };
 
     REQUIRE(expected == test);
@@ -106,7 +108,7 @@ TEST_CASE("By Value (complex)", "[value][complex][cached]")
         cx.name = "Franklin D. Roosevelt";
         cx.vals = { 0, 1, 4, 6, 7, 8, 11, 15, 17, 22, 25, 26 };
 
-        test = GetClient<bjson_adapter>().template call_func<std::string>("HashComplex", cx);
+        test = GetClient<boost_json_adapter>().template call_func<std::string>("HashComplex", cx);
     };
 
     REQUIRE_THAT(expected, Catch::Matchers::Equals(test));
@@ -161,7 +163,7 @@ TEST_CASE("By Value (many)", "[value][many][cached]")
 
     BENCHMARK("rpc.hpp (asio::tcp, Boost.JSON)")
     {
-        test = GetClient<bjson_adapter>().template call_func<double>("StdDev", 55.65, 125.325,
+        test = GetClient<boost_json_adapter>().template call_func<double>("StdDev", 55.65, 125.325,
             552.125, 12.767, 2599.6, 1245.125663, 9783.49, 125.12, 553.3333333333, 2266.1);
     };
 
@@ -208,7 +210,7 @@ TEST_CASE("By Reference (simple)", "[ref][simple]")
     BENCHMARK("rpc.hpp (asio::tcp, Boost.JSON)")
     {
         test = 20;
-        GetClient<bjson_adapter>().call_func("FibonacciRef", test);
+        GetClient<boost_json_adapter>().call_func("FibonacciRef", test);
     };
 
     REQUIRE(expected == test);
@@ -273,7 +275,7 @@ TEST_CASE("By Reference (complex)", "[ref][complex]")
         cx.name = "Franklin D. Roosevelt";
         cx.vals = { 0, 1, 4, 6, 7, 8, 11, 15, 17, 22, 25, 26 };
 
-        GetClient<bjson_adapter>().call_func("HashComplexRef", cx, test);
+        GetClient<boost_json_adapter>().call_func("HashComplexRef", cx, test);
     };
 
     REQUIRE_THAT(expected, Catch::Matchers::Equals(test));
@@ -363,7 +365,7 @@ TEST_CASE("By Reference (many)", "[ref][many]")
         double n9 = 553.3333333333;
         double n10 = 2266.1;
 
-        GetClient<bjson_adapter>().call_func(
+        GetClient<boost_json_adapter>().call_func(
             "SquareRootRef", n1, n2, n3, n4, n5, n6, n7, n8, n9, n10);
 
         test = n1 + n2 + n3 + n4 + n5 + n6 + n7 + n8 + n9 + n10;
@@ -435,7 +437,7 @@ TEST_CASE("With Container", "[container][cached]")
             9783.49, 125.12, 553.3333333333, 2266.1 };
 
         test =
-            GetClient<bjson_adapter>().template call_func<double>("AverageContainer<double>", vec);
+            GetClient<boost_json_adapter>().template call_func<double>("AverageContainer<double>", vec);
     };
 #endif
 
@@ -488,15 +490,15 @@ TEST_CASE("Sequential", "[sequential][cached]")
 #if defined(RPC_HPP_ENABLE_BOOST_JSON)
     BENCHMARK("rpc.hpp (asio::tcp, bjson)")
     {
-        auto vec = GetClient<bjson_adapter>().template call_func<std::vector<uint64_t>>(
+        auto vec = GetClient<boost_json_adapter>().template call_func<std::vector<uint64_t>>(
             "GenRandInts", 5, 30, 1000);
 
         for (auto& val : vec)
         {
-            val = GetClient<bjson_adapter>().template call_func<uint64_t>("Fibonacci", val);
+            val = GetClient<boost_json_adapter>().template call_func<uint64_t>("Fibonacci", val);
         }
 
-        return GetClient<bjson_adapter>().template call_func<double>(
+        return GetClient<boost_json_adapter>().template call_func<double>(
             "AverageContainer<uint64_t>", vec);
     };
 #endif

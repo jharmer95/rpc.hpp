@@ -28,7 +28,7 @@ inline void GetName(std::string& name_out)
     name_out.assign(MODULE_NAME);
 }
 
-void RpcModule::dispatch_impl(njson& serial_obj)
+void RpcModule::dispatch_impl(rpc::adapters::njson::njson_t& serial_obj)
 {
     RPC_DEFAULT_DISPATCH(Sum, AddOneToEach, GetName)
 }

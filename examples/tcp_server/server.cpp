@@ -85,7 +85,7 @@ void RpcServer::Run()
     }
 }
 
-void RpcServer::dispatch_impl(njson& serial_obj)
+void RpcServer::dispatch_impl(rpc::adapters::njson::njson_t& serial_obj)
 {
     // IMPORTANT: Template functions must be given explicitly with the supported types
     // or they will not be instantiated on the server

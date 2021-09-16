@@ -47,7 +47,7 @@ using rpc::adapters::bitsery_adapter;
 #if defined(RPC_HPP_ENABLE_BOOST_JSON)
 #    include <rpc_adapters/rpc_boost_json.hpp>
 
-using rpc::adapters::bjson_adapter;
+using rpc::adapters::boost_json_adapter;
 #endif
 
 #if defined(RPC_HPP_ENABLE_NJSON)
@@ -116,9 +116,9 @@ TestClient<rapidjson_adapter>& GetClient()
 
 #if defined(RPC_HPP_ENABLE_BOOST_JSON)
 template<>
-TestClient<bjson_adapter>& GetClient()
+TestClient<boost_json_adapter>& GetClient()
 {
-    static TestClient<bjson_adapter> client("127.0.0.1", "5002");
+    static TestClient<boost_json_adapter> client("127.0.0.1", "5002");
     return client;
 }
 #endif
