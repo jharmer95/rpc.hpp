@@ -42,9 +42,11 @@
 
 #include <doctest/doctest.h>
 
-const uint64_t RPC_HPP_BITSERY_MAX_FUNC_NAME_SZ = 30;
-const uint64_t RPC_HPP_BITSERY_MAX_STR_SZ = 100;
-const uint64_t RPC_HPP_BITSERY_MAX_CONTAINER_SZ = 100;
+#if defined(RPC_HPP_ENABLE_BITSERY)
+const uint64_t rpc::adapters::bitsery::config::max_func_name_size = 30;
+const uint64_t rpc::adapters::bitsery::config::max_string_size = 100;
+const uint64_t rpc::adapters::bitsery::config::max_container_size = 100;
+#endif
 
 template<typename Serial>
 void TestType()
@@ -72,7 +74,7 @@ TEST_CASE("RAPIDJSON")
 #if defined(RPC_HPP_ENABLE_BOOST_JSON)
 TEST_CASE("BOOST_JSON")
 {
-    TestType<bjson_adapter>();
+    TestType<boost_json_adapter>();
 }
 #endif
 
@@ -97,9 +99,9 @@ TEST_CASE("BITSERY")
 
 #if defined(RPC_HPP_ENABLE_BOOST_JSON)
 #    if defined(TEST_USE_COMMA)
-#        define TEST_BOOST_JSON_T , bjson_adapter
+#        define TEST_BOOST_JSON_T , boost_json_adapter
 #    else
-#        define TEST_BOOST_JSON_T bjson_adapter
+#        define TEST_BOOST_JSON_T boost_json_adapter
 #        define TEST_USE_COMMA
 #    endif
 #else
