@@ -8,7 +8,6 @@
 #include <cstdint>
 
 using asio::ip::tcp;
-using rpc::adapters::njson;
 using rpc::adapters::njson_adapter;
 
 class RpcServer : public rpc::server_interface<njson_adapter>
@@ -20,7 +19,7 @@ public:
     void Stop() { m_running = false; }
 
 private:
-    void dispatch_impl(njson& serial_obj) override;
+    void dispatch_impl(rpc::adapters::njson::njson_t& serial_obj) override;
 
     asio::io_context& m_io;
     std::atomic<bool> m_running{ false };
