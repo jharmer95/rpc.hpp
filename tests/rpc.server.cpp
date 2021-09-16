@@ -119,6 +119,16 @@ inline void AddOneToEachRef(std::vector<int>& vec)
     }
 }
 
+int (*CountChars)(const std::string&, char) = [](const std::string& str, char c)
+{
+    return static_cast<int>(std::count_if(str.begin(), str.end(), [c](char x) { return x == c; }));
+};
+
+void (*AddOne)(size_t&) = [](size_t& n)
+{
+    n += 1;
+};
+
 // cached
 uint64_t Fibonacci(const uint64_t number)
 {

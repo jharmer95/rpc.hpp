@@ -86,7 +86,7 @@ private:
     [[nodiscard]] typename Serial::bytes_t receive() override
     {
         const auto numBytes = m_socket.read_some(asio::buffer(m_buffer, 64U * 1024UL));
-        return typename Serial::bytes_t{m_buffer, m_buffer + numBytes};
+        return typename Serial::bytes_t{ m_buffer, m_buffer + numBytes };
     }
 
     asio::io_context m_io{};

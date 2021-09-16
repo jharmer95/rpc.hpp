@@ -38,6 +38,7 @@
 #define RPC_HPP_CLIENT_IMPL
 
 #include "rpc.client.hpp"
+#include "static_funcs.hpp"
 #include "test_structs.hpp"
 
 #include <doctest/doctest.h>
@@ -132,6 +133,26 @@ TEST_CASE("BITSERY")
 
 #define RPC_TEST_TYPES TEST_BITSERY_T TEST_BOOST_JSON_T TEST_NJSON_T TEST_RAPIDJSON_T
 
+TEST_CASE_TEMPLATE("CountChars (static)", TestType, RPC_TEST_TYPES)
+{
+    auto& client = GetClient<TestType>();
+    const std::string s = "peter piper picked a pack of pickled peppers";
+    const int result = client.call_header_func(CountChars, s, 'p');
+
+    REQUIRE(result == 9);
+}
+
+TEST_CASE_TEMPLATE("AddOne (static)", TestType, RPC_TEST_TYPES)
+{
+    auto& client = GetClient<TestType>();
+
+    size_t n = 2;
+    client.call_header_func(AddOne, n);
+    client.call_header_func(AddOne, n);
+
+    REQUIRE(n == 4);
+}
+
 TEST_CASE_TEMPLATE("StrLen", TestType, RPC_TEST_TYPES)
 {
     auto& client = GetClient<TestType>();
@@ -171,20 +192,20 @@ TEST_CASE_TEMPLATE("AddOneToEachRef", TestType, RPC_TEST_TYPES)
 
 TEST_CASE_TEMPLATE("Fibonacci", TestType, RPC_TEST_TYPES)
 {
-    constexpr uint64_t expected = 10946UL;
+    constexpr uint64_t expected = 10946;
     auto& client = GetClient<TestType>();
 
-    const auto test = client.template call_func<uint64_t>("Fibonacci", 20UL);
+    const auto test = client.template call_func<uint64_t>("Fibonacci", uint64_t{ 20 });
 
     REQUIRE(expected == test);
 }
 
 TEST_CASE_TEMPLATE("FibonacciRef", TestType, RPC_TEST_TYPES)
 {
-    constexpr uint64_t expected = 10946UL;
+    constexpr uint64_t expected = 10946;
     auto& client = GetClient<TestType>();
 
-    uint64_t test = 20UL;
+    uint64_t test = 20;
     client.call_func("FibonacciRef", test);
 
     REQUIRE(expected == test);
@@ -280,7 +301,9 @@ TEST_CASE_TEMPLATE("Function not found", TestType, RPC_TEST_TYPES)
     auto& client = GetClient<TestType>();
 
     const auto exp = [&client]()
-    { [[maybe_unused]] int _unused = client.template call_func<int>("FUNC_WHICH_DOES_NOT_EXIST"); };
+    {
+        [[maybe_unused]] int _unused = client.template call_func<int>("FUNC_WHICH_DOES_NOT_EXIST");
+    };
 
     REQUIRE_THROWS_WITH(
         exp(), "RPC error: Called function: \"FUNC_WHICH_DOES_NOT_EXIST\" not found!");
@@ -291,7 +314,9 @@ TEST_CASE_TEMPLATE("ThrowError", TestType, RPC_TEST_TYPES)
     auto& client = GetClient<TestType>();
 
     const auto exp = [&client]()
-    { [[maybe_unused]] int _unused = client.template call_func<int>("ThrowError"); };
+    {
+        [[maybe_unused]] int _unused = client.template call_func<int>("ThrowError");
+    };
 
     REQUIRE_THROWS_WITH(exp(), "THIS IS A TEST ERROR!");
 }

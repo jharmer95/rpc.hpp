@@ -436,8 +436,8 @@ TEST_CASE("With Container", "[container][cached]")
         const std::vector<double> vec{ 55.65, 125.325, 552.125, 12.767, 2599.6, 1245.125663,
             9783.49, 125.12, 553.3333333333, 2266.1 };
 
-        test =
-            GetClient<boost_json_adapter>().template call_func<double>("AverageContainer<double>", vec);
+        test = GetClient<boost_json_adapter>().template call_func<double>(
+            "AverageContainer<double>", vec);
     };
 #endif
 
