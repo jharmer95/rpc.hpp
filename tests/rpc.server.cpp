@@ -70,6 +70,7 @@ const uint64_t rpc::adapters::bitsery::config::max_container_size = 100;
 #include <algorithm>
 #include <cmath>
 #include <condition_variable>
+#include <fstream>
 #include <iostream>
 #include <mutex>
 #include <sstream>
@@ -235,6 +236,22 @@ void HashComplexRef(ComplexObject& cx, std::string& hashStr)
     }
 
     hashStr = hash.str();
+}
+
+template<typename Serial, typename R, typename... Args>
+void dump_cache([[maybe_unused]] R (*func)(Args...), std::string dump_path)
+{
+    auto& cache = TestServer<Serial>::template get_func_cache<typename Serial::bytes_t, R>();
+
+    if constexpr (std::is_same_v<R, int>)
+    {
+        std::ofstream ofile(std::move(dump_path));
+
+        for (const auto& [key, value] : cache)
+        {
+            ofile << key << " : " << value << '\n';
+        }
+    }
 }
 
 int main()
