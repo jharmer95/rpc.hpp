@@ -68,7 +68,6 @@ const uint64_t rpc::adapters::bitsery::config::max_container_size = 100;
 #endif
 
 #include <algorithm>
-#include <charconv>
 #include <cmath>
 #include <condition_variable>
 #include <fstream>
@@ -317,7 +316,19 @@ void load_cache(TestServer<Serial>& server, [[maybe_unused]] R (*func)(Args...),
         if constexpr (std::is_arithmetic_v<R>)
         {
             R value;
-            std::from_chars(buffer, buffer + 1024, value);
+
+            if constexpr (std::is_floating_point_v<R>)
+            {
+                value = static_cast<R>(strtod(buffer, nullptr));
+            }
+            else if constexpr (std::is_signed_v<R>)
+            {
+                value = static_cast<R>(strtoll(buffer, nullptr, 10));
+            }
+            else
+            {
+                value = static_cast<R>(strtoull(buffer, nullptr, 10));
+            }
 
             cache[ss.str()] = value;
         }
@@ -395,6 +406,7 @@ int main()
         std::unique_lock<std::mutex> lk{ MUTEX };
         cv.wait(lk, [] { return !RUNNING; });
 
+#if defined(RPC_HPP_ENABLE_NJSON)
         DUMP_CACHE(njson_server, SimpleSum, "dump_cache");
         DUMP_CACHE(njson_server, StrLen, "dump_cache");
         DUMP_CACHE(njson_server, AddOneToEach, "dump_cache");
@@ -405,6 +417,7 @@ int main()
         DUMP_CACHE(njson_server, AverageContainer<double>, "dump_cache");
         DUMP_CACHE(njson_server, HashComplex, "dump_cache");
         DUMP_CACHE(njson_server, CountChars, "dump_cache");
+#endif
 
         return 0;
     }

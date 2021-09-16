@@ -133,7 +133,7 @@ with open(fname, "w") as f:
     )
     f.write("#elif defined(RPC_HPP_CLIENT_IMPL)\n")
     f.write(
-        "#    define RPC_HEADER_FUNC(RETURN, FUNCNAME, ...) RETURN (*FUNCNAME)(__VA_ARGS__) = nullptr"
+        "#    define RPC_HEADER_FUNC(RETURN, FUNCNAME, ...) inline RETURN (*FUNCNAME)(__VA_ARGS__) = nullptr"
     )
     f.write("#endif\n\n")
 

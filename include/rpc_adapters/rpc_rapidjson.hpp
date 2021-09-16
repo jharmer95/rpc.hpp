@@ -137,12 +137,12 @@ namespace adapters
                         std::is_same_v<no_ref_t,
                             char> || std::is_same_v<no_ref_t, int8_t> || std::is_same_v<no_ref_t, int16_t>)
                     {
-                        return arg.GetInt();
+                        return static_cast<no_ref_t>(arg.GetInt());
                     }
                     else if constexpr (std::is_same_v<no_ref_t,
                                            uint8_t> || std::is_same_v<no_ref_t, uint16_t>)
                     {
-                        return arg.GetUint();
+                        return static_cast<no_ref_t>(arg.GetUint());
                     }
                     else
                     {
@@ -303,7 +303,7 @@ packed_func<R, Args...> pack_adapter<adapters::rapidjson_adapter>::deserialize_p
             }
             else if constexpr (rpc::details::is_container_v<R>)
             {
-                using value_t = typename R::value_type;
+                using subvalue_t = typename R::value_type;
                 R container;
                 container.reserve(result.Size());
 
@@ -311,7 +311,8 @@ packed_func<R, Args...> pack_adapter<adapters::rapidjson_adapter>::deserialize_p
 
                 for (const auto& val : result.GetArray())
                 {
-                    container.push_back(adapters::rapidjson::details::parse_arg<value_t>(val, j));
+                    container.push_back(
+                        adapters::rapidjson::details::parse_arg<subvalue_t>(val, j));
                 }
 
                 return packed_func<R, Args...>(
