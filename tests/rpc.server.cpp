@@ -68,6 +68,7 @@ const uint64_t rpc::adapters::bitsery::config::max_container_size = 100;
 #endif
 
 #include <algorithm>
+#include <charconv>
 #include <cmath>
 #include <condition_variable>
 #include <fstream>
@@ -239,20 +240,114 @@ void HashComplexRef(ComplexObject& cx, std::string& hashStr)
 }
 
 template<typename Serial, typename R, typename... Args>
-void dump_cache([[maybe_unused]] R (*func)(Args...), std::string dump_path)
+void dump_cache(TestServer<Serial>& server, [[maybe_unused]] R (*func)(Args...),
+    const std::string& func_name, std::string dump_dir)
 {
-    auto& cache = TestServer<Serial>::template get_func_cache<typename Serial::bytes_t, R>();
+    auto& cache = server.template get_func_cache<R>(func_name);
 
-    if constexpr (std::is_same_v<R, int>)
+    std::string file_name = func_name;
+
+    std::replace(file_name.begin(), file_name.end(), '<', '(');
+    std::replace(file_name.begin(), file_name.end(), '>', ')');
+
+    std::ofstream ofile(std::move(dump_dir) + "/" + std::move(file_name) + ".dump");
+
+    if constexpr (std::is_arithmetic_v<R> || std::is_same_v<R, std::string>)
     {
-        std::ofstream ofile(std::move(dump_path));
+        for (const auto& [key, value] : cache)
+        {
+            ofile << key << '\034' << value << '\n';
+        }
+    }
+    else if constexpr (std::is_same_v<R, std::vector<int>>)
+    {
+        std::stringstream ss;
 
         for (const auto& [key, value] : cache)
         {
-            ofile << key << " : " << value << '\n';
+            if (value.empty())
+            {
+                continue;
+            }
+
+            ss << '[';
+            auto it = value.begin();
+
+            for (; it != value.end() - 1; ++it)
+            {
+                ss << *it << ',';
+            }
+
+            ss << *it << ']';
+
+            ofile << key << '\034' << ss.str() << '\n';
         }
     }
 }
+
+template<typename Serial, typename R, typename... Args>
+void load_cache(TestServer<Serial>& server, [[maybe_unused]] R (*func)(Args...),
+    const std::string& func_name, std::string dump_dir)
+{
+    auto& cache = server.template get_func_cache<R>(func_name);
+
+    std::string file_name = func_name;
+
+    std::replace(file_name.begin(), file_name.end(), '<', '(');
+    std::replace(file_name.begin(), file_name.end(), '>', ')');
+
+    std::ifstream ifile(std::move(dump_dir) + "/" + std::move(file_name) + ".dump");
+
+    if (!ifile.is_open())
+    {
+        std::cout << "Could not load cache for function: " << func_name << '\n';
+        return;
+    }
+
+    std::stringstream ss;
+    char buffer[1024]{};
+
+    while (ifile.get(*ss.rdbuf(), '\034'))
+    {
+        // Toss out separator
+        [[maybe_unused]] auto unused = ifile.get();
+
+        ifile.getline(buffer, 1024);
+
+        if constexpr (std::is_arithmetic_v<R>)
+        {
+            R value;
+            std::from_chars(buffer, buffer + 1024, value);
+
+            cache[ss.str()] = value;
+        }
+        else if constexpr (std::is_same_v<R, std::string>)
+        {
+            std::string value{ buffer };
+            cache[ss.str()] = std::move(value);
+        }
+        else if constexpr (std::is_same_v<R, std::vector<int>>)
+        {
+            std::vector<int> value;
+            std::stringstream ss2(buffer + 1);
+
+            for (int i; ss2 >> i;)
+            {
+                value.push_back(i);
+
+                if (ss2.peek() == ',' || ss2.peek() == ']')
+                {
+                    ss2.ignore();
+                }
+            }
+
+            cache[ss.str()] = std::move(value);
+        }
+    }
+}
+
+#define DUMP_CACHE(SERVER, FUNCNAME, DIR) dump_cache(SERVER, FUNCNAME, #FUNCNAME, DIR)
+#define LOAD_CACHE(SERVER, FUNCNAME, DIR) load_cache(SERVER, FUNCNAME, #FUNCNAME, DIR)
 
 int main()
 {
@@ -263,6 +358,18 @@ int main()
 
 #if defined(RPC_HPP_ENABLE_NJSON)
         TestServer<njson_adapter> njson_server{ io_context, 5000U };
+
+        LOAD_CACHE(njson_server, SimpleSum, "dump_cache");
+        LOAD_CACHE(njson_server, StrLen, "dump_cache");
+        LOAD_CACHE(njson_server, AddOneToEach, "dump_cache");
+        LOAD_CACHE(njson_server, Fibonacci, "dump_cache");
+        LOAD_CACHE(njson_server, Average, "dump_cache");
+        LOAD_CACHE(njson_server, StdDev, "dump_cache");
+        LOAD_CACHE(njson_server, AverageContainer<uint64_t>, "dump_cache");
+        LOAD_CACHE(njson_server, AverageContainer<double>, "dump_cache");
+        LOAD_CACHE(njson_server, HashComplex, "dump_cache");
+        LOAD_CACHE(njson_server, CountChars, "dump_cache");
+
         std::thread(&TestServer<njson_adapter>::Run, &njson_server).detach();
         std::cout << "Running njson server on port 5000...\n";
 #endif
@@ -287,6 +394,18 @@ int main()
 
         std::unique_lock<std::mutex> lk{ MUTEX };
         cv.wait(lk, [] { return !RUNNING; });
+
+        DUMP_CACHE(njson_server, SimpleSum, "dump_cache");
+        DUMP_CACHE(njson_server, StrLen, "dump_cache");
+        DUMP_CACHE(njson_server, AddOneToEach, "dump_cache");
+        DUMP_CACHE(njson_server, Fibonacci, "dump_cache");
+        DUMP_CACHE(njson_server, Average, "dump_cache");
+        DUMP_CACHE(njson_server, StdDev, "dump_cache");
+        DUMP_CACHE(njson_server, AverageContainer<uint64_t>, "dump_cache");
+        DUMP_CACHE(njson_server, AverageContainer<double>, "dump_cache");
+        DUMP_CACHE(njson_server, HashComplex, "dump_cache");
+        DUMP_CACHE(njson_server, CountChars, "dump_cache");
+
         return 0;
     }
     catch (const std::exception& ex)

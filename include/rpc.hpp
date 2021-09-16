@@ -451,26 +451,22 @@ inline namespace server
         }
 
 #    if defined(RPC_HPP_SERVER_IMPL) && defined(RPC_HPP_ENABLE_SERVER_CACHE)
-        template<typename Key, typename Val>
-        static std::unordered_map<Key, Val>& get_func_cache()
+        template<typename Val>
+        std::unordered_map<typename Serial::bytes_t, Val>& get_func_cache(
+            const std::string& func_name)
         {
-            static std::unordered_map<Key, Val> cache{};
-            return cache;
+            update_all_cache<Val>(func_name);
+            return *static_cast<std::unordered_map<typename Serial::bytes_t, Val>*>(
+                m_cache_map.at(func_name));
         }
 
-        template<typename Key, typename Val>
-        static void set_func_cache(std::unordered_map<Key, Val> new_cache)
+        template<typename Val>
+        void update_all_cache(const std::string& func_name)
         {
-            auto& cache = get_func_cache<Key, Val>();
-            cache = std::move(new_cache);
+            m_cache_map[func_name] = get_func_cache_impl<Val>(func_name);
         }
 
-        template<typename Key, typename Val>
-        static void clear_func_cache()
-        {
-            auto& cache = get_func_cache<Key, Val>();
-            cache.clear();
-        }
+        void clear_all_cache() { m_cache_map.clear(); }
 
         ///@brief Deserializes the serial object to a packed_func, calls the callback function, then serializes the result back to the serial object, using a server-side cache for performance.
         ///
@@ -480,11 +476,10 @@ inline namespace server
         ///@param func pointer to the callback function
         ///@param serial_obj Serial representing the function call
         template<typename R, typename... Args>
-        static void dispatch_cached_func(R (*func)(Args...), typename Serial::serial_t& serial_obj)
+        void dispatch_cached_func(R (*func)(Args...), typename Serial::serial_t& serial_obj)
         {
-            auto& result_cache = get_func_cache<typename Serial::bytes_t, R>();
-
             auto pack = pack_adapter<Serial>::template deserialize_pack<R, Args...>(serial_obj);
+            auto& result_cache = get_func_cache<R>(pack.get_func_name());
 
             if constexpr (!std::is_void_v<R>)
             {
@@ -512,7 +507,7 @@ inline namespace server
         }
 #    else
         template<typename R, typename... Args>
-        static void dispatch_cached_func(R (*func)(Args...), typename Serial::serial_t& serial_obj)
+        void dispatch_cached_func(R (*func)(Args...), typename Serial::serial_t& serial_obj)
         {
             dispatch_func(func, serial_obj);
         }
@@ -556,6 +551,21 @@ inline namespace server
 
             bytes = Serial::to_bytes(std::move(serial_obj));
         }
+
+#    if defined(RPC_HPP_SERVER_IMPL) && defined(RPC_HPP_ENABLE_SERVER_CACHE)
+    private:
+        template<typename Val>
+        static void* get_func_cache_impl(const std::string& func_name)
+        {
+            static std::unordered_map<std::string,
+                std::unordered_map<typename Serial::bytes_t, Val>>
+                cache{};
+
+            return static_cast<void*>(&cache[func_name]);
+        }
+
+        std::unordered_map<std::string, void*> m_cache_map;
+#    endif
     };
 } // namespace server
 #endif
