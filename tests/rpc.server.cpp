@@ -304,43 +304,35 @@ void load_cache(TestServer<Serial>& server, [[maybe_unused]] R (*func)(Args...),
     }
 
     std::stringstream ss;
-    char buffer[1024]{};
+    std::string val_str;
 
     while (ifile.get(*ss.rdbuf(), '\034'))
     {
         // Toss out separator
         [[maybe_unused]] auto unused = ifile.get();
 
-        ifile.getline(buffer, 1024);
+        std::getline(ifile, val_str);
 
         if constexpr (std::is_arithmetic_v<R>)
         {
             R value;
+            std::stringstream ss2(val_str);
 
-            if constexpr (std::is_floating_point_v<R>)
-            {
-                value = static_cast<R>(strtod(buffer, nullptr));
-            }
-            else if constexpr (std::is_signed_v<R>)
-            {
-                value = static_cast<R>(strtoll(buffer, nullptr, 10));
-            }
-            else
-            {
-                value = static_cast<R>(strtoull(buffer, nullptr, 10));
-            }
+            ss2 >> value;
 
             cache[ss.str()] = value;
         }
         else if constexpr (std::is_same_v<R, std::string>)
         {
-            std::string value{ buffer };
-            cache[ss.str()] = std::move(value);
+            cache[ss.str()] = std::move(val_str);
         }
         else if constexpr (std::is_same_v<R, std::vector<int>>)
         {
             std::vector<int> value;
-            std::stringstream ss2(buffer + 1);
+            std::stringstream ss2(val_str);
+
+            // ignore first '['
+            ss2.ignore();
 
             for (int i; ss2 >> i;)
             {
@@ -354,14 +346,21 @@ void load_cache(TestServer<Serial>& server, [[maybe_unused]] R (*func)(Args...),
 
             cache[ss.str()] = std::move(value);
         }
+
+        ss.clear();
     }
 }
 
 #define DUMP_CACHE(SERVER, FUNCNAME, DIR) dump_cache(SERVER, FUNCNAME, #FUNCNAME, DIR)
 #define LOAD_CACHE(SERVER, FUNCNAME, DIR) load_cache(SERVER, FUNCNAME, #FUNCNAME, DIR)
 
-int main()
+int main(int argc, char* argv[])
 {
+    if (argc > 1 && strcmp(argv[1], "--help") == 0)
+    {
+        return 0;
+    }
+
     try
     {
         asio::io_context io_context{};
