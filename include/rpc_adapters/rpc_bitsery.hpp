@@ -330,6 +330,62 @@ namespace adapters
 #        pragma clang diagnostic pop
 #    endif
 #endif
+
+            // Borrowed from Bitsery library for compatibility
+            inline unsigned extract_length(const bit_buffer& bytes, size_t& index)
+            {
+                const uint8_t hb = bytes[index++];
+
+                if (hb < 0x80U)
+                {
+                    return hb;
+                }
+
+                const uint8_t lb = bytes[index++];
+
+                if ((hb & 0x40U) != 0U)
+                {
+                    const uint16_t lw = *reinterpret_cast<const uint16_t*>(bytes.data() + index++);
+
+                    return ((((hb & 0x3FU) << 8) | lb) << 16) | lw;
+                }
+
+                return ((hb & 0x7FU) << 8) | lb;
+            }
+
+            // Borrowed from Bitsery library for compatibility
+            inline void write_length(bit_buffer& bytes, size_t size, size_t& index)
+            {
+                if (size < 0x80u)
+                {
+                    bytes.insert(bytes.begin() + index++, static_cast<uint8_t>(size));
+                }
+                else
+                {
+                    if (size < 0x4000u)
+                    {
+                        bytes.insert(
+                            bytes.begin() + index++, static_cast<uint8_t>((size >> 8) | 0x80u));
+                        bytes.insert(bytes.begin() + index++, static_cast<uint8_t>(size));
+                    }
+                    else
+                    {
+                        assert(size < 0x40000000u);
+                        bytes.insert(
+                            bytes.begin() + index++, static_cast<uint8_t>((size >> 24) | 0xC0u));
+
+                        bytes.insert(bytes.begin() + index++, static_cast<uint8_t>(size >> 16));
+
+                        const auto sh = static_cast<uint16_t>(size);
+
+                        bytes.insert(
+                            bytes.begin() + index++, *reinterpret_cast<const uint8_t*>(&size));
+
+                        bytes.insert(
+                            bytes.begin() + index++, *reinterpret_cast<const uint8_t*>(&size) + 1);
+                    }
+                }
+            }
         } // namespace details
     }     // namespace bitsery
 } // namespace adapters
@@ -426,42 +482,38 @@ template<>
 inline std::string pack_adapter<adapters::bitsery_adapter>::get_func_name(
     const adapters::bitsery::bit_buffer& serial_obj)
 {
-    const uint8_t len = serial_obj.front();
-    return { serial_obj.begin() + 1, serial_obj.begin() + 1UL + len };
+    size_t index = 0;
+    const auto len = adapters::bitsery::details::extract_length(serial_obj, index);
+    return { serial_obj.begin() + index, serial_obj.begin() + index + len };
 }
 
 template<>
 inline void pack_adapter<adapters::bitsery_adapter>::set_err_mesg(
     adapters::bitsery::bit_buffer& serial_obj, const std::string mesg)
 {
-    // TODO: Support > 255 length
-    const auto name_len = static_cast<ptrdiff_t>(serial_obj.front());
+    size_t index = 0;
 
-    if (name_len < 0)
+    const auto name_len = adapters::bitsery::details::extract_length(serial_obj, index);
+
+    const size_t name_sz_len = index;
+
+    index += name_len;
+    const auto err_len = adapters::bitsery::details::extract_length(serial_obj, index);
+
+    const auto new_err_len = static_cast<unsigned>(mesg.size());
+
+    if (new_err_len != err_len)
     {
-        throw std::range_error("String length found to be negative");
+        serial_obj.erase(
+            serial_obj.begin() + name_sz_len + name_len, serial_obj.begin() + index + err_len);
+
+        index = name_sz_len + name_len;
+        adapters::bitsery::details::write_length(serial_obj, new_err_len, index);
     }
 
-    const auto name_ulen = static_cast<size_t>(name_len);
-
-    const uint8_t err_len = serial_obj.at(name_ulen + 1UL);
-    const auto new_err_len = static_cast<uint8_t>(mesg.size());
-
-    if (new_err_len > err_len)
+    for (unsigned i = 0; i < new_err_len; ++i)
     {
-        serial_obj.at(name_ulen + 1UL) = new_err_len;
-        serial_obj.insert(serial_obj.begin() + name_len + 2UL, new_err_len - err_len, 0);
-    }
-    else if (new_err_len < err_len)
-    {
-        serial_obj.at(name_ulen + 1UL) = new_err_len;
-        serial_obj.erase(serial_obj.begin() + name_len + 2UL,
-            serial_obj.begin() + name_len + 2UL + (err_len - new_err_len));
-    }
-
-    for (size_t i = 0; i < new_err_len; ++i)
-    {
-        serial_obj.at(name_ulen + 2UL + i) = static_cast<uint8_t>(mesg.at(i));
+        serial_obj.insert(serial_obj.begin() + index++, mesg[i]);
     }
 }
 } // namespace rpc

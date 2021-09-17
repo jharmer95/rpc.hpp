@@ -63,7 +63,7 @@ using rpc::adapters::boost_json_adapter;
 using rpc::adapters::bitsery_adapter;
 
 const uint64_t rpc::adapters::bitsery::config::max_func_name_size = 30;
-const uint64_t rpc::adapters::bitsery::config::max_string_size = 100;
+const uint64_t rpc::adapters::bitsery::config::max_string_size = 2048U;
 const uint64_t rpc::adapters::bitsery::config::max_container_size = 100;
 #endif
 
