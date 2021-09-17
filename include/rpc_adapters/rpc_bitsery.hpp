@@ -58,13 +58,13 @@ namespace std
 template<>
 struct hash<std::vector<uint8_t>>
 {
-    size_t operator()(const std::vector<uint8_t>& vec) const
+    size_t operator()(const std::vector<uint8_t>& vec) const noexcept
     {
         size_t seed = vec.size();
 
         for (const auto i : vec)
         {
-            seed ^= i + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+            seed ^= static_cast<size_t>(i) + size_t{ 0x9E3779B9UL } + (seed << 6) + (seed >> 2);
         }
 
         return seed;
@@ -78,7 +78,7 @@ namespace rpc
 namespace adapters
 {
     using bitsery_adapter =
-        rpc::details::serial_adapter<std::vector<uint8_t>, std::vector<std::uint8_t>>;
+        details::serial_adapter<std::vector<uint8_t>, std::vector<std::uint8_t>>;
 
     namespace bitsery
     {
@@ -297,14 +297,12 @@ namespace adapters
                         return packed_func<void, Args...>{ std::move(helper.func_name),
                             std::move(helper.args) };
                     }
-                    else
-                    {
-                        packed_func<void, Args...> pack{ std::move(helper.func_name),
-                            std::move(helper.args) };
 
-                        pack.set_err_mesg(helper.err_mesg);
-                        return pack;
-                    }
+                    packed_func<void, Args...> pack{ std::move(helper.func_name),
+                        std::move(helper.args) };
+
+                    pack.set_err_mesg(helper.err_mesg);
+                    return pack;
                 }
                 else
                 {
@@ -313,15 +311,13 @@ namespace adapters
                         return packed_func<R, Args...>{ std::move(helper.func_name),
                             std::move(helper.result), std::move(helper.args) };
                     }
-                    else
-                    {
-                        packed_func<R, Args...> pack{ std::move(helper.func_name),
-                            std::move(helper.result), std::move(helper.args) };
 
-                        pack.set_err_mesg(helper.err_mesg);
-                        pack.clear_result();
-                        return pack;
-                    }
+                    packed_func<R, Args...> pack{ std::move(helper.func_name),
+                        std::move(helper.result), std::move(helper.args) };
+
+                    pack.set_err_mesg(helper.err_mesg);
+                    pack.clear_result();
+                    return pack;
                 }
             }
 
@@ -340,16 +336,30 @@ namespace adapters
 
 template<>
 inline adapters::bitsery::bit_buffer adapters::bitsery_adapter::to_bytes(
-    adapters::bitsery::bit_buffer serial_obj)
+    const adapters::bitsery::bit_buffer& serial_obj)
 {
     return serial_obj;
 }
 
 template<>
+inline adapters::bitsery::bit_buffer adapters::bitsery_adapter::to_bytes(
+    adapters::bitsery::bit_buffer&& serial_obj)
+{
+    return std::move(serial_obj);
+}
+
+template<>
 inline adapters::bitsery::bit_buffer adapters::bitsery_adapter::from_bytes(
-    adapters::bitsery::bit_buffer bytes)
+    const adapters::bitsery::bit_buffer& bytes)
 {
     return bytes;
+}
+
+template<>
+inline adapters::bitsery::bit_buffer adapters::bitsery_adapter::from_bytes(
+    adapters::bitsery::bit_buffer&& bytes)
+{
+    return std::move(bytes);
 }
 
 template<>
@@ -363,7 +373,7 @@ adapters::bitsery::bit_buffer pack_adapter<adapters::bitsery_adapter>::serialize
 
     bit_buffer buffer;
     const auto bytes_written =
-        ::bitsery::quickSerialization<adapters::bitsery::details::output_adapter>(buffer, helper);
+        bitsery::quickSerialization<adapters::bitsery::details::output_adapter>(buffer, helper);
 
     buffer.resize(bytes_written);
     return buffer;
@@ -378,28 +388,28 @@ packed_func<R, Args...> pack_adapter<adapters::bitsery_adapter>::deserialize_pac
 
     adapters::bitsery::details::pack_helper<R, Args...> helper;
 
-    const auto [error, success] = ::bitsery::quickDeserialization(
+    const auto [error, success] = bitsery::quickDeserialization(
         adapters::bitsery::details::input_adapter{ serial_obj.begin(), serial_obj.size() }, helper);
 
-    if (error != ::bitsery::ReaderError::NoError)
+    if (error != bitsery::ReaderError::NoError)
     {
         const std::string error_mesg = [error = error]()
         {
             switch (error)
             {
-                case ::bitsery::ReaderError::ReadingError:
+                case bitsery::ReaderError::ReadingError:
                     return "a reading error!";
 
-                case ::bitsery::ReaderError::DataOverflow:
+                case bitsery::ReaderError::DataOverflow:
                     return "data overflow!";
 
-                case ::bitsery::ReaderError::InvalidData:
+                case bitsery::ReaderError::InvalidData:
                     return "invalid data!";
 
-                case ::bitsery::ReaderError::InvalidPointer:
+                case bitsery::ReaderError::InvalidPointer:
                     return "an invalid pointer!";
 
-                case ::bitsery::ReaderError::NoError:
+                case bitsery::ReaderError::NoError:
                 default:
                     return "extra data on the end!";
             }
@@ -422,28 +432,36 @@ inline std::string pack_adapter<adapters::bitsery_adapter>::get_func_name(
 
 template<>
 inline void pack_adapter<adapters::bitsery_adapter>::set_err_mesg(
-    adapters::bitsery::bit_buffer& serial_obj, std::string mesg)
+    adapters::bitsery::bit_buffer& serial_obj, const std::string mesg)
 {
     // TODO: Support > 255 length
-    const uint8_t name_len = serial_obj.front();
-    const uint8_t err_len = serial_obj.at(name_len + 1UL);
+    const auto name_len = static_cast<ptrdiff_t>(serial_obj.front());
+
+    if (name_len < 0)
+    {
+        throw std::range_error("String length found to be negative");
+    }
+
+    const auto name_ulen = static_cast<size_t>(name_len);
+
+    const uint8_t err_len = serial_obj.at(name_ulen + 1UL);
     const auto new_err_len = static_cast<uint8_t>(mesg.size());
 
     if (new_err_len > err_len)
     {
-        serial_obj.at(name_len + 1UL) = new_err_len;
+        serial_obj.at(name_ulen + 1UL) = new_err_len;
         serial_obj.insert(serial_obj.begin() + name_len + 2UL, new_err_len - err_len, 0);
     }
     else if (new_err_len < err_len)
     {
-        serial_obj.at(name_len + 1UL) = new_err_len;
+        serial_obj.at(name_ulen + 1UL) = new_err_len;
         serial_obj.erase(serial_obj.begin() + name_len + 2UL,
             serial_obj.begin() + name_len + 2UL + (err_len - new_err_len));
     }
 
     for (size_t i = 0; i < new_err_len; ++i)
     {
-        serial_obj.at(name_len + 2UL + i) = static_cast<uint8_t>(mesg.at(i));
+        serial_obj.at(name_ulen + 2UL + i) = static_cast<uint8_t>(mesg.at(i));
     }
 }
 } // namespace rpc

@@ -49,12 +49,11 @@ void RpcServer::Run()
     {
         tcp::acceptor acc(m_io, tcp::endpoint(tcp::v4(), m_port));
         tcp::socket sock = acc.accept();
-        constexpr auto BUFFER_SZ = 128;
-
-        uint8_t data[BUFFER_SZ];
 
         try
         {
+            constexpr auto BUFFER_SZ = 128;
+            uint8_t data[BUFFER_SZ];
             while (true)
             {
                 asio::error_code error;

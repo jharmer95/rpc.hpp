@@ -19,7 +19,6 @@ using module_t = void*;
 
 #include <rpc_adapters/rpc_njson.hpp>
 
-#include <stdexcept>
 #include <string>
 
 using rpc::adapters::njson_adapter;

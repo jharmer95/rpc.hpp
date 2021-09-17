@@ -141,13 +141,28 @@ namespace adapters
 } // namespace adapters
 
 template<>
-inline std::string adapters::boost_json_adapter::to_bytes(adapters::boost_json::value_t serial_obj)
+inline std::string adapters::boost_json_adapter::to_bytes(
+    const adapters::boost_json::value_t& serial_obj)
+{
+    return boost::json::serialize(serial_obj);
+}
+
+template<>
+inline std::string adapters::boost_json_adapter::to_bytes(
+    adapters::boost_json::value_t&& serial_obj)
 {
     return boost::json::serialize(std::move(serial_obj));
 }
 
 template<>
-inline adapters::boost_json::value_t adapters::boost_json_adapter::from_bytes(std::string bytes)
+inline adapters::boost_json::value_t adapters::boost_json_adapter::from_bytes(
+    const std::string& bytes)
+{
+    return boost::json::parse(bytes);
+}
+
+template<>
+inline adapters::boost_json::value_t adapters::boost_json_adapter::from_bytes(std::string&& bytes)
 {
     return boost::json::parse(std::move(bytes));
 }
@@ -163,7 +178,7 @@ adapters::boost_json::value_t pack_adapter<adapters::boost_json_adapter>::serial
 
     ret_j["func_name"] = pack.get_func_name();
 
-    const auto err_mesg = pack.get_err_mesg();
+    const auto& err_mesg = pack.get_err_mesg();
 
     if (!err_mesg.empty())
     {
@@ -184,7 +199,7 @@ adapters::boost_json::value_t pack_adapter<adapters::boost_json_adapter>::serial
             else if constexpr (rpc::details::is_container_v<R>)
             {
                 result = boost::json::array{};
-                const auto container = pack.get_result();
+                const auto& container = pack.get_result();
 
                 for (const auto& val : container)
                 {

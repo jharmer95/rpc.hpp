@@ -63,7 +63,6 @@ using rpc::adapters::rapidjson_adapter;
 #include <algorithm>
 #include <array>
 #include <cstdint>
-#include <cstring>
 #include <string>
 
 struct ComplexObject
@@ -145,7 +144,7 @@ template<>
 template<>
 inline rpc::adapters::njson::njson_t njson_adapter::serialize(const ComplexObject& val)
 {
-    rpc::adapters::njson::njson_t obj_j;
+    adapters::njson::njson_t obj_j;
     obj_j["id"] = val.id;
     obj_j["name"] = val.name;
     obj_j["flag1"] = val.flag1;
@@ -157,7 +156,7 @@ inline rpc::adapters::njson::njson_t njson_adapter::serialize(const ComplexObjec
 
 template<>
 template<>
-inline ComplexObject njson_adapter::deserialize(const rpc::adapters::njson::njson_t& serial_obj)
+inline ComplexObject njson_adapter::deserialize(const adapters::njson::njson_t& serial_obj)
 {
     ComplexObject cx;
     cx.id = serial_obj["id"].get<int>();
@@ -184,27 +183,27 @@ template<>
 template<>
 inline rpc::adapters::rapidjson::doc_t rapidjson_adapter::serialize(const ComplexObject& val)
 {
-    rpc::adapters::rapidjson::doc_t d;
+    adapters::rapidjson::doc_t d;
     d.SetObject();
     auto& alloc = d.GetAllocator();
 
-    rpc::adapters::rapidjson::value_t id_v;
+    adapters::rapidjson::value_t id_v;
     id_v.SetInt(val.id);
     d.AddMember("id", id_v, alloc);
 
-    rpc::adapters::rapidjson::value_t name_v;
+    adapters::rapidjson::value_t name_v;
     name_v.SetString(val.name.c_str(), alloc);
     d.AddMember("name", name_v, alloc);
 
-    rpc::adapters::rapidjson::value_t flag1_v;
+    adapters::rapidjson::value_t flag1_v;
     flag1_v.SetBool(val.flag1);
     d.AddMember("flag1", flag1_v, alloc);
 
-    rpc::adapters::rapidjson::value_t flag2_v;
+    adapters::rapidjson::value_t flag2_v;
     flag2_v.SetBool(val.flag2);
     d.AddMember("flag2", flag2_v, alloc);
 
-    rpc::adapters::rapidjson::value_t vals_v;
+    adapters::rapidjson::value_t vals_v;
     vals_v.SetArray();
 
     for (uint8_t i = 0; i < 12; ++i)
@@ -218,8 +217,7 @@ inline rpc::adapters::rapidjson::doc_t rapidjson_adapter::serialize(const Comple
 
 template<>
 template<>
-inline ComplexObject rapidjson_adapter::deserialize(
-    const rpc::adapters::rapidjson::doc_t& serial_obj)
+inline ComplexObject rapidjson_adapter::deserialize(const adapters::rapidjson::doc_t& serial_obj)
 {
     ComplexObject obj;
 

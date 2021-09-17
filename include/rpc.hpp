@@ -193,8 +193,8 @@ namespace details
     inline constexpr bool is_container_v = is_container<C>::value;
 
     template<typename F, typename... Ts, size_t... Is>
-    constexpr void for_each_tuple(
-        const std::tuple<Ts...>& tuple, const F& func, [[maybe_unused]] std::index_sequence<Is...>)
+    constexpr void for_each_tuple(const std::tuple<Ts...>& tuple, const F& func,
+        [[maybe_unused]] std::index_sequence<Is...> iseq)
     {
         using expander = int[];
         (void)expander{ 0, ((void)func(std::get<Is>(tuple)), 0)... };
@@ -246,20 +246,32 @@ namespace details
         {
         }
 
-        std::string get_err_mesg() const { return m_err_mesg; }
-        std::string get_func_name() const { return m_func_name; }
+        const std::string& get_err_mesg() const& { return m_err_mesg; }
+        [[nodiscard]] std::string get_err_mesg() && { return std::move(m_err_mesg); }
+
+        const std::string& get_func_name() const& { return m_func_name; }
+        [[nodiscard]] std::string get_func_name() && { return std::move(m_func_name); }
 
         void set_err_mesg(const std::string& mesg) & { m_err_mesg = mesg; }
 
         explicit operator bool() const { return m_err_mesg.empty(); }
 
-        args_t get_args() const { return m_args; }
+        const args_t& get_args() const& { return m_args; }
+        [[nodiscard]] args_t get_args() && { return std::move(m_args); }
+
         void set_args(const args_t& args) & { m_args = args; }
+        void set_args(args_t&& args) & { m_args = std::move(args); }
 
         template<size_t Index>
-        auto get_arg() const
+        const auto& get_arg() const&
         {
             return std::get<Index>(m_args);
+        }
+
+        template<size_t Index>
+        [[nodiscard]] auto get_arg() &&
+        {
+            return std::get<Index>(std::move(m_args));
         }
 
     private:
@@ -280,8 +292,11 @@ namespace details
         template<typename T>
         static T deserialize(const serial_t& serial_obj);
 
-        static serial_t from_bytes(bytes_t bytes);
-        static bytes_t to_bytes(serial_t serial_obj);
+        static serial_t from_bytes(const bytes_t& bytes);
+        [[nodiscard]] static serial_t from_bytes(bytes_t&& bytes);
+
+        static bytes_t to_bytes(const serial_t& serial_obj);
+        [[nodiscard]] static bytes_t to_bytes(serial_t&& serial_obj);
     };
 #endif
 } // namespace details
@@ -324,22 +339,31 @@ public:
     ///@brief Returns the result, throwing with the error message if it does not exist
     ///
     ///@return R The result of the function call
-    R get_result() const
+    const R& get_result() const&
     {
         if (m_result.has_value())
         {
             return m_result.value();
         }
-        else
+
+        throw std::runtime_error(this->get_err_mesg());
+    }
+
+    [[nodiscard]] R get_result() &&
+    {
+        if (m_result.has_value())
         {
-            throw std::runtime_error(this->get_err_mesg());
+            return std::move(m_result).value();
         }
+
+        throw std::runtime_error(this->get_err_mesg());
     }
 
     ///@brief Sets the result to a value
     ///
     ///@param value The value to store as the result
     void set_result(const R& value) & { m_result = value; }
+    void set_result(R&& value) & { m_result = std::move(value); }
 
     ///@brief Clears the result stored (sets it back to std::nullopt)
     void clear_result() & { m_result = std::nullopt; }

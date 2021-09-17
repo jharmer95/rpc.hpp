@@ -107,7 +107,7 @@ TestClient<njson_adapter>& GetClient()
 
 #if defined(RPC_HPP_ENABLE_RAPIDJSON)
 template<>
-TestClient<rapidjson_adapter>& GetClient()
+inline TestClient<rapidjson_adapter>& GetClient()
 {
     static TestClient<rapidjson_adapter> client("127.0.0.1", "5001");
     return client;
@@ -116,7 +116,7 @@ TestClient<rapidjson_adapter>& GetClient()
 
 #if defined(RPC_HPP_ENABLE_BOOST_JSON)
 template<>
-TestClient<boost_json_adapter>& GetClient()
+inline TestClient<boost_json_adapter>& GetClient()
 {
     static TestClient<boost_json_adapter> client("127.0.0.1", "5002");
     return client;
@@ -125,7 +125,7 @@ TestClient<boost_json_adapter>& GetClient()
 
 #if defined(RPC_HPP_ENABLE_BITSERY)
 template<>
-TestClient<bitsery_adapter>& GetClient()
+inline TestClient<bitsery_adapter>& GetClient()
 {
     static TestClient<bitsery_adapter> client("127.0.0.1", "5003");
     return client;

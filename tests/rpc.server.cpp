@@ -70,6 +70,7 @@ const uint64_t rpc::adapters::bitsery::config::max_container_size = 100;
 #include <algorithm>
 #include <cmath>
 #include <condition_variable>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <mutex>
@@ -96,15 +97,15 @@ inline void KillServer() noexcept
 }
 
 // cached
-inline size_t StrLen(std::string str)
+inline size_t StrLen(const std::string& str)
 {
-    return std::move(str).size();
+    return str.size();
 }
 
 // cached
 inline std::vector<int> AddOneToEach(std::vector<int> vec)
 {
-    for (auto& n : std::move(vec))
+    for (auto& n : vec)
     {
         ++n;
     }
@@ -122,19 +123,14 @@ inline void AddOneToEachRef(std::vector<int>& vec)
 
 int (*CountChars)(const std::string&, char) = [](const std::string& str, char c)
 {
-    return static_cast<int>(std::count_if(str.begin(), str.end(), [c](char x) { return x == c; }));
+    return static_cast<int>(
+        std::count_if(str.begin(), str.end(), [c](const char x) { return x == c; }));
 };
 
 void (*AddOne)(size_t&) = [](size_t& n)
 {
     n += 1;
 };
-
-// cached
-uint64_t Fibonacci(const uint64_t number)
-{
-    return number < 2 ? 1 : Fibonacci(number - 1) + Fibonacci(number - 2);
-}
 
 void FibonacciRef(uint64_t& number)
 {
@@ -150,14 +146,6 @@ void FibonacciRef(uint64_t& number)
         FibonacciRef(n2);
         number = n1 + n2;
     }
-}
-
-// cached
-inline double Average(const double n1, const double n2, const double n3, const double n4,
-    const double n5, const double n6, const double n7, const double n8, const double n9,
-    const double n10)
-{
-    return (n1 + n2 + n3 + n4 + n5 + n6 + n7 + n8 + n9 + n10) / 10.00;
 }
 
 // cached
@@ -240,7 +228,7 @@ void HashComplexRef(ComplexObject& cx, std::string& hashStr)
 
 template<typename Serial, typename R, typename... Args>
 void dump_cache(TestServer<Serial>& server, [[maybe_unused]] R (*func)(Args...),
-    const std::string& func_name, std::string dump_dir)
+    const std::string& func_name, const std::string& dump_dir)
 {
     auto& cache = server.template get_func_cache<R>(func_name);
 
@@ -249,7 +237,7 @@ void dump_cache(TestServer<Serial>& server, [[maybe_unused]] R (*func)(Args...),
     std::replace(file_name.begin(), file_name.end(), '<', '(');
     std::replace(file_name.begin(), file_name.end(), '>', ')');
 
-    std::ofstream ofile(std::move(dump_dir) + "/" + std::move(file_name) + ".dump");
+    std::ofstream ofile(dump_dir + "/" + std::move(file_name) + ".dump");
 
     if constexpr (std::is_arithmetic_v<R> || std::is_same_v<R, std::string>)
     {
@@ -286,7 +274,7 @@ void dump_cache(TestServer<Serial>& server, [[maybe_unused]] R (*func)(Args...),
 
 template<typename Serial, typename R, typename... Args>
 void load_cache(TestServer<Serial>& server, [[maybe_unused]] R (*func)(Args...),
-    const std::string& func_name, std::string dump_dir)
+    const std::string& func_name, const std::string& dump_dir)
 {
     auto& cache = server.template get_func_cache<R>(func_name);
 
@@ -295,7 +283,7 @@ void load_cache(TestServer<Serial>& server, [[maybe_unused]] R (*func)(Args...),
     std::replace(file_name.begin(), file_name.end(), '<', '(');
     std::replace(file_name.begin(), file_name.end(), '>', ')');
 
-    std::ifstream ifile(std::move(dump_dir) + "/" + std::move(file_name) + ".dump");
+    std::ifstream ifile(dump_dir + "/" + std::move(file_name) + ".dump");
 
     if (!ifile.is_open())
     {
@@ -354,7 +342,7 @@ void load_cache(TestServer<Serial>& server, [[maybe_unused]] R (*func)(Args...),
 #define DUMP_CACHE(SERVER, FUNCNAME, DIR) dump_cache(SERVER, FUNCNAME, #FUNCNAME, DIR)
 #define LOAD_CACHE(SERVER, FUNCNAME, DIR) load_cache(SERVER, FUNCNAME, #FUNCNAME, DIR)
 
-int main(int argc, char* argv[])
+int main(const int argc, char* argv[])
 {
     if (argc > 1 && strcmp(argv[1], "--help") == 0)
     {
@@ -369,16 +357,22 @@ int main(int argc, char* argv[])
 #if defined(RPC_HPP_ENABLE_NJSON)
         TestServer<njson_adapter> njson_server{ io_context, 5000U };
 
-        LOAD_CACHE(njson_server, SimpleSum, "dump_cache");
-        LOAD_CACHE(njson_server, StrLen, "dump_cache");
-        LOAD_CACHE(njson_server, AddOneToEach, "dump_cache");
-        LOAD_CACHE(njson_server, Fibonacci, "dump_cache");
-        LOAD_CACHE(njson_server, Average, "dump_cache");
-        LOAD_CACHE(njson_server, StdDev, "dump_cache");
-        LOAD_CACHE(njson_server, AverageContainer<uint64_t>, "dump_cache");
-        LOAD_CACHE(njson_server, AverageContainer<double>, "dump_cache");
-        LOAD_CACHE(njson_server, HashComplex, "dump_cache");
-        LOAD_CACHE(njson_server, CountChars, "dump_cache");
+        const std::string njson_dump_path("dump_cache");
+
+        if (std::filesystem::exists(njson_dump_path)
+            && std::filesystem::is_directory(njson_dump_path))
+        {
+            LOAD_CACHE(njson_server, SimpleSum, njson_dump_path);
+            LOAD_CACHE(njson_server, StrLen, njson_dump_path);
+            LOAD_CACHE(njson_server, AddOneToEach, njson_dump_path);
+            LOAD_CACHE(njson_server, Fibonacci, njson_dump_path);
+            LOAD_CACHE(njson_server, Average, njson_dump_path);
+            LOAD_CACHE(njson_server, StdDev, njson_dump_path);
+            LOAD_CACHE(njson_server, AverageContainer<uint64_t>, njson_dump_path);
+            LOAD_CACHE(njson_server, AverageContainer<double>, njson_dump_path);
+            LOAD_CACHE(njson_server, HashComplex, njson_dump_path);
+            LOAD_CACHE(njson_server, CountChars, njson_dump_path);
+        }
 
         std::thread(&TestServer<njson_adapter>::Run, &njson_server).detach();
         std::cout << "Running njson server on port 5000...\n";
@@ -406,16 +400,16 @@ int main(int argc, char* argv[])
         cv.wait(lk, [] { return !RUNNING; });
 
 #if defined(RPC_HPP_ENABLE_NJSON)
-        DUMP_CACHE(njson_server, SimpleSum, "dump_cache");
-        DUMP_CACHE(njson_server, StrLen, "dump_cache");
-        DUMP_CACHE(njson_server, AddOneToEach, "dump_cache");
-        DUMP_CACHE(njson_server, Fibonacci, "dump_cache");
-        DUMP_CACHE(njson_server, Average, "dump_cache");
-        DUMP_CACHE(njson_server, StdDev, "dump_cache");
-        DUMP_CACHE(njson_server, AverageContainer<uint64_t>, "dump_cache");
-        DUMP_CACHE(njson_server, AverageContainer<double>, "dump_cache");
-        DUMP_CACHE(njson_server, HashComplex, "dump_cache");
-        DUMP_CACHE(njson_server, CountChars, "dump_cache");
+        DUMP_CACHE(njson_server, SimpleSum, njson_dump_path);
+        DUMP_CACHE(njson_server, StrLen, njson_dump_path);
+        DUMP_CACHE(njson_server, AddOneToEach, njson_dump_path);
+        DUMP_CACHE(njson_server, Fibonacci, njson_dump_path);
+        DUMP_CACHE(njson_server, Average, njson_dump_path);
+        DUMP_CACHE(njson_server, StdDev, njson_dump_path);
+        DUMP_CACHE(njson_server, AverageContainer<uint64_t>, njson_dump_path);
+        DUMP_CACHE(njson_server, AverageContainer<double>, njson_dump_path);
+        DUMP_CACHE(njson_server, HashComplex, njson_dump_path);
+        DUMP_CACHE(njson_server, CountChars, njson_dump_path);
 #endif
 
         return 0;
