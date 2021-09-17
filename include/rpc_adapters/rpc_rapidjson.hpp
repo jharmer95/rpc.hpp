@@ -50,7 +50,7 @@ namespace rpc
 {
 namespace adapters
 {
-    using rapidjson_adapter = rpc::details::serial_adapter<::rapidjson::Document, std::string>;
+    using rapidjson_adapter = details::serial_adapter<rapidjson::Document, std::string>;
 
     namespace rapidjson
     {
@@ -137,12 +137,12 @@ namespace adapters
                         std::is_same_v<no_ref_t,
                             char> || std::is_same_v<no_ref_t, int8_t> || std::is_same_v<no_ref_t, int16_t>)
                     {
-                        return arg.GetInt();
+                        return static_cast<no_ref_t>(arg.GetInt());
                     }
                     else if constexpr (std::is_same_v<no_ref_t,
                                            uint8_t> || std::is_same_v<no_ref_t, uint16_t>)
                     {
-                        return arg.GetUint();
+                        return static_cast<no_ref_t>(arg.GetUint());
                     }
                     else
                     {
@@ -182,16 +182,35 @@ namespace adapters
 } // namespace adapters
 
 template<>
-inline std::string adapters::rapidjson_adapter::to_bytes(adapters::rapidjson::doc_t serial_obj)
+inline std::string adapters::rapidjson_adapter::to_bytes(
+    const adapters::rapidjson::doc_t& serial_obj)
 {
-    ::rapidjson::StringBuffer buffer;
-    ::rapidjson::Writer<::rapidjson::StringBuffer> writer(buffer);
+    rapidjson::StringBuffer buffer;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+    serial_obj.Accept(writer);
+    return buffer.GetString();
+}
+
+template<>
+inline std::string adapters::rapidjson_adapter::to_bytes(adapters::rapidjson::doc_t&& serial_obj)
+{
+    rapidjson::StringBuffer buffer;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
     std::move(serial_obj).Accept(writer);
     return buffer.GetString();
 }
 
 template<>
-inline adapters::rapidjson::doc_t adapters::rapidjson_adapter::from_bytes(std::string bytes)
+inline adapters::rapidjson::doc_t adapters::rapidjson_adapter::from_bytes(const std::string& bytes)
+{
+    adapters::rapidjson::doc_t d;
+    d.SetObject();
+    d.Parse(bytes.c_str());
+    return d;
+}
+
+template<>
+inline adapters::rapidjson::doc_t adapters::rapidjson_adapter::from_bytes(std::string&& bytes)
 {
     adapters::rapidjson::doc_t d;
     d.SetObject();
@@ -228,7 +247,7 @@ adapters::rapidjson::doc_t pack_adapter<adapters::rapidjson_adapter>::serialize_
             }
             else if constexpr (rpc::details::is_container_v<R>)
             {
-                const R container = pack.get_result();
+                const auto& container = pack.get_result();
                 result.SetArray();
 
                 for (const auto& val : container)
@@ -258,7 +277,7 @@ adapters::rapidjson::doc_t pack_adapter<adapters::rapidjson_adapter>::serialize_
     value_t args;
     args.SetArray();
 
-    const auto argTup = pack.get_args();
+    const auto& argTup = pack.get_args();
     rpc::details::for_each_tuple(argTup,
         [&args, &alloc](auto&& x)
         { adapters::rapidjson::details::push_arg(std::forward<decltype(x)>(x), args, alloc); });
@@ -303,7 +322,7 @@ packed_func<R, Args...> pack_adapter<adapters::rapidjson_adapter>::deserialize_p
             }
             else if constexpr (rpc::details::is_container_v<R>)
             {
-                using value_t = typename R::value_type;
+                using subvalue_t = typename R::value_type;
                 R container;
                 container.reserve(result.Size());
 
@@ -311,7 +330,8 @@ packed_func<R, Args...> pack_adapter<adapters::rapidjson_adapter>::deserialize_p
 
                 for (const auto& val : result.GetArray())
                 {
-                    container.push_back(adapters::rapidjson::details::parse_arg<value_t>(val, j));
+                    container.push_back(
+                        adapters::rapidjson::details::parse_arg<subvalue_t>(val, j));
                 }
 
                 return packed_func<R, Args...>(

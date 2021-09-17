@@ -65,13 +65,25 @@ constexpr int SimpleSum(const int n1, const int n2)
     return n1 + n2;
 }
 
-size_t StrLen(std::string str);
+size_t StrLen(const std::string& str);
 std::vector<int> AddOneToEach(std::vector<int> vec);
 void AddOneToEachRef(std::vector<int>& vec);
-uint64_t Fibonacci(uint64_t number);
+
+// cached
+constexpr uint64_t Fibonacci(const uint64_t number)
+{
+    return number < 2 ? 1 : Fibonacci(number - 1) + Fibonacci(number - 2);
+}
+
 void FibonacciRef(uint64_t& number);
-double Average(double n1, double n2, double n3, double n4, double n5, double n6, double n7,
-    double n8, double n9, double n10);
+
+// cached
+constexpr double Average(const double n1, const double n2, const double n3, const double n4,
+    const double n5, const double n6, const double n7, const double n8, const double n9,
+    const double n10)
+{
+    return (n1 + n2 + n3 + n4 + n5 + n6 + n7 + n8 + n9 + n10) / 10.00;
+}
 
 double StdDev(double n1, double n2, double n3, double n4, double n5, double n6, double n7,
     double n8, double n9, double n10);
@@ -87,15 +99,16 @@ double AverageContainer(const std::vector<T>& vec)
     return sum / static_cast<double>(vec.size());
 }
 
-std::vector<uint64_t> GenRandInts(const uint64_t min, const uint64_t max, const size_t sz = 1000);
+std::vector<uint64_t> GenRandInts(uint64_t min, uint64_t max, size_t sz = 1000);
 std::string HashComplex(const ComplexObject& cx);
 void HashComplexRef(ComplexObject& cx, std::string& hashStr);
 
 template<typename Serial>
-class TestServer : public rpc::server_interface<Serial>
+class TestServer final : public rpc::server_interface<Serial>
 {
 public:
-    TestServer(asio::io_context& io, uint16_t port) : m_accept(io, tcp::endpoint(tcp::v4(), port))
+    TestServer(asio::io_context& io, const uint16_t port)
+        : m_accept(io, tcp::endpoint(tcp::v4(), port))
     {
     }
 

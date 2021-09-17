@@ -48,7 +48,7 @@ namespace rpc
 {
 namespace adapters
 {
-    using njson_adapter = rpc::details::serial_adapter<nlohmann::json, std::string>;
+    using njson_adapter = details::serial_adapter<nlohmann::json, std::string>;
 
     namespace njson
     {
@@ -132,13 +132,25 @@ namespace adapters
 } // namespace adapters
 
 template<>
-inline std::string adapters::njson_adapter::to_bytes(adapters::njson::njson_t serial_obj)
+inline std::string adapters::njson_adapter::to_bytes(const adapters::njson::njson_t& serial_obj)
+{
+    return serial_obj.dump();
+}
+
+template<>
+inline std::string adapters::njson_adapter::to_bytes(adapters::njson::njson_t&& serial_obj)
 {
     return std::move(serial_obj).dump();
 }
 
 template<>
-inline adapters::njson::njson_t adapters::njson_adapter::from_bytes(std::string bytes)
+inline adapters::njson::njson_t adapters::njson_adapter::from_bytes(const std::string& bytes)
+{
+    return adapters::njson::njson_t::parse(bytes);
+}
+
+template<>
+inline adapters::njson::njson_t adapters::njson_adapter::from_bytes(std::string&& bytes)
 {
     return adapters::njson::njson_t::parse(std::move(bytes));
 }
@@ -156,7 +168,7 @@ adapters::njson::njson_t pack_adapter<adapters::njson_adapter>::serialize_pack(
 
     auto arg_arr = njson_t::array();
 
-    const auto argTup = pack.get_args();
+    const auto& argTup = pack.get_args();
     rpc::details::for_each_tuple(argTup,
         [&arg_arr](auto&& x)
         { adapters::njson::details::push_arg(std::forward<decltype(x)>(x), arg_arr); });

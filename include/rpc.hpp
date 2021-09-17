@@ -193,8 +193,8 @@ namespace details
     inline constexpr bool is_container_v = is_container<C>::value;
 
     template<typename F, typename... Ts, size_t... Is>
-    constexpr void for_each_tuple(
-        const std::tuple<Ts...>& tuple, const F& func, [[maybe_unused]] std::index_sequence<Is...>)
+    constexpr void for_each_tuple(const std::tuple<Ts...>& tuple, const F& func,
+        [[maybe_unused]] std::index_sequence<Is...> iseq)
     {
         using expander = int[];
         (void)expander{ 0, ((void)func(std::get<Is>(tuple)), 0)... };
@@ -246,20 +246,32 @@ namespace details
         {
         }
 
-        std::string get_err_mesg() const { return m_err_mesg; }
-        std::string get_func_name() const { return m_func_name; }
+        const std::string& get_err_mesg() const& { return m_err_mesg; }
+        [[nodiscard]] std::string get_err_mesg() && { return std::move(m_err_mesg); }
+
+        const std::string& get_func_name() const& { return m_func_name; }
+        [[nodiscard]] std::string get_func_name() && { return std::move(m_func_name); }
 
         void set_err_mesg(const std::string& mesg) & { m_err_mesg = mesg; }
 
         explicit operator bool() const { return m_err_mesg.empty(); }
 
-        args_t get_args() const { return m_args; }
+        const args_t& get_args() const& { return m_args; }
+        [[nodiscard]] args_t get_args() && { return std::move(m_args); }
+
         void set_args(const args_t& args) & { m_args = args; }
+        void set_args(args_t&& args) & { m_args = std::move(args); }
 
         template<size_t Index>
-        auto get_arg() const
+        const auto& get_arg() const&
         {
             return std::get<Index>(m_args);
+        }
+
+        template<size_t Index>
+        [[nodiscard]] auto get_arg() &&
+        {
+            return std::get<Index>(std::move(m_args));
         }
 
     private:
@@ -280,8 +292,11 @@ namespace details
         template<typename T>
         static T deserialize(const serial_t& serial_obj);
 
-        static serial_t from_bytes(bytes_t bytes);
-        static bytes_t to_bytes(serial_t serial_obj);
+        static serial_t from_bytes(const bytes_t& bytes);
+        [[nodiscard]] static serial_t from_bytes(bytes_t&& bytes);
+
+        static bytes_t to_bytes(const serial_t& serial_obj);
+        [[nodiscard]] static bytes_t to_bytes(serial_t&& serial_obj);
     };
 #endif
 } // namespace details
@@ -324,22 +339,31 @@ public:
     ///@brief Returns the result, throwing with the error message if it does not exist
     ///
     ///@return R The result of the function call
-    R get_result() const
+    const R& get_result() const&
     {
         if (m_result.has_value())
         {
             return m_result.value();
         }
-        else
+
+        throw std::runtime_error(this->get_err_mesg());
+    }
+
+    [[nodiscard]] R get_result() &&
+    {
+        if (m_result.has_value())
         {
-            throw std::runtime_error(this->get_err_mesg());
+            return std::move(m_result).value();
         }
+
+        throw std::runtime_error(this->get_err_mesg());
     }
 
     ///@brief Sets the result to a value
     ///
     ///@param value The value to store as the result
     void set_result(const R& value) & { m_result = value; }
+    void set_result(R&& value) & { m_result = std::move(value); }
 
     ///@brief Clears the result stored (sets it back to std::nullopt)
     void clear_result() & { m_result = std::nullopt; }
@@ -451,6 +475,23 @@ inline namespace server
         }
 
 #    if defined(RPC_HPP_SERVER_IMPL) && defined(RPC_HPP_ENABLE_SERVER_CACHE)
+        template<typename Val>
+        std::unordered_map<typename Serial::bytes_t, Val>& get_func_cache(
+            const std::string& func_name)
+        {
+            update_all_cache<Val>(func_name);
+            return *static_cast<std::unordered_map<typename Serial::bytes_t, Val>*>(
+                m_cache_map.at(func_name));
+        }
+
+        template<typename Val>
+        void update_all_cache(const std::string& func_name)
+        {
+            m_cache_map[func_name] = get_func_cache_impl<Val>(func_name);
+        }
+
+        void clear_all_cache() { m_cache_map.clear(); }
+
         ///@brief Deserializes the serial object to a packed_func, calls the callback function, then serializes the result back to the serial object, using a server-side cache for performance.
         ///
         ///@note This feature is enabled by defining @ref RPC_HPP_ENABLE_SERVER_CACHE
@@ -459,11 +500,10 @@ inline namespace server
         ///@param func pointer to the callback function
         ///@param serial_obj Serial representing the function call
         template<typename R, typename... Args>
-        static void dispatch_cached_func(R (*func)(Args...), typename Serial::serial_t& serial_obj)
+        void dispatch_cached_func(R (*func)(Args...), typename Serial::serial_t& serial_obj)
         {
-            static std::unordered_map<typename Serial::bytes_t, R> result_cache;
-
             auto pack = pack_adapter<Serial>::template deserialize_pack<R, Args...>(serial_obj);
+            auto& result_cache = get_func_cache<R>(pack.get_func_name());
 
             if constexpr (!std::is_void_v<R>)
             {
@@ -491,7 +531,7 @@ inline namespace server
         }
 #    else
         template<typename R, typename... Args>
-        static void dispatch_cached_func(R (*func)(Args...), typename Serial::serial_t& serial_obj)
+        void dispatch_cached_func(R (*func)(Args...), typename Serial::serial_t& serial_obj)
         {
             dispatch_func(func, serial_obj);
         }
@@ -535,6 +575,21 @@ inline namespace server
 
             bytes = Serial::to_bytes(std::move(serial_obj));
         }
+
+#    if defined(RPC_HPP_SERVER_IMPL) && defined(RPC_HPP_ENABLE_SERVER_CACHE)
+    private:
+        template<typename Val>
+        static void* get_func_cache_impl(const std::string& func_name)
+        {
+            static std::unordered_map<std::string,
+                std::unordered_map<typename Serial::bytes_t, Val>>
+                cache{};
+
+            return static_cast<void*>(&cache[func_name]);
+        }
+
+        std::unordered_map<std::string, void*> m_cache_map;
+#    endif
     };
 } // namespace server
 #endif
@@ -615,7 +670,7 @@ inline namespace client
         virtual typename Serial::bytes_t receive() = 0;
     };
 
-#    define call_header_func(FUNCNAME, ...) call_header_func_impl(FUNCNAME, #FUNCNAME, __VA_ARGS__)
+#    define call_header_func(FUNCNAME, ...) call_header_func_impl(FUNCNAME, #    FUNCNAME, __VA_ARGS__)
 } // namespace client
 #endif
 } // namespace rpc

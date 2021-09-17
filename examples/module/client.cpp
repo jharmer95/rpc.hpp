@@ -67,10 +67,9 @@ int main(int argc, char* argv[])
         return EXIT_FAILURE;
     }
 
-    std::string funcName;
-
     try
     {
+        std::string funcName;
         RpcClient client{ argv[1] };
 
         try

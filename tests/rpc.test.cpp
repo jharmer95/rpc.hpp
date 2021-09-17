@@ -45,7 +45,7 @@
 
 #if defined(RPC_HPP_ENABLE_BITSERY)
 const uint64_t rpc::adapters::bitsery::config::max_func_name_size = 30;
-const uint64_t rpc::adapters::bitsery::config::max_string_size = 100;
+const uint64_t rpc::adapters::bitsery::config::max_string_size = 2048U;
 const uint64_t rpc::adapters::bitsery::config::max_container_size = 100;
 #endif
 
@@ -156,9 +156,12 @@ TEST_CASE_TEMPLATE("AddOne (static)", TestType, RPC_TEST_TYPES)
 TEST_CASE_TEMPLATE("StrLen", TestType, RPC_TEST_TYPES)
 {
     auto& client = GetClient<TestType>();
-    const auto result = client.template call_func<size_t>("StrLen", std::string("hello, world"));
 
-    REQUIRE(result == 12);
+    constexpr auto test_str_len = 2048U;
+    const std::string test_str(test_str_len, 'f');
+    const auto result = client.template call_func<size_t>("StrLen", test_str);
+
+    REQUIRE(result == test_str_len);
 }
 
 TEST_CASE_TEMPLATE("AddOneToEach", TestType, RPC_TEST_TYPES)
