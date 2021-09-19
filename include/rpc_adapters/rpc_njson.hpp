@@ -79,7 +79,9 @@ namespace adapters
 
                     arg_arr.push_back(obj);
                 }
-                else if constexpr (rpc::details::is_set_v<no_ref_t> || rpc::details::is_vector_v<no_ref_t>)
+                else if constexpr (
+                    rpc::details::is_deque_v<
+                        no_ref_t> || rpc::details::is_list_v<no_ref_t> || rpc::details::is_forward_list_v<no_ref_t> || rpc::details::is_set_v<no_ref_t> || rpc::details::is_vector_v<no_ref_t>)
                 {
                     njson_t arr = njson_t::array();
 
@@ -146,7 +148,9 @@ namespace adapters
 
                     return container;
                 }
-                else if constexpr (rpc::details::is_vector_v<no_ref_t>)
+                else if constexpr (
+                    rpc::details::is_deque_v<
+                        no_ref_t> || rpc::details::is_list_v<no_ref_t> || rpc::details::is_vector_v<no_ref_t>)
                 {
                     using value_t = typename no_ref_t::value_type;
 
@@ -158,6 +162,22 @@ namespace adapters
                     for (const auto& val : arg)
                     {
                         container.push_back(parse_arg<value_t>(val, j));
+                    }
+
+                    return container;
+                }
+                else if constexpr (rpc::details::is_forward_list_v<no_ref_t>)
+                {
+                    using value_t = typename no_ref_t::value_type;
+
+                    no_ref_t container;
+                    container.reserve(arg.size());
+
+                    unsigned j = 0;
+
+                    for (auto it = arg.rbegin(); it != arg.rend(); ++it)
+                    {
+                        container.push_front(parse_arg<value_t>(*it, j));
                     }
 
                     return container;

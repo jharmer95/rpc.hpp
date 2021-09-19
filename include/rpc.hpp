@@ -53,14 +53,17 @@
 #endif
 
 #include <cstddef>       // for size_t
-#include <map>           // for map
+#include <deque>         // for deque
+#include <forward_list>  // for forward_list
+#include <list>          // for list
+#include <map>           // for map, multimap
 #include <optional>      // for nullopt, optional
 #include <set>           // for set, multiset
 #include <stdexcept>     // for runtime_error
 #include <string>        // for string
 #include <tuple>         // for tuple, forward_as_tuple
 #include <type_traits>   // for declval, false_type, is_same, integral_constant
-#include <unordered_map> // for unordered_map
+#include <unordered_map> // for unordered_map, unordered_multimap
 #include <unordered_set> // for unordered_set, unordered_multiset
 #include <utility>       // for move, index_sequence, make_index_sequence
 #include <vector>        // for vector
@@ -186,6 +189,51 @@ namespace details
     static_assert(is_set_v<std::multiset<int>>, "Multiset is not set?!");
     static_assert(is_set_v<std::unordered_set<int>>, "Unordered set is not set?!");
     static_assert(is_set_v<std::unordered_multiset<int>>, "Unordered multiset is not set?!");
+
+    template<typename C>
+    struct is_deque : std::false_type
+    {
+    };
+
+    template<typename T>
+    struct is_deque<std::deque<T>> : std::true_type
+    {
+    };
+
+    template<typename T>
+    inline constexpr bool is_deque_v = is_deque<T>::value;
+
+    static_assert(is_deque_v<std::deque<int>>, "Deque is not deque!?");
+
+    template<typename C>
+    struct is_list : std::false_type
+    {
+    };
+
+    template<typename T>
+    struct is_list<std::list<T>> : std::true_type
+    {
+    };
+
+    template<typename T>
+    inline constexpr bool is_list_v = is_list<T>::value;
+
+    static_assert(is_list_v<std::list<int>>, "List is not list!?");
+
+    template<typename C>
+    struct is_forward_list : std::false_type
+    {
+    };
+
+    template<typename T>
+    struct is_forward_list<std::forward_list<T>> : std::true_type
+    {
+    };
+
+    template<typename T>
+    inline constexpr bool is_forward_list_v = is_forward_list<T>::value;
+
+    static_assert(is_forward_list_v<std::forward_list<int>>, "Forward list is not forward list!?");
 
     template<typename C>
     struct is_vector : std::false_type
