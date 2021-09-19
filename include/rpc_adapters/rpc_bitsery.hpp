@@ -195,7 +195,7 @@ namespace adapters
                 {
                     s.template value<sizeof(R)>(o.result);
                 }
-                else if constexpr (rpc::details::is_container_v<R>)
+                else if constexpr (rpc::details::is_vector_v<R>)
                 {
                     if constexpr (std::is_arithmetic_v<typename R::value_type>)
                     {
@@ -231,7 +231,7 @@ namespace adapters
                                     s2.value8b(val);
                                 }
                             }
-                            else if constexpr (rpc::details::is_container_v<T>)
+                            else if constexpr (rpc::details::is_vector_v<T>)
                             {
                                 if constexpr (std::is_arithmetic_v<typename T::value_type>)
                                 {

@@ -87,7 +87,7 @@ namespace adapters
                         arg_arr.PushBack(value_t().Set<no_ref_t>(arg), alloc);
                     }
                 }
-                else if constexpr (rpc::details::is_container_v<no_ref_t>)
+                else if constexpr (rpc::details::is_vector_v<no_ref_t>)
                 {
                     value_t sub_arr;
                     sub_arr.SetArray();
@@ -149,7 +149,7 @@ namespace adapters
                         return arg.Get<no_ref_t>();
                     }
                 }
-                else if constexpr (rpc::details::is_container_v<no_ref_t>)
+                else if constexpr (rpc::details::is_vector_v<no_ref_t>)
                 {
                     using subvalue_t = typename no_ref_t::value_type;
                     no_ref_t container;
@@ -245,7 +245,7 @@ adapters::rapidjson::doc_t pack_adapter<adapters::rapidjson_adapter>::serialize_
             {
                 result.SetString(pack.get_result().c_str(), alloc);
             }
-            else if constexpr (rpc::details::is_container_v<R>)
+            else if constexpr (rpc::details::is_vector_v<R>)
             {
                 const auto& container = pack.get_result();
                 result.SetArray();
@@ -320,7 +320,7 @@ packed_func<R, Args...> pack_adapter<adapters::rapidjson_adapter>::deserialize_p
                 return packed_func<R, Args...>(
                     serial_obj["func_name"].GetString(), result.GetString(), std::move(args));
             }
-            else if constexpr (rpc::details::is_container_v<R>)
+            else if constexpr (rpc::details::is_vector_v<R>)
             {
                 using subvalue_t = typename R::value_type;
                 R container;

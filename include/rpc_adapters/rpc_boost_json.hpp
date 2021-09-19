@@ -72,7 +72,7 @@ namespace adapters
                 {
                     arg_arr.push_back(boost::json::string{ arg.c_str() });
                 }
-                else if constexpr (rpc::details::is_container_v<no_ref_t>)
+                else if constexpr (rpc::details::is_vector_v<no_ref_t>)
                 {
                     boost::json::array arr;
 
@@ -109,7 +109,7 @@ namespace adapters
                 {
                     return boost::json::value_to<no_ref_t>(arg);
                 }
-                else if constexpr (rpc::details::is_container_v<no_ref_t>)
+                else if constexpr (rpc::details::is_vector_v<no_ref_t>)
                 {
                     using value_t = typename no_ref_t::value_type;
 
@@ -196,7 +196,7 @@ adapters::boost_json::value_t pack_adapter<adapters::boost_json_adapter>::serial
             {
                 result = pack.get_result();
             }
-            else if constexpr (rpc::details::is_container_v<R>)
+            else if constexpr (rpc::details::is_vector_v<R>)
             {
                 result = boost::json::array{};
                 const auto& container = pack.get_result();
@@ -271,7 +271,7 @@ packed_func<R, Args...> pack_adapter<adapters::boost_json_adapter>::deserialize_
                 return packed_func<R, Args...>(obj.at("func_name").get_string().c_str(),
                     result.get_string().c_str(), std::move(args));
             }
-            else if constexpr (rpc::details::is_container_v<R>)
+            else if constexpr (rpc::details::is_vector_v<R>)
             {
                 using value_t = typename R::value_type;
 

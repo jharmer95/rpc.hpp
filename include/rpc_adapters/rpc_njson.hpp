@@ -79,7 +79,7 @@ namespace adapters
 
                     arg_arr.push_back(obj);
                 }
-                else if constexpr (rpc::details::is_container_v<no_ref_t>)
+                else if constexpr (rpc::details::is_set_v<no_ref_t> || rpc::details::is_vector_v<no_ref_t>)
                 {
                     njson_t arr = njson_t::array();
 
@@ -131,7 +131,22 @@ namespace adapters
 
                     return map;
                 }
-                else if constexpr (rpc::details::is_container_v<no_ref_t>)
+                else if constexpr (rpc::details::is_set_v<no_ref_t>)
+                {
+                    using value_t = typename no_ref_t::value_type;
+
+                    no_ref_t container;
+
+                    unsigned j = 0;
+
+                    for (const auto& val : arg)
+                    {
+                        container.insert(parse_arg<value_t>(val, j));
+                    }
+
+                    return container;
+                }
+                else if constexpr (rpc::details::is_vector_v<no_ref_t>)
                 {
                     using value_t = typename no_ref_t::value_type;
 

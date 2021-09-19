@@ -55,12 +55,15 @@
 #include <cstddef>       // for size_t
 #include <map>           // for map
 #include <optional>      // for nullopt, optional
+#include <set>           // for set, multiset
 #include <stdexcept>     // for runtime_error
 #include <string>        // for string
 #include <tuple>         // for tuple, forward_as_tuple
 #include <type_traits>   // for declval, false_type, is_same, integral_constant
 #include <unordered_map> // for unordered_map
+#include <unordered_set> // for unordered_set, unordered_multiset
 #include <utility>       // for move, index_sequence, make_index_sequence
+#include <vector>        // for vector
 
 ///@brief Top-level namespace for rpc.hpp classes and functions
 namespace rpc
@@ -149,37 +152,55 @@ namespace details
     inline constexpr bool is_map_v = is_map<T>::value;
 
     static_assert(is_map_v<std::map<std::string, int>>, "Map is not map?!");
-
-#    define METHOD_CHECKER(FUNCNAME, RET_TYPE)                                                 \
-        template<typename C>                                                                   \
-        struct has_##FUNCNAME                                                                  \
-        {                                                                                      \
-        private:                                                                               \
-            template<typename T>                                                               \
-            static constexpr auto check(T*) noexcept ->                                        \
-                typename std::is_same<decltype(std::declval<T>().FUNCNAME()), RET_TYPE>::type; \
-                                                                                               \
-            template<typename>                                                                 \
-            static constexpr std::false_type check(...) noexcept;                              \
-                                                                                               \
-            using type = decltype(check<C>(nullptr));                                          \
-                                                                                               \
-        public:                                                                                \
-            static constexpr bool value = type::value;                                         \
-        }
-
-    METHOD_CHECKER(begin, typename T::iterator);
-    METHOD_CHECKER(end, typename T::iterator);
-    METHOD_CHECKER(size, size_t);
+    static_assert(is_map_v<std::unordered_map<std::string, int>>, "Unordered map is not map?!");
 
     template<typename C>
-    struct is_container : std::integral_constant<bool,
-                              has_size<C>::value && has_begin<C>::value && has_end<C>::value>
+    struct is_set : std::false_type
     {
     };
 
+    template<typename T>
+    struct is_set<std::set<T>> : std::true_type
+    {
+    };
+
+    template<typename T>
+    struct is_set<std::multiset<T>> : std::true_type
+    {
+    };
+
+    template<typename T>
+    struct is_set<std::unordered_set<T>> : std::true_type
+    {
+    };
+
+    template<typename T>
+    struct is_set<std::unordered_multiset<T>> : std::true_type
+    {
+    };
+
+    template<typename T>
+    inline constexpr bool is_set_v = is_set<T>::value;
+
+    static_assert(is_set_v<std::set<int>>, "Set is not set?!");
+    static_assert(is_set_v<std::multiset<int>>, "Multiset is not set?!");
+    static_assert(is_set_v<std::unordered_set<int>>, "Unordered set is not set?!");
+    static_assert(is_set_v<std::unordered_multiset<int>>, "Unordered multiset is not set?!");
+
     template<typename C>
-    inline constexpr bool is_container_v = is_container<C>::value;
+    struct is_vector : std::false_type
+    {
+    };
+
+    template<typename T>
+    struct is_vector<std::vector<T>> : std::true_type
+    {
+    };
+
+    template<typename T>
+    inline constexpr bool is_vector_v = is_vector<T>::value;
+
+    static_assert(is_vector_v<std::vector<int>>, "Vector is not vector?!");
 
     template<typename F, typename... Ts, size_t... Is>
     constexpr void for_each_tuple(const std::tuple<Ts...>& tuple, const F& func,
