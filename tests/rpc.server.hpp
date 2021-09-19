@@ -103,7 +103,9 @@ double AverageContainer(const std::vector<T>& vec)
 
 std::map<char, unsigned> CharacterMap(const std::string& str);
 unsigned UMapSum(const std::unordered_map<std::string, unsigned>& umap);
-
+void AddToPQueue(std::priority_queue<int>& que, int num);
+int QueueSum(std::queue<int>& que);
+int StackSum(std::stack<int>& stk);
 std::vector<uint64_t> GenRandInts(uint64_t min, uint64_t max, size_t sz = 1000);
 std::string HashComplex(const ComplexObject& cx);
 void HashComplexRef(ComplexObject& cx, std::string& hashStr);
@@ -192,7 +194,8 @@ private:
         const auto func_name = rpc::pack_adapter<Serial>::get_func_name(serial_obj);
 
         RPC_ATTACH_FUNCS(KillServer, ThrowError, AddOneToEachRef, FibonacciRef, SquareRootRef,
-            CharacterMap, UMapSum, GenRandInts, HashComplexRef, AddOne)
+            CharacterMap, UMapSum, AddToPQueue, QueueSum, StackSum, GenRandInts, HashComplexRef,
+            AddOne)
 
         RPC_ATTACH_CACHED_FUNCS(SimpleSum, StrLen, AddOneToEach, Fibonacci, Average, StdDev,
             AverageContainer<uint64_t>, AverageContainer<double>, HashComplex, CountChars)

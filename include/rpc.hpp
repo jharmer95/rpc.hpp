@@ -59,7 +59,9 @@
 #include <list>          // for list
 #include <map>           // for map, multimap
 #include <optional>      // for nullopt, optional
+#include <queue>         // for priority_queue, queue
 #include <set>           // for set, multiset
+#include <stack>         // for stack
 #include <stdexcept>     // for runtime_error
 #include <string>        // for string
 #include <tuple>         // for tuple, forward_as_tuple
@@ -137,6 +139,8 @@ namespace details
     template<typename Serial, typename Value>
     inline constexpr bool is_serializable_v = is_serializable<Serial, Value>::value;
 
+    // STL Container checks
+
     template<typename C>
     struct is_array : std::false_type
     {
@@ -155,13 +159,13 @@ namespace details
     {
     };
 
-    template<typename K, typename V>
-    struct is_map<std::map<K, V>> : std::true_type
+    template<typename Key, typename T, typename Compare, typename Allocator>
+    struct is_map<std::map<Key, T, Compare, Allocator>> : std::true_type
     {
     };
 
-    template<typename K, typename V>
-    struct is_map<std::unordered_map<K, V>> : std::true_type
+    template<typename Key, typename T, typename Hash, typename KeyEqual, typename Allocator>
+    struct is_map<std::unordered_map<Key, T, Hash, KeyEqual, Allocator>> : std::true_type
     {
     };
 
@@ -176,13 +180,13 @@ namespace details
     {
     };
 
-    template<typename K, typename V>
-    struct is_multimap<std::multimap<K, V>> : std::true_type
+    template<typename Key, typename T, typename Compare, typename Allocator>
+    struct is_multimap<std::multimap<Key, T, Compare, Allocator>> : std::true_type
     {
     };
 
-    template<typename K, typename V>
-    struct is_multimap<std::unordered_multimap<K, V>> : std::true_type
+    template<typename Key, typename T, typename Hash, typename KeyEqual, typename Allocator>
+    struct is_multimap<std::unordered_multimap<Key, T, Hash, KeyEqual, Allocator>> : std::true_type
     {
     };
 
@@ -198,23 +202,23 @@ namespace details
     {
     };
 
-    template<typename T>
-    struct is_set<std::set<T>> : std::true_type
+    template<typename Key, typename Compare, typename Allocator>
+    struct is_set<std::set<Key, Compare, Allocator>> : std::true_type
     {
     };
 
-    template<typename T>
-    struct is_set<std::multiset<T>> : std::true_type
+    template<typename Key, typename Compare, typename Allocator>
+    struct is_set<std::multiset<Key, Compare, Allocator>> : std::true_type
     {
     };
 
-    template<typename T>
-    struct is_set<std::unordered_set<T>> : std::true_type
+    template<typename Key, typename Hash, typename KeyEqual, typename Allocator>
+    struct is_set<std::unordered_set<Key, Hash, KeyEqual, Allocator>> : std::true_type
     {
     };
 
-    template<typename T>
-    struct is_set<std::unordered_multiset<T>> : std::true_type
+    template<typename Key, typename Hash, typename KeyEqual, typename Allocator>
+    struct is_set<std::unordered_multiset<Key, Hash, KeyEqual, Allocator>> : std::true_type
     {
     };
 
@@ -231,8 +235,8 @@ namespace details
     {
     };
 
-    template<typename T>
-    struct is_deque<std::deque<T>> : std::true_type
+    template<typename T, typename Allocator>
+    struct is_deque<std::deque<T, Allocator>> : std::true_type
     {
     };
 
@@ -246,8 +250,8 @@ namespace details
     {
     };
 
-    template<typename T>
-    struct is_list<std::list<T>> : std::true_type
+    template<typename T, typename Allocator>
+    struct is_list<std::list<T, Allocator>> : std::true_type
     {
     };
 
@@ -261,8 +265,8 @@ namespace details
     {
     };
 
-    template<typename T>
-    struct is_forward_list<std::forward_list<T>> : std::true_type
+    template<typename T, typename Allocator>
+    struct is_forward_list<std::forward_list<T, Allocator>> : std::true_type
     {
     };
 
@@ -276,8 +280,8 @@ namespace details
     {
     };
 
-    template<typename T>
-    struct is_vector<std::vector<T>> : std::true_type
+    template<typename T, typename Allocator>
+    struct is_vector<std::vector<T, Allocator>> : std::true_type
     {
     };
 
@@ -285,6 +289,51 @@ namespace details
     inline constexpr bool is_vector_v = is_vector<T>::value;
 
     static_assert(is_vector_v<std::vector<int>>, "Vector is not vector?!");
+
+    template<typename C>
+    struct is_stack : std::false_type
+    {
+    };
+
+    template<typename T, typename Container>
+    struct is_stack<std::stack<T, Container>> : std::true_type
+    {
+    };
+
+    template<typename T>
+    inline constexpr bool is_stack_v = is_stack<T>::value;
+
+    static_assert(is_stack_v<std::stack<int>>, "Stack is not stack?!");
+
+    template<typename C>
+    struct is_queue : std::false_type
+    {
+    };
+
+    template<typename T, typename Container>
+    struct is_queue<std::queue<T, Container>> : std::true_type
+    {
+    };
+
+    template<typename T>
+    inline constexpr bool is_queue_v = is_queue<T>::value;
+
+    static_assert(is_queue_v<std::queue<int>>, "Queue is not queue?!");
+
+    template<typename C>
+    struct is_p_queue : std::false_type
+    {
+    };
+
+    template<typename T, typename Container, typename Compare>
+    struct is_p_queue<std::priority_queue<T, Container, Compare>> : std::true_type
+    {
+    };
+
+    template<typename T>
+    inline constexpr bool is_p_queue_v = is_p_queue<T>::value;
+
+    static_assert(is_p_queue_v<std::priority_queue<int>>, "Priority queue is not p_queue?!");
 
     template<typename F, typename... Ts, size_t... Is>
     constexpr void for_each_tuple(const std::tuple<Ts...>& tuple, const F& func,

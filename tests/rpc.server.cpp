@@ -205,6 +205,33 @@ inline unsigned UMapSum(const std::unordered_map<std::string, unsigned>& umap)
     return sum;
 }
 
+inline void AddToPQueue(std::priority_queue<int>& que, int num)
+{
+    que.push(num);
+}
+
+inline int QueueSum(std::queue<int>& que)
+{
+    int sum = que.front();
+    que.pop();
+
+    sum += que.front();
+    que.pop();
+
+    return sum;
+}
+
+inline int StackSum(std::stack<int>& stk)
+{
+    int sum = stk.top();
+    stk.pop();
+
+    sum += stk.top();
+    stk.pop();
+
+    return sum;
+}
+
 std::vector<uint64_t> GenRandInts(const uint64_t min, const uint64_t max, const size_t sz)
 {
     std::vector<uint64_t> vec;

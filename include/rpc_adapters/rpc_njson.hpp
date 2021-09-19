@@ -103,6 +103,33 @@ namespace adapters
 
                     arg_arr.push_back(obj);
                 }
+                else if constexpr (rpc::details::is_queue_v<no_ref_t>)
+                {
+                    auto cpy = arg;
+                    njson_t arr = njson_t::array();
+
+                    while (!cpy.empty())
+                    {
+                        push_arg(cpy.front(), arr);
+                        cpy.pop();
+                    }
+
+                    arg_arr.push_back(std::move(arr));
+                }
+                else if constexpr (rpc::details::is_p_queue_v<
+                                       no_ref_t> || rpc::details::is_stack_v<no_ref_t>)
+                {
+                    auto cpy = arg;
+                    njson_t arr = njson_t::array();
+
+                    while (!cpy.empty())
+                    {
+                        push_arg(cpy.top(), arr);
+                        cpy.pop();
+                    }
+
+                    arg_arr.push_back(std::move(arr));
+                }
                 else if constexpr (
                     rpc::details::is_array_v<
                         no_ref_t> || rpc::details::is_deque_v<no_ref_t> || rpc::details::is_list_v<no_ref_t> || rpc::details::is_forward_list_v<no_ref_t> || rpc::details::is_set_v<no_ref_t> || rpc::details::is_vector_v<no_ref_t>)
@@ -175,6 +202,37 @@ namespace adapters
                     }
 
                     return mmap;
+                }
+                else if constexpr (rpc::details::is_p_queue_v<
+                                       no_ref_t> || rpc::details::is_queue_v<no_ref_t>)
+                {
+                    using value_t = typename no_ref_t::value_type;
+
+                    no_ref_t queue;
+
+                    unsigned j = 0;
+
+                    for (const auto& val : arg)
+                    {
+                        queue.push(parse_arg<value_t>(val, j));
+                    }
+
+                    return queue;
+                }
+                else if constexpr (rpc::details::is_stack_v<no_ref_t>)
+                {
+                    using value_t = typename no_ref_t::value_type;
+
+                    no_ref_t stack;
+
+                    unsigned j = 0;
+
+                    for (auto it = arg.rbegin(); it != arg.rend(); ++it)
+                    {
+                        stack.push(parse_arg<value_t>(*it, j));
+                    }
+
+                    return stack;
                 }
                 else if constexpr (rpc::details::is_array_v<no_ref_t>)
                 {
