@@ -158,6 +158,28 @@ namespace details
     static_assert(is_map_v<std::unordered_map<std::string, int>>, "Unordered map is not map?!");
 
     template<typename C>
+    struct is_multimap : std::false_type
+    {
+    };
+
+    template<typename K, typename V>
+    struct is_multimap<std::multimap<K, V>> : std::true_type
+    {
+    };
+
+    template<typename K, typename V>
+    struct is_multimap<std::unordered_multimap<K, V>> : std::true_type
+    {
+    };
+
+    template<typename T>
+    inline constexpr bool is_multimap_v = is_multimap<T>::value;
+
+    static_assert(is_multimap_v<std::multimap<std::string, int>>, "Multimap is not multimap?!");
+    static_assert(is_multimap_v<std::unordered_multimap<std::string, int>>,
+        "Unordered multimap is not multimap?!");
+
+    template<typename C>
     struct is_set : std::false_type
     {
     };
@@ -646,7 +668,7 @@ inline namespace server
             return static_cast<void*>(&cache[func_name]);
         }
 
-        std::unordered_map<std::string, void*> m_cache_map;
+        std::unordered_map<std::string, void*> m_cache_map{};
 #    endif
     };
 } // namespace server

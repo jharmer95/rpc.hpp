@@ -79,6 +79,28 @@ namespace adapters
 
                     arg_arr.push_back(obj);
                 }
+                else if constexpr (rpc::details::is_multimap_v<no_ref_t>)
+                {
+                    njson_t obj;
+                    njson_t val_arr = njson_t::array();
+
+                    for (const auto& [key, val] : arg)
+                    {
+                        push_arg(val, val_arr);
+                        const auto key_str = njson_t{ key }.dump();
+
+                        if (obj.find(key_str) == obj.end())
+                        {
+                            obj[key_str] = njson_t::array();
+                        }
+
+                        obj[key_str].push_back(val_arr.back());
+                    }
+
+                    const std::string sstr = obj.dump();
+
+                    arg_arr.push_back(obj);
+                }
                 else if constexpr (
                     rpc::details::is_deque_v<
                         no_ref_t> || rpc::details::is_list_v<no_ref_t> || rpc::details::is_forward_list_v<no_ref_t> || rpc::details::is_set_v<no_ref_t> || rpc::details::is_vector_v<no_ref_t>)
@@ -132,6 +154,25 @@ namespace adapters
                     }
 
                     return map;
+                }
+                else if constexpr (rpc::details::is_multimap_v<no_ref_t>)
+                {
+                    using key_t = typename no_ref_t::key_type;
+                    using value_t = typename no_ref_t::mapped_type;
+
+                    no_ref_t mmap;
+
+                    for (const auto& [key, val] : arg.items())
+                    {
+                        for (const auto& subval : val)
+                        {
+                            unsigned i = 0;
+                            mmap.insert({ njson_t::parse(key).front().template get<key_t>(),
+                                parse_arg<value_t>(subval, i) });
+                        }
+                    }
+
+                    return mmap;
                 }
                 else if constexpr (rpc::details::is_set_v<no_ref_t>)
                 {
