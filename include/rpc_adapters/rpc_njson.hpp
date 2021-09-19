@@ -66,6 +66,19 @@ namespace adapters
                 {
                     arg_arr.push_back(std::forward<T>(arg));
                 }
+                else if constexpr (rpc::details::is_map_v<no_ref_t>)
+                {
+                    njson_t obj;
+                    njson_t val_arr = njson_t::array();
+
+                    for (const auto& [key, val] : arg)
+                    {
+                        push_arg(val, val_arr);
+                        obj[njson_t{ key }.dump()] = val_arr.back();
+                    }
+
+                    arg_arr.push_back(obj);
+                }
                 else if constexpr (rpc::details::is_container_v<no_ref_t>)
                 {
                     njson_t arr = njson_t::array();
@@ -101,6 +114,22 @@ namespace adapters
                                   no_ref_t> || std::is_same_v<no_ref_t, std::string>)
                 {
                     return arg.get<no_ref_t>();
+                }
+                else if constexpr (rpc::details::is_map_v<no_ref_t>)
+                {
+                    using key_t = typename no_ref_t::key_type;
+                    using value_t = typename no_ref_t::mapped_type;
+
+                    no_ref_t map;
+
+                    for (const auto& [key, val] : arg.items())
+                    {
+                        unsigned i = 0;
+                        map[njson_t::parse(key).front().template get<key_t>()] =
+                            parse_arg<value_t>(val, i);
+                    }
+
+                    return map;
                 }
                 else if constexpr (rpc::details::is_container_v<no_ref_t>)
                 {

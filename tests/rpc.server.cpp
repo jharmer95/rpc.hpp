@@ -174,6 +174,37 @@ void SquareRootRef(double& n1, double& n2, double& n3, double& n4, double& n5, d
     n10 = std::sqrt(n10);
 }
 
+std::map<char, unsigned> CharacterMap(const std::string& str)
+{
+    std::map<char, unsigned> ret_map;
+
+    for (const auto c : str)
+    {
+        if (ret_map.find(c) != ret_map.end())
+        {
+            ret_map[c] += 1;
+        }
+        else
+        {
+            ret_map[c] = 1;
+        }
+    }
+
+    return ret_map;
+}
+
+inline unsigned UMapSum(const std::unordered_map<std::string, unsigned>& umap)
+{
+    unsigned sum = 0;
+
+    for (const auto& [_, value] : umap)
+    {
+        sum += value;
+    }
+
+    return sum;
+}
+
 std::vector<uint64_t> GenRandInts(const uint64_t min, const uint64_t max, const size_t sz)
 {
     std::vector<uint64_t> vec;

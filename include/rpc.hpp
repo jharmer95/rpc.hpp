@@ -52,17 +52,15 @@
 #    error At least one implementation type must be defined using 'RPC_HPP_{CLIENT, SERVER, MODULE}_IMPL'
 #endif
 
-#include <cstddef>     // for size_t
-#include <optional>    // for nullopt, optional
-#include <stdexcept>   // for runtime_error
-#include <string>      // for string
-#include <tuple>       // for tuple, forward_as_tuple
-#include <type_traits> // for declval, false_type, is_same, integral_constant
-#include <utility>     // for move, index_sequence, make_index_sequence
-
-#if defined(RPC_HPP_SERVER_IMPL) && defined(RPC_HPP_ENABLE_SERVER_CACHE)
-#    include <unordered_map> // for unordered_map
-#endif
+#include <cstddef>       // for size_t
+#include <map>           // for map
+#include <optional>      // for nullopt, optional
+#include <stdexcept>     // for runtime_error
+#include <string>        // for string
+#include <tuple>         // for tuple, forward_as_tuple
+#include <type_traits>   // for declval, false_type, is_same, integral_constant
+#include <unordered_map> // for unordered_map
+#include <utility>       // for move, index_sequence, make_index_sequence
 
 ///@brief Top-level namespace for rpc.hpp classes and functions
 namespace rpc
@@ -133,55 +131,46 @@ namespace details
     inline constexpr bool is_serializable_v = is_serializable<Serial, Value>::value;
 
     template<typename C>
-    struct has_begin
+    struct is_map : std::false_type
     {
-    private:
-        template<typename T>
-        static constexpr auto check(T*) noexcept ->
-            typename std::is_same<decltype(std::declval<T>().begin()), typename T::iterator>::type;
-
-        template<typename>
-        static constexpr std::false_type check(...) noexcept;
-
-        using type = decltype(check<C>(nullptr));
-
-    public:
-        static constexpr bool value = type::value;
     };
 
-    template<typename C>
-    struct has_end
+    template<typename K, typename V>
+    struct is_map<std::map<K, V>> : std::true_type
     {
-    private:
-        template<typename T>
-        static constexpr auto check(T*) noexcept ->
-            typename std::is_same<decltype(std::declval<T>().end()), typename T::iterator>::type;
-
-        template<typename>
-        static constexpr std::false_type check(...) noexcept;
-
-        using type = decltype(check<C>(nullptr));
-
-    public:
-        static constexpr bool value = type::value;
     };
 
-    template<typename C>
-    struct has_size
+    template<typename K, typename V>
+    struct is_map<std::unordered_map<K, V>> : std::true_type
     {
-    private:
-        template<typename T>
-        static constexpr auto check(T*) noexcept ->
-            typename std::is_same<decltype(std::declval<T>().size()), size_t>::type;
-
-        template<typename>
-        static constexpr std::false_type check(...) noexcept;
-
-        using type = decltype(check<C>(nullptr));
-
-    public:
-        static constexpr bool value = type::value;
     };
+
+    template<typename T>
+    inline constexpr bool is_map_v = is_map<T>::value;
+
+    static_assert(is_map_v<std::map<std::string, int>>, "Map is not map?!");
+
+#    define METHOD_CHECKER(FUNCNAME, RET_TYPE)                                                 \
+        template<typename C>                                                                   \
+        struct has_##FUNCNAME                                                                  \
+        {                                                                                      \
+        private:                                                                               \
+            template<typename T>                                                               \
+            static constexpr auto check(T*) noexcept ->                                        \
+                typename std::is_same<decltype(std::declval<T>().FUNCNAME()), RET_TYPE>::type; \
+                                                                                               \
+            template<typename>                                                                 \
+            static constexpr std::false_type check(...) noexcept;                              \
+                                                                                               \
+            using type = decltype(check<C>(nullptr));                                          \
+                                                                                               \
+        public:                                                                                \
+            static constexpr bool value = type::value;                                         \
+        }
+
+    METHOD_CHECKER(begin, typename T::iterator);
+    METHOD_CHECKER(end, typename T::iterator);
+    METHOD_CHECKER(size, size_t);
 
     template<typename C>
     struct is_container : std::integral_constant<bool,

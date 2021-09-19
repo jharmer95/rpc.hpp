@@ -47,10 +47,12 @@
 #include <cstdint>
 #include <iomanip>
 #include <iostream>
+#include <map>
 #include <memory>
 #include <numeric>
 #include <stdexcept>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 using asio::ip::tcp;
@@ -98,6 +100,9 @@ double AverageContainer(const std::vector<T>& vec)
     const double sum = std::accumulate(vec.begin(), vec.end(), 0.00);
     return sum / static_cast<double>(vec.size());
 }
+
+std::map<char, unsigned> CharacterMap(const std::string& str);
+unsigned UMapSum(const std::unordered_map<std::string, unsigned>& umap);
 
 std::vector<uint64_t> GenRandInts(uint64_t min, uint64_t max, size_t sz = 1000);
 std::string HashComplex(const ComplexObject& cx);
@@ -187,7 +192,7 @@ private:
         const auto func_name = rpc::pack_adapter<Serial>::get_func_name(serial_obj);
 
         RPC_ATTACH_FUNCS(KillServer, ThrowError, AddOneToEachRef, FibonacciRef, SquareRootRef,
-            GenRandInts, HashComplexRef, AddOne)
+            CharacterMap, UMapSum, GenRandInts, HashComplexRef, AddOne)
 
         RPC_ATTACH_CACHED_FUNCS(SimpleSum, StrLen, AddOneToEach, Fibonacci, Average, StdDev,
             AverageContainer<uint64_t>, AverageContainer<double>, HashComplex, CountChars)

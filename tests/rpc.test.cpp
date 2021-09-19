@@ -261,6 +261,30 @@ TEST_CASE_TEMPLATE("AverageContainer<double>", TestType, RPC_TEST_TYPES)
     REQUIRE(test == doctest::Approx(expected).epsilon(0.001));
 }
 
+TEST_CASE_TEMPLATE("CharacterMap", TestType, RPC_TEST_TYPES)
+{
+    auto& client = GetClient<TestType>();
+
+    const std::string str = "The quick brown fox ran over the hill last night";
+
+    const auto char_map = client.template call_func<std::map<char, unsigned>>("CharacterMap", str);
+
+    REQUIRE(char_map.at('e') == 3U);
+    REQUIRE(char_map.at('x') == 1U);
+}
+
+TEST_CASE_TEMPLATE("UMapSum", TestType, RPC_TEST_TYPES)
+{
+    auto& client = GetClient<TestType>();
+
+    const std::unordered_map<std::string, unsigned> name_map{ { "Bill", 2 }, { "John", 4 },
+        { "Sue", 2 }, { "Jane", 3 }, { "Alfonso", 1 }, { "Hilda", 1 } };
+
+    const auto sum = client.template call_func<unsigned>("UMapSum", name_map);
+
+    REQUIRE(sum == 13U);
+}
+
 TEST_CASE_TEMPLATE("HashComplex", TestType, RPC_TEST_TYPES)
 {
     const std::string expected = "467365747274747d315a473a527073796c7e707b85";
