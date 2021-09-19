@@ -44,6 +44,8 @@
 
 #include <nlohmann/json.hpp>
 
+#include <cassert>
+
 namespace rpc
 {
 namespace adapters
@@ -102,8 +104,8 @@ namespace adapters
                     arg_arr.push_back(obj);
                 }
                 else if constexpr (
-                    rpc::details::is_deque_v<
-                        no_ref_t> || rpc::details::is_list_v<no_ref_t> || rpc::details::is_forward_list_v<no_ref_t> || rpc::details::is_set_v<no_ref_t> || rpc::details::is_vector_v<no_ref_t>)
+                    rpc::details::is_array_v<
+                        no_ref_t> || rpc::details::is_deque_v<no_ref_t> || rpc::details::is_list_v<no_ref_t> || rpc::details::is_forward_list_v<no_ref_t> || rpc::details::is_set_v<no_ref_t> || rpc::details::is_vector_v<no_ref_t>)
                 {
                     njson_t arr = njson_t::array();
 
@@ -173,6 +175,22 @@ namespace adapters
                     }
 
                     return mmap;
+                }
+                else if constexpr (rpc::details::is_array_v<no_ref_t>)
+                {
+                    using value_t = typename no_ref_t::value_type;
+
+                    no_ref_t arr;
+                    assert(arg.size() == arr.size());
+
+                    unsigned j = 0;
+
+                    for (const auto& val : arg)
+                    {
+                        arr[j] = parse_arg<value_t>(val, j);
+                    }
+
+                    return arr;
                 }
                 else if constexpr (rpc::details::is_set_v<no_ref_t>)
                 {

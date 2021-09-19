@@ -52,6 +52,7 @@
 #    error At least one implementation type must be defined using 'RPC_HPP_{CLIENT, SERVER, MODULE}_IMPL'
 #endif
 
+#include <array>         // for array
 #include <cstddef>       // for size_t
 #include <deque>         // for deque
 #include <forward_list>  // for forward_list
@@ -135,6 +136,19 @@ namespace details
 
     template<typename Serial, typename Value>
     inline constexpr bool is_serializable_v = is_serializable<Serial, Value>::value;
+
+    template<typename C>
+    struct is_array : std::false_type
+    {
+    };
+
+    template<typename T, size_t N>
+    struct is_array<std::array<T, N>> : std::true_type
+    {
+    };
+
+    template<typename T>
+    inline constexpr bool is_array_v = is_array<T>::value;
 
     template<typename C>
     struct is_map : std::false_type
