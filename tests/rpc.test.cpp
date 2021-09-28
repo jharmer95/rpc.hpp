@@ -41,6 +41,12 @@
 #include "static_funcs.hpp"
 #include "test_structs.hpp"
 
+#include <container_adapters/array.hpp>
+#include <container_adapters/map.hpp>
+//#include <container_adapters/queue.hpp>
+#include <container_adapters/unordered_map.hpp>
+#include <container_adapters/vector.hpp>
+
 #include <doctest/doctest.h>
 
 #if defined(RPC_HPP_ENABLE_BITSERY)
@@ -285,55 +291,55 @@ TEST_CASE_TEMPLATE("UMapSum", TestType, RPC_TEST_TYPES)
     REQUIRE(sum == 13U);
 }
 
-TEST_CASE_TEMPLATE("AddToPQueue", TestType, RPC_TEST_TYPES)
-{
-    auto& client = GetClient<TestType>();
+// TEST_CASE_TEMPLATE("AddToPQueue", TestType, RPC_TEST_TYPES)
+// {
+//     auto& client = GetClient<TestType>();
 
-    std::priority_queue<int> que;
-    que.push(12);
-    que.push(44);
-    que.push(6);
-    que.push(9);
+//     std::priority_queue<int> que;
+//     que.push(12);
+//     que.push(44);
+//     que.push(6);
+//     que.push(9);
 
-    client.call_func("AddToPQueue", que, 33);
+//     client.call_func("AddToPQueue", que, 33);
 
-    REQUIRE(que.size() == 5);
-    REQUIRE(que.top() == 44);
-    que.pop();
-    REQUIRE(que.top() == 33);
-}
+//     REQUIRE(que.size() == 5);
+//     REQUIRE(que.top() == 44);
+//     que.pop();
+//     REQUIRE(que.top() == 33);
+// }
 
-TEST_CASE_TEMPLATE("QueueSum", TestType, RPC_TEST_TYPES)
-{
-    auto& client = GetClient<TestType>();
+// TEST_CASE_TEMPLATE("QueueSum", TestType, RPC_TEST_TYPES)
+// {
+//     auto& client = GetClient<TestType>();
 
-    std::queue<int> que;
-    que.push(12);
-    que.push(44);
-    que.push(6);
-    que.push(9);
+//     std::queue<int> que;
+//     que.push(12);
+//     que.push(44);
+//     que.push(6);
+//     que.push(9);
 
-    const auto sum = client.template call_func<int>("QueueSum", que);
+//     const auto sum = client.template call_func<int>("QueueSum", que);
 
-    REQUIRE(sum == 56);
-    REQUIRE(que.size() == 2);
-}
+//     REQUIRE(sum == 56);
+//     REQUIRE(que.size() == 2);
+// }
 
-TEST_CASE_TEMPLATE("StackSum", TestType, RPC_TEST_TYPES)
-{
-    auto& client = GetClient<TestType>();
+// TEST_CASE_TEMPLATE("StackSum", TestType, RPC_TEST_TYPES)
+// {
+//     auto& client = GetClient<TestType>();
 
-    std::stack<int> stk;
-    stk.push(12);
-    stk.push(44);
-    stk.push(6);
-    stk.push(9);
+//     std::stack<int> stk;
+//     stk.push(12);
+//     stk.push(44);
+//     stk.push(6);
+//     stk.push(9);
 
-    const auto sum = client.template call_func<int>("StackSum", stk);
+//     const auto sum = client.template call_func<int>("StackSum", stk);
 
-    REQUIRE(sum == 15);
-    REQUIRE(stk.size() == 2);
-}
+//     REQUIRE(sum == 15);
+//     REQUIRE(stk.size() == 2);
+// }
 
 TEST_CASE_TEMPLATE("HashComplex", TestType, RPC_TEST_TYPES)
 {

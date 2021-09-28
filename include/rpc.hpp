@@ -139,202 +139,6 @@ namespace details
     template<typename Serial, typename Value>
     inline constexpr bool is_serializable_v = is_serializable<Serial, Value>::value;
 
-    // STL Container checks
-
-    template<typename C>
-    struct is_array : std::false_type
-    {
-    };
-
-    template<typename T, size_t N>
-    struct is_array<std::array<T, N>> : std::true_type
-    {
-    };
-
-    template<typename T>
-    inline constexpr bool is_array_v = is_array<T>::value;
-
-    template<typename C>
-    struct is_map : std::false_type
-    {
-    };
-
-    template<typename Key, typename T, typename Compare, typename Allocator>
-    struct is_map<std::map<Key, T, Compare, Allocator>> : std::true_type
-    {
-    };
-
-    template<typename Key, typename T, typename Hash, typename KeyEqual, typename Allocator>
-    struct is_map<std::unordered_map<Key, T, Hash, KeyEqual, Allocator>> : std::true_type
-    {
-    };
-
-    template<typename T>
-    inline constexpr bool is_map_v = is_map<T>::value;
-
-    static_assert(is_map_v<std::map<std::string, int>>, "Map is not map?!");
-    static_assert(is_map_v<std::unordered_map<std::string, int>>, "Unordered map is not map?!");
-
-    template<typename C>
-    struct is_multimap : std::false_type
-    {
-    };
-
-    template<typename Key, typename T, typename Compare, typename Allocator>
-    struct is_multimap<std::multimap<Key, T, Compare, Allocator>> : std::true_type
-    {
-    };
-
-    template<typename Key, typename T, typename Hash, typename KeyEqual, typename Allocator>
-    struct is_multimap<std::unordered_multimap<Key, T, Hash, KeyEqual, Allocator>> : std::true_type
-    {
-    };
-
-    template<typename T>
-    inline constexpr bool is_multimap_v = is_multimap<T>::value;
-
-    static_assert(is_multimap_v<std::multimap<std::string, int>>, "Multimap is not multimap?!");
-    static_assert(is_multimap_v<std::unordered_multimap<std::string, int>>,
-        "Unordered multimap is not multimap?!");
-
-    template<typename C>
-    struct is_set : std::false_type
-    {
-    };
-
-    template<typename Key, typename Compare, typename Allocator>
-    struct is_set<std::set<Key, Compare, Allocator>> : std::true_type
-    {
-    };
-
-    template<typename Key, typename Compare, typename Allocator>
-    struct is_set<std::multiset<Key, Compare, Allocator>> : std::true_type
-    {
-    };
-
-    template<typename Key, typename Hash, typename KeyEqual, typename Allocator>
-    struct is_set<std::unordered_set<Key, Hash, KeyEqual, Allocator>> : std::true_type
-    {
-    };
-
-    template<typename Key, typename Hash, typename KeyEqual, typename Allocator>
-    struct is_set<std::unordered_multiset<Key, Hash, KeyEqual, Allocator>> : std::true_type
-    {
-    };
-
-    template<typename T>
-    inline constexpr bool is_set_v = is_set<T>::value;
-
-    static_assert(is_set_v<std::set<int>>, "Set is not set?!");
-    static_assert(is_set_v<std::multiset<int>>, "Multiset is not set?!");
-    static_assert(is_set_v<std::unordered_set<int>>, "Unordered set is not set?!");
-    static_assert(is_set_v<std::unordered_multiset<int>>, "Unordered multiset is not set?!");
-
-    template<typename C>
-    struct is_deque : std::false_type
-    {
-    };
-
-    template<typename T, typename Allocator>
-    struct is_deque<std::deque<T, Allocator>> : std::true_type
-    {
-    };
-
-    template<typename T>
-    inline constexpr bool is_deque_v = is_deque<T>::value;
-
-    static_assert(is_deque_v<std::deque<int>>, "Deque is not deque!?");
-
-    template<typename C>
-    struct is_list : std::false_type
-    {
-    };
-
-    template<typename T, typename Allocator>
-    struct is_list<std::list<T, Allocator>> : std::true_type
-    {
-    };
-
-    template<typename T>
-    inline constexpr bool is_list_v = is_list<T>::value;
-
-    static_assert(is_list_v<std::list<int>>, "List is not list!?");
-
-    template<typename C>
-    struct is_forward_list : std::false_type
-    {
-    };
-
-    template<typename T, typename Allocator>
-    struct is_forward_list<std::forward_list<T, Allocator>> : std::true_type
-    {
-    };
-
-    template<typename T>
-    inline constexpr bool is_forward_list_v = is_forward_list<T>::value;
-
-    static_assert(is_forward_list_v<std::forward_list<int>>, "Forward list is not forward list!?");
-
-    template<typename C>
-    struct is_vector : std::false_type
-    {
-    };
-
-    template<typename T, typename Allocator>
-    struct is_vector<std::vector<T, Allocator>> : std::true_type
-    {
-    };
-
-    template<typename T>
-    inline constexpr bool is_vector_v = is_vector<T>::value;
-
-    static_assert(is_vector_v<std::vector<int>>, "Vector is not vector?!");
-
-    template<typename C>
-    struct is_stack : std::false_type
-    {
-    };
-
-    template<typename T, typename Container>
-    struct is_stack<std::stack<T, Container>> : std::true_type
-    {
-    };
-
-    template<typename T>
-    inline constexpr bool is_stack_v = is_stack<T>::value;
-
-    static_assert(is_stack_v<std::stack<int>>, "Stack is not stack?!");
-
-    template<typename C>
-    struct is_queue : std::false_type
-    {
-    };
-
-    template<typename T, typename Container>
-    struct is_queue<std::queue<T, Container>> : std::true_type
-    {
-    };
-
-    template<typename T>
-    inline constexpr bool is_queue_v = is_queue<T>::value;
-
-    static_assert(is_queue_v<std::queue<int>>, "Queue is not queue?!");
-
-    template<typename C>
-    struct is_p_queue : std::false_type
-    {
-    };
-
-    template<typename T, typename Container, typename Compare>
-    struct is_p_queue<std::priority_queue<T, Container, Compare>> : std::true_type
-    {
-    };
-
-    template<typename T>
-    inline constexpr bool is_p_queue_v = is_p_queue<T>::value;
-
-    static_assert(is_p_queue_v<std::priority_queue<int>>, "Priority queue is not p_queue?!");
-
     template<typename F, typename... Ts, size_t... Is>
     constexpr void for_each_tuple(const std::tuple<Ts...>& tuple, const F& func,
         [[maybe_unused]] std::index_sequence<Is...> iseq)
@@ -443,6 +247,62 @@ namespace details
     };
 #endif
 } // namespace details
+
+namespace adapters
+{
+    template<typename C>
+    class container_adapter
+    {
+    public:
+        using container_t = C;
+        using citer_t = typename container_t::const_iterator;
+        using iter_t = typename container_t::iterator;
+        using value_t = typename container_t::value_type;
+
+        explicit container_adapter(C& ref) : m_cont(ref) {}
+
+        void add_element(const value_t& val);
+        void add_element(value_t&& val);
+
+        iter_t begin() noexcept;
+        citer_t begin() const noexcept;
+        citer_t cbegin() const noexcept;
+
+        iter_t end() noexcept;
+        citer_t end() const noexcept;
+        citer_t cend() const noexcept;
+
+        iter_t next_element() &;
+
+    private:
+        container_t& m_cont;
+        iter_t m_iter{ std::begin(m_cont) };
+    };
+
+    template<typename C>
+    struct is_container : std::false_type
+    {
+    };
+
+    template<typename C>
+    inline constexpr bool is_container_v = is_container<C>::value;
+
+    template<typename C>
+    struct is_map : std::false_type
+    {
+    };
+
+    template<typename C>
+    inline constexpr bool is_map_v = is_map<C>::value;
+
+    template<typename C>
+    struct is_multimap : std::false_type
+    {
+    };
+
+    template<typename C>
+    inline constexpr bool is_multimap_v = is_multimap<C>::value;
+} // namespace adapters
 
 ///@brief Object representing a function call, including the function's name, arguments and result
 ///

@@ -5,6 +5,9 @@
 #include "rpc.client.hpp"
 #include "test_structs.hpp"
 
+#include <container_adapters/array.hpp>
+#include <container_adapters/vector.hpp>
+
 #include <catch2/catch.hpp>
 
 #if defined(RPC_HPP_ENABLE_BITSERY)

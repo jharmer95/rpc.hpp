@@ -68,77 +68,53 @@ namespace adapters
                 {
                     arg_arr.push_back(std::forward<T>(arg));
                 }
-                else if constexpr (rpc::details::is_map_v<no_ref_t>)
+                else if constexpr (is_map_v<no_ref_t>)
                 {
+                    container_adapter<no_ref_t> adapter(arg);
                     njson_t obj;
                     njson_t val_arr = njson_t::array();
 
-                    for (const auto& [key, val] : arg)
+                    auto it = adapter.next_element();
+
+                    if constexpr (is_multimap_v<no_ref_t>)
                     {
-                        push_arg(val, val_arr);
-                        obj[njson_t{ key }.dump()] = val_arr.back();
-                    }
-
-                    arg_arr.push_back(obj);
-                }
-                else if constexpr (rpc::details::is_multimap_v<no_ref_t>)
-                {
-                    njson_t obj;
-                    njson_t val_arr = njson_t::array();
-
-                    for (const auto& [key, val] : arg)
-                    {
-                        push_arg(val, val_arr);
-                        const auto key_str = njson_t{ key }.dump();
-
-                        if (obj.find(key_str) == obj.end())
+                        while (it != adapter.end())
                         {
-                            obj[key_str] = njson_t::array();
+                            push_arg(it->second, val_arr);
+                            const auto key_str = njson_t{ it->first }.dump();
+
+                            if (obj.find(key_str) == obj.end())
+                            {
+                                obj[key_str] = njson_t::array();
+                            }
+
+                            obj[key_str].push_back(val_arr.back());
                         }
-
-                        obj[key_str].push_back(val_arr.back());
                     }
-
-                    const std::string sstr = obj.dump();
+                    else
+                    {
+                        while (it != adapter.end())
+                        {
+                            push_arg(it->second, val_arr);
+                            obj[njson_t{ it->first }.dump()] = val_arr.back();
+                        }
+                    }
 
                     arg_arr.push_back(obj);
                 }
-                else if constexpr (rpc::details::is_queue_v<no_ref_t>)
+                else if constexpr (is_container_v<no_ref_t>)
                 {
-                    auto cpy = arg;
+                    container_adapter<no_ref_t> adapter(arg);
+                    njson_t obj;
                     njson_t arr = njson_t::array();
 
-                    while (!cpy.empty())
+                    auto it = adapter.next_element();
+
+                    while (it != adapter.end())
                     {
-                        push_arg(cpy.front(), arr);
-                        cpy.pop();
-                    }
-
-                    arg_arr.push_back(std::move(arr));
-                }
-                else if constexpr (rpc::details::is_p_queue_v<
-                                       no_ref_t> || rpc::details::is_stack_v<no_ref_t>)
-                {
-                    auto cpy = arg;
-                    njson_t arr = njson_t::array();
-
-                    while (!cpy.empty())
-                    {
-                        push_arg(cpy.top(), arr);
-                        cpy.pop();
-                    }
-
-                    arg_arr.push_back(std::move(arr));
-                }
-                else if constexpr (
-                    rpc::details::is_array_v<
-                        no_ref_t> || rpc::details::is_deque_v<no_ref_t> || rpc::details::is_list_v<no_ref_t> || rpc::details::is_forward_list_v<no_ref_t> || rpc::details::is_set_v<no_ref_t> || rpc::details::is_vector_v<no_ref_t>)
-                {
-                    njson_t arr = njson_t::array();
-
-                    for (auto&& val : arg)
-                    {
-                        push_arg(std::forward<decltype(val)>(val), arr);
+                        push_arg(
+                            std::forward<typename container_adapter<no_ref_t>::value_t>(*it), arr);
+                        it = adapter.next_element();
                     }
 
                     arg_arr.push_back(std::move(arr));
@@ -168,133 +144,51 @@ namespace adapters
                 {
                     return arg.get<no_ref_t>();
                 }
-                else if constexpr (rpc::details::is_map_v<no_ref_t>)
+                else if constexpr (is_map_v<no_ref_t>)
                 {
                     using key_t = typename no_ref_t::key_type;
                     using value_t = typename no_ref_t::mapped_type;
 
                     no_ref_t map;
+                    container_adapter<no_ref_t> adapter(map);
 
-                    for (const auto& [key, val] : arg.items())
+                    if constexpr (is_multimap_v<no_ref_t>)
                     {
-                        unsigned i = 0;
-                        map[njson_t::parse(key).front().template get<key_t>()] =
-                            parse_arg<value_t>(val, i);
+                        for (const auto& [key, val] : arg.items())
+                        {
+                            for (const auto& subval : val)
+                            {
+                                unsigned j = 0;
+                                adapter.add_element(
+                                    { njson_t::parse(key).front().template get<key_t>(),
+                                        parse_arg<value_t>(subval, j) });
+                            }
+                        }
+                    }
+                    else
+                    {
+                        for (const auto& [key, val] : arg.items())
+                        {
+                            unsigned j = 0;
+                            adapter.add_element({ njson_t::parse(key).front().template get<key_t>(),
+                                parse_arg<value_t>(val, j) });
+                        }
                     }
 
                     return map;
                 }
-                else if constexpr (rpc::details::is_multimap_v<no_ref_t>)
-                {
-                    using key_t = typename no_ref_t::key_type;
-                    using value_t = typename no_ref_t::mapped_type;
-
-                    no_ref_t mmap;
-
-                    for (const auto& [key, val] : arg.items())
-                    {
-                        for (const auto& subval : val)
-                        {
-                            unsigned i = 0;
-                            mmap.insert({ njson_t::parse(key).front().template get<key_t>(),
-                                parse_arg<value_t>(subval, i) });
-                        }
-                    }
-
-                    return mmap;
-                }
-                else if constexpr (rpc::details::is_p_queue_v<
-                                       no_ref_t> || rpc::details::is_queue_v<no_ref_t>)
-                {
-                    using value_t = typename no_ref_t::value_type;
-
-                    no_ref_t queue;
-
-                    unsigned j = 0;
-
-                    for (const auto& val : arg)
-                    {
-                        queue.push(parse_arg<value_t>(val, j));
-                    }
-
-                    return queue;
-                }
-                else if constexpr (rpc::details::is_stack_v<no_ref_t>)
-                {
-                    using value_t = typename no_ref_t::value_type;
-
-                    no_ref_t stack;
-
-                    unsigned j = 0;
-
-                    for (auto it = arg.rbegin(); it != arg.rend(); ++it)
-                    {
-                        stack.push(parse_arg<value_t>(*it, j));
-                    }
-
-                    return stack;
-                }
-                else if constexpr (rpc::details::is_array_v<no_ref_t>)
-                {
-                    using value_t = typename no_ref_t::value_type;
-
-                    no_ref_t arr;
-                    assert(arg.size() == arr.size());
-
-                    unsigned j = 0;
-
-                    for (const auto& val : arg)
-                    {
-                        arr[j] = parse_arg<value_t>(val, j);
-                    }
-
-                    return arr;
-                }
-                else if constexpr (rpc::details::is_set_v<no_ref_t>)
+                else if constexpr (is_container_v<no_ref_t>)
                 {
                     using value_t = typename no_ref_t::value_type;
 
                     no_ref_t container;
+                    container_adapter<no_ref_t> adapter(container);
 
                     unsigned j = 0;
 
                     for (const auto& val : arg)
                     {
-                        container.insert(parse_arg<value_t>(val, j));
-                    }
-
-                    return container;
-                }
-                else if constexpr (
-                    rpc::details::is_deque_v<
-                        no_ref_t> || rpc::details::is_list_v<no_ref_t> || rpc::details::is_vector_v<no_ref_t>)
-                {
-                    using value_t = typename no_ref_t::value_type;
-
-                    no_ref_t container;
-                    container.reserve(arg.size());
-
-                    unsigned j = 0;
-
-                    for (const auto& val : arg)
-                    {
-                        container.push_back(parse_arg<value_t>(val, j));
-                    }
-
-                    return container;
-                }
-                else if constexpr (rpc::details::is_forward_list_v<no_ref_t>)
-                {
-                    using value_t = typename no_ref_t::value_type;
-
-                    no_ref_t container;
-                    container.reserve(arg.size());
-
-                    unsigned j = 0;
-
-                    for (auto it = arg.rbegin(); it != arg.rend(); ++it)
-                    {
-                        container.push_front(parse_arg<value_t>(*it, j));
+                        adapter.add_element(parse_arg<value_t>(val, j));
                     }
 
                     return container;
