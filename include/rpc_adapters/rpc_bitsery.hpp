@@ -356,23 +356,23 @@ namespace adapters
             // Borrowed from Bitsery library for compatibility
             inline void write_length(bit_buffer& bytes, size_t size, size_t& index)
             {
-                if (size < 0x80u)
+                if (size < 0x80U)
                 {
                     bytes.insert(bytes.begin() + index++, static_cast<uint8_t>(size));
                 }
                 else
                 {
-                    if (size < 0x4000u)
+                    if (size < 0x4000U)
                     {
                         bytes.insert(
-                            bytes.begin() + index++, static_cast<uint8_t>((size >> 8) | 0x80u));
+                            bytes.begin() + index++, static_cast<uint8_t>((size >> 8) | 0x80U));
                         bytes.insert(bytes.begin() + index++, static_cast<uint8_t>(size));
                     }
                     else
                     {
-                        assert(size < 0x40000000u);
+                        assert(size < 0x40000000U);
                         bytes.insert(
-                            bytes.begin() + index++, static_cast<uint8_t>((size >> 24) | 0xC0u));
+                            bytes.begin() + index++, static_cast<uint8_t>((size >> 24) | 0xC0U));
 
                         bytes.insert(bytes.begin() + index++, static_cast<uint8_t>(size >> 16));
 
@@ -489,7 +489,7 @@ inline std::string pack_adapter<adapters::bitsery_adapter>::get_func_name(
 
 template<>
 inline void pack_adapter<adapters::bitsery_adapter>::set_err_mesg(
-    adapters::bitsery::bit_buffer& serial_obj, const std::string mesg)
+    adapters::bitsery::bit_buffer& serial_obj, const std::string& mesg)
 {
     size_t index = 0;
 
