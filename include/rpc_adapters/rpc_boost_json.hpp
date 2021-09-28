@@ -323,10 +323,10 @@ inline std::string pack_adapter<adapters::boost_json_adapter>::get_func_name(
 
 template<>
 inline void pack_adapter<adapters::boost_json_adapter>::set_err_mesg(
-    adapters::boost_json::value_t& serial_obj, std::string mesg)
+    adapters::boost_json::value_t& serial_obj, const std::string& mesg)
 {
     assert(serial_obj.is_object());
     auto& obj = serial_obj.as_object();
-    obj["err_mesg"] = std::move(mesg);
+    obj["err_mesg"] = mesg;
 }
 } // namespace rpc

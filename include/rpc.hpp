@@ -221,7 +221,7 @@ namespace details
                         std::is_reference_v<
                             decltype(x)> && !std::is_const_v<std::remove_reference_t<decltype(x)>>)
                     {
-                        x = std::move(y);
+                        x = std::forward<decltype(y)>(y);
                     }
                 }(dest, std::get<Is>(src)),
                 0)... };
@@ -254,7 +254,7 @@ namespace details
 
         void set_err_mesg(const std::string& mesg) & { m_err_mesg = mesg; }
 
-        explicit operator bool() const { return m_err_mesg.empty(); }
+        virtual explicit operator bool() const { return m_err_mesg.empty(); }
 
         const args_t& get_args() const& { return m_args; }
         [[nodiscard]] args_t get_args() && { return std::move(m_args); }
@@ -331,7 +331,7 @@ public:
     ///@note If an error occurred, the reason may be retrieved from the get_err_mesg() function
     ///@return true A return value exists and no error occurred
     ///@return false A return value does not exist AND/OR an error occurred
-    explicit operator bool() const
+    explicit operator bool() const override
     {
         return m_result.has_value() && details::packed_func_base<Args...>::operator bool();
     }
@@ -430,7 +430,7 @@ public:
     ///
     ///@param serial_obj Serial object to be modified
     ///@param mesg String to set as the error message
-    static void set_err_mesg(typename Serial::serial_t& serial_obj, std::string mesg);
+    static void set_err_mesg(typename Serial::serial_t& serial_obj, const std::string& mesg);
 };
 
 #if defined(RPC_HPP_SERVER_IMPL) || defined(RPC_HPP_MODULE_IMPL)

@@ -393,18 +393,18 @@ inline std::string pack_adapter<adapters::rapidjson_adapter>::get_func_name(
 
 template<>
 inline void pack_adapter<adapters::rapidjson_adapter>::set_err_mesg(
-    adapters::rapidjson::doc_t& serial_obj, std::string mesg)
+    adapters::rapidjson::doc_t& serial_obj, const std::string& mesg)
 {
     auto& alloc = serial_obj.GetAllocator();
 
     if (serial_obj.HasMember("err_mesg"))
     {
-        serial_obj["HasMember"].SetString(std::move(mesg).c_str(), alloc);
+        serial_obj["HasMember"].SetString(mesg.c_str(), alloc);
     }
     else
     {
         adapters::rapidjson::value_t v;
-        v.SetString(std::move(mesg).c_str(), alloc);
+        v.SetString(mesg.c_str(), alloc);
         serial_obj.AddMember("err_mesg", v, alloc);
     }
 }
