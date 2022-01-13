@@ -1,8 +1,8 @@
 var searchData=
 [
-  ['send_39',['send',['../classrpc_1_1client_1_1client__interface.html#aa7c513e73a82d7c5ef0bf1401b3acd4a',1,'rpc::client::client_interface']]],
-  ['serialize_5fpack_40',['serialize_pack',['../classrpc_1_1pack__adapter.html#aa2b0dc1bb016265f0dc367a56ff31208',1,'rpc::pack_adapter']]],
-  ['server_5finterface_41',['server_interface',['../classrpc_1_1server_1_1server__interface.html',1,'rpc::server::server_interface&lt; Serial &gt;'],['../classrpc_1_1server_1_1server__interface.html',1,'rpc::server_interface&lt; Serial &gt;']]],
-  ['set_5ferr_5fmesg_42',['set_err_mesg',['../classrpc_1_1pack__adapter.html#ac5569c012b082665157f2033f4c39a75',1,'rpc::pack_adapter']]],
-  ['set_5fresult_43',['set_result',['../classrpc_1_1packed__func.html#a7fd739d3cf02f83a81e9dbbac39ce187',1,'rpc::packed_func']]]
+  ['pack_5fadapter_18',['pack_adapter',['../classrpc_1_1pack__adapter.html',1,'rpc']]],
+  ['pack_5fhelper_19',['pack_helper',['../structrpc_1_1adapters_1_1bitsery_1_1details_1_1pack__helper.html',1,'rpc::adapters::bitsery::details']]],
+  ['pack_5fhelper_3c_20void_2c_20args_2e_2e_2e_20_3e_20',['pack_helper&lt; void, Args... &gt;',['../structrpc_1_1adapters_1_1bitsery_1_1details_1_1pack__helper_3_01void_00_01Args_8_8_8_01_4.html',1,'rpc::adapters::bitsery::details']]],
+  ['packed_5ffunc_21',['packed_func',['../classrpc_1_1packed__func.html#aef4285a1e20b28b275ccf3947ed65d31',1,'rpc::packed_func::packed_func()'],['../classrpc_1_1packed__func_3_01void_00_01Args_8_8_8_01_4.html#a6d8d040cbd7755f7491887ba0fa9bc6f',1,'rpc::packed_func&lt; void, Args... &gt;::packed_func()'],['../classrpc_1_1packed__func.html',1,'rpc::packed_func&lt; R, Args &gt;']]],
+  ['packed_5ffunc_3c_20void_2c_20args_2e_2e_2e_20_3e_22',['packed_func&lt; void, Args... &gt;',['../classrpc_1_1packed__func_3_01void_00_01Args_8_8_8_01_4.html',1,'rpc']]]
 ];

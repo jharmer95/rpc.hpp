@@ -1,7 +1,7 @@
 ///@file rpc.hpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Header-only library for serialized RPC usage
-///@version 0.6.1
+///@version 0.6.2
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -598,7 +598,7 @@ inline namespace server
             return static_cast<void*>(&cache[func_name]);
         }
 
-        std::unordered_map<std::string, void*> m_cache_map;
+        std::unordered_map<std::string, void*> m_cache_map{};
 #    endif
     };
 } // namespace server

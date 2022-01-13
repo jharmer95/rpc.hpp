@@ -531,7 +531,7 @@ inline void pack_adapter<adapters::bitsery_adapter>::set_err_mesg(
         assert(index <= std::numeric_limits<ptrdiff_t>::max());
 
         serial_obj.insert(serial_obj.begin() + static_cast<ptrdiff_t>(index++),
-            static_cast<const unsigned char>(mesg[i]));
+            static_cast<unsigned char>(mesg[i]));
     }
 }
 } // namespace rpc

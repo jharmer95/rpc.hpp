@@ -22,7 +22,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">rpc.hpp
-   &#160;<span id="projectnumber">0.6.1</span>
+   &#160;<span id="projectnumber">0.6.2</span>
    </div>
    <div id="projectbrief">Simple RPC Header-Only Library</div>
   </td>
@@ -85,17 +85,17 @@ Include dependency graph for rpc_njson.hpp:</div>
 <div class="dyncontent">
 <div class="center"><img src="rpc__njson_8hpp__incl.png" border="0" usemap="#ainclude_2rpc__adapters_2rpc__njson_8hpp" alt=""/></div>
 <map name="ainclude_2rpc__adapters_2rpc__njson_8hpp" id="ainclude_2rpc__adapters_2rpc__njson_8hpp">
-<area shape="rect" title="Implementation of adapting nlohmann&#39;s JSON library (https://github.com/nlohmann/json)" alt="" coords="346,5,489,47"/>
-<area shape="rect" href="rpc_8hpp.html" title="Header&#45;only library for serialized RPC usage." alt="" coords="315,95,392,121"/>
-<area shape="rect" title=" " alt="" coords="416,95,547,121"/>
-<area shape="rect" title=" " alt="" coords="5,169,69,196"/>
-<area shape="rect" title=" " alt="" coords="93,169,160,196"/>
-<area shape="rect" title=" " alt="" coords="185,169,263,196"/>
-<area shape="rect" title=" " alt="" coords="287,169,342,196"/>
-<area shape="rect" title=" " alt="" coords="367,169,417,196"/>
-<area shape="rect" title=" " alt="" coords="441,169,524,196"/>
-<area shape="rect" title=" " alt="" coords="548,169,601,196"/>
-<area shape="rect" title=" " alt="" coords="626,169,737,196"/>
+<area shape="rect" title="Implementation of adapting nlohmann&#39;s JSON library (https://github.com/nlohmann/json)" alt="" coords="371,5,529,47"/>
+<area shape="rect" href="rpc_8hpp.html" title="Header&#45;only library for serialized RPC usage." alt="" coords="339,95,422,121"/>
+<area shape="rect" title=" " alt="" coords="446,95,593,121"/>
+<area shape="rect" title=" " alt="" coords="5,169,76,196"/>
+<area shape="rect" title=" " alt="" coords="101,169,175,196"/>
+<area shape="rect" title=" " alt="" coords="200,169,287,196"/>
+<area shape="rect" title=" " alt="" coords="311,169,370,196"/>
+<area shape="rect" title=" " alt="" coords="395,169,449,196"/>
+<area shape="rect" title=" " alt="" coords="473,169,565,196"/>
+<area shape="rect" title=" " alt="" coords="589,169,649,196"/>
+<area shape="rect" title=" " alt="" coords="673,169,797,196"/>
 </map>
 </div>
 </div>
@@ -109,23 +109,23 @@ Namespaces</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="typedef-members"></a>
 Typedefs</h2></td></tr>
-<tr class="memitem:a649c9cd9bec41e2fcaf509345528ca6a"><td class="memItemLeft" align="right" valign="top"><a id="a649c9cd9bec41e2fcaf509345528ca6a"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>rpc::adapters::njson</b> = nlohmann::json</td></tr>
-<tr class="separator:a649c9cd9bec41e2fcaf509345528ca6a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab9c9616cb66196ffc535793e9e5aa214"><td class="memItemLeft" align="right" valign="top"><a id="ab9c9616cb66196ffc535793e9e5aa214"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>rpc::adapters::njson_adapter</b> = details::serial_adapter&lt; njson, std::string &gt;</td></tr>
-<tr class="separator:ab9c9616cb66196ffc535793e9e5aa214"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a21deb467de558f852d1d3bb9ff7d23c0"><td class="memItemLeft" align="right" valign="top"><a id="a21deb467de558f852d1d3bb9ff7d23c0"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>rpc::adapters::njson_adapter</b> = details::serial_adapter&lt; nlohmann::json, std::string &gt;</td></tr>
+<tr class="separator:a21deb467de558f852d1d3bb9ff7d23c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a529a545683fb9d05ed707c0cceebab72"><td class="memItemLeft" align="right" valign="top"><a id="a529a545683fb9d05ed707c0cceebab72"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>rpc::adapters::njson::njson_t</b> = nlohmann::json</td></tr>
+<tr class="separator:a529a545683fb9d05ed707c0cceebab72"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a753b6c6fa9863ca9663a3038d578c4d2"><td class="memTemplParams" colspan="2"><a id="a753b6c6fa9863ca9663a3038d578c4d2"></a>
+<tr class="memitem:a525e9f3556565b6e8339a507b814100c"><td class="memTemplParams" colspan="2"><a id="a525e9f3556565b6e8339a507b814100c"></a>
 template&lt;typename T &gt; </td></tr>
-<tr class="memitem:a753b6c6fa9863ca9663a3038d578c4d2"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>rpc::adapters::push_arg</b> (T &amp;&amp;arg, njson &amp;arg_arr)</td></tr>
-<tr class="separator:a753b6c6fa9863ca9663a3038d578c4d2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a23cf749baec74c395bd2182a799160a4"><td class="memTemplParams" colspan="2"><a id="a23cf749baec74c395bd2182a799160a4"></a>
+<tr class="memitem:a525e9f3556565b6e8339a507b814100c"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>rpc::adapters::njson::details::push_arg</b> (T &amp;&amp;arg, njson_t &amp;arg_arr)</td></tr>
+<tr class="separator:a525e9f3556565b6e8339a507b814100c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa2538a93ce37816d9ffbe78e0584e0b3"><td class="memTemplParams" colspan="2"><a id="aa2538a93ce37816d9ffbe78e0584e0b3"></a>
 template&lt;typename T &gt; </td></tr>
-<tr class="memitem:a23cf749baec74c395bd2182a799160a4"><td class="memTemplItemLeft" align="right" valign="top">std::remove_cv_t&lt; std::remove_reference_t&lt; T &gt; &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>rpc::adapters::parse_arg</b> (const njson &amp;arg_arr, unsigned &amp;index)</td></tr>
-<tr class="separator:a23cf749baec74c395bd2182a799160a4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa2538a93ce37816d9ffbe78e0584e0b3"><td class="memTemplItemLeft" align="right" valign="top">std::remove_cv_t&lt; std::remove_reference_t&lt; T &gt; &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>rpc::adapters::njson::details::parse_arg</b> (const njson_t &amp;arg_arr, unsigned &amp;index)</td></tr>
+<tr class="separator:aa2538a93ce37816d9ffbe78e0584e0b3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Implementation of adapting nlohmann's JSON library (<a href="https://github.com/nlohmann/json">https://github.com/nlohmann/json</a>) </p>

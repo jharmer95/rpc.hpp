@@ -22,7 +22,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">rpc.hpp
-   &#160;<span id="projectnumber">0.6.1</span>
+   &#160;<span id="projectnumber">0.6.2</span>
    </div>
    <div id="projectbrief">Simple RPC Header-Only Library</div>
   </td>
@@ -83,42 +83,54 @@ $(function() {
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a447ab49b5fc19b8066e7b1c7f25dd3d0"><td class="memItemLeft" align="right" valign="top"><a id="a447ab49b5fc19b8066e7b1c7f25dd3d0"></a>
-adapters::bjson_val&#160;</td><td class="memItemRight" valign="bottom"><b>serialize_pack</b> (const <a class="el" href="classrpc_1_1packed__func.html">packed_func</a>&lt; R, Args... &gt; &amp;pack)</td></tr>
-<tr class="separator:a447ab49b5fc19b8066e7b1c7f25dd3d0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a33078dc11b4c95b70ffd731bc0f0e872"><td class="memItemLeft" align="right" valign="top"><a id="a33078dc11b4c95b70ffd731bc0f0e872"></a>
-<a class="el" href="classrpc_1_1packed__func.html">packed_func</a>&lt; R, Args... &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>deserialize_pack</b> (const adapters::bjson_val &amp;serial_obj)</td></tr>
-<tr class="separator:a33078dc11b4c95b70ffd731bc0f0e872"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a32f2004880561c881c46215288843b7e"><td class="memItemLeft" align="right" valign="top"><a id="a32f2004880561c881c46215288843b7e"></a>
-std::string&#160;</td><td class="memItemRight" valign="bottom"><b>get_func_name</b> (const adapters::bjson_val &amp;serial_obj)</td></tr>
-<tr class="separator:a32f2004880561c881c46215288843b7e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a247dafa816550a95dae29e02a3c433af"><td class="memItemLeft" align="right" valign="top"><a id="a247dafa816550a95dae29e02a3c433af"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>set_err_mesg</b> (adapters::bjson_val &amp;serial_obj, std::string mesg)</td></tr>
-<tr class="separator:a247dafa816550a95dae29e02a3c433af"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a997a0516ae6598ecf271d877dd1d54fd"><td class="memItemLeft" align="right" valign="top"><a id="a997a0516ae6598ecf271d877dd1d54fd"></a>
-adapters::njson&#160;</td><td class="memItemRight" valign="bottom"><b>serialize_pack</b> (const <a class="el" href="classrpc_1_1packed__func.html">packed_func</a>&lt; R, Args... &gt; &amp;pack)</td></tr>
-<tr class="separator:a997a0516ae6598ecf271d877dd1d54fd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aefad42fa4c0179d49df5fc9f4d505b40"><td class="memItemLeft" align="right" valign="top"><a id="aefad42fa4c0179d49df5fc9f4d505b40"></a>
-<a class="el" href="classrpc_1_1packed__func.html">packed_func</a>&lt; R, Args... &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>deserialize_pack</b> (const adapters::njson &amp;serial_obj)</td></tr>
-<tr class="separator:aefad42fa4c0179d49df5fc9f4d505b40"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aba7fd7c13eeba867fb5ed0638821dfe9"><td class="memItemLeft" align="right" valign="top"><a id="aba7fd7c13eeba867fb5ed0638821dfe9"></a>
-std::string&#160;</td><td class="memItemRight" valign="bottom"><b>get_func_name</b> (const adapters::njson &amp;serial_obj)</td></tr>
-<tr class="separator:aba7fd7c13eeba867fb5ed0638821dfe9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6959a97bfded7b158e0c6b959dd09fdd"><td class="memItemLeft" align="right" valign="top"><a id="a6959a97bfded7b158e0c6b959dd09fdd"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>set_err_mesg</b> (adapters::njson &amp;serial_obj, std::string mesg)</td></tr>
-<tr class="separator:a6959a97bfded7b158e0c6b959dd09fdd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a01e60d63035dea47e05d2846948da3ff"><td class="memItemLeft" align="right" valign="top"><a id="a01e60d63035dea47e05d2846948da3ff"></a>
-adapters::rapidjson_doc&#160;</td><td class="memItemRight" valign="bottom"><b>serialize_pack</b> (const <a class="el" href="classrpc_1_1packed__func.html">packed_func</a>&lt; R, Args... &gt; &amp;pack)</td></tr>
-<tr class="separator:a01e60d63035dea47e05d2846948da3ff"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac3e51b2101ec65f6d3511769e83fd2dd"><td class="memItemLeft" align="right" valign="top"><a id="ac3e51b2101ec65f6d3511769e83fd2dd"></a>
-<a class="el" href="classrpc_1_1packed__func.html">packed_func</a>&lt; R, Args... &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>deserialize_pack</b> (const adapters::rapidjson_doc &amp;serial_obj)</td></tr>
-<tr class="separator:ac3e51b2101ec65f6d3511769e83fd2dd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9767ce3a5393066af178ef5d7a61735e"><td class="memItemLeft" align="right" valign="top"><a id="a9767ce3a5393066af178ef5d7a61735e"></a>
-std::string&#160;</td><td class="memItemRight" valign="bottom"><b>get_func_name</b> (const adapters::rapidjson_doc &amp;serial_obj)</td></tr>
-<tr class="separator:a9767ce3a5393066af178ef5d7a61735e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6c141f4d1893e7e7ab4db0729ee42467"><td class="memItemLeft" align="right" valign="top"><a id="a6c141f4d1893e7e7ab4db0729ee42467"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>set_err_mesg</b> (adapters::rapidjson_doc &amp;serial_obj, std::string mesg)</td></tr>
-<tr class="separator:a6c141f4d1893e7e7ab4db0729ee42467"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abbdf92a83ad491f72aebe0714de21ac4"><td class="memItemLeft" align="right" valign="top"><a id="abbdf92a83ad491f72aebe0714de21ac4"></a>
+adapters::bitsery::bit_buffer&#160;</td><td class="memItemRight" valign="bottom"><b>serialize_pack</b> (const <a class="el" href="classrpc_1_1packed__func.html">packed_func</a>&lt; R, Args... &gt; &amp;pack)</td></tr>
+<tr class="separator:abbdf92a83ad491f72aebe0714de21ac4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a906202c50b03b3e2320465914ac9c341"><td class="memItemLeft" align="right" valign="top"><a id="a906202c50b03b3e2320465914ac9c341"></a>
+<a class="el" href="classrpc_1_1packed__func.html">packed_func</a>&lt; R, Args... &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>deserialize_pack</b> (const adapters::bitsery::bit_buffer &amp;serial_obj)</td></tr>
+<tr class="separator:a906202c50b03b3e2320465914ac9c341"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4a58dfd6b5cfc2b2f7c991ec881383cf"><td class="memItemLeft" align="right" valign="top"><a id="a4a58dfd6b5cfc2b2f7c991ec881383cf"></a>
+std::string&#160;</td><td class="memItemRight" valign="bottom"><b>get_func_name</b> (const adapters::bitsery::bit_buffer &amp;serial_obj)</td></tr>
+<tr class="separator:a4a58dfd6b5cfc2b2f7c991ec881383cf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae88ad6d7cf4fb4954268882ccd0093da"><td class="memItemLeft" align="right" valign="top"><a id="ae88ad6d7cf4fb4954268882ccd0093da"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>set_err_mesg</b> (adapters::bitsery::bit_buffer &amp;serial_obj, const std::string &amp;mesg)</td></tr>
+<tr class="separator:ae88ad6d7cf4fb4954268882ccd0093da"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acb583bd6b7ebd3ba15b5ccf49755963f"><td class="memItemLeft" align="right" valign="top"><a id="acb583bd6b7ebd3ba15b5ccf49755963f"></a>
+adapters::boost_json::value_t&#160;</td><td class="memItemRight" valign="bottom"><b>serialize_pack</b> (const <a class="el" href="classrpc_1_1packed__func.html">packed_func</a>&lt; R, Args... &gt; &amp;pack)</td></tr>
+<tr class="separator:acb583bd6b7ebd3ba15b5ccf49755963f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a068bfa016fdffbce582b336dea61dd2f"><td class="memItemLeft" align="right" valign="top"><a id="a068bfa016fdffbce582b336dea61dd2f"></a>
+<a class="el" href="classrpc_1_1packed__func.html">packed_func</a>&lt; R, Args... &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>deserialize_pack</b> (const adapters::boost_json::value_t &amp;serial_obj)</td></tr>
+<tr class="separator:a068bfa016fdffbce582b336dea61dd2f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2cc8a5b07313bac9aeac331aa2b8fc3e"><td class="memItemLeft" align="right" valign="top"><a id="a2cc8a5b07313bac9aeac331aa2b8fc3e"></a>
+std::string&#160;</td><td class="memItemRight" valign="bottom"><b>get_func_name</b> (const adapters::boost_json::value_t &amp;serial_obj)</td></tr>
+<tr class="separator:a2cc8a5b07313bac9aeac331aa2b8fc3e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6d83bc7911c44ccd8250d55120bff46c"><td class="memItemLeft" align="right" valign="top"><a id="a6d83bc7911c44ccd8250d55120bff46c"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>set_err_mesg</b> (adapters::boost_json::value_t &amp;serial_obj, const std::string &amp;mesg)</td></tr>
+<tr class="separator:a6d83bc7911c44ccd8250d55120bff46c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adbfdaef95ea8185d972968156585850a"><td class="memItemLeft" align="right" valign="top"><a id="adbfdaef95ea8185d972968156585850a"></a>
+adapters::njson::njson_t&#160;</td><td class="memItemRight" valign="bottom"><b>serialize_pack</b> (const <a class="el" href="classrpc_1_1packed__func.html">packed_func</a>&lt; R, Args... &gt; &amp;pack)</td></tr>
+<tr class="separator:adbfdaef95ea8185d972968156585850a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aab7bdca9f556076f6bc4ce306401e6dc"><td class="memItemLeft" align="right" valign="top"><a id="aab7bdca9f556076f6bc4ce306401e6dc"></a>
+<a class="el" href="classrpc_1_1packed__func.html">packed_func</a>&lt; R, Args... &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>deserialize_pack</b> (const adapters::njson::njson_t &amp;serial_obj)</td></tr>
+<tr class="separator:aab7bdca9f556076f6bc4ce306401e6dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a50af34bc220985a0beb99fba99a96b05"><td class="memItemLeft" align="right" valign="top"><a id="a50af34bc220985a0beb99fba99a96b05"></a>
+std::string&#160;</td><td class="memItemRight" valign="bottom"><b>get_func_name</b> (const adapters::njson::njson_t &amp;serial_obj)</td></tr>
+<tr class="separator:a50af34bc220985a0beb99fba99a96b05"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afc4bc50b74ef510c5195e9eac549ade9"><td class="memItemLeft" align="right" valign="top"><a id="afc4bc50b74ef510c5195e9eac549ade9"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>set_err_mesg</b> (adapters::njson::njson_t &amp;serial_obj, const std::string &amp;mesg)</td></tr>
+<tr class="separator:afc4bc50b74ef510c5195e9eac549ade9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aef5e7a329e25298fcef66a500f44db23"><td class="memItemLeft" align="right" valign="top"><a id="aef5e7a329e25298fcef66a500f44db23"></a>
+adapters::rapidjson::doc_t&#160;</td><td class="memItemRight" valign="bottom"><b>serialize_pack</b> (const <a class="el" href="classrpc_1_1packed__func.html">packed_func</a>&lt; R, Args... &gt; &amp;pack)</td></tr>
+<tr class="separator:aef5e7a329e25298fcef66a500f44db23"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2dd060c9d587dc23f73000d5e9cef678"><td class="memItemLeft" align="right" valign="top"><a id="a2dd060c9d587dc23f73000d5e9cef678"></a>
+<a class="el" href="classrpc_1_1packed__func.html">packed_func</a>&lt; R, Args... &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>deserialize_pack</b> (const adapters::rapidjson::doc_t &amp;serial_obj)</td></tr>
+<tr class="separator:a2dd060c9d587dc23f73000d5e9cef678"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0df68377a0ea22d2cdda2d917f5dd367"><td class="memItemLeft" align="right" valign="top"><a id="a0df68377a0ea22d2cdda2d917f5dd367"></a>
+std::string&#160;</td><td class="memItemRight" valign="bottom"><b>get_func_name</b> (const adapters::rapidjson::doc_t &amp;serial_obj)</td></tr>
+<tr class="separator:a0df68377a0ea22d2cdda2d917f5dd367"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a86e16cdf3ac4da3637f583d00793f4f3"><td class="memItemLeft" align="right" valign="top"><a id="a86e16cdf3ac4da3637f583d00793f4f3"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>set_err_mesg</b> (adapters::rapidjson::doc_t &amp;serial_obj, const std::string &amp;mesg)</td></tr>
+<tr class="separator:a86e16cdf3ac4da3637f583d00793f4f3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
@@ -133,9 +145,9 @@ Static Public Member Functions</h2></td></tr>
 <tr class="memitem:a97335816daece357925dadcd95ebbfde"><td class="memItemLeft" align="right" valign="top">static std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrpc_1_1pack__adapter.html#a97335816daece357925dadcd95ebbfde">get_func_name</a> (const typename Serial::serial_t &amp;serial_obj)</td></tr>
 <tr class="memdesc:a97335816daece357925dadcd95ebbfde"><td class="mdescLeft">&#160;</td><td class="mdescRight">Extracts the function name of a serialized function call.  <a href="classrpc_1_1pack__adapter.html#a97335816daece357925dadcd95ebbfde">More...</a><br /></td></tr>
 <tr class="separator:a97335816daece357925dadcd95ebbfde"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac5569c012b082665157f2033f4c39a75"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrpc_1_1pack__adapter.html#ac5569c012b082665157f2033f4c39a75">set_err_mesg</a> (typename Serial::serial_t &amp;serial_obj, std::string mesg)</td></tr>
-<tr class="memdesc:ac5569c012b082665157f2033f4c39a75"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the error message for the serialized function call.  <a href="classrpc_1_1pack__adapter.html#ac5569c012b082665157f2033f4c39a75">More...</a><br /></td></tr>
-<tr class="separator:ac5569c012b082665157f2033f4c39a75"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a44bcb2451187823a88c00c01e9a45a3f"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrpc_1_1pack__adapter.html#a44bcb2451187823a88c00c01e9a45a3f">set_err_mesg</a> (typename Serial::serial_t &amp;serial_obj, const std::string &amp;mesg)</td></tr>
+<tr class="memdesc:a44bcb2451187823a88c00c01e9a45a3f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the error message for the serialized function call.  <a href="classrpc_1_1pack__adapter.html#a44bcb2451187823a88c00c01e9a45a3f">More...</a><br /></td></tr>
+<tr class="separator:a44bcb2451187823a88c00c01e9a45a3f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><h3>template&lt;typename Serial&gt;<br />
@@ -278,8 +290,8 @@ template&lt;typename R , typename... Args&gt; </div>
 
 </div>
 </div>
-<a id="ac5569c012b082665157f2033f4c39a75"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac5569c012b082665157f2033f4c39a75">&#9670;&nbsp;</a></span>set_err_mesg()</h2>
+<a id="a44bcb2451187823a88c00c01e9a45a3f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a44bcb2451187823a88c00c01e9a45a3f">&#9670;&nbsp;</a></span>set_err_mesg()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -298,7 +310,7 @@ template&lt;typename Serial &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">std::string&#160;</td>
+          <td class="paramtype">const std::string &amp;&#160;</td>
           <td class="paramname"><em>mesg</em>&#160;</td>
         </tr>
         <tr>

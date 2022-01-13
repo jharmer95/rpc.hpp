@@ -22,7 +22,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">rpc.hpp
-   &#160;<span id="projectnumber">0.6.1</span>
+   &#160;<span id="projectnumber">0.6.2</span>
    </div>
    <div id="projectbrief">Simple RPC Header-Only Library</div>
   </td>
@@ -87,19 +87,19 @@ Include dependency graph for rpc_rapidjson.hpp:</div>
 <div class="dyncontent">
 <div class="center"><img src="rpc__rapidjson_8hpp__incl.png" border="0" usemap="#ainclude_2rpc__adapters_2rpc__rapidjson_8hpp" alt=""/></div>
 <map name="ainclude_2rpc__adapters_2rpc__rapidjson_8hpp" id="ainclude_2rpc__adapters_2rpc__rapidjson_8hpp">
-<area shape="rect" title="Implementation of adapting rapidjson (https://github.com/Tencent/rapidjson)" alt="" coords="505,5,647,47"/>
-<area shape="rect" href="rpc_8hpp.html" title="Header&#45;only library for serialized RPC usage." alt="" coords="315,95,392,121"/>
-<area shape="rect" title=" " alt="" coords="416,95,563,121"/>
-<area shape="rect" title=" " alt="" coords="587,95,739,121"/>
-<area shape="rect" title=" " alt="" coords="763,95,883,121"/>
-<area shape="rect" title=" " alt="" coords="5,169,69,196"/>
-<area shape="rect" title=" " alt="" coords="93,169,160,196"/>
-<area shape="rect" title=" " alt="" coords="185,169,263,196"/>
-<area shape="rect" title=" " alt="" coords="287,169,342,196"/>
-<area shape="rect" title=" " alt="" coords="367,169,417,196"/>
-<area shape="rect" title=" " alt="" coords="441,169,524,196"/>
-<area shape="rect" title=" " alt="" coords="548,169,601,196"/>
-<area shape="rect" title=" " alt="" coords="626,169,737,196"/>
+<area shape="rect" title="Implementation of adapting rapidjson (https://github.com/Tencent/rapidjson)" alt="" coords="545,5,702,47"/>
+<area shape="rect" href="rpc_8hpp.html" title="Header&#45;only library for serialized RPC usage." alt="" coords="339,95,422,121"/>
+<area shape="rect" title=" " alt="" coords="446,95,609,121"/>
+<area shape="rect" title=" " alt="" coords="633,95,805,121"/>
+<area shape="rect" title=" " alt="" coords="829,95,964,121"/>
+<area shape="rect" title=" " alt="" coords="5,169,76,196"/>
+<area shape="rect" title=" " alt="" coords="101,169,175,196"/>
+<area shape="rect" title=" " alt="" coords="200,169,287,196"/>
+<area shape="rect" title=" " alt="" coords="311,169,370,196"/>
+<area shape="rect" title=" " alt="" coords="395,169,449,196"/>
+<area shape="rect" title=" " alt="" coords="473,169,565,196"/>
+<area shape="rect" title=" " alt="" coords="589,169,649,196"/>
+<area shape="rect" title=" " alt="" coords="673,169,797,196"/>
 </map>
 </div>
 </div>
@@ -113,26 +113,26 @@ Namespaces</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="typedef-members"></a>
 Typedefs</h2></td></tr>
-<tr class="memitem:a20a444050712f77a03f1b98b310a2902"><td class="memItemLeft" align="right" valign="top"><a id="a20a444050712f77a03f1b98b310a2902"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>rpc::adapters::rapidjson_doc</b> = rapidjson::Document</td></tr>
-<tr class="separator:a20a444050712f77a03f1b98b310a2902"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae7f03ed6ea6dfb9d9551f4237ce2191a"><td class="memItemLeft" align="right" valign="top"><a id="ae7f03ed6ea6dfb9d9551f4237ce2191a"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>rpc::adapters::rapidjson_val</b> = rapidjson::Value</td></tr>
-<tr class="separator:ae7f03ed6ea6dfb9d9551f4237ce2191a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4cd74ea6ab478f75e7659cb72638774a"><td class="memItemLeft" align="right" valign="top"><a id="a4cd74ea6ab478f75e7659cb72638774a"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>rpc::adapters::rapidjson_adapter</b> = details::serial_adapter&lt; rapidjson_doc, std::string &gt;</td></tr>
-<tr class="separator:a4cd74ea6ab478f75e7659cb72638774a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5f5447afd9e7c2654c8b95d80f3b94a0"><td class="memItemLeft" align="right" valign="top"><a id="a5f5447afd9e7c2654c8b95d80f3b94a0"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>rpc::adapters::rapidjson_adapter</b> = details::serial_adapter&lt; rapidjson::Document, std::string &gt;</td></tr>
+<tr class="separator:a5f5447afd9e7c2654c8b95d80f3b94a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aae128bcbe59d429061e60f7d898a08fd"><td class="memItemLeft" align="right" valign="top"><a id="aae128bcbe59d429061e60f7d898a08fd"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>rpc::adapters::rapidjson::doc_t</b> = ::rapidjson::Document</td></tr>
+<tr class="separator:aae128bcbe59d429061e60f7d898a08fd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0ab437f4431e474dfe9d42bd3841c749"><td class="memItemLeft" align="right" valign="top"><a id="a0ab437f4431e474dfe9d42bd3841c749"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>rpc::adapters::rapidjson::value_t</b> = ::rapidjson::Value</td></tr>
+<tr class="separator:a0ab437f4431e474dfe9d42bd3841c749"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a860185ee43edd97d725eaa9da3a4599c"><td class="memTemplParams" colspan="2"><a id="a860185ee43edd97d725eaa9da3a4599c"></a>
+<tr class="memitem:acdaccfcd14ae9466efdd4c0440941144"><td class="memTemplParams" colspan="2"><a id="acdaccfcd14ae9466efdd4c0440941144"></a>
 template&lt;typename T &gt; </td></tr>
-<tr class="memitem:a860185ee43edd97d725eaa9da3a4599c"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>rpc::adapters::push_arg</b> (T &amp;&amp;arg, rapidjson_val &amp;arg_arr, rapidjson::MemoryPoolAllocator&lt;&gt; &amp;alloc)</td></tr>
-<tr class="separator:a860185ee43edd97d725eaa9da3a4599c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab1c93e77c15da1bd054859e049f9e2a3"><td class="memTemplParams" colspan="2"><a id="ab1c93e77c15da1bd054859e049f9e2a3"></a>
+<tr class="memitem:acdaccfcd14ae9466efdd4c0440941144"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>rpc::adapters::rapidjson::details::push_arg</b> (T &amp;&amp;arg, value_t &amp;arg_arr, ::rapidjson::MemoryPoolAllocator&lt;&gt; &amp;alloc)</td></tr>
+<tr class="separator:acdaccfcd14ae9466efdd4c0440941144"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab47118d894b94b80babc5611abcdf182"><td class="memTemplParams" colspan="2"><a id="ab47118d894b94b80babc5611abcdf182"></a>
 template&lt;typename T &gt; </td></tr>
-<tr class="memitem:ab1c93e77c15da1bd054859e049f9e2a3"><td class="memTemplItemLeft" align="right" valign="top">std::remove_cv_t&lt; std::remove_reference_t&lt; T &gt; &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>rpc::adapters::parse_arg</b> (const rapidjson_val &amp;arg_arr, unsigned &amp;index)</td></tr>
-<tr class="separator:ab1c93e77c15da1bd054859e049f9e2a3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab47118d894b94b80babc5611abcdf182"><td class="memTemplItemLeft" align="right" valign="top">std::remove_cv_t&lt; std::remove_reference_t&lt; T &gt; &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>rpc::adapters::rapidjson::details::parse_arg</b> (const value_t &amp;arg_arr, unsigned &amp;index)</td></tr>
+<tr class="separator:ab47118d894b94b80babc5611abcdf182"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Implementation of adapting rapidjson (<a href="https://github.com/Tencent/rapidjson">https://github.com/Tencent/rapidjson</a>) </p>
