@@ -358,31 +358,37 @@ namespace adapters
             {
                 if (size < 0x80U)
                 {
-                    bytes.insert(bytes.begin() + index++, static_cast<uint8_t>(size));
+                    assert(index < size);
+                    assert(index <= std::numeric_limits<ptrdiff_t>::max());
+
+                    bytes.insert(bytes.begin() + static_cast<ptrdiff_t>(index++),
+                        static_cast<uint8_t>(size));
                 }
                 else
                 {
                     if (size < 0x4000U)
                     {
-                        bytes.insert(
-                            bytes.begin() + index++, static_cast<uint8_t>((size >> 8) | 0x80U));
-                        bytes.insert(bytes.begin() + index++, static_cast<uint8_t>(size));
+                        bytes.insert(bytes.begin() + static_cast<ptrdiff_t>(index++),
+                            static_cast<uint8_t>((size >> 8) | 0x80U));
+
+                        bytes.insert(bytes.begin() + static_cast<ptrdiff_t>(index++),
+                            static_cast<uint8_t>(size));
                     }
                     else
                     {
                         assert(size < 0x40000000U);
-                        bytes.insert(
-                            bytes.begin() + index++, static_cast<uint8_t>((size >> 24) | 0xC0U));
 
-                        bytes.insert(bytes.begin() + index++, static_cast<uint8_t>(size >> 16));
+                        bytes.insert(bytes.begin() + static_cast<ptrdiff_t>(index++),
+                            static_cast<uint8_t>((size >> 24) | 0xC0U));
 
-                        const auto sh = static_cast<uint16_t>(size);
+                        bytes.insert(bytes.begin() + static_cast<ptrdiff_t>(index++),
+                            static_cast<uint8_t>(size >> 16));
 
-                        bytes.insert(
-                            bytes.begin() + index++, *reinterpret_cast<const uint8_t*>(&size));
+                        bytes.insert(bytes.begin() + static_cast<ptrdiff_t>(index++),
+                            *reinterpret_cast<const uint8_t*>(&size));
 
-                        bytes.insert(
-                            bytes.begin() + index++, *reinterpret_cast<const uint8_t*>(&size) + 1);
+                        bytes.insert(bytes.begin() + static_cast<ptrdiff_t>(index++),
+                            *reinterpret_cast<const uint8_t*>(&size) + 1);
                     }
                 }
             }
@@ -484,7 +490,11 @@ inline std::string pack_adapter<adapters::bitsery_adapter>::get_func_name(
 {
     size_t index = 0;
     const auto len = adapters::bitsery::details::extract_length(serial_obj, index);
-    return { serial_obj.begin() + index, serial_obj.begin() + index + len };
+
+    assert(index < serial_obj.size());
+    assert(index <= std::numeric_limits<ptrdiff_t>::max());
+    return { serial_obj.begin() + static_cast<ptrdiff_t>(index),
+        serial_obj.begin() + static_cast<ptrdiff_t>(index) + len };
 }
 
 template<>
@@ -504,8 +514,12 @@ inline void pack_adapter<adapters::bitsery_adapter>::set_err_mesg(
 
     if (new_err_len != err_len)
     {
-        serial_obj.erase(
-            serial_obj.begin() + name_sz_len + name_len, serial_obj.begin() + index + err_len);
+        assert(index < serial_obj.size());
+        assert(index <= std::numeric_limits<ptrdiff_t>::max());
+
+        serial_obj.erase(serial_obj.begin() + static_cast<ptrdiff_t>(name_sz_len)
+                + static_cast<ptrdiff_t>(name_len),
+            serial_obj.begin() + static_cast<ptrdiff_t>(index) + static_cast<ptrdiff_t>(err_len));
 
         index = name_sz_len + name_len;
         adapters::bitsery::details::write_length(serial_obj, new_err_len, index);
@@ -513,7 +527,11 @@ inline void pack_adapter<adapters::bitsery_adapter>::set_err_mesg(
 
     for (unsigned i = 0; i < new_err_len; ++i)
     {
-        serial_obj.insert(serial_obj.begin() + index++, mesg[i]);
+        assert(index < serial_obj.size());
+        assert(index <= std::numeric_limits<ptrdiff_t>::max());
+
+        serial_obj.insert(serial_obj.begin() + static_cast<ptrdiff_t>(index++),
+            static_cast<const unsigned char>(mesg[i]));
     }
 }
 } // namespace rpc

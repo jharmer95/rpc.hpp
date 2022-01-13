@@ -215,8 +215,7 @@ namespace details
         using expander = int[];
         (void)expander{ 0,
             (
-                (void)[](auto&& x, auto&& y)
-                {
+                (void)[](auto&& x, auto&& y) {
                     if constexpr (
                         std::is_reference_v<
                             decltype(x)> && !std::is_const_v<std::remove_reference_t<decltype(x)>>)
@@ -241,6 +240,8 @@ namespace details
     public:
         using args_t = std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...>;
 
+        virtual ~packed_func_base() = default;
+
         packed_func_base(std::string func_name, args_t args)
             : m_func_name(std::move(func_name)), m_args(std::move(args))
         {
@@ -254,7 +255,7 @@ namespace details
 
         void set_err_mesg(const std::string& mesg) & { m_err_mesg = mesg; }
 
-        virtual explicit operator bool() const { return m_err_mesg.empty(); }
+        explicit operator bool() const { return is_valid(); }
 
         const args_t& get_args() const& { return m_args; }
         [[nodiscard]] args_t get_args() && { return std::move(m_args); }
@@ -273,6 +274,15 @@ namespace details
         {
             return std::get<Index>(std::move(m_args));
         }
+
+    protected:
+        // Prevent slicing
+        packed_func_base(const packed_func_base&) = default;
+        packed_func_base(packed_func_base&&) noexcept = default;
+        packed_func_base& operator=(const packed_func_base&) & = default;
+        packed_func_base& operator=(packed_func_base&&) & noexcept = default;
+
+        [[nodiscard]] virtual bool is_valid() const { return m_err_mesg.empty(); }
 
     private:
         std::string m_func_name;
@@ -326,16 +336,6 @@ public:
     {
     }
 
-    ///@brief Indicates if the packed_func holds a return value and no error occurred
-    ///
-    ///@note If an error occurred, the reason may be retrieved from the get_err_mesg() function
-    ///@return true A return value exists and no error occurred
-    ///@return false A return value does not exist AND/OR an error occurred
-    explicit operator bool() const override
-    {
-        return m_result.has_value() && details::packed_func_base<Args...>::operator bool();
-    }
-
     ///@brief Returns the result, throwing with the error message if it does not exist
     ///
     ///@return R The result of the function call
@@ -369,6 +369,11 @@ public:
     void clear_result() & { m_result = std::nullopt; }
 
 private:
+    [[nodiscard]] bool is_valid() const override
+    {
+        return m_result.has_value() && details::packed_func_base<Args...>::is_valid();
+    }
+
     std::optional<result_t> m_result{ std::nullopt };
 };
 
@@ -449,6 +454,11 @@ inline namespace server
         using adapter_t = Serial;
 
         virtual ~server_interface() = default;
+        server_interface() = default;
+
+        server_interface(const server_interface&) = delete;
+        server_interface& operator=(const server_interface&) = delete;
+        server_interface& operator=(server_interface&&) = delete;
 
         ///@brief Runs the callback function and updates the result (and any changes to mutable arguments) in the packed_func
         ///
@@ -552,11 +562,6 @@ inline namespace server
             serial_obj = pack_adapter<Serial>::template serialize_pack<R, Args...>(pack);
         }
 
-        ///@brief Implementation component for the dispatch function
-        ///
-        ///@param serial_obj Serial object used to represent the function call
-        virtual void dispatch_impl(typename Serial::serial_t& serial_obj) = 0;
-
         ///@brief Parses the received serialized data and determines which function to call
         ///
         ///@param bytes Data to be parsed into/back out of a serial object
@@ -576,8 +581,13 @@ inline namespace server
             bytes = Serial::to_bytes(std::move(serial_obj));
         }
 
-#    if defined(RPC_HPP_SERVER_IMPL) && defined(RPC_HPP_ENABLE_SERVER_CACHE)
+    protected:
+        server_interface(server_interface&&) noexcept = default;
+
     private:
+        virtual void dispatch_impl(typename Serial::serial_t& serial_obj) = 0;
+
+#    if defined(RPC_HPP_SERVER_IMPL) && defined(RPC_HPP_ENABLE_SERVER_CACHE)
         template<typename Val>
         static void* get_func_cache_impl(const std::string& func_name)
         {
@@ -608,6 +618,12 @@ inline namespace client
     {
     public:
         virtual ~client_interface() = default;
+        client_interface() = default;
+
+        client_interface(const client_interface&) = delete;
+        client_interface(client_interface&&) noexcept = default;
+        client_interface& operator=(const client_interface&) = delete;
+        client_interface& operator=(client_interface&&) = delete;
 
         ///@brief Sends an RPC call request to a server, waits for a response, then returns the result
         ///

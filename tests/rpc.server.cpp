@@ -88,22 +88,24 @@ static std::condition_variable cv;
 }
 
 // NOTE: This function is only for testing purposes. Obviously you would not want this in a production server!
-inline void KillServer() noexcept
+void KillServer() noexcept
 {
-    std::unique_lock<std::mutex> lk{ MUTEX };
-    RUNNING = false;
-    lk.unlock();
+    {
+        auto lk = std::unique_lock<std::mutex>{ MUTEX };
+        RUNNING = false;
+    }
+
     cv.notify_one();
 }
 
 // cached
-inline size_t StrLen(const std::string& str)
+size_t StrLen(const std::string& str)
 {
     return str.size();
 }
 
 // cached
-inline std::vector<int> AddOneToEach(std::vector<int> vec)
+std::vector<int> AddOneToEach(std::vector<int> vec)
 {
     for (auto& n : vec)
     {
@@ -113,7 +115,7 @@ inline std::vector<int> AddOneToEach(std::vector<int> vec)
     return vec;
 }
 
-inline void AddOneToEachRef(std::vector<int>& vec)
+void AddOneToEachRef(std::vector<int>& vec)
 {
     for (auto& n : vec)
     {
@@ -149,9 +151,8 @@ void FibonacciRef(uint64_t& number)
 }
 
 // cached
-inline double StdDev(const double n1, const double n2, const double n3, const double n4,
-    const double n5, const double n6, const double n7, const double n8, const double n9,
-    const double n10)
+double StdDev(const double n1, const double n2, const double n3, const double n4, const double n5,
+    const double n6, const double n7, const double n8, const double n9, const double n10)
 {
     const auto avg = Average(
         n1 * n1, n2 * n2, n3 * n3, n4 * n4, n5 * n5, n6 * n6, n7 * n7, n8 * n8, n9 * n9, n10 * n10);
@@ -396,7 +397,7 @@ int main(const int argc, char* argv[])
         std::cout << "Running Bitsery server on port 5003...\n";
 #endif
 
-        std::unique_lock<std::mutex> lk{ MUTEX };
+        auto lk = std::unique_lock<std::mutex>{ MUTEX };
         cv.wait(lk, [] { return !RUNNING; });
 
 #if defined(RPC_HPP_ENABLE_NJSON)
