@@ -36,10 +36,6 @@
 
 #pragma once
 
-#if !defined(RPC_HPP_ENABLE_BOOST_JSON)
-#    error 'rpc_boost_json' was included without defining 'RPC_HPP_ENABLE_BOOST_JSON' Please define this macro or do not include this header!
-#endif
-
 #include "../rpc.hpp"
 
 #include <cassert>

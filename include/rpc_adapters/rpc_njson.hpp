@@ -36,10 +36,6 @@
 
 #pragma once
 
-#if !defined(RPC_HPP_ENABLE_NJSON)
-#    error 'rpc_njson' was included without defining 'RPC_HPP_ENABLE_NJSON' Please define this macro or do not include this header!
-#endif
-
 #include "../rpc.hpp"
 
 #include <nlohmann/json.hpp>

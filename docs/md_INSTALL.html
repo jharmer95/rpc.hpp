@@ -77,13 +77,13 @@ Installing With CMake</h1>
 <div class="fragment"><div class="line">$ mkdir build</div>
 </div><!-- fragment --><div class="fragment"><div class="line">$ cmake -B build -D BUILD_ADAPTER_BOOST_JSON=ON -D BUILD_ADAPTER_NJSON=ON -D BUILD_ADAPTER_RAPIDJSON=ON</div>
 </div><!-- fragment --><div class="fragment"><div class="line">$ cmake --install build</div>
-</div><!-- fragment --><p>CMake version 3.12 or newer is required for this method, see below for instructions to install CMake if it is not already installed.</p>
+</div><!-- fragment --><p>CMake version 3.16 or newer is required for this method, see below for instructions to install CMake if it is not already installed.</p>
 <h1><a class="anchor" id="autotoc_md33"></a>
 Building and Testing the Project</h1>
 <p>If you are looking to contribute to <code><a class="el" href="rpc_8hpp.html" title="Header-only library for serialized RPC usage.">rpc.hpp</a></code>, or just want to run the tests/benchmarks, you will need to make sure that you can build the project and its test suite.</p>
 <h2><a class="anchor" id="autotoc_md34"></a>
 Setting Up Your Environment</h2>
-<p>While <code><a class="el" href="rpc_8hpp.html" title="Header-only library for serialized RPC usage.">rpc.hpp</a></code> is a header-only library, the project relies on using a buildsystem to perform certain tasks. It is therefore required that CMake (version 3.12 or newer) is installed on your machine and available on your <code>$PATH</code> to build the project.</p>
+<p>While <code><a class="el" href="rpc_8hpp.html" title="Header-only library for serialized RPC usage.">rpc.hpp</a></code> is a header-only library, the project relies on using a buildsystem to perform certain tasks. It is therefore required that CMake (version 3.16 or newer) is installed on your machine and available on your <code>$PATH</code> to build the project.</p>
 <p>Additionally, <code><a class="el" href="rpc_8hpp.html" title="Header-only library for serialized RPC usage.">rpc.hpp</a></code> requires at least one C++ compiler that fully supports C++17 or newer:</p>
 <p><b>Linux/macOS/BSD</b></p>
 <ul>
@@ -189,12 +189,12 @@ Building the Project</h2>
 </div><!-- fragment --><ol type="1">
 <li>Configure the project</li>
 </ol>
-<div class="fragment"><div class="line">$ cmake -B build -G Ninja -D BUILD_ADAPTER_BOOST_JSON=ON -D BUILD_ADAPTER_NJSON=ON -D BUILD_ADAPTER_RAPIDJSON=ON -D BUILD_TESTING=ON</div>
+<div class="fragment"><div class="line">$ cmake -B build -G Ninja -D BUILD_ADAPTER_BITSERY -D BUILD_ADAPTER_BOOST_JSON=ON -D BUILD_ADAPTER_NJSON=ON -D BUILD_ADAPTER_RAPIDJSON=ON -D BUILD_TESTING=ON</div>
 </div><!-- fragment --><p>NOTE: The above command can be altered based on your needs:</p>
 <ul>
 <li>In this example, the "Ninja" generator is used as it is fast, but <code>-G Ninja</code> may be omitted to use the system default make system</li>
-<li>With this example, all three adapters are to be built. By omitting one or more, they will not be built (example: <code>-D BUILD_ADAPTER_BOOST_JSON=ON</code> could be omitted or set to <code>=OFF</code>)<ul>
-<li><code>BUILD_ADAPTER_NJSON</code> is required for testing</li>
+<li>With this example, all adapters are to be built. By omitting one or more, they will not be built (example: <code>-D BUILD_ADAPTER_BOOST_JSON=ON</code> could be omitted or set to <code>=OFF</code>)<ul>
+<li><b>NOTE:</b> <code>BUILD_ADAPTER_NJSON</code> is required for testing</li>
 </ul>
 </li>
 <li>If using Conan to auto-install dependencies, make sure to set its option (add <code>-D DEPENDS_CONAN=ON</code>)</li>
@@ -214,24 +214,26 @@ Build Options</h3>
 <tr class="markdownTableHead">
 <th class="markdownTableHeadNone">Option   </th><th class="markdownTableHeadNone">Description    </th></tr>
 <tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone"><code>BUILD_ADAPTER_BITSERY</code>   </td><td class="markdownTableBodyNone">Build the adapter for Bitsery    </td></tr>
+<tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone"><code>BUILD_ADAPTER_BOOST_JSON</code>   </td><td class="markdownTableBodyNone">Build the adapter for Boost.JSON    </td></tr>
-<tr class="markdownTableRowEven">
+<tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone"><code>BUILD_ADAPTER_NJSON</code>   </td><td class="markdownTableBodyNone">Build the adapter for nlohmann/json    </td></tr>
-<tr class="markdownTableRowOdd">
+<tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone"><code>BUILD_ADAPTER_RAPIDJSON</code>   </td><td class="markdownTableBodyNone">Build the adapter for rapidjson    </td></tr>
-<tr class="markdownTableRowEven">
+<tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone"><code>BUILD_BENCHMARK</code>   </td><td class="markdownTableBodyNone">Build the benchmarking suite    </td></tr>
-<tr class="markdownTableRowOdd">
+<tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone"><code>BUILD_EXAMPLES</code>   </td><td class="markdownTableBodyNone">Build the examples    </td></tr>
-<tr class="markdownTableRowEven">
+<tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone"><code>BUILD_TESTING</code>   </td><td class="markdownTableBodyNone">Build the testing tree    </td></tr>
-<tr class="markdownTableRowOdd">
+<tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone"><code>CODE_COVERAGE</code>   </td><td class="markdownTableBodyNone">Enable coverage reporting    </td></tr>
-<tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone"><code>DEPENDS_CONAN</code>   </td><td class="markdownTableBodyNone">Use Conan to manage C/C++ dependencies    </td></tr>
 <tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone"><code>DEPENDS_VCPKG</code>   </td><td class="markdownTableBodyNone">User vcpkg to manage C/C++ dependencies    </td></tr>
+<td class="markdownTableBodyNone"><code>DEPENDS_CONAN</code>   </td><td class="markdownTableBodyNone">Use Conan to manage C/C++ dependencies    </td></tr>
 <tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone"><code>DEPENDS_VCPKG</code>   </td><td class="markdownTableBodyNone">User vcpkg to manage C/C++ dependencies    </td></tr>
+<tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone"><code>GENERATE_DOXYGEN</code>   </td><td class="markdownTableBodyNone">Generate Doxygen documentation from comments   </td></tr>
 </table>
 <p>NOTE:</p>

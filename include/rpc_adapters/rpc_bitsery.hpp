@@ -36,10 +36,6 @@
 
 #pragma once
 
-#if !defined(RPC_HPP_ENABLE_BITSERY)
-#    error 'rpc_bitsery' was included without defining 'RPC_HPP_ENABLE_BITSERY' Please define this macro or do not include this header!
-#endif
-
 #include "../rpc.hpp"
 
 #include <limits>
