@@ -43,6 +43,7 @@
 #include <rpc.hpp>
 #include <rpc_dispatch_helper.hpp>
 
+#include <atomic>
 #include <cstddef>
 #include <cstdint>
 #include <iomanip>
@@ -54,6 +55,8 @@
 #include <vector>
 
 using asio::ip::tcp;
+
+extern std::atomic<bool> RUNNING;
 
 // Forward declares
 [[noreturn]] void ThrowError() noexcept(false);
@@ -112,9 +115,9 @@ public:
     {
     }
 
-    [[noreturn]] void Run()
+    void Run()
     {
-        while (true)
+        while (RUNNING)
         {
             tcp::socket sock = m_accept.accept();
             constexpr auto BUFFER_SZ = 64U * 1024UL;
@@ -122,7 +125,7 @@ public:
 
             try
             {
-                while (true)
+                while (RUNNING)
                 {
                     asio::error_code error;
                     const size_t len = sock.read_some(asio::buffer(data.get(), BUFFER_SZ), error);

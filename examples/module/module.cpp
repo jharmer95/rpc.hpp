@@ -8,8 +8,6 @@
 
 constexpr auto MODULE_NAME{ "rpc_module" };
 
-static RpcModule rpc_mod;
-
 inline int Sum(int n1, int n2)
 {
     return n1 + n2;
@@ -35,6 +33,8 @@ void RpcModule::dispatch_impl(rpc::adapters::njson::njson_t& serial_obj)
 
 int RunRemoteFunc(char* const json_str, const size_t json_buf_len)
 {
+    static RpcModule rpc_mod{};
+
     std::string input{ json_str };
     rpc_mod.dispatch(input);
 

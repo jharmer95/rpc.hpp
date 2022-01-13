@@ -460,7 +460,7 @@ TEST_CASE("Sequential", "[sequential][cached]")
     BENCHMARK("rpc.hpp (asio::tcp, njson)")
     {
         auto vec = GetClient<njson_adapter>().template call_func<std::vector<uint64_t>>(
-            "GenRandInts", 5, 30, 1000);
+            "GenRandInts", 5, 30, 1'000);
 
         for (auto& val : vec)
         {
@@ -475,7 +475,7 @@ TEST_CASE("Sequential", "[sequential][cached]")
     BENCHMARK("rpc.hpp (asio::tcp, rapidjson)")
     {
         auto vec = GetClient<rapidjson_adapter>().template call_func<std::vector<uint64_t>>(
-            "GenRandInts", 5, 30, 1000);
+            "GenRandInts", 5, 30, 1'000);
 
         for (auto& val : vec)
         {
@@ -491,7 +491,7 @@ TEST_CASE("Sequential", "[sequential][cached]")
     BENCHMARK("rpc.hpp (asio::tcp, bjson)")
     {
         auto vec = GetClient<boost_json_adapter>().template call_func<std::vector<uint64_t>>(
-            "GenRandInts", 5, 30, 1000);
+            "GenRandInts", 5, 30, 1'000);
 
         for (auto& val : vec)
         {
@@ -507,7 +507,7 @@ TEST_CASE("Sequential", "[sequential][cached]")
     BENCHMARK("rpc.hpp (asio::tcp, bitsery)")
     {
         auto vec = GetClient<bitsery_adapter>().template call_func<std::vector<uint64_t>>(
-            "GenRandInts", 5, 30, 1000);
+            "GenRandInts", 5, 30, 1'000);
 
         for (auto& val : vec)
         {

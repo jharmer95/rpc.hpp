@@ -69,18 +69,14 @@ const uint64_t rpc::adapters::bitsery::config::max_container_size = 100;
 
 #include <algorithm>
 #include <cmath>
-#include <condition_variable>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
-#include <mutex>
 #include <sstream>
 #include <thread>
 #include <utility>
 
-static bool RUNNING = false;
-static std::mutex MUTEX;
-static std::condition_variable cv;
+std::atomic<bool> RUNNING{ false };
 
 [[noreturn]] void ThrowError() noexcept(false)
 {
@@ -90,12 +86,7 @@ static std::condition_variable cv;
 // NOTE: This function is only for testing purposes. Obviously you would not want this in a production server!
 void KillServer() noexcept
 {
-    {
-        auto lk = std::unique_lock<std::mutex>{ MUTEX };
-        RUNNING = false;
-    }
-
-    cv.notify_one();
+    RUNNING = false;
 }
 
 // cached
@@ -355,6 +346,8 @@ int main(const int argc, char* argv[])
         asio::io_context io_context{};
         RUNNING = true;
 
+        std::vector<std::thread> threads;
+
 #if defined(RPC_HPP_ENABLE_NJSON)
         TestServer<njson_adapter> njson_server{ io_context, 5000U };
 
@@ -375,30 +368,32 @@ int main(const int argc, char* argv[])
             LOAD_CACHE(njson_server, CountChars, njson_dump_path);
         }
 
-        std::thread(&TestServer<njson_adapter>::Run, &njson_server).detach();
+        threads.emplace_back(&TestServer<njson_adapter>::Run, &njson_server);
         std::cout << "Running njson server on port 5000...\n";
 #endif
 
 #if defined(RPC_HPP_ENABLE_RAPIDJSON)
         TestServer<rapidjson_adapter> rapidjson_server{ io_context, 5001U };
-        std::thread(&TestServer<rapidjson_adapter>::Run, &rapidjson_server).detach();
+        threads.emplace_back(&TestServer<rapidjson_adapter>::Run, &rapidjson_server);
         std::cout << "Running rapidjson server on port 5001...\n";
 #endif
 
 #if defined(RPC_HPP_ENABLE_BOOST_JSON)
         TestServer<boost_json_adapter> bjson_server{ io_context, 5002U };
-        std::thread(&TestServer<boost_json_adapter>::Run, &bjson_server).detach();
+        threads.emplace_back(&TestServer<boost_json_adapter>::Run, &bjson_server);
         std::cout << "Running Boost.JSON server on port 5002...\n";
 #endif
 
 #if defined(RPC_HPP_ENABLE_BITSERY)
         TestServer<bitsery_adapter> bitsery_server{ io_context, 5003U };
-        std::thread(&TestServer<bitsery_adapter>::Run, &bitsery_server).detach();
+        threads.emplace_back(&TestServer<bitsery_adapter>::Run, &bitsery_server);
         std::cout << "Running Bitsery server on port 5003...\n";
 #endif
 
-        auto lk = std::unique_lock<std::mutex>{ MUTEX };
-        cv.wait(lk, [] { return !RUNNING; });
+        for (auto& th : threads)
+        {
+            th.join();
+        }
 
 #if defined(RPC_HPP_ENABLE_NJSON)
         DUMP_CACHE(njson_server, SimpleSum, njson_dump_path);
