@@ -142,7 +142,7 @@ namespace adapters
                     std::tuple<largest_t<std::remove_cv_t<std::remove_reference_t<Args>>>...>;
 #endif
 
-                pack_helper() noexcept = default;
+                pack_helper() = default;
 
                 pack_helper(std::string name, std::string err, R res, args_t arg_tup) noexcept(
                     std::is_move_constructible_v<R>)
@@ -167,7 +167,7 @@ namespace adapters
                     std::tuple<largest_t<std::remove_cv_t<std::remove_reference_t<Args>>>...>;
 #endif
 
-                pack_helper() noexcept = default;
+                pack_helper() = default;
 
                 pack_helper(std::string name, std::string err, args_t arg_tup) noexcept
                     : func_name(std::move(name)), err_mesg(std::move(err)), args(std::move(arg_tup))
