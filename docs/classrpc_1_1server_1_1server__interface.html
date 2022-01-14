@@ -108,9 +108,9 @@ template&lt;typename Val &gt; </td></tr>
 template&lt;typename Val &gt; </td></tr>
 <tr class="memitem:ac79f63f2838e833ab23aa0ed6bbfd6f3"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>update_all_cache</b> (const std::string &amp;func_name)</td></tr>
 <tr class="separator:ac79f63f2838e833ab23aa0ed6bbfd6f3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad98cdde72b460d4aaed286cfab1e9252"><td class="memItemLeft" align="right" valign="top"><a id="ad98cdde72b460d4aaed286cfab1e9252"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>clear_all_cache</b> ()</td></tr>
-<tr class="separator:ad98cdde72b460d4aaed286cfab1e9252"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a618b227f7243326fc7e662c446466746"><td class="memItemLeft" align="right" valign="top"><a id="a618b227f7243326fc7e662c446466746"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>clear_all_cache</b> () noexcept</td></tr>
+<tr class="separator:a618b227f7243326fc7e662c446466746"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab6055dff21bc516eff7956117488184f"><td class="memTemplParams" colspan="2">template&lt;typename R , typename... Args&gt; </td></tr>
 <tr class="memitem:ab6055dff21bc516eff7956117488184f"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classrpc_1_1server_1_1server__interface.html#ab6055dff21bc516eff7956117488184f">dispatch_cached_func</a> (R(*func)(Args...), typename Serial::serial_t &amp;serial_obj)</td></tr>
 <tr class="memdesc:ab6055dff21bc516eff7956117488184f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Deserializes the serial object to a <a class="el" href="classrpc_1_1packed__func.html" title="Object representing a function call, including the function&#39;s name, arguments and result.">packed_func</a>, calls the callback function, then serializes the result back to the serial object, using a server-side cache for performance.  <a href="classrpc_1_1server_1_1server__interface.html#ab6055dff21bc516eff7956117488184f">More...</a><br /></td></tr>

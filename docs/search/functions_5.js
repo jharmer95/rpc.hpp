@@ -1,7 +1,5 @@
 var searchData=
 [
-  ['send_80',['send',['../classrpc_1_1client_1_1client__interface.html#aa7c513e73a82d7c5ef0bf1401b3acd4a',1,'rpc::client::client_interface']]],
-  ['serialize_5fpack_81',['serialize_pack',['../classrpc_1_1pack__adapter.html#aa2b0dc1bb016265f0dc367a56ff31208',1,'rpc::pack_adapter']]],
-  ['set_5ferr_5fmesg_82',['set_err_mesg',['../classrpc_1_1pack__adapter.html#a44bcb2451187823a88c00c01e9a45a3f',1,'rpc::pack_adapter']]],
-  ['set_5fresult_83',['set_result',['../classrpc_1_1packed__func.html#a7fd739d3cf02f83a81e9dbbac39ce187',1,'rpc::packed_func']]]
+  ['receive_84',['receive',['../classrpc_1_1client_1_1client__interface.html#ac183a72ae42949d1995d919e248909bd',1,'rpc::client::client_interface']]],
+  ['run_5fcallback_85',['run_callback',['../classrpc_1_1server_1_1server__interface.html#ac5d9e8286cff4d1c0183f8bf089ab8aa',1,'rpc::server::server_interface']]]
 ];

@@ -110,7 +110,7 @@ namespace adapters
                     using value_t = typename no_ref_t::value_type;
 
                     auto& arr = arg.as_array();
-                    no_ref_t container;
+                    no_ref_t container{};
                     container.reserve(arr.size());
 
                     unsigned j = 0;
@@ -185,10 +185,11 @@ template<typename R, typename... Args>
     if constexpr (!std::is_void_v<R>)
     {
         ret_j["result"] = nullptr;
-        auto& result = ret_j["result"];
 
         if (pack)
         {
+            auto& result = ret_j["result"];
+            
             if constexpr (std::is_arithmetic_v<R> || std::is_same_v<R, std::string>)
             {
                 result = pack.get_result();
@@ -273,7 +274,7 @@ template<typename R, typename... Args>
                 using value_t = typename R::value_type;
 
                 auto& arr = result.as_array();
-                R container;
+                R container{};
                 container.reserve(arr.size());
 
                 unsigned j = 0;
