@@ -93,7 +93,7 @@ namespace adapters
             }
 
             template<typename T>
-            std::remove_cv_t<std::remove_reference_t<T>> parse_arg(
+            [[nodiscard]] std::remove_cv_t<std::remove_reference_t<T>> parse_arg(
                 const value_t& arg_arr, unsigned& index)
             {
                 using no_ref_t = std::remove_cv_t<std::remove_reference_t<T>>;
@@ -137,36 +137,37 @@ namespace adapters
 } // namespace adapters
 
 template<>
-inline std::string adapters::boost_json_adapter::to_bytes(
+[[nodiscard]] inline std::string adapters::boost_json_adapter::to_bytes(
     const adapters::boost_json::value_t& serial_obj)
 {
     return boost::json::serialize(serial_obj);
 }
 
 template<>
-inline std::string adapters::boost_json_adapter::to_bytes(
+[[nodiscard]] inline std::string adapters::boost_json_adapter::to_bytes(
     adapters::boost_json::value_t&& serial_obj)
 {
     return boost::json::serialize(std::move(serial_obj));
 }
 
 template<>
-inline adapters::boost_json::value_t adapters::boost_json_adapter::from_bytes(
+[[nodiscard]] inline adapters::boost_json::value_t adapters::boost_json_adapter::from_bytes(
     const std::string& bytes)
 {
     return boost::json::parse(bytes);
 }
 
 template<>
-inline adapters::boost_json::value_t adapters::boost_json_adapter::from_bytes(std::string&& bytes)
+[[nodiscard]] inline adapters::boost_json::value_t adapters::boost_json_adapter::from_bytes(
+    std::string&& bytes)
 {
     return boost::json::parse(std::move(bytes));
 }
 
 template<>
 template<typename R, typename... Args>
-adapters::boost_json::value_t pack_adapter<adapters::boost_json_adapter>::serialize_pack(
-    const packed_func<R, Args...>& pack)
+[[nodiscard]] adapters::boost_json::value_t pack_adapter<
+    adapters::boost_json_adapter>::serialize_pack(const packed_func<R, Args...>& pack)
 {
     using namespace adapters::boost_json;
 
@@ -226,7 +227,7 @@ adapters::boost_json::value_t pack_adapter<adapters::boost_json_adapter>::serial
 
 template<>
 template<typename R, typename... Args>
-packed_func<R, Args...> pack_adapter<adapters::boost_json_adapter>::deserialize_pack(
+[[nodiscard]] packed_func<R, Args...> pack_adapter<adapters::boost_json_adapter>::deserialize_pack(
     const adapters::boost_json::value_t& serial_obj)
 {
     using namespace adapters::boost_json;
@@ -310,7 +311,7 @@ packed_func<R, Args...> pack_adapter<adapters::boost_json_adapter>::deserialize_
 }
 
 template<>
-inline std::string pack_adapter<adapters::boost_json_adapter>::get_func_name(
+[[nodiscard]] inline std::string pack_adapter<adapters::boost_json_adapter>::get_func_name(
     const adapters::boost_json::value_t& serial_obj)
 {
     assert(serial_obj.is_object());

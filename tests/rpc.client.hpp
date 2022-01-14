@@ -74,7 +74,11 @@ public:
         asio::connect(m_socket, m_resolver.resolve(host, port));
     }
 
-    std::string getIP() const { return m_socket.remote_endpoint().address().to_string(); }
+    // nodiscard because string is being allocated for return
+    [[nodiscard]] std::string getIP() const
+    {
+        return m_socket.remote_endpoint().address().to_string();
+    }
 
 private:
     void send(const typename Serial::bytes_t& mesg) override
@@ -85,8 +89,8 @@ private:
     // nodiscard because data is lost after receive
     [[nodiscard]] typename Serial::bytes_t receive() override
     {
-        const auto numBytes = m_socket.read_some(asio::buffer(m_buffer, 64U * 1024UL));
-        return typename Serial::bytes_t{ m_buffer, m_buffer + numBytes };
+        const auto numBytes = m_socket.read_some(asio::buffer(m_buffer, 64UL * 1024UL));
+        return typename Serial::bytes_t{ &m_buffer[0], &m_buffer[numBytes] };
     }
 
     asio::io_context m_io{};
@@ -99,7 +103,7 @@ template<typename Serial>
 TestClient<Serial>& GetClient();
 
 template<>
-TestClient<njson_adapter>& GetClient()
+[[nodiscard]] inline TestClient<njson_adapter>& GetClient()
 {
     static TestClient<njson_adapter> client("127.0.0.1", "5000");
     return client;
@@ -107,7 +111,7 @@ TestClient<njson_adapter>& GetClient()
 
 #if defined(RPC_HPP_ENABLE_RAPIDJSON)
 template<>
-inline TestClient<rapidjson_adapter>& GetClient()
+[[nodiscard]] inline TestClient<rapidjson_adapter>& GetClient()
 {
     static TestClient<rapidjson_adapter> client("127.0.0.1", "5001");
     return client;
@@ -116,7 +120,7 @@ inline TestClient<rapidjson_adapter>& GetClient()
 
 #if defined(RPC_HPP_ENABLE_BOOST_JSON)
 template<>
-inline TestClient<boost_json_adapter>& GetClient()
+[[nodiscard]] inline TestClient<boost_json_adapter>& GetClient()
 {
     static TestClient<boost_json_adapter> client("127.0.0.1", "5002");
     return client;
@@ -125,7 +129,7 @@ inline TestClient<boost_json_adapter>& GetClient()
 
 #if defined(RPC_HPP_ENABLE_BITSERY)
 template<>
-inline TestClient<bitsery_adapter>& GetClient()
+[[nodiscard]] inline TestClient<bitsery_adapter>& GetClient()
 {
     static TestClient<bitsery_adapter> client("127.0.0.1", "5003");
     return client;

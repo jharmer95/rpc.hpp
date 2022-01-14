@@ -49,12 +49,10 @@
 #include <vector>
 
 #if defined(RPC_HPP_ENABLE_SERVER_CACHE)
-namespace std
-{
 template<>
-struct hash<std::vector<uint8_t>>
+struct std::hash<std::vector<uint8_t>>
 {
-    size_t operator()(const std::vector<uint8_t>& vec) const noexcept
+    [[nodiscard]] size_t operator()(const std::vector<uint8_t>& vec) const noexcept
     {
         size_t seed = vec.size();
 
@@ -66,7 +64,6 @@ struct hash<std::vector<uint8_t>>
         return seed;
     }
 };
-} // namespace std
 #endif
 
 namespace rpc
@@ -145,9 +142,10 @@ namespace adapters
                     std::tuple<largest_t<std::remove_cv_t<std::remove_reference_t<Args>>>...>;
 #endif
 
-                pack_helper() = default;
+                pack_helper() noexcept = default;
 
-                pack_helper(std::string name, std::string err, R res, args_t arg_tup)
+                pack_helper(std::string name, std::string err, R res, args_t arg_tup) noexcept(
+                    std::is_move_constructible_v<R>)
                     : func_name(std::move(name)), err_mesg(std::move(err)), result(std::move(res)),
                       args(std::move(arg_tup))
                 {
@@ -169,9 +167,9 @@ namespace adapters
                     std::tuple<largest_t<std::remove_cv_t<std::remove_reference_t<Args>>>...>;
 #endif
 
-                pack_helper() = default;
+                pack_helper() noexcept = default;
 
-                pack_helper(std::string name, std::string err, args_t arg_tup)
+                pack_helper(std::string name, std::string err, args_t arg_tup) noexcept
                     : func_name(std::move(name)), err_mesg(std::move(err)), args(std::move(arg_tup))
                 {
                 }
@@ -246,8 +244,9 @@ namespace adapters
                         } });
             }
 
+            // nodiscard because a potentially expensive copy and allocation is being done
             template<typename R, typename... Args>
-            pack_helper<R, Args...> to_helper(const packed_func<R, Args...>& pack)
+            [[nodiscard]] pack_helper<R, Args...> to_helper(const packed_func<R, Args...>& pack)
             {
                 pack_helper<R, Args...> helper;
 
@@ -283,8 +282,9 @@ namespace adapters
 #    endif
 #endif
 
+            // nodiscard because a potentially expensive copy and allocation is being done
             template<typename R, typename... Args>
-            packed_func<R, Args...> from_helper(pack_helper<R, Args...> helper)
+            [[nodiscard]] packed_func<R, Args...> from_helper(pack_helper<R, Args...> helper)
             {
                 if constexpr (std::is_void_v<R>)
                 {
@@ -344,7 +344,7 @@ namespace adapters
                 if ((hb & 0x40U) != 0U)
                 {
                     assert(index < bytes.size());
-                    const uint16_t lw = *reinterpret_cast<const uint16_t*>(bytes.data() + index++);
+                    const uint16_t lw = *reinterpret_cast<const uint16_t*>(&bytes[index++]);
 
                     return ((((hb & 0x3FU) << 8) | lb) << 16) | lw;
                 }
@@ -396,28 +396,28 @@ namespace adapters
 } // namespace adapters
 
 template<>
-inline adapters::bitsery::bit_buffer adapters::bitsery_adapter::to_bytes(
+[[nodiscard]] inline adapters::bitsery::bit_buffer adapters::bitsery_adapter::to_bytes(
     const adapters::bitsery::bit_buffer& serial_obj)
 {
     return serial_obj;
 }
 
 template<>
-inline adapters::bitsery::bit_buffer adapters::bitsery_adapter::to_bytes(
+[[nodiscard]] inline adapters::bitsery::bit_buffer adapters::bitsery_adapter::to_bytes(
     adapters::bitsery::bit_buffer&& serial_obj)
 {
     return std::move(serial_obj);
 }
 
 template<>
-inline adapters::bitsery::bit_buffer adapters::bitsery_adapter::from_bytes(
+[[nodiscard]] inline adapters::bitsery::bit_buffer adapters::bitsery_adapter::from_bytes(
     const adapters::bitsery::bit_buffer& bytes)
 {
     return bytes;
 }
 
 template<>
-inline adapters::bitsery::bit_buffer adapters::bitsery_adapter::from_bytes(
+[[nodiscard]] inline adapters::bitsery::bit_buffer adapters::bitsery_adapter::from_bytes(
     adapters::bitsery::bit_buffer&& bytes)
 {
     return std::move(bytes);
@@ -425,7 +425,7 @@ inline adapters::bitsery::bit_buffer adapters::bitsery_adapter::from_bytes(
 
 template<>
 template<typename R, typename... Args>
-adapters::bitsery::bit_buffer pack_adapter<adapters::bitsery_adapter>::serialize_pack(
+[[nodiscard]] adapters::bitsery::bit_buffer pack_adapter<adapters::bitsery_adapter>::serialize_pack(
     const packed_func<R, Args...>& pack)
 {
     using namespace adapters::bitsery;
@@ -442,7 +442,7 @@ adapters::bitsery::bit_buffer pack_adapter<adapters::bitsery_adapter>::serialize
 
 template<>
 template<typename R, typename... Args>
-packed_func<R, Args...> pack_adapter<adapters::bitsery_adapter>::deserialize_pack(
+[[nodiscard]] packed_func<R, Args...> pack_adapter<adapters::bitsery_adapter>::deserialize_pack(
     const adapters::bitsery::bit_buffer& serial_obj)
 {
     using namespace adapters::bitsery;
@@ -484,7 +484,7 @@ packed_func<R, Args...> pack_adapter<adapters::bitsery_adapter>::deserialize_pac
 }
 
 template<>
-inline std::string pack_adapter<adapters::bitsery_adapter>::get_func_name(
+[[nodiscard]] inline std::string pack_adapter<adapters::bitsery_adapter>::get_func_name(
     const adapters::bitsery::bit_buffer& serial_obj)
 {
     size_t index = 0;

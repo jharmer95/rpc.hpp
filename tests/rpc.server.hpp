@@ -156,7 +156,7 @@ public:
                         throw asio::system_error(error);
                     }
 
-                    typename Serial::bytes_t bytes{ data.get(), data.get() + len };
+                    typename Serial::bytes_t bytes{ &data[0], &data[len] };
                     this->dispatch(bytes);
 
 #ifndef NDEBUG

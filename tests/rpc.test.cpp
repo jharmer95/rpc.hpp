@@ -196,9 +196,10 @@ TEST_CASE_TEMPLATE("AddOneToEachRef", TestType, RPC_TEST_TYPES)
 TEST_CASE_TEMPLATE("Fibonacci", TestType, RPC_TEST_TYPES)
 {
     constexpr uint64_t expected = 10946;
+    constexpr uint64_t input = 20;
     auto& client = GetClient<TestType>();
 
-    const auto test = client.template call_func<uint64_t>("Fibonacci", uint64_t{ 20 });
+    const auto test = client.template call_func<uint64_t>("Fibonacci", input);
 
     REQUIRE(expected == test);
 }
@@ -266,12 +267,8 @@ TEST_CASE_TEMPLATE("HashComplex", TestType, RPC_TEST_TYPES)
     const std::string expected = "467365747274747d315a473a527073796c7e707b85";
     auto& client = GetClient<TestType>();
 
-    ComplexObject cx;
-    cx.flag1 = false;
-    cx.flag2 = true;
-    cx.id = 24;
-    cx.name = "Franklin D. Roosevelt";
-    cx.vals = { 0, 1, 4, 6, 7, 8, 11, 15, 17, 22, 25, 26 };
+    const ComplexObject cx{ 24, "Franklin D. Roosevelt", false, true,
+        { 0, 1, 4, 6, 7, 8, 11, 15, 17, 22, 25, 26 } };
 
     const auto test = client.template call_func<std::string>("HashComplex", cx);
 
@@ -283,12 +280,8 @@ TEST_CASE_TEMPLATE("HashComplexRef", TestType, RPC_TEST_TYPES)
     const std::string expected = "467365747274747d315a473a527073796c7e707b85";
     auto& client = GetClient<TestType>();
 
-    ComplexObject cx;
-    cx.flag1 = false;
-    cx.flag2 = true;
-    cx.id = 24;
-    cx.name = "Franklin D. Roosevelt";
-    cx.vals = { 0, 1, 4, 6, 7, 8, 11, 15, 17, 22, 25, 26 };
+    ComplexObject cx{ 24, "Franklin D. Roosevelt", false, true,
+        { 0, 1, 4, 6, 7, 8, 11, 15, 17, 22, 25, 26 } };
 
     // initialize empty string to pass
     std::string test{};

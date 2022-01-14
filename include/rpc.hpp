@@ -197,7 +197,7 @@ namespace details
         [[maybe_unused]] std::index_sequence<Is...> iseq)
     {
         using expander = int[];
-        (void)expander{ 0, ((void)func(std::get<Is>(tuple)), 0)... };
+        std::ignore = expander{ 0, ((void)func(std::get<Is>(tuple)), 0)... };
     }
 
     template<typename F, typename... Ts>
@@ -213,7 +213,7 @@ namespace details
         std::index_sequence<Is...>, Args&&... dest)
     {
         using expander = int[];
-        (void)expander{ 0,
+        std::ignore = expander{ 0,
             (
                 (void)[](auto&& x, auto&& y)
                 {
@@ -259,14 +259,15 @@ namespace details
         [[nodiscard]] std::string get_func_name() && noexcept { return std::move(m_func_name); }
 
         void set_err_mesg(const std::string& mesg) & { m_err_mesg = mesg; }
+        void set_err_mesg(std::string&& mesg) & noexcept { m_err_mesg = std::move(mesg); }
 
-        const args_t& get_args() const& { return m_args; }
+        const args_t& get_args() const& noexcept { return m_args; }
 
         // nodiscard because args are being moved out of the object
         [[nodiscard]] args_t get_args() && { return std::move(m_args); }
 
         void set_args(const args_t& args) & { m_args = args; }
-        void set_args(args_t&& args) & { m_args = std::move(args); }
+        void set_args(args_t&& args) & noexcept { m_args = std::move(args); }
 
         template<size_t Index>
         const auto& get_arg() const& noexcept
@@ -300,18 +301,22 @@ namespace details
         using serial_t = T_Serial;
         using bytes_t = T_Bytes;
 
+        // nodiscard because a potentially expensive parse and copy is being done
         template<typename T>
-        static serial_t serialize(const T& val);
+        [[nodiscard]] static serial_t serialize(const T& val);
 
+        // nodiscard because a potentially expensive parse and copy is being done
         template<typename T>
-        static T deserialize(const serial_t& serial_obj);
+        [[nodiscard]] static T deserialize(const serial_t& serial_obj);
 
-        static serial_t from_bytes(const bytes_t& bytes);
+        // nodiscard because a potentially expensive parse and copy is being done
+        [[nodiscard]] static serial_t from_bytes(const bytes_t& bytes);
 
         // nodiscard because input bytes are lost after conversion
         [[nodiscard]] static serial_t from_bytes(bytes_t&& bytes);
 
-        static bytes_t to_bytes(const serial_t& serial_obj);
+        // nodiscard because a potentially expensive parse and copy is being done
+        [[nodiscard]] static bytes_t to_bytes(const serial_t& serial_obj);
 
         // nodiscard because input object is lost after conversion
         [[nodiscard]] static bytes_t to_bytes(serial_t&& serial_obj);
@@ -388,7 +393,10 @@ public:
     ///@brief Returns the result as an optional value (needs to be checked before use)
     ///
     ///@return std::optional<R> Result of the function call (may be empty)
-    std::optional<R> get_result_opt() const noexcept(std::is_nothrow_copy_constructible_v<R>)
+
+    // nodiscard because a potentially expensive copy is being done
+    [[nodiscard]] std::optional<R> get_result_opt() const
+        noexcept(std::is_nothrow_copy_constructible_v<R>)
     {
         return m_result;
     }
@@ -396,17 +404,9 @@ public:
     ///@brief Sets the result to a value
     ///
     ///@param value The value to store as the result
-    void set_result(const R& value) & noexcept(
-        std::is_nothrow_copy_constructible_v<R>&& std::is_nothrow_move_assignable_v<R>)
-    {
-        m_result = value;
-    }
+    void set_result(const R& value) & { m_result = value; }
 
-    void set_result(R&& value) & noexcept(
-        std::is_nothrow_move_constructible_v<R>&& std::is_nothrow_move_assignable_v<R>)
-    {
-        m_result = std::move(value);
-    }
+    void set_result(R&& value) & { m_result = std::move(value); }
 
     ///@brief Clears the result stored (sets it back to std::nullopt)
     void clear_result() & noexcept { m_result.reset(); }
@@ -445,8 +445,11 @@ public:
     ///@tparam Args Variadic argument type(s) of the packed_func
     ///@param pack packed_func to be serialized
     ///@return Serial::serial_t Serial representation of the packed_func
+
+    // nodiscard because a potentially expensive parse and copy is being done
     template<typename R, typename... Args>
-    static typename Serial::serial_t serialize_pack(const packed_func<R, Args...>& pack);
+    [[nodiscard]] static typename Serial::serial_t serialize_pack(
+        const packed_func<R, Args...>& pack);
 
     ///@brief De-serializes a serial object to a packed_func
     ///
@@ -454,14 +457,19 @@ public:
     ///@tparam Args Variadic argument type(s) of the packed_func
     ///@param serial_obj Serial object to be serialized
     ///@return packed_func<R, Args...> resulting packed_func
+
+    // nodiscard because a potentially expensive parse and copy is being done
     template<typename R, typename... Args>
-    static packed_func<R, Args...> deserialize_pack(const typename Serial::serial_t& serial_obj);
+    [[nodiscard]] static packed_func<R, Args...> deserialize_pack(
+        const typename Serial::serial_t& serial_obj);
 
     ///@brief Extracts the function name of a serialized function call
     ///
     ///@param serial_obj Serial object to be parsed
     ///@return std::string Name of the contained function
-    static std::string get_func_name(const typename Serial::serial_t& serial_obj);
+
+    // nodiscard because a potentially expensive parse and string allocation is being done
+    [[nodiscard]] static std::string get_func_name(const typename Serial::serial_t& serial_obj);
 
     ///@brief Sets the error message for the serialized function call
     ///
@@ -627,7 +635,7 @@ inline namespace server
                 std::unordered_map<typename Serial::bytes_t, Val>>
                 cache{};
 
-            return static_cast<void*>(&cache[func_name]);
+            return &cache[func_name];
         }
 
         std::unordered_map<std::string, void*> m_cache_map{};
@@ -637,6 +645,8 @@ inline namespace server
 #endif
 
 #if defined(RPC_HPP_CLIENT_IMPL)
+#    define call_header_func(FUNCNAME, ...) call_header_func_impl(FUNCNAME, #    FUNCNAME, __VA_ARGS__)
+
 ///@brief Namespace containing functions and classes only relevant to "client-side" implentations
 ///
 ///@note Is only compiled by defining @ref RPC_HPP_CLIENT_IMPL
@@ -664,8 +674,10 @@ inline namespace client
         ///@param func_name Name of the remote function to call
         ///@param args Argument(s) for the remote function
         ///@return R Result of the function call, will throw with server's error message if the result does not exist
+
+        // nodiscard because an expensive remote procedure call is being performed
         template<typename R = void, typename... Args>
-        R call_func(std::string func_name, Args&&... args)
+        [[nodiscard]] R call_func(std::string func_name, Args&&... args)
         {
             packed_func<R, Args...> pack = [&]() noexcept
             {
@@ -699,8 +711,9 @@ inline namespace client
             }
         }
 
+        // nodiscard because an expensive remote procedure call is being performed
         template<typename R, typename... Args>
-        R call_header_func_impl(
+        [[nodiscard]] R call_header_func_impl(
             [[maybe_unused]] R (*func)(Args...), std::string func_name, Args&&... args)
         {
             return call_func<R, Args...>(std::move(func_name), std::forward<Args>(args)...);
@@ -717,8 +730,6 @@ inline namespace client
         ///@return Serial::bytes_t Received serialized data
         virtual typename Serial::bytes_t receive() = 0;
     };
-
-#    define call_header_func(FUNCNAME, ...) call_header_func_impl(FUNCNAME, #    FUNCNAME, __VA_ARGS__)
 } // namespace client
 #endif
 } // namespace rpc

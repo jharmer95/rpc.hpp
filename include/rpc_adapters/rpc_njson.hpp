@@ -86,7 +86,7 @@ namespace adapters
             }
 
             template<typename T>
-            std::remove_cv_t<std::remove_reference_t<T>> parse_arg(
+            [[nodiscard]] std::remove_cv_t<std::remove_reference_t<T>> parse_arg(
                 const njson_t& arg_arr, unsigned& index)
             {
                 using no_ref_t = std::remove_cv_t<std::remove_reference_t<T>>;
@@ -102,7 +102,7 @@ namespace adapters
                 {
                     using value_t = typename no_ref_t::value_type;
 
-                    no_ref_t container;
+                    no_ref_t container{};
                     container.reserve(arg.size());
 
                     unsigned j = 0;
@@ -128,32 +128,36 @@ namespace adapters
 } // namespace adapters
 
 template<>
-inline std::string adapters::njson_adapter::to_bytes(const adapters::njson::njson_t& serial_obj)
+[[nodiscard]] inline std::string adapters::njson_adapter::to_bytes(
+    const adapters::njson::njson_t& serial_obj)
 {
     return serial_obj.dump();
 }
 
 template<>
-inline std::string adapters::njson_adapter::to_bytes(adapters::njson::njson_t&& serial_obj)
+[[nodiscard]] inline std::string adapters::njson_adapter::to_bytes(
+    adapters::njson::njson_t&& serial_obj)
 {
     return std::move(serial_obj).dump();
 }
 
 template<>
-inline adapters::njson::njson_t adapters::njson_adapter::from_bytes(const std::string& bytes)
+[[nodiscard]] inline adapters::njson::njson_t adapters::njson_adapter::from_bytes(
+    const std::string& bytes)
 {
     return adapters::njson::njson_t::parse(bytes);
 }
 
 template<>
-inline adapters::njson::njson_t adapters::njson_adapter::from_bytes(std::string&& bytes)
+[[nodiscard]] inline adapters::njson::njson_t adapters::njson_adapter::from_bytes(
+    std::string&& bytes)
 {
     return adapters::njson::njson_t::parse(std::move(bytes));
 }
 
 template<>
 template<typename R, typename... Args>
-adapters::njson::njson_t pack_adapter<adapters::njson_adapter>::serialize_pack(
+[[nodiscard]] adapters::njson::njson_t pack_adapter<adapters::njson_adapter>::serialize_pack(
     const packed_func<R, Args...>& pack)
 {
     using namespace adapters::njson;
@@ -188,7 +192,7 @@ adapters::njson::njson_t pack_adapter<adapters::njson_adapter>::serialize_pack(
 
 template<>
 template<typename R, typename... Args>
-packed_func<R, Args...> pack_adapter<adapters::njson_adapter>::deserialize_pack(
+[[nodiscard]] packed_func<R, Args...> pack_adapter<adapters::njson_adapter>::deserialize_pack(
     const adapters::njson::njson_t& serial_obj)
 {
     using namespace adapters::njson;
@@ -229,7 +233,7 @@ packed_func<R, Args...> pack_adapter<adapters::njson_adapter>::deserialize_pack(
 }
 
 template<>
-inline std::string pack_adapter<adapters::njson_adapter>::get_func_name(
+[[nodiscard]] inline std::string pack_adapter<adapters::njson_adapter>::get_func_name(
     const adapters::njson::njson_t& serial_obj)
 {
     return serial_obj["func_name"];
