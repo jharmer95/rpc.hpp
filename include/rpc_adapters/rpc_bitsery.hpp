@@ -331,7 +331,7 @@ namespace adapters
             inline unsigned extract_length(const bit_buffer& bytes, size_t& index)
             {
                 assert(index < bytes.size());
-                const uint8_t hb = bytes.at(index++);
+                const uint8_t hb = bytes[index++];
 
                 if (hb < 0x80U)
                 {
@@ -339,7 +339,7 @@ namespace adapters
                 }
 
                 assert(index < bytes.size());
-                const uint8_t lb = bytes.at(index++);
+                const uint8_t lb = bytes[index++];
 
                 if ((hb & 0x40U) != 0U)
                 {
@@ -494,7 +494,7 @@ template<>
     assert(index <= std::numeric_limits<ptrdiff_t>::max());
     assert(len <= std::numeric_limits<ptrdiff_t>::max());
     return { serial_obj.begin() + static_cast<ptrdiff_t>(index),
-        serial_obj.begin() + static_cast<ptrdiff_t>(index) + static_cast<ptrdiff_t>(len) };
+        serial_obj.begin() + static_cast<ptrdiff_t>(index + len) };
 }
 
 template<>
@@ -519,7 +519,7 @@ inline void pack_adapter<adapters::bitsery_adapter>::set_err_mesg(
 
         serial_obj.erase(serial_obj.begin() + static_cast<ptrdiff_t>(name_sz_len)
                 + static_cast<ptrdiff_t>(name_len),
-            serial_obj.begin() + static_cast<ptrdiff_t>(index) + static_cast<ptrdiff_t>(err_len));
+            serial_obj.begin() + static_cast<ptrdiff_t>(index + err_len));
 
         index = name_sz_len + name_len;
         adapters::bitsery::details::write_length(serial_obj, new_err_len, index);
