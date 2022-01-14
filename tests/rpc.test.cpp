@@ -45,7 +45,7 @@
 
 #if defined(RPC_HPP_ENABLE_BITSERY)
 const uint64_t rpc::adapters::bitsery::config::max_func_name_size = 30;
-const uint64_t rpc::adapters::bitsery::config::max_string_size = 2048U;
+const uint64_t rpc::adapters::bitsery::config::max_string_size = 2048;
 const uint64_t rpc::adapters::bitsery::config::max_container_size = 100;
 #endif
 
@@ -305,7 +305,7 @@ TEST_CASE_TEMPLATE("Function not found", TestType, RPC_TEST_TYPES)
 
     const auto exp = [&client]()
     {
-        [[maybe_unused]] int _unused = client.template call_func<int>("FUNC_WHICH_DOES_NOT_EXIST");
+        std::ignore = client.template call_func<int>("FUNC_WHICH_DOES_NOT_EXIST");
     };
 
     REQUIRE_THROWS_WITH(
@@ -318,7 +318,7 @@ TEST_CASE_TEMPLATE("ThrowError", TestType, RPC_TEST_TYPES)
 
     const auto exp = [&client]()
     {
-        [[maybe_unused]] int _unused = client.template call_func<int>("ThrowError");
+        std::ignore = client.template call_func<int>("ThrowError");
     };
 
     REQUIRE_THROWS_WITH(exp(), "THIS IS A TEST ERROR!");
@@ -334,5 +334,6 @@ TEST_CASE("KillServer")
     }
     catch (...)
     {
+        // Exception is expected so continue
     }
 }

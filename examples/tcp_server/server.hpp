@@ -16,7 +16,7 @@ public:
     RpcServer(asio::io_context& io, uint16_t port) : m_io(io), m_port(port) {}
 
     void Run();
-    void Stop() { m_running = false; }
+    void Stop() noexcept { m_running = false; }
 
 private:
     void dispatch_impl(rpc::adapters::njson::njson_t& serial_obj) override;

@@ -6,14 +6,14 @@
 
 #include <cstring>
 
-constexpr auto MODULE_NAME{ "rpc_module" };
+static constexpr auto MODULE_NAME{ "rpc_module" };
 
-inline int Sum(int n1, int n2)
+int Sum(int n1, int n2)
 {
     return n1 + n2;
 }
 
-inline void AddOneToEach(std::vector<int>& vec)
+void AddOneToEach(std::vector<int>& vec)
 {
     for (auto& n : vec)
     {
@@ -21,7 +21,7 @@ inline void AddOneToEach(std::vector<int>& vec)
     }
 }
 
-inline void GetName(std::string& name_out)
+void GetName(std::string& name_out)
 {
     name_out.assign(MODULE_NAME);
 }

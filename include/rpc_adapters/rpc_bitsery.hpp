@@ -83,9 +83,9 @@ namespace adapters
         namespace config
         {
 #if defined(RPC_HPP_BITSERY_EXACT_SZ)
-            constexpr bool use_exact_size = true;
+            static constexpr bool use_exact_size = true;
 #else
-            constexpr bool use_exact_size = false;
+            static constexpr bool use_exact_size = false;
 #endif
 
             extern const uint64_t max_func_name_size;
@@ -330,17 +330,20 @@ namespace adapters
             // Borrowed from Bitsery library for compatibility
             inline unsigned extract_length(const bit_buffer& bytes, size_t& index)
             {
-                const uint8_t hb = bytes[index++];
+                assert(index < bytes.size());
+                const uint8_t hb = bytes.at(index++);
 
                 if (hb < 0x80U)
                 {
                     return hb;
                 }
 
-                const uint8_t lb = bytes[index++];
+                assert(index < bytes.size());
+                const uint8_t lb = bytes.at(index++);
 
                 if ((hb & 0x40U) != 0U)
                 {
+                    assert(index < bytes.size());
                     const uint16_t lw = *reinterpret_cast<const uint16_t*>(bytes.data() + index++);
 
                     return ((((hb & 0x3FU) << 8) | lb) << 16) | lw;
@@ -489,8 +492,9 @@ inline std::string pack_adapter<adapters::bitsery_adapter>::get_func_name(
 
     assert(index < serial_obj.size());
     assert(index <= std::numeric_limits<ptrdiff_t>::max());
+    assert(len <= std::numeric_limits<ptrdiff_t>::max());
     return { serial_obj.begin() + static_cast<ptrdiff_t>(index),
-        serial_obj.begin() + static_cast<ptrdiff_t>(index) + len };
+        serial_obj.begin() + static_cast<ptrdiff_t>(index) + static_cast<ptrdiff_t>(len) };
 }
 
 template<>

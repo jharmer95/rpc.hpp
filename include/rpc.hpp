@@ -215,7 +215,8 @@ namespace details
         using expander = int[];
         (void)expander{ 0,
             (
-                (void)[](auto&& x, auto&& y) {
+                (void)[](auto&& x, auto&& y)
+                {
                     if constexpr (
                         std::is_reference_v<
                             decltype(x)> && !std::is_const_v<std::remove_reference_t<decltype(x)>>)
@@ -240,49 +241,52 @@ namespace details
     public:
         using args_t = std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...>;
 
-        virtual ~packed_func_base() = default;
-
-        packed_func_base(std::string func_name, args_t args)
+        packed_func_base(std::string func_name, args_t args) noexcept
             : m_func_name(std::move(func_name)), m_args(std::move(args))
         {
         }
 
-        const std::string& get_err_mesg() const& { return m_err_mesg; }
-        [[nodiscard]] std::string get_err_mesg() && { return std::move(m_err_mesg); }
+        explicit operator bool() const noexcept { return m_err_mesg.empty(); }
 
-        const std::string& get_func_name() const& { return m_func_name; }
-        [[nodiscard]] std::string get_func_name() && { return std::move(m_func_name); }
+        const std::string& get_err_mesg() const& noexcept { return m_err_mesg; }
+
+        // nodiscard because string is being moved out of the object
+        [[nodiscard]] std::string get_err_mesg() && noexcept { return std::move(m_err_mesg); }
+
+        const std::string& get_func_name() const& noexcept { return m_func_name; }
+
+        // nodiscard because string is being moved out of the object
+        [[nodiscard]] std::string get_func_name() && noexcept { return std::move(m_func_name); }
 
         void set_err_mesg(const std::string& mesg) & { m_err_mesg = mesg; }
 
-        explicit operator bool() const { return is_valid(); }
-
         const args_t& get_args() const& { return m_args; }
+
+        // nodiscard because args are being moved out of the object
         [[nodiscard]] args_t get_args() && { return std::move(m_args); }
 
         void set_args(const args_t& args) & { m_args = args; }
         void set_args(args_t&& args) & { m_args = std::move(args); }
 
         template<size_t Index>
-        const auto& get_arg() const&
+        const auto& get_arg() const& noexcept
         {
             return std::get<Index>(m_args);
         }
 
+        // nodiscard because arg is being moved out of the object
         template<size_t Index>
-        [[nodiscard]] auto get_arg() &&
+        [[nodiscard]] auto get_arg() && noexcept(std::is_nothrow_move_constructible_v<args_t>)
         {
             return std::get<Index>(std::move(m_args));
         }
 
     protected:
-        // Prevent slicing
+        ~packed_func_base() noexcept = default;
         packed_func_base(const packed_func_base&) = default;
         packed_func_base(packed_func_base&&) noexcept = default;
         packed_func_base& operator=(const packed_func_base&) & = default;
         packed_func_base& operator=(packed_func_base&&) & noexcept = default;
-
-        [[nodiscard]] virtual bool is_valid() const { return m_err_mesg.empty(); }
 
     private:
         std::string m_func_name;
@@ -303,13 +307,24 @@ namespace details
         static T deserialize(const serial_t& serial_obj);
 
         static serial_t from_bytes(const bytes_t& bytes);
+
+        // nodiscard because input bytes are lost after conversion
         [[nodiscard]] static serial_t from_bytes(bytes_t&& bytes);
 
         static bytes_t to_bytes(const serial_t& serial_obj);
+
+        // nodiscard because input object is lost after conversion
         [[nodiscard]] static bytes_t to_bytes(serial_t&& serial_obj);
     };
 #endif
 } // namespace details
+
+///@brief Exception for indicating that the execution of a packed_func has not resulted in a return value
+class packed_func_result_error final : public std::runtime_error
+{
+public:
+    using std::runtime_error::runtime_error;
+};
 
 ///@brief Object representing a function call, including the function's name, arguments and result
 ///
@@ -330,15 +345,25 @@ public:
     ///@param func_name Function name
     ///@param result Return value of the function (std::nullopt if not called yet or an error occurred)
     ///@param args Tuple containing the argument(s)
-    packed_func(std::string func_name, std::optional<result_t> result, args_t args)
+    packed_func(std::string func_name, std::optional<result_t> result, args_t args) noexcept
         : details::packed_func_base<Args...>(std::move(func_name), std::move(args)),
           m_result(std::move(result))
     {
     }
 
+    ///@brief Indicates if the packed_func holds a return value and no error occurred
+    ///
+    ///@note If an error occurred, the reason may be retrieved from the get_err_mesg() function
+    ///@return true A return value exists and no error occurred
+    ///@return false A return value does not exist AND/OR an error occurred
+    explicit operator bool() const noexcept
+    {
+        return m_result.has_value() && details::packed_func_base<Args...>::operator bool();
+    }
+
     ///@brief Returns the result, throwing with the error message if it does not exist
     ///
-    ///@return R The result of the function call
+    ///@return R Result of the function call
     const R& get_result() const&
     {
         if (m_result.has_value())
@@ -346,9 +371,10 @@ public:
             return m_result.value();
         }
 
-        throw std::runtime_error(this->get_err_mesg());
+        throw packed_func_result_error(this->get_err_mesg());
     }
 
+    // nodiscard because result is being moved out of the object
     [[nodiscard]] R get_result() &&
     {
         if (m_result.has_value())
@@ -356,25 +382,37 @@ public:
             return std::move(m_result).value();
         }
 
-        throw std::runtime_error(this->get_err_mesg());
+        throw packed_func_result_error(this->get_err_mesg());
+    }
+
+    ///@brief Returns the result as an optional value (needs to be checked before use)
+    ///
+    ///@return std::optional<R> Result of the function call (may be empty)
+    std::optional<R> get_result_opt() const noexcept(std::is_nothrow_copy_constructible_v<R>)
+    {
+        return m_result;
     }
 
     ///@brief Sets the result to a value
     ///
     ///@param value The value to store as the result
-    void set_result(const R& value) & { m_result = value; }
-    void set_result(R&& value) & { m_result = std::move(value); }
-
-    ///@brief Clears the result stored (sets it back to std::nullopt)
-    void clear_result() & { m_result = std::nullopt; }
-
-private:
-    [[nodiscard]] bool is_valid() const override
+    void set_result(const R& value) & noexcept(
+        std::is_nothrow_copy_constructible_v<R>&& std::is_nothrow_move_assignable_v<R>)
     {
-        return m_result.has_value() && details::packed_func_base<Args...>::is_valid();
+        m_result = value;
     }
 
-    std::optional<result_t> m_result{ std::nullopt };
+    void set_result(R&& value) & noexcept(
+        std::is_nothrow_move_constructible_v<R>&& std::is_nothrow_move_assignable_v<R>)
+    {
+        m_result = std::move(value);
+    }
+
+    ///@brief Clears the result stored (sets it back to std::nullopt)
+    void clear_result() & noexcept { m_result.reset(); }
+
+private:
+    std::optional<result_t> m_result{};
 };
 
 ///@brief Object representing a void returning function call, including the function's name and arguments
@@ -390,14 +428,8 @@ public:
     ///@brief Type alias for the argument type(s) in a tuple
     using typename details::packed_func_base<Args...>::args_t;
 
-    ///@brief Constructs a packed_func
-    ///
-    ///@param func_name Function name
-    ///@param args Tuple containing the argument(s)
-    packed_func(std::string func_name, args_t args)
-        : details::packed_func_base<Args...>(std::move(func_name), std::move(args))
-    {
-    }
+    using details::packed_func_base<Args...>::packed_func_base;
+    using details::packed_func_base<Args...>::operator bool;
 };
 
 ///@brief Class collecting several functions for interoperating between serial objects and a packed_func
@@ -453,8 +485,8 @@ inline namespace server
     public:
         using adapter_t = Serial;
 
-        virtual ~server_interface() = default;
-        server_interface() = default;
+        virtual ~server_interface() noexcept = default;
+        server_interface() noexcept = default;
 
         server_interface(const server_interface&) = delete;
         server_interface& operator=(const server_interface&) = delete;
@@ -497,10 +529,10 @@ inline namespace server
         template<typename Val>
         void update_all_cache(const std::string& func_name)
         {
-            m_cache_map[func_name] = get_func_cache_impl<Val>(func_name);
+            m_cache_map.insert_or_assign(func_name, get_func_cache_impl<Val>(func_name));
         }
 
-        void clear_all_cache() { m_cache_map.clear(); }
+        void clear_all_cache() noexcept { m_cache_map.clear(); }
 
         ///@brief Deserializes the serial object to a packed_func, calls the callback function, then serializes the result back to the serial object, using a server-side cache for performance.
         ///
@@ -617,8 +649,8 @@ inline namespace client
     class client_interface
     {
     public:
-        virtual ~client_interface() = default;
-        client_interface() = default;
+        virtual ~client_interface() noexcept = default;
+        client_interface() noexcept = default;
 
         client_interface(const client_interface&) = delete;
         client_interface(client_interface&&) noexcept = default;
@@ -635,7 +667,7 @@ inline namespace client
         template<typename R = void, typename... Args>
         R call_func(std::string func_name, Args&&... args)
         {
-            packed_func<R, Args...> pack = [&]
+            packed_func<R, Args...> pack = [&]() noexcept
             {
                 if constexpr (std::is_void_v<R>)
                 {

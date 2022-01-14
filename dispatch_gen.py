@@ -129,11 +129,11 @@ with open(fname, "w") as f:
 
     f.write("#if defined(RPC_HPP_SERVER_IMPL) || defined(RPC_HPP_MODULE_IMPL)\n")
     f.write(
-        "#    define RPC_HEADER_FUNC(RETURN, FUNCNAME, ...) extern RETURN (*FUNCNAME)(__VA_ARGS__)\n"
+        "#    define RPC_HEADER_FUNC(RETURN, FUNCNAME, ...) extern RETURN (* const FUNCNAME)(__VA_ARGS__)\n"
     )
     f.write("#elif defined(RPC_HPP_CLIENT_IMPL)\n")
     f.write(
-        "#    define RPC_HEADER_FUNC(RETURN, FUNCNAME, ...) inline RETURN (*FUNCNAME)(__VA_ARGS__) = nullptr"
+        "#    define RPC_HEADER_FUNC(RETURN, FUNCNAME, ...) inline RETURN (* const FUNCNAME)(__VA_ARGS__) = nullptr\n"
     )
     f.write("#endif\n\n")
 

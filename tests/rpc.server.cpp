@@ -63,8 +63,8 @@ using rpc::adapters::boost_json_adapter;
 using rpc::adapters::bitsery_adapter;
 
 const uint64_t rpc::adapters::bitsery::config::max_func_name_size = 30;
-const uint64_t rpc::adapters::bitsery::config::max_string_size = 2048U;
-const uint64_t rpc::adapters::bitsery::config::max_container_size = 100;
+const uint64_t rpc::adapters::bitsery::config::max_string_size = 2048;
+const uint64_t rpc::adapters::bitsery::config::max_container_size = 1'000;
 #endif
 
 #include <algorithm>
@@ -114,13 +114,13 @@ void AddOneToEachRef(std::vector<int>& vec)
     }
 }
 
-int (*CountChars)(const std::string&, char) = [](const std::string& str, char c)
+int (*const CountChars)(const std::string&, char) = [](const std::string& str, char c)
 {
     return static_cast<int>(
         std::count_if(str.begin(), str.end(), [c](const char x) { return x == c; }));
 };
 
-void (*AddOne)(size_t&) = [](size_t& n)
+void (*const AddOne)(size_t&) = [](size_t& n)
 {
     n += 1;
 };

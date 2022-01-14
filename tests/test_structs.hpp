@@ -165,9 +165,9 @@ inline ComplexObject njson_adapter::deserialize(const adapters::njson::njson_t& 
     cx.flag2 = serial_obj["flag2"].get<bool>();
     const auto& vals = serial_obj["vals"];
 
-    if (vals.size() > 12)
+    if (vals.size() > cx.vals.size())
     {
-        std::copy_n(vals.begin(), 12, cx.vals.begin());
+        std::copy_n(vals.begin(), cx.vals.size(), cx.vals.begin());
     }
     else
     {
@@ -206,9 +206,9 @@ inline rpc::adapters::rapidjson::doc_t rapidjson_adapter::serialize(const Comple
     adapters::rapidjson::value_t vals_v;
     vals_v.SetArray();
 
-    for (uint8_t i = 0; i < 12; ++i)
+    for (const auto byte : val.vals)
     {
-        vals_v.PushBack(val.vals[i], alloc);
+        vals_v.PushBack(byte, alloc);
     }
 
     d.AddMember("vals", vals_v, alloc);
@@ -236,7 +236,9 @@ inline ComplexObject rapidjson_adapter::deserialize(const adapters::rapidjson::d
     const auto vals_v = serial_obj.FindMember("vals");
     const auto& arr = vals_v->value.GetArray();
 
-    for (unsigned i = 0; i < 12; ++i)
+    assert(arr.Size() == obj.vals.size());
+
+    for (unsigned i = 0; i < obj.vals.size(); ++i)
     {
         obj.vals[i] = static_cast<uint8_t>(arr[i].GetUint());
     }

@@ -11,11 +11,9 @@
 
 using rpc::adapters::njson_adapter;
 
-RpcClient::RpcClient(std::string module_path)
+RpcClient::RpcClient(const std::string& module_path) : m_module{ LoadLibrary(module_path.c_str()) }
 {
     // Load the module into the application's memory
-    m_module = LoadLibrary(std::move(module_path).c_str());
-
     if (m_module == nullptr)
     {
         throw std::runtime_error("Could not load module!");

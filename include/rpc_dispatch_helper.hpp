@@ -109,9 +109,9 @@
 #endif
 
 #if defined(RPC_HPP_SERVER_IMPL) || defined(RPC_HPP_MODULE_IMPL)
-#    define RPC_HEADER_FUNC(RETURN, FUNCNAME, ...) extern RETURN (*FUNCNAME)(__VA_ARGS__)
+#    define RPC_HEADER_FUNC(RETURN, FUNCNAME, ...) extern RETURN (* const FUNCNAME)(__VA_ARGS__)
 #elif defined(RPC_HPP_CLIENT_IMPL)
-#    define RPC_HEADER_FUNC(RETURN, FUNCNAME, ...) inline RETURN (*FUNCNAME)(__VA_ARGS__) = nullptr
+#    define RPC_HEADER_FUNC(RETURN, FUNCNAME, ...) inline RETURN (* const FUNCNAME)(__VA_ARGS__) = nullptr
 #endif
 
 #if defined(RPC_HPP_SERVER_IMPL) || defined(RPC_HPP_MODULE_IMPL)
