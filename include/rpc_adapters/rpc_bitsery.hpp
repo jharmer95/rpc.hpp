@@ -432,7 +432,9 @@ template<typename R, typename... Args>
 
     const auto helper = adapters::bitsery::details::to_helper(pack);
 
-    bit_buffer buffer;
+    bit_buffer buffer{};
+    buffer.reserve(64);
+
     const auto bytes_written =
         bitsery::quickSerialization<adapters::bitsery::details::output_adapter>(buffer, helper);
 
@@ -500,6 +502,44 @@ template<>
 template<>
 inline void pack_adapter<adapters::bitsery_adapter>::set_err_mesg(
     adapters::bitsery::bit_buffer& serial_obj, const std::string& mesg)
+{
+    size_t index = 0;
+
+    const auto name_len = adapters::bitsery::details::extract_length(serial_obj, index);
+
+    const size_t name_sz_len = index;
+
+    index += name_len;
+    const auto err_len = adapters::bitsery::details::extract_length(serial_obj, index);
+
+    const auto new_err_len = static_cast<unsigned>(mesg.size());
+
+    if (new_err_len != err_len)
+    {
+        assert(index < serial_obj.size());
+        assert(index <= std::numeric_limits<ptrdiff_t>::max());
+
+        serial_obj.erase(serial_obj.begin() + static_cast<ptrdiff_t>(name_sz_len)
+                + static_cast<ptrdiff_t>(name_len),
+            serial_obj.begin() + static_cast<ptrdiff_t>(index + err_len));
+
+        index = name_sz_len + name_len;
+        adapters::bitsery::details::write_length(serial_obj, new_err_len, index);
+    }
+
+    for (unsigned i = 0; i < new_err_len; ++i)
+    {
+        assert(index < serial_obj.size());
+        assert(index <= std::numeric_limits<ptrdiff_t>::max());
+
+        serial_obj.insert(serial_obj.begin() + static_cast<ptrdiff_t>(index++),
+            static_cast<unsigned char>(mesg[i]));
+    }
+}
+
+template<>
+inline void pack_adapter<adapters::bitsery_adapter>::set_err_mesg(
+    adapters::bitsery::bit_buffer& serial_obj, std::string&& mesg)
 {
     size_t index = 0;
 

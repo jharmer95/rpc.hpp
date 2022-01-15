@@ -476,6 +476,12 @@ public:
     ///@param serial_obj Serial object to be modified
     ///@param mesg String to set as the error message
     static void set_err_mesg(typename Serial::serial_t& serial_obj, const std::string& mesg);
+
+    ///@brief Sets the error message for the serialized function call
+    ///
+    ///@param serial_obj Serial object to be modified
+    ///@param mesg String to set as the error message
+    static void set_err_mesg(typename Serial::serial_t& serial_obj, std::string&& mesg);
 };
 
 #if defined(RPC_HPP_SERVER_IMPL) || defined(RPC_HPP_MODULE_IMPL)

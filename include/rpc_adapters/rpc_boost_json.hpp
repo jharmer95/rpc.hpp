@@ -70,14 +70,13 @@ namespace adapters
                 }
                 else if constexpr (rpc::details::is_container_v<no_ref_t>)
                 {
-                    boost::json::array arr;
+                    auto& arr = arg_arr.emplace_back(boost::json::array{}).as_array();
+                    arr.reserve(arg.size());
 
                     for (auto&& val : arg)
                     {
                         push_arg(std::forward<decltype(val)>(val), arr);
                     }
-
-                    arg_arr.push_back(arr);
                 }
                 else if constexpr (rpc::details::is_serializable_v<adapters::boost_json_adapter,
                                        no_ref_t>)
@@ -107,7 +106,7 @@ namespace adapters
                 }
                 else if constexpr (rpc::details::is_container_v<no_ref_t>)
                 {
-                    using value_t = typename no_ref_t::value_type;
+                    using subvalue_t = typename no_ref_t::value_type;
 
                     auto& arr = arg.as_array();
                     no_ref_t container{};
@@ -117,7 +116,7 @@ namespace adapters
 
                     for (const auto& val : arr)
                     {
-                        container.push_back(parse_arg<value_t>(val, j));
+                        container.push_back(parse_arg<subvalue_t>(val, j));
                     }
 
                     return container;
@@ -171,7 +170,7 @@ template<typename R, typename... Args>
 {
     using namespace adapters::boost_json;
 
-    object_t ret_j;
+    object_t ret_j{};
 
     ret_j["func_name"] = pack.get_func_name();
 
@@ -189,7 +188,7 @@ template<typename R, typename... Args>
         if (pack)
         {
             auto& result = ret_j["result"];
-            
+
             if constexpr (std::is_arithmetic_v<R> || std::is_same_v<R, std::string>)
             {
                 result = pack.get_result();
@@ -198,6 +197,7 @@ template<typename R, typename... Args>
             {
                 result = boost::json::array{};
                 const auto& container = pack.get_result();
+                result.as_array().reserve(container.size());
 
                 for (const auto& val : container)
                 {
@@ -215,14 +215,14 @@ template<typename R, typename... Args>
         }
     }
 
-    boost::json::array args{};
+    auto& args = ret_j["args"].emplace_array();
+    args.reserve(sizeof...(Args));
 
     const auto& argTup = pack.get_args();
     rpc::details::for_each_tuple(argTup,
         [&args](auto&& x)
         { adapters::boost_json::details::push_arg(std::forward<decltype(x)>(x), args); });
 
-    ret_j["args"] = std::move(args);
     return ret_j;
 }
 
@@ -271,7 +271,7 @@ template<typename R, typename... Args>
             }
             else if constexpr (rpc::details::is_container_v<R>)
             {
-                using value_t = typename R::value_type;
+                using subvalue_t = typename R::value_type;
 
                 auto& arr = result.as_array();
                 R container{};
@@ -281,7 +281,8 @@ template<typename R, typename... Args>
 
                 for (const auto& val : arr)
                 {
-                    container.push_back(adapters::boost_json::details::parse_arg<value_t>(val, j));
+                    container.push_back(
+                        adapters::boost_json::details::parse_arg<subvalue_t>(val, j));
                 }
 
                 return packed_func<R, Args...>(
@@ -326,5 +327,14 @@ inline void pack_adapter<adapters::boost_json_adapter>::set_err_mesg(
     assert(serial_obj.is_object());
     auto& obj = serial_obj.as_object();
     obj["err_mesg"] = mesg;
+}
+
+template<>
+inline void pack_adapter<adapters::boost_json_adapter>::set_err_mesg(
+    adapters::boost_json::value_t& serial_obj, std::string&& mesg)
+{
+    assert(serial_obj.is_object());
+    auto& obj = serial_obj.as_object();
+    obj["err_mesg"] = std::move(mesg);
 }
 } // namespace rpc

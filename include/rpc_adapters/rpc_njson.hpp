@@ -64,14 +64,12 @@ namespace adapters
                 }
                 else if constexpr (rpc::details::is_container_v<no_ref_t>)
                 {
-                    njson_t arr = njson_t::array();
+                    auto& arr = arg_arr.emplace_back();
 
                     for (auto&& val : arg)
                     {
                         push_arg(std::forward<decltype(val)>(val), arr);
                     }
-
-                    arg_arr.push_back(std::move(arr));
                 }
                 else if constexpr (rpc::details::is_serializable_v<njson_adapter, no_ref_t>)
                 {
@@ -166,14 +164,13 @@ template<typename R, typename... Args>
 
     obj["func_name"] = pack.get_func_name();
 
-    auto arg_arr = njson_t::array();
+    obj["args"] = njson_t::array();
+    auto& arg_arr = obj["args"];
 
     const auto& argTup = pack.get_args();
     rpc::details::for_each_tuple(argTup,
         [&arg_arr](auto&& x)
         { adapters::njson::details::push_arg(std::forward<decltype(x)>(x), arg_arr); });
-
-    obj["args"] = std::move(arg_arr);
 
     if (!pack)
     {
@@ -199,12 +196,10 @@ template<typename R, typename... Args>
 
     [[maybe_unused]] unsigned i = 0;
 
-    typename packed_func<R, Args...>::args_t args{ adapters::njson::details::parse_arg<Args>(
-        serial_obj["args"], i)... };
-
     if constexpr (std::is_void_v<R>)
     {
-        packed_func<void, Args...> pack(serial_obj["func_name"], std::move(args));
+        packed_func<void, Args...> pack(serial_obj["func_name"],
+            { adapters::njson::details::parse_arg<Args>(serial_obj["args"], i)... });
 
         if (serial_obj.contains("err_mesg"))
         {
@@ -217,11 +212,12 @@ template<typename R, typename... Args>
     {
         if (serial_obj.contains("result") && !serial_obj["result"].is_null())
         {
-            return packed_func<R, Args...>(
-                serial_obj["func_name"], serial_obj["result"].get<R>(), std::move(args));
+            return packed_func<R, Args...>(serial_obj["func_name"], serial_obj["result"].get<R>(),
+                { adapters::njson::details::parse_arg<Args>(serial_obj["args"], i)... });
         }
 
-        packed_func<R, Args...> pack(serial_obj["func_name"], std::nullopt, std::move(args));
+        packed_func<R, Args...> pack(serial_obj["func_name"], std::nullopt,
+            { adapters::njson::details::parse_arg<Args>(serial_obj["args"], i)... });
 
         if (serial_obj.contains("err_mesg"))
         {
@@ -244,5 +240,12 @@ inline void pack_adapter<adapters::njson_adapter>::set_err_mesg(
     adapters::njson::njson_t& serial_obj, const std::string& mesg)
 {
     serial_obj["err_mesg"] = mesg;
+}
+
+template<>
+inline void pack_adapter<adapters::njson_adapter>::set_err_mesg(
+    adapters::njson::njson_t& serial_obj, std::string&& mesg)
+{
+    serial_obj["err_mesg"] = std::move(mesg);
 }
 } // namespace rpc
