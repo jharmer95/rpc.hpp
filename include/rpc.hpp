@@ -52,6 +52,7 @@
 #    error At least one implementation type must be defined using 'RPC_HPP_{CLIENT, SERVER, MODULE}_IMPL'
 #endif
 
+#include <cassert>     // for assert
 #include <cstddef>     // for size_t
 #include <optional>    // for nullopt, optional
 #include <stdexcept>   // for runtime_error
@@ -215,8 +216,7 @@ namespace details
         using expander = int[];
         std::ignore = expander{ 0,
             (
-                (void)[](auto&& x, auto&& y)
-                {
+                (void)[](auto&& x, auto&& y) {
                     if constexpr (
                         std::is_reference_v<
                             decltype(x)> && !std::is_const_v<std::remove_reference_t<decltype(x)>>)
@@ -515,6 +515,7 @@ inline namespace server
         template<typename R, typename... Args>
         static void run_callback(R (*func)(Args...), packed_func<R, Args...>& pack)
         {
+            assert(func != nullptr);
             auto args = pack.get_args();
 
             if constexpr (std::is_void_v<R>)
@@ -558,6 +559,7 @@ inline namespace server
         template<typename R, typename... Args>
         void dispatch_cached_func(R (*func)(Args...), typename Serial::serial_t& serial_obj)
         {
+            assert(func != nullptr);
             auto pack = pack_adapter<Serial>::template deserialize_pack<R, Args...>(serial_obj);
             auto& result_cache = get_func_cache<R>(pack.get_func_name());
 
@@ -589,6 +591,7 @@ inline namespace server
         template<typename R, typename... Args>
         void dispatch_cached_func(R (*func)(Args...), typename Serial::serial_t& serial_obj)
         {
+            assert(func != nullptr);
             dispatch_func(func, serial_obj);
         }
 #    endif
@@ -602,6 +605,7 @@ inline namespace server
         template<typename R, typename... Args>
         static void dispatch_func(R (*func)(Args...), typename Serial::serial_t& serial_obj)
         {
+            assert(func != nullptr);
             auto pack = pack_adapter<Serial>::template deserialize_pack<R, Args...>(serial_obj);
 
             run_callback(func, pack);
