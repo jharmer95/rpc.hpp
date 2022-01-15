@@ -64,7 +64,8 @@ namespace adapters
                 }
                 else if constexpr (rpc::details::is_container_v<no_ref_t>)
                 {
-                    auto& arr = arg_arr.emplace_back();
+                    auto& arr = arg_arr.emplace_back(njson_t::array());
+                    arr.get_ref<njson_t::array_t&>().reserve(arg.size());
 
                     for (auto&& val : arg)
                     {
@@ -166,6 +167,7 @@ template<typename R, typename... Args>
 
     obj["args"] = njson_t::array();
     auto& arg_arr = obj["args"];
+    arg_arr.get_ref<njson_t::array_t&>().reserve(sizeof...(Args));
 
     const auto& argTup = pack.get_args();
     rpc::details::for_each_tuple(argTup,
