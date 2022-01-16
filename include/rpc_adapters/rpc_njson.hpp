@@ -128,23 +128,9 @@ namespace adapters
 
 template<>
 [[nodiscard]] inline std::string adapters::njson_adapter::to_bytes(
-    const adapters::njson::njson_t& serial_obj)
-{
-    return serial_obj.dump();
-}
-
-template<>
-[[nodiscard]] inline std::string adapters::njson_adapter::to_bytes(
     adapters::njson::njson_t&& serial_obj)
 {
     return std::move(serial_obj).dump();
-}
-
-template<>
-[[nodiscard]] inline adapters::njson::njson_t adapters::njson_adapter::from_bytes(
-    const std::string& bytes)
-{
-    return adapters::njson::njson_t::parse(bytes);
 }
 
 template<>
@@ -157,7 +143,7 @@ template<>
 template<>
 template<typename R, typename... Args>
 [[nodiscard]] adapters::njson::njson_t pack_adapter<adapters::njson_adapter>::serialize_pack(
-    const packed_func<R, Args...>& pack)
+    const ::rpc::details::packed_func<R, Args...>& pack)
 {
     using namespace adapters::njson;
 
@@ -191,8 +177,8 @@ template<typename R, typename... Args>
 
 template<>
 template<typename R, typename... Args>
-[[nodiscard]] packed_func<R, Args...> pack_adapter<adapters::njson_adapter>::deserialize_pack(
-    const adapters::njson::njson_t& serial_obj)
+[[nodiscard]] ::rpc::details::packed_func<R, Args...> pack_adapter<
+    adapters::njson_adapter>::deserialize_pack(const adapters::njson::njson_t& serial_obj)
 {
     using namespace adapters::njson;
 
@@ -200,7 +186,7 @@ template<typename R, typename... Args>
 
     if constexpr (std::is_void_v<R>)
     {
-        packed_func<void, Args...> pack(serial_obj["func_name"],
+        ::rpc::details::packed_func<void, Args...> pack(serial_obj["func_name"],
             { adapters::njson::details::parse_arg<Args>(serial_obj["args"], i)... });
 
         if (serial_obj.contains("err_mesg"))
@@ -214,11 +200,12 @@ template<typename R, typename... Args>
     {
         if (serial_obj.contains("result") && !serial_obj["result"].is_null())
         {
-            return packed_func<R, Args...>(serial_obj["func_name"], serial_obj["result"].get<R>(),
+            return ::rpc::details::packed_func<R, Args...>(serial_obj["func_name"],
+                serial_obj["result"].get<R>(),
                 { adapters::njson::details::parse_arg<Args>(serial_obj["args"], i)... });
         }
 
-        packed_func<R, Args...> pack(serial_obj["func_name"], std::nullopt,
+        ::rpc::details::packed_func<R, Args...> pack(serial_obj["func_name"], std::nullopt,
             { adapters::njson::details::parse_arg<Args>(serial_obj["args"], i)... });
 
         if (serial_obj.contains("err_mesg"))

@@ -130,21 +130,6 @@ public:
                     asio::error_code error;
                     const size_t len = sock.read_some(asio::buffer(data.get(), BUFFER_SZ), error);
 
-#ifndef NDEBUG
-                    if constexpr (std::is_same_v<typename Serial::bytes_t, std::vector<uint8_t>>)
-                    {
-                        std::cout << "Received bytes: [";
-
-                        for (size_t i = 0; i < len; ++i)
-                        {
-                            std::cout << std::hex << std::setw(2) << std::setfill('0')
-                                      << static_cast<unsigned>(data[i]) << ' ';
-                        }
-
-                        std::cout << "]\n";
-                    }
-#endif
-
                     if (error == asio::error::eof)
                     {
                         break;
@@ -158,21 +143,6 @@ public:
 
                     typename Serial::bytes_t bytes{ &data[0], &data[len] };
                     this->dispatch(bytes);
-
-#ifndef NDEBUG
-                    if constexpr (std::is_same_v<typename Serial::bytes_t, std::vector<uint8_t>>)
-                    {
-                        std::cout << "Return bytes: [";
-
-                        for (const auto b : bytes)
-                        {
-                            std::cout << "0x" << std::hex << std::setw(2) << std::setfill('0')
-                                      << static_cast<unsigned>(b) << ' ';
-                        }
-
-                        std::cout << "]\n";
-                    }
-#endif
 
                     write(sock, asio::buffer(bytes, bytes.size()));
                 }

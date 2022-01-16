@@ -38,7 +38,6 @@
 
 #include "../rpc.hpp"
 
-#include <limits>
 #include <bitsery/bitsery.h>
 #include <bitsery/adapter/buffer.h>
 #include <bitsery/ext/std_tuple.h>
@@ -144,13 +143,6 @@ namespace adapters
 
                 pack_helper() = default;
 
-                pack_helper(std::string name, std::string err, R res, args_t arg_tup) noexcept(
-                    std::is_move_constructible_v<R>)
-                    : func_name(std::move(name)), err_mesg(std::move(err)), result(std::move(res)),
-                      args(std::move(arg_tup))
-                {
-                }
-
                 std::string func_name{};
                 std::string err_mesg{};
                 R result{};
@@ -168,11 +160,6 @@ namespace adapters
 #endif
 
                 pack_helper() = default;
-
-                pack_helper(std::string name, std::string err, args_t arg_tup) noexcept
-                    : func_name(std::move(name)), err_mesg(std::move(err)), args(std::move(arg_tup))
-                {
-                }
 
                 std::string func_name{};
                 std::string err_mesg{};
@@ -246,7 +233,8 @@ namespace adapters
 
             // nodiscard because a potentially expensive copy and allocation is being done
             template<typename R, typename... Args>
-            [[nodiscard]] pack_helper<R, Args...> to_helper(const packed_func<R, Args...>& pack)
+            [[nodiscard]] pack_helper<R, Args...> to_helper(
+                const ::rpc::details::packed_func<R, Args...>& pack)
             {
                 pack_helper<R, Args...> helper;
 
@@ -284,34 +272,36 @@ namespace adapters
 
             // nodiscard because a potentially expensive copy and allocation is being done
             template<typename R, typename... Args>
-            [[nodiscard]] packed_func<R, Args...> from_helper(pack_helper<R, Args...> helper)
+            [[nodiscard]] ::rpc::details::packed_func<R, Args...> from_helper(
+                pack_helper<R, Args...> helper)
             {
                 if constexpr (std::is_void_v<R>)
                 {
                     if (helper.err_mesg.empty())
                     {
-                        return packed_func<void, Args...>{ std::move(helper.func_name),
-                            std::move(helper.args) };
+                        return ::rpc::details::packed_func<void, Args...>{
+                            std::move(helper.func_name), std::move(helper.args)
+                        };
                     }
 
-                    packed_func<void, Args...> pack{ std::move(helper.func_name),
+                    ::rpc::details::packed_func<void, Args...> pack{ std::move(helper.func_name),
                         std::move(helper.args) };
 
-                    pack.set_err_mesg(helper.err_mesg);
+                    pack.set_err_mesg(std::move(helper.err_mesg));
                     return pack;
                 }
                 else
                 {
                     if (helper.err_mesg.empty())
                     {
-                        return packed_func<R, Args...>{ std::move(helper.func_name),
+                        return ::rpc::details::packed_func<R, Args...>{ std::move(helper.func_name),
                             std::move(helper.result), std::move(helper.args) };
                     }
 
-                    packed_func<R, Args...> pack{ std::move(helper.func_name),
+                    ::rpc::details::packed_func<R, Args...> pack{ std::move(helper.func_name),
                         std::move(helper.result), std::move(helper.args) };
 
-                    pack.set_err_mesg(helper.err_mesg);
+                    pack.set_err_mesg(std::move(helper.err_mesg));
                     pack.clear_result();
                     return pack;
                 }
@@ -397,23 +387,9 @@ namespace adapters
 
 template<>
 [[nodiscard]] inline adapters::bitsery::bit_buffer adapters::bitsery_adapter::to_bytes(
-    const adapters::bitsery::bit_buffer& serial_obj)
-{
-    return serial_obj;
-}
-
-template<>
-[[nodiscard]] inline adapters::bitsery::bit_buffer adapters::bitsery_adapter::to_bytes(
     adapters::bitsery::bit_buffer&& serial_obj)
 {
     return std::move(serial_obj);
-}
-
-template<>
-[[nodiscard]] inline adapters::bitsery::bit_buffer adapters::bitsery_adapter::from_bytes(
-    const adapters::bitsery::bit_buffer& bytes)
-{
-    return bytes;
 }
 
 template<>
@@ -426,7 +402,7 @@ template<>
 template<>
 template<typename R, typename... Args>
 [[nodiscard]] adapters::bitsery::bit_buffer pack_adapter<adapters::bitsery_adapter>::serialize_pack(
-    const packed_func<R, Args...>& pack)
+    const ::rpc::details::packed_func<R, Args...>& pack)
 {
     using namespace adapters::bitsery;
 
@@ -444,8 +420,8 @@ template<typename R, typename... Args>
 
 template<>
 template<typename R, typename... Args>
-[[nodiscard]] packed_func<R, Args...> pack_adapter<adapters::bitsery_adapter>::deserialize_pack(
-    const adapters::bitsery::bit_buffer& serial_obj)
+[[nodiscard]] ::rpc::details::packed_func<R, Args...> pack_adapter<
+    adapters::bitsery_adapter>::deserialize_pack(const adapters::bitsery::bit_buffer& serial_obj)
 {
     using namespace adapters::bitsery;
 
@@ -504,14 +480,11 @@ inline void pack_adapter<adapters::bitsery_adapter>::set_err_mesg(
     adapters::bitsery::bit_buffer& serial_obj, const std::string& mesg)
 {
     size_t index = 0;
-
     const auto name_len = adapters::bitsery::details::extract_length(serial_obj, index);
-
     const size_t name_sz_len = index;
 
     index += name_len;
     const auto err_len = adapters::bitsery::details::extract_length(serial_obj, index);
-
     const auto new_err_len = static_cast<unsigned>(mesg.size());
 
     if (new_err_len != err_len)
@@ -542,14 +515,11 @@ inline void pack_adapter<adapters::bitsery_adapter>::set_err_mesg(
     adapters::bitsery::bit_buffer& serial_obj, std::string&& mesg)
 {
     size_t index = 0;
-
     const auto name_len = adapters::bitsery::details::extract_length(serial_obj, index);
-
     const size_t name_sz_len = index;
 
     index += name_len;
     const auto err_len = adapters::bitsery::details::extract_length(serial_obj, index);
-
     const auto new_err_len = static_cast<unsigned>(mesg.size());
 
     if (new_err_len != err_len)

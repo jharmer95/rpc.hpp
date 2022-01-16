@@ -177,32 +177,12 @@ namespace adapters
 
 template<>
 [[nodiscard]] inline std::string adapters::rapidjson_adapter::to_bytes(
-    const adapters::rapidjson::doc_t& serial_obj)
-{
-    rapidjson::StringBuffer buffer{};
-    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
-    serial_obj.Accept(writer);
-    return buffer.GetString();
-}
-
-template<>
-[[nodiscard]] inline std::string adapters::rapidjson_adapter::to_bytes(
     adapters::rapidjson::doc_t&& serial_obj)
 {
     rapidjson::StringBuffer buffer{};
     rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
     std::move(serial_obj).Accept(writer);
     return buffer.GetString();
-}
-
-template<>
-[[nodiscard]] inline adapters::rapidjson::doc_t adapters::rapidjson_adapter::from_bytes(
-    const std::string& bytes)
-{
-    adapters::rapidjson::doc_t d{};
-    d.SetObject();
-    d.Parse(bytes.c_str());
-    return d;
 }
 
 template<>
@@ -218,7 +198,7 @@ template<>
 template<>
 template<typename R, typename... Args>
 [[nodiscard]] adapters::rapidjson::doc_t pack_adapter<adapters::rapidjson_adapter>::serialize_pack(
-    const packed_func<R, Args...>& pack)
+    const ::rpc::details::packed_func<R, Args...>& pack)
 {
     using namespace adapters::rapidjson;
 
@@ -287,19 +267,21 @@ template<typename R, typename... Args>
 
 template<>
 template<typename R, typename... Args>
-[[nodiscard]] packed_func<R, Args...> pack_adapter<adapters::rapidjson_adapter>::deserialize_pack(
-    const adapters::rapidjson::doc_t& serial_obj)
+[[nodiscard]] ::rpc::details::packed_func<R, Args...> pack_adapter<
+    adapters::rapidjson_adapter>::deserialize_pack(const adapters::rapidjson::doc_t& serial_obj)
 {
     using namespace adapters::rapidjson;
 
     [[maybe_unused]] unsigned i = 0;
 
-    typename packed_func<R, Args...>::args_t args{ adapters::rapidjson::details::parse_arg<Args>(
-        serial_obj["args"], i)... };
+    typename ::rpc::details::packed_func<R, Args...>::args_t args{
+        adapters::rapidjson::details::parse_arg<Args>(serial_obj["args"], i)...
+    };
 
     if constexpr (std::is_void_v<R>)
     {
-        packed_func<void, Args...> pack(serial_obj["func_name"].GetString(), std::move(args));
+        ::rpc::details::packed_func<void, Args...> pack(
+            serial_obj["func_name"].GetString(), std::move(args));
 
         if (serial_obj.HasMember("err_mesg"))
         {
@@ -316,7 +298,7 @@ template<typename R, typename... Args>
 
             if constexpr (std::is_same_v<R, std::string>)
             {
-                return packed_func<R, Args...>(
+                return ::rpc::details::packed_func<R, Args...>(
                     serial_obj["func_name"].GetString(), result.GetString(), std::move(args));
             }
             else if constexpr (rpc::details::is_container_v<R>)
@@ -333,7 +315,7 @@ template<typename R, typename... Args>
                         adapters::rapidjson::details::parse_arg<subvalue_t>(val, j));
                 }
 
-                return packed_func<R, Args...>(
+                return ::rpc::details::packed_func<R, Args...>(
                     serial_obj["func_name"].GetString(), container, std::move(args));
             }
             else if constexpr (std::is_arithmetic_v<R>)
@@ -341,17 +323,17 @@ template<typename R, typename... Args>
                 if constexpr (std::is_same_v<R,
                                   char> || std::is_same_v<R, int8_t> || std::is_same_v<R, int16_t>)
                 {
-                    return packed_func<R, Args...>(
+                    return ::rpc::details::packed_func<R, Args...>(
                         serial_obj["func_name"].GetString(), result.GetInt(), std::move(args));
                 }
                 else if constexpr (std::is_same_v<R, uint8_t> || std::is_same_v<R, uint16_t>)
                 {
-                    return packed_func<R, Args...>(
+                    return ::rpc::details::packed_func<R, Args...>(
                         serial_obj["func_name"].GetString(), result.GetUint(), std::move(args));
                 }
                 else
                 {
-                    return packed_func<R, Args...>(
+                    return ::rpc::details::packed_func<R, Args...>(
                         serial_obj["func_name"].GetString(), result.Get<R>(), std::move(args));
                 }
             }
@@ -359,19 +341,19 @@ template<typename R, typename... Args>
             {
                 doc_t d{};
                 d.CopyFrom(result, d.GetAllocator());
-                return packed_func<R, Args...>(serial_obj["func_name"].GetString(),
+                return ::rpc::details::packed_func<R, Args...>(serial_obj["func_name"].GetString(),
                     R::template deserialize<adapters::rapidjson_adapter>(d), std::move(args));
             }
             else
             {
                 doc_t d{};
                 d.CopyFrom(result, d.GetAllocator());
-                return packed_func<R, Args...>(serial_obj["func_name"].GetString(),
+                return ::rpc::details::packed_func<R, Args...>(serial_obj["func_name"].GetString(),
                     adapters::rapidjson_adapter::template deserialize<R>(d), args);
             }
         }
 
-        packed_func<R, Args...> pack(
+        ::rpc::details::packed_func<R, Args...> pack(
             serial_obj["func_name"].GetString(), std::nullopt, std::move(args));
 
         if (serial_obj.HasMember("err_mesg"))

@@ -65,6 +65,7 @@ public:
 
 private:
     void send(const std::string& mesg) override;
+    void send(std::string&& mesg) override;
 
     [[nodiscard]] std::string receive() override
     {

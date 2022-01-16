@@ -137,23 +137,9 @@ namespace adapters
 
 template<>
 [[nodiscard]] inline std::string adapters::boost_json_adapter::to_bytes(
-    const adapters::boost_json::value_t& serial_obj)
-{
-    return boost::json::serialize(serial_obj);
-}
-
-template<>
-[[nodiscard]] inline std::string adapters::boost_json_adapter::to_bytes(
     adapters::boost_json::value_t&& serial_obj)
 {
     return boost::json::serialize(std::move(serial_obj));
-}
-
-template<>
-[[nodiscard]] inline adapters::boost_json::value_t adapters::boost_json_adapter::from_bytes(
-    const std::string& bytes)
-{
-    return boost::json::parse(bytes);
 }
 
 template<>
@@ -165,8 +151,8 @@ template<>
 
 template<>
 template<typename R, typename... Args>
-[[nodiscard]] adapters::boost_json::value_t pack_adapter<
-    adapters::boost_json_adapter>::serialize_pack(const packed_func<R, Args...>& pack)
+[[nodiscard]] adapters::boost_json::value_t pack_adapter<adapters::boost_json_adapter>::
+    serialize_pack(const ::rpc::details::packed_func<R, Args...>& pack)
 {
     using namespace adapters::boost_json;
 
@@ -228,23 +214,25 @@ template<typename R, typename... Args>
 
 template<>
 template<typename R, typename... Args>
-[[nodiscard]] packed_func<R, Args...> pack_adapter<adapters::boost_json_adapter>::deserialize_pack(
-    const adapters::boost_json::value_t& serial_obj)
+[[nodiscard]] ::rpc::details::packed_func<R, Args...> pack_adapter<
+    adapters::boost_json_adapter>::deserialize_pack(const adapters::boost_json::value_t& serial_obj)
 {
     using namespace adapters::boost_json;
 
-    assert(serial_obj.is_object());
+    RPC_HPP_PRECONDITION(serial_obj.is_object());
     const auto& obj = serial_obj.as_object();
     [[maybe_unused]] unsigned i = 0;
 
     auto& args_val = obj.at("args");
 
-    typename packed_func<R, Args...>::args_t args{ adapters::boost_json::details::parse_arg<Args>(
-        args_val, i)... };
+    typename ::rpc::details::packed_func<R, Args...>::args_t args{
+        adapters::boost_json::details::parse_arg<Args>(args_val, i)...
+    };
 
     if constexpr (std::is_void_v<R>)
     {
-        packed_func<void, Args...> pack(obj.at("func_name").get_string().c_str(), std::move(args));
+        ::rpc::details::packed_func<void, Args...> pack(
+            obj.at("func_name").get_string().c_str(), std::move(args));
 
         if (obj.contains("err_mesg"))
         {
@@ -261,13 +249,15 @@ template<typename R, typename... Args>
 
             if constexpr (std::is_arithmetic_v<R>)
             {
-                return packed_func<R, Args...>(obj.at("func_name").get_string().c_str(),
-                    boost::json::value_to<R>(result), std::move(args));
+                return ::rpc::details::packed_func<R, Args...>(
+                    obj.at("func_name").get_string().c_str(), boost::json::value_to<R>(result),
+                    std::move(args));
             }
             else if constexpr (std::is_same_v<R, std::string>)
             {
-                return packed_func<R, Args...>(obj.at("func_name").get_string().c_str(),
-                    result.get_string().c_str(), std::move(args));
+                return ::rpc::details::packed_func<R, Args...>(
+                    obj.at("func_name").get_string().c_str(), result.get_string().c_str(),
+                    std::move(args));
             }
             else if constexpr (rpc::details::is_container_v<R>)
             {
@@ -285,22 +275,24 @@ template<typename R, typename... Args>
                         adapters::boost_json::details::parse_arg<subvalue_t>(val, j));
                 }
 
-                return packed_func<R, Args...>(
+                return ::rpc::details::packed_func<R, Args...>(
                     obj.at("func_name").get_string().c_str(), container, std::move(args));
             }
             else if constexpr (rpc::details::is_serializable_v<adapters::boost_json_adapter, R>)
             {
-                return packed_func<R, Args...>(obj.at("func_name").get_string().c_str(),
+                return ::rpc::details::packed_func<R, Args...>(
+                    obj.at("func_name").get_string().c_str(),
                     R::template deserialize<adapters::boost_json_adapter>(result), std::move(args));
             }
             else
             {
-                return packed_func<R, Args...>(obj.at("func_name").get_string().c_str(),
+                return ::rpc::details::packed_func<R, Args...>(
+                    obj.at("func_name").get_string().c_str(),
                     adapters::boost_json_adapter::template deserialize<R>(result), std::move(args));
             }
         }
 
-        packed_func<R, Args...> pack(
+        ::rpc::details::packed_func<R, Args...> pack(
             obj.at("func_name").get_string().c_str(), std::nullopt, std::move(args));
 
         if (obj.contains("err_mesg"))
@@ -316,7 +308,7 @@ template<>
 [[nodiscard]] inline std::string pack_adapter<adapters::boost_json_adapter>::get_func_name(
     const adapters::boost_json::value_t& serial_obj)
 {
-    assert(serial_obj.is_object());
+    RPC_HPP_PRECONDITION(serial_obj.is_object());
     return serial_obj.at("func_name").get_string().c_str();
 }
 
@@ -324,7 +316,7 @@ template<>
 inline void pack_adapter<adapters::boost_json_adapter>::set_err_mesg(
     adapters::boost_json::value_t& serial_obj, const std::string& mesg)
 {
-    assert(serial_obj.is_object());
+    RPC_HPP_PRECONDITION(serial_obj.is_object());
     auto& obj = serial_obj.as_object();
     obj["err_mesg"] = mesg;
 }
@@ -333,7 +325,7 @@ template<>
 inline void pack_adapter<adapters::boost_json_adapter>::set_err_mesg(
     adapters::boost_json::value_t& serial_obj, std::string&& mesg)
 {
-    assert(serial_obj.is_object());
+    RPC_HPP_PRECONDITION(serial_obj.is_object());
     auto& obj = serial_obj.as_object();
     obj["err_mesg"] = std::move(mesg);
 }

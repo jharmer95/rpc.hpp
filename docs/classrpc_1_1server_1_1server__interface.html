@@ -70,8 +70,8 @@ $(function() {
   <div class="summary">
 <a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
-<a href="#pub-static-methods">Static Public Member Functions</a> &#124;
 <a href="#pro-methods">Protected Member Functions</a> &#124;
+<a href="#pro-static-methods">Static Protected Member Functions</a> &#124;
 <a href="classrpc_1_1server_1_1server__interface-members.html">List of all members</a>  </div>
   <div class="headertitle">
 <div class="title">rpc::server::server_interface&lt; Serial &gt; Class Template Reference<span class="mlabels"><span class="mlabel">abstract</span></span></div>  </div>
@@ -104,37 +104,29 @@ Public Member Functions</h2></td></tr>
 template&lt;typename Val &gt; </td></tr>
 <tr class="memitem:a0e12b383305276c2cb80720dae2706f2"><td class="memTemplItemLeft" align="right" valign="top">std::unordered_map&lt; typename Serial::bytes_t, Val &gt; &amp;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>get_func_cache</b> (const std::string &amp;func_name)</td></tr>
 <tr class="separator:a0e12b383305276c2cb80720dae2706f2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac79f63f2838e833ab23aa0ed6bbfd6f3"><td class="memTemplParams" colspan="2"><a id="ac79f63f2838e833ab23aa0ed6bbfd6f3"></a>
-template&lt;typename Val &gt; </td></tr>
-<tr class="memitem:ac79f63f2838e833ab23aa0ed6bbfd6f3"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>update_all_cache</b> (const std::string &amp;func_name)</td></tr>
-<tr class="separator:ac79f63f2838e833ab23aa0ed6bbfd6f3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a618b227f7243326fc7e662c446466746"><td class="memItemLeft" align="right" valign="top"><a id="a618b227f7243326fc7e662c446466746"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>clear_all_cache</b> () noexcept</td></tr>
 <tr class="separator:a618b227f7243326fc7e662c446466746"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab6055dff21bc516eff7956117488184f"><td class="memTemplParams" colspan="2">template&lt;typename R , typename... Args&gt; </td></tr>
-<tr class="memitem:ab6055dff21bc516eff7956117488184f"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classrpc_1_1server_1_1server__interface.html#ab6055dff21bc516eff7956117488184f">dispatch_cached_func</a> (R(*func)(Args...), typename Serial::serial_t &amp;serial_obj)</td></tr>
-<tr class="memdesc:ab6055dff21bc516eff7956117488184f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Deserializes the serial object to a <a class="el" href="classrpc_1_1packed__func.html" title="Object representing a function call, including the function&#39;s name, arguments and result.">packed_func</a>, calls the callback function, then serializes the result back to the serial object, using a server-side cache for performance.  <a href="classrpc_1_1server_1_1server__interface.html#ab6055dff21bc516eff7956117488184f">More...</a><br /></td></tr>
-<tr class="separator:ab6055dff21bc516eff7956117488184f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8052947e620688b4b2bde4dabfa0c8f0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrpc_1_1server_1_1server__interface.html#a8052947e620688b4b2bde4dabfa0c8f0">dispatch</a> (typename Serial::bytes_t &amp;bytes)</td></tr>
 <tr class="memdesc:a8052947e620688b4b2bde4dabfa0c8f0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Parses the received serialized data and determines which function to call.  <a href="classrpc_1_1server_1_1server__interface.html#a8052947e620688b4b2bde4dabfa0c8f0">More...</a><br /></td></tr>
 <tr class="separator:a8052947e620688b4b2bde4dabfa0c8f0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-methods"></a>
-Static Public Member Functions</h2></td></tr>
-<tr class="memitem:ac5d9e8286cff4d1c0183f8bf089ab8aa"><td class="memTemplParams" colspan="2">template&lt;typename R , typename... Args&gt; </td></tr>
-<tr class="memitem:ac5d9e8286cff4d1c0183f8bf089ab8aa"><td class="memTemplItemLeft" align="right" valign="top">static void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classrpc_1_1server_1_1server__interface.html#ac5d9e8286cff4d1c0183f8bf089ab8aa">run_callback</a> (R(*func)(Args...), <a class="el" href="classrpc_1_1packed__func.html">packed_func</a>&lt; R, Args... &gt; &amp;pack)</td></tr>
-<tr class="memdesc:ac5d9e8286cff4d1c0183f8bf089ab8aa"><td class="mdescLeft">&#160;</td><td class="mdescRight">Runs the callback function and updates the result (and any changes to mutable arguments) in the <a class="el" href="classrpc_1_1packed__func.html" title="Object representing a function call, including the function&#39;s name, arguments and result.">packed_func</a>.  <a href="classrpc_1_1server_1_1server__interface.html#ac5d9e8286cff4d1c0183f8bf089ab8aa">More...</a><br /></td></tr>
-<tr class="separator:ac5d9e8286cff4d1c0183f8bf089ab8aa"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3c4b127d19f2c7b96d9518e57f0a93ce"><td class="memTemplParams" colspan="2">template&lt;typename R , typename... Args&gt; </td></tr>
-<tr class="memitem:a3c4b127d19f2c7b96d9518e57f0a93ce"><td class="memTemplItemLeft" align="right" valign="top">static void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classrpc_1_1server_1_1server__interface.html#a3c4b127d19f2c7b96d9518e57f0a93ce">dispatch_func</a> (R(*func)(Args...), typename Serial::serial_t &amp;serial_obj)</td></tr>
-<tr class="memdesc:a3c4b127d19f2c7b96d9518e57f0a93ce"><td class="mdescLeft">&#160;</td><td class="mdescRight">Deserializes the serial object to a <a class="el" href="classrpc_1_1packed__func.html" title="Object representing a function call, including the function&#39;s name, arguments and result.">packed_func</a>, calls the callback function, then serializes the result back to the serial object.  <a href="classrpc_1_1server_1_1server__interface.html#a3c4b127d19f2c7b96d9518e57f0a93ce">More...</a><br /></td></tr>
-<tr class="separator:a3c4b127d19f2c7b96d9518e57f0a93ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-methods"></a>
 Protected Member Functions</h2></td></tr>
 <tr class="memitem:a20a2df74590e4551d72ece0b4fd700f0"><td class="memItemLeft" align="right" valign="top"><a id="a20a2df74590e4551d72ece0b4fd700f0"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>server_interface</b> (<a class="el" href="classrpc_1_1server_1_1server__interface.html">server_interface</a> &amp;&amp;) noexcept=default</td></tr>
 <tr class="separator:a20a2df74590e4551d72ece0b4fd700f0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab6055dff21bc516eff7956117488184f"><td class="memTemplParams" colspan="2">template&lt;typename R , typename... Args&gt; </td></tr>
+<tr class="memitem:ab6055dff21bc516eff7956117488184f"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classrpc_1_1server_1_1server__interface.html#ab6055dff21bc516eff7956117488184f">dispatch_cached_func</a> (R(*func)(Args...), typename Serial::serial_t &amp;serial_obj)</td></tr>
+<tr class="memdesc:ab6055dff21bc516eff7956117488184f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Deserializes the serial object to a packed_func, calls the callback function, then serializes the result back to the serial object, using a server-side cache for performance.  <a href="classrpc_1_1server_1_1server__interface.html#ab6055dff21bc516eff7956117488184f">More...</a><br /></td></tr>
+<tr class="separator:ab6055dff21bc516eff7956117488184f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-static-methods"></a>
+Static Protected Member Functions</h2></td></tr>
+<tr class="memitem:a3c4b127d19f2c7b96d9518e57f0a93ce"><td class="memTemplParams" colspan="2">template&lt;typename R , typename... Args&gt; </td></tr>
+<tr class="memitem:a3c4b127d19f2c7b96d9518e57f0a93ce"><td class="memTemplItemLeft" align="right" valign="top">static void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classrpc_1_1server_1_1server__interface.html#a3c4b127d19f2c7b96d9518e57f0a93ce">dispatch_func</a> (R(*func)(Args...), typename Serial::serial_t &amp;serial_obj)</td></tr>
+<tr class="memdesc:a3c4b127d19f2c7b96d9518e57f0a93ce"><td class="mdescLeft">&#160;</td><td class="mdescRight">Deserializes the serial object to a packed_func, calls the callback function, then serializes the result back to the serial object.  <a href="classrpc_1_1server_1_1server__interface.html#a3c4b127d19f2c7b96d9518e57f0a93ce">More...</a><br /></td></tr>
+<tr class="separator:a3c4b127d19f2c7b96d9518e57f0a93ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><h3>template&lt;typename Serial&gt;<br />
@@ -217,12 +209,12 @@ template&lt;typename R , typename... Args&gt; </div>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">protected</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
 
-<p>Deserializes the serial object to a <a class="el" href="classrpc_1_1packed__func.html" title="Object representing a function call, including the function&#39;s name, arguments and result.">packed_func</a>, calls the callback function, then serializes the result back to the serial object, using a server-side cache for performance. </p>
+<p>Deserializes the serial object to a packed_func, calls the callback function, then serializes the result back to the serial object, using a server-side cache for performance. </p>
 <dl class="section note"><dt>Note</dt><dd>This feature is enabled by defining <a class="el" href="rpc_8hpp.html#aa68fe684faf759e42e530ec4584f09fa">RPC_HPP_ENABLE_SERVER_CACHE</a> </dd></dl>
 <dl class="tparams"><dt>Template Parameters</dt><dd>
   <table class="tparams">
@@ -274,12 +266,12 @@ template&lt;typename R , typename... Args&gt; </div>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span><span class="mlabel">protected</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
 
-<p>Deserializes the serial object to a <a class="el" href="classrpc_1_1packed__func.html" title="Object representing a function call, including the function&#39;s name, arguments and result.">packed_func</a>, calls the callback function, then serializes the result back to the serial object. </p>
+<p>Deserializes the serial object to a packed_func, calls the callback function, then serializes the result back to the serial object. </p>
 <dl class="tparams"><dt>Template Parameters</dt><dd>
   <table class="tparams">
     <tr><td class="paramname">R</td><td>Return type of the callback function </td></tr>
@@ -291,62 +283,6 @@ template&lt;typename R , typename... Args&gt; </div>
   <table class="params">
     <tr><td class="paramname">func</td><td>pointer to the callback function </td></tr>
     <tr><td class="paramname">serial_obj</td><td>Serial representing the function call </td></tr>
-  </table>
-  </dd>
-</dl>
-
-</div>
-</div>
-<a id="ac5d9e8286cff4d1c0183f8bf089ab8aa"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac5d9e8286cff4d1c0183f8bf089ab8aa">&#9670;&nbsp;</a></span>run_callback()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename Serial &gt; </div>
-<div class="memtemplate">
-template&lt;typename R , typename... Args&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">static void <a class="el" href="classrpc_1_1server_1_1server__interface.html">rpc::server::server_interface</a>&lt; Serial &gt;::run_callback </td>
-          <td>(</td>
-          <td class="paramtype">R(*)(Args...)&#160;</td>
-          <td class="paramname"><em>func</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classrpc_1_1packed__func.html">packed_func</a>&lt; R, Args... &gt; &amp;&#160;</td>
-          <td class="paramname"><em>pack</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Runs the callback function and updates the result (and any changes to mutable arguments) in the <a class="el" href="classrpc_1_1packed__func.html" title="Object representing a function call, including the function&#39;s name, arguments and result.">packed_func</a>. </p>
-<dl class="tparams"><dt>Template Parameters</dt><dd>
-  <table class="tparams">
-    <tr><td class="paramname">R</td><td>Return type of the callback function </td></tr>
-    <tr><td class="paramname">Args</td><td>Variadic argument type(s) for the function </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">func</td><td>pointer to the callback function </td></tr>
-    <tr><td class="paramname">pack</td><td><a class="el" href="classrpc_1_1packed__func.html" title="Object representing a function call, including the function&#39;s name, arguments and result.">packed_func</a> representing the callback </td></tr>
   </table>
   </dd>
 </dl>

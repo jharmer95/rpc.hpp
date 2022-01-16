@@ -124,6 +124,11 @@ private:
         // Send mesg to server...
     }
 
+	void send(std::string&& mesg) override
+    {
+        // Send mesg to server...
+    }
+
     std::string receive() override
     {
         // Get message back from server...

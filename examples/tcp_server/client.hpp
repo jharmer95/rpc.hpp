@@ -26,6 +26,12 @@ private:
         asio::write(m_socket, asio::buffer(mesg, mesg.size()));
     }
 
+    void send(std::string&& mesg) override
+    {
+        const auto sz = mesg.size();
+        asio::write(m_socket, asio::buffer(std::move(mesg), sz));
+    }
+
     std::string receive() override
     {
         const auto numBytes = m_socket.read_some(asio::buffer(m_buffer, BUF_SZ));

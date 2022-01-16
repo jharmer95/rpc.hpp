@@ -86,6 +86,12 @@ private:
         asio::write(m_socket, asio::buffer(mesg, mesg.size()));
     }
 
+    void send(typename Serial::bytes_t&& mesg) override
+    {
+        const auto sz = mesg.size();
+        asio::write(m_socket, asio::buffer(std::move(mesg), sz));
+    }
+
     // nodiscard because data is lost after receive
     [[nodiscard]] typename Serial::bytes_t receive() override
     {

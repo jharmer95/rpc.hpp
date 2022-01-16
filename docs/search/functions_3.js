@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['operator_20bool_82',['operator bool',['../classrpc_1_1packed__func.html#abcf985cd2837b469f3d21711006ec8d2',1,'rpc::packed_func']]]
+  ['receive_66',['receive',['../classrpc_1_1client_1_1client__interface.html#ac183a72ae42949d1995d919e248909bd',1,'rpc::client::client_interface']]]
 ];

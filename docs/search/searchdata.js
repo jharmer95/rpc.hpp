@@ -1,13 +1,12 @@
 var indexSectionsWithContent =
 {
-  0: "cdghiloprs",
+  0: "cdghilprs",
   1: "chlps",
   2: "r",
   3: "r",
-  4: "cdgoprs",
+  4: "cdgrs",
   5: "r",
-  6: "r",
-  7: "chir"
+  6: "chir"
 };
 
 var indexSectionNames =
@@ -17,9 +16,8 @@ var indexSectionNames =
   2: "namespaces",
   3: "files",
   4: "functions",
-  5: "typedefs",
-  6: "defines",
-  7: "pages"
+  5: "defines",
+  6: "pages"
 };
 
 var indexSectionLabels =
@@ -29,8 +27,7 @@ var indexSectionLabels =
   2: "Namespaces",
   3: "Files",
   4: "Functions",
-  5: "Typedefs",
-  6: "Macros",
-  7: "Pages"
+  5: "Macros",
+  6: "Pages"
 };
 

@@ -183,7 +183,6 @@ std::vector<uint64_t> GenRandInts(const uint64_t min, const uint64_t max, const 
 std::string HashComplex(const ComplexObject& cx)
 {
     std::stringstream hash;
-
     auto values = cx.vals;
 
     if (cx.flag1)
@@ -223,7 +222,6 @@ void dump_cache(TestServer<Serial>& server, [[maybe_unused]] R (*func)(Args...),
     const std::string& func_name, const std::string& dump_dir)
 {
     auto& cache = server.template get_func_cache<R>(func_name);
-
     std::string file_name = func_name;
 
     std::replace(file_name.begin(), file_name.end(), '<', '(');
@@ -258,7 +256,6 @@ void dump_cache(TestServer<Serial>& server, [[maybe_unused]] R (*func)(Args...),
             }
 
             ss << *it << ']';
-
             ofile << key << '\034' << ss.str() << '\n';
         }
     }
@@ -269,7 +266,6 @@ void load_cache(TestServer<Serial>& server, [[maybe_unused]] R (*func)(Args...),
     const std::string& func_name, const std::string& dump_dir)
 {
     auto& cache = server.template get_func_cache<R>(func_name);
-
     std::string file_name = func_name;
 
     std::replace(file_name.begin(), file_name.end(), '<', '(');
@@ -299,7 +295,6 @@ void load_cache(TestServer<Serial>& server, [[maybe_unused]] R (*func)(Args...),
             std::stringstream ss2(val_str);
 
             ss2 >> value;
-
             cache[ss.str()] = value;
         }
         else if constexpr (std::is_same_v<R, std::string>)
@@ -350,7 +345,6 @@ int main(const int argc, char* argv[])
 
 #if defined(RPC_HPP_ENABLE_NJSON)
         TestServer<njson_adapter> njson_server{ io_context, 5000U };
-
         const std::string njson_dump_path("dump_cache");
 
         if (std::filesystem::exists(njson_dump_path)
