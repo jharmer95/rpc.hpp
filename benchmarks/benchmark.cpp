@@ -1,10 +1,9 @@
-#define CATCH_CONFIG_ENABLE_BENCHMARKING
-#define CATCH_CONFIG_MAIN
 #define RPC_HPP_CLIENT_IMPL
-
-#include "rpc.client.hpp"
+#include "test_client/rpc.client.hpp"
 #include "test_structs.hpp"
 
+#define CATCH_CONFIG_ENABLE_BENCHMARKING
+#define CATCH_CONFIG_MAIN
 #include <catch2/catch.hpp>
 
 #if defined(RPC_HPP_ENABLE_BITSERY)

@@ -143,6 +143,7 @@ namespace adapters
 
                 pack_helper() = default;
 
+                int except_type{};
                 std::string func_name{};
                 std::string err_mesg{};
                 R result{};
@@ -161,6 +162,7 @@ namespace adapters
 
                 pack_helper() = default;
 
+                int except_type{};
                 std::string func_name{};
                 std::string err_mesg{};
                 args_t args{};
@@ -169,6 +171,7 @@ namespace adapters
             template<typename S, typename R, typename... Args>
             void serialize(S& s, pack_helper<R, Args...>& o)
             {
+                s.template value<sizeof(int)>(o.except_type);
                 s.text1b(o.func_name, config::max_func_name_size);
                 s.text1b(o.err_mesg, config::max_string_size);
 
@@ -240,6 +243,7 @@ namespace adapters
 
                 if (!pack)
                 {
+                    helper.except_type = static_cast<int>(pack.get_except_type());
                     helper.err_mesg = pack.get_err_mesg();
                 }
                 else
@@ -277,7 +281,7 @@ namespace adapters
             {
                 if constexpr (std::is_void_v<R>)
                 {
-                    if (helper.err_mesg.empty())
+                    if (helper.except_type == 0)
                     {
                         return ::rpc::details::packed_func<void, Args...>{
                             std::move(helper.func_name), std::move(helper.args)
@@ -287,7 +291,8 @@ namespace adapters
                     ::rpc::details::packed_func<void, Args...> pack{ std::move(helper.func_name),
                         std::move(helper.args) };
 
-                    pack.set_err_mesg(std::move(helper.err_mesg));
+                    pack.set_exception(std::move(helper.err_mesg),
+                        static_cast<exceptions::Type>(helper.except_type));
                     return pack;
                 }
                 else
@@ -299,10 +304,10 @@ namespace adapters
                     }
 
                     ::rpc::details::packed_func<R, Args...> pack{ std::move(helper.func_name),
-                        std::move(helper.result), std::move(helper.args) };
+                        std::nullopt, std::move(helper.args) };
 
-                    pack.set_err_mesg(std::move(helper.err_mesg));
-                    pack.clear_result();
+                    pack.set_exception(std::move(helper.err_mesg),
+                        static_cast<exceptions::Type>(helper.except_type));
                     return pack;
                 }
             }
@@ -432,30 +437,29 @@ template<typename R, typename... Args>
 
     if (error != bitsery::ReaderError::NoError)
     {
-        const std::string error_mesg = [error = error]()
+        switch (error)
         {
-            switch (error)
-            {
-                case bitsery::ReaderError::ReadingError:
-                    return "a reading error!";
+            case bitsery::ReaderError::ReadingError:
+                throw rpc::exceptions::deserialization_error(
+                    "Bitsery deserialization failed due to a reading error");
 
-                case bitsery::ReaderError::DataOverflow:
-                    return "data overflow!";
+            case bitsery::ReaderError::DataOverflow:
+                throw rpc::exceptions::function_mismatch(
+                    "Bitsery deserialization failed due to data overflow (likely mismatched "
+                    "function signature)");
 
-                case bitsery::ReaderError::InvalidData:
-                    return "invalid data!";
+            case bitsery::ReaderError::InvalidData:
+                throw rpc::exceptions::deserialization_error(
+                    "Bitsery deserialization failed due to a invalid data");
 
-                case bitsery::ReaderError::InvalidPointer:
-                    return "an invalid pointer!";
+            case bitsery::ReaderError::InvalidPointer:
+                throw rpc::exceptions::deserialization_error(
+                    "Bitsery deserialization failed due to an invalid pointer");
 
-                case bitsery::ReaderError::NoError:
-                default:
-                    return "extra data on the end!";
-            }
-        }();
-
-        throw std::runtime_error(
-            std::string{ "Bitsery deserialization failed due to " } + error_mesg);
+            default:
+                throw rpc::exceptions::deserialization_error(
+                    "Bitsery deserialization failed due to extra data on the end");
+        }
     }
 
     return adapters::bitsery::details::from_helper(helper);
@@ -465,21 +469,26 @@ template<>
 [[nodiscard]] inline std::string pack_adapter<adapters::bitsery_adapter>::get_func_name(
     const adapters::bitsery::bit_buffer& serial_obj)
 {
-    size_t index = 0;
+    size_t index = sizeof(int);
     const auto len = adapters::bitsery::details::extract_length(serial_obj, index);
 
     assert(index < serial_obj.size());
     assert(index <= std::numeric_limits<ptrdiff_t>::max());
-    assert(len <= std::numeric_limits<ptrdiff_t>::max());
     return { serial_obj.begin() + static_cast<ptrdiff_t>(index),
         serial_obj.begin() + static_cast<ptrdiff_t>(index + len) };
 }
 
 template<>
-inline void pack_adapter<adapters::bitsery_adapter>::set_err_mesg(
-    adapters::bitsery::bit_buffer& serial_obj, const std::string& mesg)
+inline void pack_adapter<adapters::bitsery_adapter>::set_exception(
+    adapters::bitsery::bit_buffer& serial_obj, const rpc::exceptions::rpc_exception& ex)
 {
-    size_t index = 0;
+    // copy except_type into buffer
+    const int ex_type = static_cast<int>(ex.get_type());
+    memcpy(&serial_obj[0], &ex_type, sizeof(int));
+
+    const std::string_view mesg = ex.what();
+
+    size_t index = sizeof(int);
     const auto name_len = adapters::bitsery::details::extract_length(serial_obj, index);
     const size_t name_sz_len = index;
 
@@ -489,47 +498,15 @@ inline void pack_adapter<adapters::bitsery_adapter>::set_err_mesg(
 
     if (new_err_len != err_len)
     {
-        assert(index < serial_obj.size());
-        assert(index <= std::numeric_limits<ptrdiff_t>::max());
+        if (err_len != 0)
+        {
+            assert(index < serial_obj.size());
+            assert(index <= std::numeric_limits<ptrdiff_t>::max());
 
-        serial_obj.erase(serial_obj.begin() + static_cast<ptrdiff_t>(name_sz_len)
-                + static_cast<ptrdiff_t>(name_len),
-            serial_obj.begin() + static_cast<ptrdiff_t>(index + err_len));
-
-        index = name_sz_len + name_len;
-        adapters::bitsery::details::write_length(serial_obj, new_err_len, index);
-    }
-
-    for (unsigned i = 0; i < new_err_len; ++i)
-    {
-        assert(index < serial_obj.size());
-        assert(index <= std::numeric_limits<ptrdiff_t>::max());
-
-        serial_obj.insert(serial_obj.begin() + static_cast<ptrdiff_t>(index++),
-            static_cast<unsigned char>(mesg[i]));
-    }
-}
-
-template<>
-inline void pack_adapter<adapters::bitsery_adapter>::set_err_mesg(
-    adapters::bitsery::bit_buffer& serial_obj, std::string&& mesg)
-{
-    size_t index = 0;
-    const auto name_len = adapters::bitsery::details::extract_length(serial_obj, index);
-    const size_t name_sz_len = index;
-
-    index += name_len;
-    const auto err_len = adapters::bitsery::details::extract_length(serial_obj, index);
-    const auto new_err_len = static_cast<unsigned>(mesg.size());
-
-    if (new_err_len != err_len)
-    {
-        assert(index < serial_obj.size());
-        assert(index <= std::numeric_limits<ptrdiff_t>::max());
-
-        serial_obj.erase(serial_obj.begin() + static_cast<ptrdiff_t>(name_sz_len)
-                + static_cast<ptrdiff_t>(name_len),
-            serial_obj.begin() + static_cast<ptrdiff_t>(index + err_len));
+            serial_obj.erase(serial_obj.begin() + static_cast<ptrdiff_t>(name_sz_len)
+                    + static_cast<ptrdiff_t>(name_len),
+                serial_obj.begin() + static_cast<ptrdiff_t>(index + err_len));
+        }
 
         index = name_sz_len + name_len;
         adapters::bitsery::details::write_length(serial_obj, new_err_len, index);

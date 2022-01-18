@@ -36,8 +36,8 @@
 
 #pragma once
 
-#include "static_funcs.hpp"
-#include "test_structs.hpp"
+#include "../static_funcs.hpp"
+#include "../test_structs.hpp"
 
 #include <asio.hpp>
 #include <rpc.hpp>
@@ -165,7 +165,9 @@ private:
         RPC_ATTACH_CACHED_FUNCS(SimpleSum, StrLen, AddOneToEach, Fibonacci, Average, StdDev,
             AverageContainer<uint64_t>, AverageContainer<double>, HashComplex, CountChars)
 
-        throw std::runtime_error("RPC error: Called function: \"" + func_name + "\" not found!");
+        throw rpc::exceptions::rpc_exception(
+            "RPC error: Called function: \"" + func_name + "\" not found!",
+            rpc::exceptions::Type::FuncNotFound);
     }
 
     tcp::acceptor m_accept;

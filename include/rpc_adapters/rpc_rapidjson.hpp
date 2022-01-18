@@ -55,6 +55,73 @@ namespace adapters
 
         namespace details
         {
+            [[noreturn]] inline void throw_mismatch(
+                std::string&& expect_type, const value_t& obj) noexcept(false)
+            {
+                std::string type_str = [&obj]
+                {
+                    if (obj.IsNull())
+                    {
+                        return "null";
+                    }
+
+                    if (obj.IsInt64())
+                    {
+                        return "int64";
+                    }
+
+                    if (obj.IsInt())
+                    {
+                        return "int";
+                    }
+
+                    if (obj.IsUint64())
+                    {
+                        return "uint64";
+                    }
+
+                    if (obj.IsUint())
+                    {
+                        return "uint";
+                    }
+
+                    if (obj.IsDouble())
+                    {
+                        return "double";
+                    }
+
+                    if (obj.IsFloat())
+                    {
+                        return "float";
+                    }
+
+                    if (obj.IsBool())
+                    {
+                        return "bool";
+                    }
+
+                    if (obj.IsString())
+                    {
+                        return "string";
+                    }
+
+                    if (obj.IsArray())
+                    {
+                        return "array";
+                    }
+
+                    if (obj.IsObject())
+                    {
+                        return "object";
+                    }
+
+                    return "unknown";
+                }();
+
+                throw exceptions::function_mismatch("rapidjson expected type: "
+                    + std::move(expect_type) + ", got type: " + std::move(type_str));
+            }
+
             template<typename T>
             void push_arg(T&& arg, value_t& arg_arr, ::rapidjson::MemoryPoolAllocator<>& alloc)
             {
@@ -101,14 +168,18 @@ namespace adapters
                     doc_t serialized =
                         no_ref_t::template serialize<rapidjson_adapter>(std::forward<T>(arg));
 
-                    arg_arr.PushBack(std::move(serialized), alloc);
+                    value_t arr_val;
+                    arr_val.CopyFrom(serialized, alloc);
+                    arg_arr.PushBack(std::move(arr_val), alloc);
                 }
                 else
                 {
                     doc_t serialized =
                         rapidjson_adapter::template serialize<no_ref_t>(std::forward<T>(arg));
 
-                    arg_arr.PushBack(std::move(serialized), alloc);
+                    value_t arr_val;
+                    arr_val.CopyFrom(serialized, alloc);
+                    arg_arr.PushBack(std::move(arr_val), alloc);
                 }
             }
 
@@ -118,10 +189,20 @@ namespace adapters
             {
                 using no_ref_t = std::remove_cv_t<std::remove_reference_t<T>>;
 
+                if (arg_arr.IsArray() && index >= arg_arr.GetArray().Size())
+                {
+                    throw exceptions::function_mismatch("Argument count mismatch");
+                }
+
                 const value_t& arg = arg_arr.IsArray() ? arg_arr.GetArray()[index++] : arg_arr;
 
                 if constexpr (std::is_same_v<no_ref_t, std::string>)
                 {
+                    if (!arg.IsString())
+                    {
+                        throw_mismatch("string", arg);
+                    }
+
                     return arg.GetString();
                 }
                 else if constexpr (std::is_arithmetic_v<no_ref_t>)
@@ -131,15 +212,30 @@ namespace adapters
                         std::is_same_v<no_ref_t,
                             char> || std::is_same_v<no_ref_t, int8_t> || std::is_same_v<no_ref_t, int16_t>)
                     {
+                        if (!arg.IsInt())
+                        {
+                            throw_mismatch("int", arg);
+                        }
+
                         return static_cast<no_ref_t>(arg.GetInt());
                     }
                     else if constexpr (std::is_same_v<no_ref_t,
                                            uint8_t> || std::is_same_v<no_ref_t, uint16_t>)
                     {
+                        if (!arg.IsUint())
+                        {
+                            throw_mismatch("uint", arg);
+                        }
+
                         return static_cast<no_ref_t>(arg.GetUint());
                     }
                     else
                     {
+                        if (!arg.Is<no_ref_t>())
+                        {
+                            throw_mismatch(typeid(no_ref_t).name(), arg);
+                        }
+
                         return arg.Get<no_ref_t>();
                     }
                 }
@@ -283,9 +379,10 @@ template<typename R, typename... Args>
         ::rpc::details::packed_func<void, Args...> pack(
             serial_obj["func_name"].GetString(), std::move(args));
 
-        if (serial_obj.HasMember("err_mesg"))
+        if (serial_obj.HasMember("except_type"))
         {
-            pack.set_err_mesg(serial_obj["err_mesg"].GetString());
+            pack.set_exception(serial_obj["err_mesg"].GetString(),
+                static_cast<rpc::exceptions::Type>(serial_obj["except_type"].GetInt()));
         }
 
         return pack;
@@ -298,8 +395,47 @@ template<typename R, typename... Args>
 
             if constexpr (std::is_same_v<R, std::string>)
             {
+                if (!result.IsString())
+                {
+                    adapters::rapidjson::details::throw_mismatch("string", result);
+                }
+
                 return ::rpc::details::packed_func<R, Args...>(
                     serial_obj["func_name"].GetString(), result.GetString(), std::move(args));
+            }
+            else if constexpr (std::is_arithmetic_v<R>)
+            {
+                if constexpr (std::is_same_v<R,
+                                  char> || std::is_same_v<R, int8_t> || std::is_same_v<R, int16_t>)
+                {
+                    if (!result.IsInt())
+                    {
+                        adapters::rapidjson::details::throw_mismatch("int", result);
+                    }
+
+                    return ::rpc::details::packed_func<R, Args...>(
+                        serial_obj["func_name"].GetString(), result.GetInt(), std::move(args));
+                }
+                else if constexpr (std::is_same_v<R, uint8_t> || std::is_same_v<R, uint16_t>)
+                {
+                    if (!result.IsUint())
+                    {
+                        adapters::rapidjson::details::throw_mismatch("int", result);
+                    }
+
+                    return ::rpc::details::packed_func<R, Args...>(
+                        serial_obj["func_name"].GetString(), result.GetUint(), std::move(args));
+                }
+                else
+                {
+                    if (!result.Is<R>())
+                    {
+                        adapters::rapidjson::details::throw_mismatch(typeid(R).name(), result);
+                    }
+
+                    return ::rpc::details::packed_func<R, Args...>(
+                        serial_obj["func_name"].GetString(), result.Get<R>(), std::move(args));
+                }
             }
             else if constexpr (rpc::details::is_container_v<R>)
             {
@@ -317,25 +453,6 @@ template<typename R, typename... Args>
 
                 return ::rpc::details::packed_func<R, Args...>(
                     serial_obj["func_name"].GetString(), container, std::move(args));
-            }
-            else if constexpr (std::is_arithmetic_v<R>)
-            {
-                if constexpr (std::is_same_v<R,
-                                  char> || std::is_same_v<R, int8_t> || std::is_same_v<R, int16_t>)
-                {
-                    return ::rpc::details::packed_func<R, Args...>(
-                        serial_obj["func_name"].GetString(), result.GetInt(), std::move(args));
-                }
-                else if constexpr (std::is_same_v<R, uint8_t> || std::is_same_v<R, uint16_t>)
-                {
-                    return ::rpc::details::packed_func<R, Args...>(
-                        serial_obj["func_name"].GetString(), result.GetUint(), std::move(args));
-                }
-                else
-                {
-                    return ::rpc::details::packed_func<R, Args...>(
-                        serial_obj["func_name"].GetString(), result.Get<R>(), std::move(args));
-                }
             }
             else if constexpr (rpc::details::is_serializable_v<adapters::rapidjson_adapter, R>)
             {
@@ -356,9 +473,10 @@ template<typename R, typename... Args>
         ::rpc::details::packed_func<R, Args...> pack(
             serial_obj["func_name"].GetString(), std::nullopt, std::move(args));
 
-        if (serial_obj.HasMember("err_mesg"))
+        if (serial_obj.HasMember("except_type"))
         {
-            pack.set_err_mesg(serial_obj["err_mesg"].GetString());
+            pack.set_exception(serial_obj["err_mesg"].GetString(),
+                static_cast<rpc::exceptions::Type>(serial_obj["except_type"].GetInt()));
         }
 
         return pack;
@@ -373,38 +491,21 @@ template<>
 }
 
 template<>
-inline void pack_adapter<adapters::rapidjson_adapter>::set_err_mesg(
-    adapters::rapidjson::doc_t& serial_obj, const std::string& mesg)
+inline void pack_adapter<adapters::rapidjson_adapter>::set_exception(
+    adapters::rapidjson::doc_t& serial_obj, const rpc::exceptions::rpc_exception& ex)
 {
     auto& alloc = serial_obj.GetAllocator();
 
-    if (serial_obj.HasMember("err_mesg"))
+    if (serial_obj.HasMember("except_type"))
     {
-        serial_obj["err_mesg"].SetString(mesg.c_str(), alloc);
+        serial_obj["except_type"].SetInt(static_cast<int>(ex.get_type()));
+        serial_obj["err_mesg"].SetString(ex.what(), alloc);
     }
     else
     {
-        adapters::rapidjson::value_t v{};
-        v.SetString(mesg.c_str(), alloc);
-        serial_obj.AddMember("err_mesg", std::move(v), alloc);
-    }
-}
-
-template<>
-inline void pack_adapter<adapters::rapidjson_adapter>::set_err_mesg(
-    adapters::rapidjson::doc_t& serial_obj, std::string&& mesg)
-{
-    auto& alloc = serial_obj.GetAllocator();
-
-    if (serial_obj.HasMember("err_mesg"))
-    {
-        serial_obj["err_mesg"].SetString(mesg.c_str(), alloc);
-    }
-    else
-    {
-        adapters::rapidjson::value_t v{};
-        v.SetString(mesg.c_str(), alloc);
-        serial_obj.AddMember("err_mesg", std::move(v), alloc);
+        serial_obj.AddMember("except_type", static_cast<int>(ex.get_type()), alloc);
+        serial_obj.AddMember(
+            "err_mesg", adapters::rapidjson::value_t{}.SetString(ex.what(), alloc), alloc);
     }
 }
 } // namespace rpc

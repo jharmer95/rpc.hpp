@@ -34,13 +34,13 @@
 ///OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ///
 
-#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #define RPC_HPP_CLIENT_IMPL
 
 #include "rpc.client.hpp"
-#include "static_funcs.hpp"
-#include "test_structs.hpp"
+#include "../static_funcs.hpp"
+#include "../test_structs.hpp"
 
+#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include <doctest/doctest.h>
 
 #if defined(RPC_HPP_ENABLE_BITSERY)
@@ -296,30 +296,78 @@ TEST_CASE_TEMPLATE("Function not found", TestType, RPC_TEST_TYPES)
 {
     auto& client = GetClient<TestType>();
 
-    const auto exp = [&client]()
+    const auto exp = [&client]
     {
         std::ignore = client.template call_func<int>("FUNC_WHICH_DOES_NOT_EXIST");
     };
 
-    REQUIRE_THROWS_WITH(
-        exp(), "RPC error: Called function: \"FUNC_WHICH_DOES_NOT_EXIST\" not found!");
+    REQUIRE_THROWS_AS(exp(), rpc::exceptions::function_not_found);
+}
+
+TEST_CASE_TEMPLATE("FunctionMismatch", TestType, RPC_TEST_TYPES)
+{
+    auto& client = GetClient<TestType>();
+
+    const auto wrong_param = [&client]
+    {
+        std::ignore = client.template call_func<int>("SimpleSum", 2, std::string{ "Hello, world" });
+    };
+
+    const auto wrong_return = [&client]
+    {
+        std::ignore = client.template call_func<std::string>("SimpleSum", 1, 2);
+    };
+
+    const auto float_to_int = [&client]
+    {
+        std::ignore = client.template call_func<int>("SimpleSum", 2.4, 1.2);
+    };
+
+    const auto int_to_float = [&client]
+    {
+        std::ignore = client.template call_func<double>("StdDev", -4, 125.325, 552.125, 55, 2599.6,
+            1245.125663, 9783.49, 125.12, 553.3333333333, 2266.1);
+    };
+
+    const auto less_params = [&client]
+    {
+        std::ignore = client.template call_func<double>("StdDev", -4.2, 125.325);
+    };
+
+    const auto more_params = [&client]
+    {
+        std::ignore = client.template call_func<double>("StdDev", -4.2, 125.325, 552.125, 55.123,
+            2599.6, 1245.125663, 9783.49, 125.12, 553.3333333333, 2266.1, 111.222, 1234.56789);
+    };
+
+    REQUIRE_THROWS_AS(wrong_param(), rpc::exceptions::function_mismatch);
+    REQUIRE_THROWS_AS(wrong_return(), rpc::exceptions::function_mismatch);
+    REQUIRE_THROWS_AS(float_to_int(), rpc::exceptions::function_mismatch);
+    REQUIRE_THROWS_AS(int_to_float(), rpc::exceptions::function_mismatch);
+    REQUIRE_THROWS_AS(less_params(), rpc::exceptions::function_mismatch);
+    REQUIRE_THROWS_AS(more_params(), rpc::exceptions::function_mismatch);
 }
 
 TEST_CASE_TEMPLATE("ThrowError", TestType, RPC_TEST_TYPES)
 {
     auto& client = GetClient<TestType>();
 
-    const auto exp = [&client]()
+    const auto exp = [&client]
     {
-        std::ignore = client.template call_func<int>("ThrowError");
+        client.call_func("ThrowError");
     };
 
-    REQUIRE_THROWS_WITH(exp(), "THIS IS A TEST ERROR!");
+    REQUIRE_THROWS_AS(exp(), rpc::exceptions::remote_exec_error);
 }
 
 TEST_CASE("KillServer")
 {
     auto& client = GetClient<njson_adapter>();
+
+    const auto exp = [&client]
+    {
+        std::ignore = client.template call_func<int>("SimpleSum", 1, 2);
+    };
 
     try
     {
@@ -329,4 +377,6 @@ TEST_CASE("KillServer")
     {
         // Exception is expected so continue
     }
+
+    REQUIRE_THROWS_AS(exp(), rpc::exceptions::client_receive_error);
 }
