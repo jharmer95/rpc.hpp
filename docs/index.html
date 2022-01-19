@@ -22,7 +22,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">rpc.hpp
-   &#160;<span id="projectnumber">0.6.1</span>
+   &#160;<span id="projectnumber">0.7.1</span>
    </div>
    <div id="projectbrief">Simple RPC Header-Only Library</div>
   </td>
@@ -68,36 +68,155 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><p><a class="anchor" id="md_README"></a> <img src="https://github.com/jharmer95/rpc.hpp/workflows/cmake/badge.svg?branch=main&amp;event=push" alt="cmake" style="pointer-events: none;" class="inline"/> <a href="https://codecov.io/gh/jharmer95/rpc.hpp"><img src="https://codecov.io/gh/jharmer95/rpc.hpp/branch/main/graph/badge.svg" alt="codecov" style="pointer-events: none;" class="inline"/></a></p>
-<h1><a class="anchor" id="autotoc_md0"></a>
+<h1><a class="anchor" id="autotoc_md42"></a>
 rpc.hpp</h1>
-<p>A simple header-only library for supporting remote procedure calls using a variety of extensible features</p>
-<h2><a class="anchor" id="autotoc_md1"></a>
+<p>A simple header-only library for supporting remote procedure calls using a variety of extensible features.</p>
+<h2><a class="anchor" id="autotoc_md43"></a>
+License</h2>
+<p><code><a class="el" href="rpc_8hpp.html" title="Header-only library for serialized RPC usage.">rpc.hpp</a></code> is licensed under the [BSD 3-Clause License](LICENSE).</p>
+<h2><a class="anchor" id="autotoc_md44"></a>
 Features</h2>
 <ul>
-<li>Cross-platform<ul>
-<li>Supports every major compiler/operating system</li>
+<li>Cross-platform.<ul>
+<li>Supports every major compiler/operating system.</li>
 </ul>
 </li>
-<li>Modern<ul>
-<li>Utilizes features like C++17's <a href="https://en.cppreference.com/w/cpp/language/if"><code>constexpr if</code></a></li>
+<li>Modern.<ul>
+<li>Utilizes features like C++17's <a href="https://en.cppreference.com/w/cpp/language/if"><code>constexpr if</code></a>.</li>
 </ul>
 </li>
-<li>Type safe support for various types<ul>
-<li>Supports most built-in/STL types out of the box</li>
-<li>Can add your own "extensions" to allow serialization and sending of any custom type</li>
+<li>Type-safe support for various types.<ul>
+<li>Supports most built-in/STL types out of the box.</li>
+<li>Users can create serialization methods for their own custom types.</li>
 </ul>
 </li>
-<li>Easy to use</li>
+<li>Easy to use.</li>
+<li>Extensible support via "adapters".<ul>
+<li>Currently supported:<ul>
+<li><a href="https://github.com/nlohmann/json">nlohmann-json</a></li>
+<li><a href="https://github.com/Tencent/rapidjson">rapidjson</a></li>
+<li><a href="https://github.com/boostorg/json">Boost.JSON</a></li>
+<li><a href="https://github.com/fraillt/bitsery">bitsery</a></li>
 </ul>
-<h3><a class="anchor" id="autotoc_md2"></a>
-Upcoming Features</h3>
-<ul>
-<li>Utilizing C++20's concepts/<code>requires</code> statement will make the library a lot simpler, cleaner, and easy to read.</li>
+</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md3"></a>
+</li>
+</ul>
+<h2><a class="anchor" id="autotoc_md45"></a>
 Documentation</h2>
-<p>See Doxygen docs <a href="https://jharmer95.github.io/rpc.hpp/">here</a> </p>
-</div></div><!-- PageDoc -->
+<p>See Doxygen docs <a href="https://jharmer95.github.io/rpc.hpp/">here</a>.</p>
+<h2><a class="anchor" id="autotoc_md46"></a>
+Basic Example</h2>
+<p>For more examples see [examples](examples).</p>
+<p>server.cpp</p>
+<div class="fragment"><div class="line"> {C++}</div>
+<div class="line">#define RPC_HPP_SERVER_IMPL</div>
+<div class="line"> </div>
+<div class="line">#include &lt;rpc_adapters/rpc_njson.hpp&gt;</div>
+<div class="line">#include &lt;rpc_dispatch_helper.hpp&gt;</div>
+<div class="line"> </div>
+<div class="line">#include &lt;string&gt;</div>
+<div class="line"> </div>
+<div class="line">using rpc::adapters::njson;</div>
+<div class="line">using rpc::adapters::njson_adapter;</div>
+<div class="line"> </div>
+<div class="line">int Add(int n1, int n2)</div>
+<div class="line">{</div>
+<div class="line">    return n1 + n2;</div>
+<div class="line">}</div>
+<div class="line"> </div>
+<div class="line">void AppendStr(std::string&amp; str, const char* append)</div>
+<div class="line">{</div>
+<div class="line">    str.append(append);</div>
+<div class="line">}</div>
+<div class="line"> </div>
+<div class="line">class RpcServer : public rpc::server_interface&lt;njson_adapter&gt;</div>
+<div class="line">{</div>
+<div class="line">public:</div>
+<div class="line">    RpcServer(const char* address)</div>
+<div class="line">    {</div>
+<div class="line">        // initialize server...</div>
+<div class="line">    }</div>
+<div class="line"> </div>
+<div class="line">    // ...</div>
+<div class="line"> </div>
+<div class="line">    void Run()</div>
+<div class="line">    {</div>
+<div class="line">        std::string data;</div>
+<div class="line"> </div>
+<div class="line">        // Get data from client...</div>
+<div class="line"> </div>
+<div class="line">        dispatch(data);</div>
+<div class="line"> </div>
+<div class="line">        // Send data back to client...</div>
+<div class="line">    }</div>
+<div class="line"> </div>
+<div class="line">private:</div>
+<div class="line">    void dispatch_impl(njson&amp; serial_obj) override</div>
+<div class="line">    {</div>
+<div class="line">       RPC_DEFAULT_DISPATCH(Add, AppendStr)</div>
+<div class="line">    }</div>
+<div class="line">};</div>
+<div class="line"> </div>
+<div class="line">int main()</div>
+<div class="line">{</div>
+<div class="line">    RpcServer my_server{&quot;address&quot;};</div>
+<div class="line"> </div>
+<div class="line">    while (true)</div>
+<div class="line">    {</div>
+<div class="line">        my_server.Run();</div>
+<div class="line">    }</div>
+<div class="line">}</div>
+</div><!-- fragment --><p>client.cpp</p>
+<div class="fragment"><div class="line"> {C++}</div>
+<div class="line">#define RPC_HPP_CLIENT_IMPL</div>
+<div class="line"> </div>
+<div class="line">#include &lt;rpc_adapters/rpc_njson.hpp&gt;</div>
+<div class="line"> </div>
+<div class="line">#include &lt;cassert&gt;</div>
+<div class="line">#include &lt;string&gt;</div>
+<div class="line"> </div>
+<div class="line">using rpc::adapters::njson_adapter;</div>
+<div class="line"> </div>
+<div class="line">class RpcClient : public rpc::client_interface&lt;njson_adapter&gt;</div>
+<div class="line">{</div>
+<div class="line">public:</div>
+<div class="line">    RpcClient(const char* address)</div>
+<div class="line">    {</div>
+<div class="line">        // initialize client...</div>
+<div class="line">    }</div>
+<div class="line"> </div>
+<div class="line">    // ...</div>
+<div class="line"> </div>
+<div class="line">private:</div>
+<div class="line">    void send(const std::string&amp; mesg) override</div>
+<div class="line">    {</div>
+<div class="line">        // Send mesg to server...</div>
+<div class="line">    }</div>
+<div class="line"> </div>
+<div class="line">    void send(std::string&amp;&amp; mesg) override</div>
+<div class="line">    {</div>
+<div class="line">        // Send mesg to server...</div>
+<div class="line">    }</div>
+<div class="line"> </div>
+<div class="line">    std::string receive() override</div>
+<div class="line">    {</div>
+<div class="line">        // Get message back from server...</div>
+<div class="line">    }</div>
+<div class="line">};</div>
+<div class="line"> </div>
+<div class="line">int main()</div>
+<div class="line">{</div>
+<div class="line">    RpcClient my_client{ &quot;address&quot; };</div>
+<div class="line"> </div>
+<div class="line">    const auto result = my_client.template call_func&lt;int&gt;(&quot;Sum&quot;, 1, 2);</div>
+<div class="line">    assert(result == 3);</div>
+<div class="line"> </div>
+<div class="line">    std::string str{ &quot;Hello&quot; };</div>
+<div class="line">    my_client.call_func(&quot;AppendStr&quot;, str, &quot; world!&quot;);</div>
+<div class="line">    assert(str == &quot;Hello world!&quot;);</div>
+<div class="line">}</div>
+</div><!-- fragment --> </div></div><!-- PageDoc -->
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

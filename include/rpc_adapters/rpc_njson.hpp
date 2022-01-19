@@ -36,10 +36,6 @@
 
 #pragma once
 
-#if !defined(RPC_HPP_ENABLE_NJSON)
-#    error 'rpc_njson' was included without defining 'RPC_HPP_ENABLE_NJSON' Please define this macro or do not include this header!
-#endif
-
 #include "../rpc.hpp"
 
 #include <nlohmann/json.hpp>
@@ -57,45 +53,90 @@ namespace adapters
         namespace details
         {
             template<typename T>
-            void push_arg(T&& arg, njson_t& arg_arr)
+            [[nodiscard]] constexpr bool validate_arg(const njson_t& arg)
+            {
+                if constexpr (std::is_same_v<T, bool>)
+                {
+                    return arg.is_boolean();
+                }
+                else if constexpr (std::is_integral_v<T>)
+                {
+                    return arg.is_number() && !arg.is_number_float();
+                }
+                else if constexpr (std::is_floating_point_v<T>)
+                {
+                    return arg.is_number_float();
+                }
+                else if constexpr (std::is_same_v<T, std::string>)
+                {
+                    return arg.is_string();
+                }
+                else if constexpr (rpc::details::is_container_v<T>)
+                {
+                    return arg.is_array();
+                }
+                else
+                {
+                    return !arg.is_null();
+                }
+            }
+
+            template<typename T>
+            void push_args(T&& arg, njson_t& obj_arr);
+
+            template<typename T>
+            void push_arg(T&& arg, njson_t& obj)
             {
                 using no_ref_t = std::remove_cv_t<std::remove_reference_t<T>>;
 
                 if constexpr (std::is_arithmetic_v<
                                   no_ref_t> || std::is_same_v<no_ref_t, std::string>)
                 {
-                    arg_arr.push_back(std::forward<T>(arg));
+                    obj = std::forward<T>(arg);
                 }
                 else if constexpr (rpc::details::is_container_v<no_ref_t>)
                 {
-                    njson_t arr = njson_t::array();
+                    obj = njson_t::array();
+                    obj.get_ref<njson_t::array_t&>().reserve(arg.size());
 
                     for (auto&& val : arg)
                     {
-                        push_arg(std::forward<decltype(val)>(val), arr);
+                        push_args(std::forward<decltype(val)>(val), obj);
                     }
-
-                    arg_arr.push_back(std::move(arr));
                 }
                 else if constexpr (rpc::details::is_serializable_v<njson_adapter, no_ref_t>)
                 {
-                    arg_arr.push_back(
-                        no_ref_t::template serialize<njson_adapter>(std::forward<T>(arg)));
+                    obj = no_ref_t::template serialize<njson_adapter>(std::forward<T>(arg));
                 }
                 else
                 {
-                    arg_arr.push_back(
-                        njson_adapter::template serialize<no_ref_t>(std::forward<T>(arg)));
+                    obj = njson_adapter::template serialize<no_ref_t>(std::forward<T>(arg));
                 }
             }
 
             template<typename T>
-            std::remove_cv_t<std::remove_reference_t<T>> parse_arg(
-                const njson_t& arg_arr, unsigned& index)
+            void push_args(T&& arg, njson_t& obj_arr)
+            {
+                njson_t tmp{};
+                push_arg(std::forward<T>(arg), tmp);
+                obj_arr.push_back(std::move(tmp));
+            }
+
+            template<typename T>
+            std::remove_cv_t<std::remove_reference_t<T>> parse_args(
+                const njson_t& arg_arr, unsigned& index);
+
+            template<typename T>
+            [[nodiscard]] std::remove_cv_t<std::remove_reference_t<T>> parse_arg(const njson_t& arg)
             {
                 using no_ref_t = std::remove_cv_t<std::remove_reference_t<T>>;
 
-                const auto& arg = arg_arr.is_array() ? arg_arr[index++] : arg_arr;
+                if (!validate_arg<T>(arg))
+                {
+                    throw exceptions::function_mismatch(std::string{ "njson expected type: " }
+                        + std::string{ typeid(no_ref_t).name() } + std::string{ ", got type: " }
+                        + std::string{ arg.type_name() });
+                }
 
                 if constexpr (std::is_arithmetic_v<
                                   no_ref_t> || std::is_same_v<no_ref_t, std::string>)
@@ -106,14 +147,14 @@ namespace adapters
                 {
                     using value_t = typename no_ref_t::value_type;
 
-                    no_ref_t container;
+                    no_ref_t container{};
                     container.reserve(arg.size());
 
                     unsigned j = 0;
 
                     for (const auto& val : arg)
                     {
-                        container.push_back(parse_arg<value_t>(val, j));
+                        container.push_back(parse_args<value_t>(val, j));
                     }
 
                     return container;
@@ -127,63 +168,66 @@ namespace adapters
                     return njson_adapter::template deserialize<no_ref_t>(arg);
                 }
             }
+
+            template<typename T>
+            [[nodiscard]] std::remove_cv_t<std::remove_reference_t<T>> parse_args(
+                const njson_t& arg_arr, unsigned& index)
+            {
+                if (index >= arg_arr.size())
+                {
+                    throw exceptions::function_mismatch("Argument count mismatch");
+                }
+
+                const auto& arg = arg_arr.is_array() ? arg_arr[index++] : arg_arr;
+                return parse_arg<T>(arg);
+            }
         } // namespace details
     }     // namespace njson
 } // namespace adapters
 
 template<>
-inline std::string adapters::njson_adapter::to_bytes(const adapters::njson::njson_t& serial_obj)
-{
-    return serial_obj.dump();
-}
-
-template<>
-inline std::string adapters::njson_adapter::to_bytes(adapters::njson::njson_t&& serial_obj)
+[[nodiscard]] inline std::string adapters::njson_adapter::to_bytes(
+    adapters::njson::njson_t&& serial_obj)
 {
     return std::move(serial_obj).dump();
 }
 
 template<>
-inline adapters::njson::njson_t adapters::njson_adapter::from_bytes(const std::string& bytes)
-{
-    return adapters::njson::njson_t::parse(bytes);
-}
-
-template<>
-inline adapters::njson::njson_t adapters::njson_adapter::from_bytes(std::string&& bytes)
+[[nodiscard]] inline adapters::njson::njson_t adapters::njson_adapter::from_bytes(
+    std::string&& bytes)
 {
     return adapters::njson::njson_t::parse(std::move(bytes));
 }
 
 template<>
 template<typename R, typename... Args>
-adapters::njson::njson_t pack_adapter<adapters::njson_adapter>::serialize_pack(
-    const packed_func<R, Args...>& pack)
+[[nodiscard]] adapters::njson::njson_t pack_adapter<adapters::njson_adapter>::serialize_pack(
+    const ::rpc::details::packed_func<R, Args...>& pack)
 {
     using namespace adapters::njson;
 
-    njson_t obj;
-
+    njson_t obj{};
     obj["func_name"] = pack.get_func_name();
-
-    auto arg_arr = njson_t::array();
+    obj["args"] = njson_t::array();
+    auto& arg_arr = obj["args"];
+    arg_arr.get_ref<njson_t::array_t&>().reserve(sizeof...(Args));
 
     const auto& argTup = pack.get_args();
     rpc::details::for_each_tuple(argTup,
         [&arg_arr](auto&& x)
-        { adapters::njson::details::push_arg(std::forward<decltype(x)>(x), arg_arr); });
-
-    obj["args"] = std::move(arg_arr);
+        { adapters::njson::details::push_args(std::forward<decltype(x)>(x), arg_arr); });
 
     if (!pack)
     {
+        obj["except_type"] = pack.get_except_type();
         obj["err_mesg"] = pack.get_err_mesg();
     }
     else
     {
         if constexpr (!std::is_void_v<R>)
         {
-            obj["result"] = pack.get_result();
+            obj["result"] = {};
+            adapters::njson::details::push_arg(pack.get_result(), obj["result"]);
         }
     }
 
@@ -192,23 +236,22 @@ adapters::njson::njson_t pack_adapter<adapters::njson_adapter>::serialize_pack(
 
 template<>
 template<typename R, typename... Args>
-packed_func<R, Args...> pack_adapter<adapters::njson_adapter>::deserialize_pack(
-    const adapters::njson::njson_t& serial_obj)
+[[nodiscard]] ::rpc::details::packed_func<R, Args...> pack_adapter<
+    adapters::njson_adapter>::deserialize_pack(const adapters::njson::njson_t& serial_obj)
 {
     using namespace adapters::njson;
 
     [[maybe_unused]] unsigned i = 0;
 
-    typename packed_func<R, Args...>::args_t args{ adapters::njson::details::parse_arg<Args>(
-        serial_obj["args"], i)... };
-
     if constexpr (std::is_void_v<R>)
     {
-        packed_func<void, Args...> pack(serial_obj["func_name"], std::move(args));
+        ::rpc::details::packed_func<void, Args...> pack(serial_obj["func_name"],
+            { adapters::njson::details::parse_args<Args>(serial_obj["args"], i)... });
 
-        if (serial_obj.contains("err_mesg"))
+        if (serial_obj.contains("except_type"))
         {
-            pack.set_err_mesg(serial_obj["err_mesg"]);
+            pack.set_exception(
+                serial_obj["err_mesg"], static_cast<exceptions::Type>(serial_obj["except_type"]));
         }
 
         return pack;
@@ -217,15 +260,18 @@ packed_func<R, Args...> pack_adapter<adapters::njson_adapter>::deserialize_pack(
     {
         if (serial_obj.contains("result") && !serial_obj["result"].is_null())
         {
-            return packed_func<R, Args...>(
-                serial_obj["func_name"], serial_obj["result"].get<R>(), std::move(args));
+            return ::rpc::details::packed_func<R, Args...>(serial_obj["func_name"],
+                adapters::njson::details::parse_arg<R>(serial_obj["result"]),
+                { adapters::njson::details::parse_args<Args>(serial_obj["args"], i)... });
         }
 
-        packed_func<R, Args...> pack(serial_obj["func_name"], std::nullopt, std::move(args));
+        ::rpc::details::packed_func<R, Args...> pack(serial_obj["func_name"], std::nullopt,
+            { adapters::njson::details::parse_args<Args>(serial_obj["args"], i)... });
 
-        if (serial_obj.contains("err_mesg"))
+        if (serial_obj.contains("except_type"))
         {
-            pack.set_err_mesg(serial_obj["err_mesg"]);
+            pack.set_exception(
+                serial_obj["err_mesg"], static_cast<exceptions::Type>(serial_obj["except_type"]));
         }
 
         return pack;
@@ -233,16 +279,17 @@ packed_func<R, Args...> pack_adapter<adapters::njson_adapter>::deserialize_pack(
 }
 
 template<>
-inline std::string pack_adapter<adapters::njson_adapter>::get_func_name(
+[[nodiscard]] inline std::string pack_adapter<adapters::njson_adapter>::get_func_name(
     const adapters::njson::njson_t& serial_obj)
 {
     return serial_obj["func_name"];
 }
 
 template<>
-inline void pack_adapter<adapters::njson_adapter>::set_err_mesg(
-    adapters::njson::njson_t& serial_obj, const std::string& mesg)
+inline void pack_adapter<adapters::njson_adapter>::set_exception(
+    adapters::njson::njson_t& serial_obj, const rpc::exceptions::rpc_exception& ex)
 {
-    serial_obj["err_mesg"] = mesg;
+    serial_obj["except_type"] = ex.get_type();
+    serial_obj["err_mesg"] = ex.what();
 }
 } // namespace rpc

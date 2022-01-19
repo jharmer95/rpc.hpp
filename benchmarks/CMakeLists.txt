@@ -77,6 +77,7 @@ endif()
 add_executable(rpc_benchmark benchmark.cpp)
 target_include_directories(rpc_benchmark PRIVATE ../tests)
 target_link_libraries(rpc_benchmark PRIVATE rpc_hpp catch2_lib asio_lib)
+target_precompile_headers(rpc_benchmark PRIVATE pch.hpp)
 
 if(${BUILD_ADAPTER_BITSERY})
   target_link_libraries(rpc_benchmark PRIVATE bitsery_adapter)

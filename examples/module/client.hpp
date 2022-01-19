@@ -37,7 +37,7 @@ public:
         }
     }
 
-    RpcClient(std::string module_path);
+    RpcClient(const std::string& module_path);
 
     // Cannot copy a client, module could be unloaded by a copy
     RpcClient(const RpcClient&) = delete;
@@ -65,8 +65,9 @@ public:
 
 private:
     void send(const std::string& mesg) override;
+    void send(std::string&& mesg) override;
 
-    std::string receive() override
+    [[nodiscard]] std::string receive() override
     {
         // By moving, we indicate that the result is no longer valid after the function returns
         return std::move(m_result);

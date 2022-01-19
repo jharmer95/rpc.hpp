@@ -1,4 +1,5 @@
 var searchData=
 [
-  ['server_5finterface_48',['server_interface',['../classrpc_1_1server_1_1server__interface.html',1,'rpc::server::server_interface&lt; Serial &gt;'],['../classrpc_1_1server_1_1server__interface.html',1,'rpc::server_interface&lt; Serial &gt;']]]
+  ['function_5fmismatch_52',['function_mismatch',['../classrpc_1_1exceptions_1_1function__mismatch.html',1,'rpc::exceptions']]],
+  ['function_5fnot_5ffound_53',['function_not_found',['../classrpc_1_1exceptions_1_1function__not__found.html',1,'rpc::exceptions']]]
 ];

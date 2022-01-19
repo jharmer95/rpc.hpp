@@ -24,7 +24,7 @@ $ cmake -B build -D BUILD_ADAPTER_BOOST_JSON=ON -D BUILD_ADAPTER_NJSON=ON -D BUI
 $ cmake --install build
 ```
 
-CMake version 3.12 or newer is required for this method, see below for instructions to install CMake
+CMake version 3.16 or newer is required for this method, see below for instructions to install CMake
 if it is not already installed.
 
 ## Building and Testing the Project
@@ -36,7 +36,7 @@ need to make sure that you can build the project and its test suite.
 
 While `rpc.hpp` is a header-only library, the project relies on using a buildsystem to
 perform certain tasks.
-It is therefore required that CMake (version 3.12 or newer) is installed on your machine and
+It is therefore required that CMake (version 3.16 or newer) is installed on your machine and
 available on your `$PATH` to build the project.
 
 Additionally, `rpc.hpp` requires at least one C++ compiler that fully supports C++17 or newer:
@@ -209,16 +209,16 @@ $ mkdir build
 3. Configure the project
 
 ```shell
-$ cmake -B build -G Ninja -D BUILD_ADAPTER_BOOST_JSON=ON -D BUILD_ADAPTER_NJSON=ON -D BUILD_ADAPTER_RAPIDJSON=ON -D BUILD_TESTING=ON
+$ cmake -B build -G Ninja -D BUILD_ADAPTER_BITSERY -D BUILD_ADAPTER_BOOST_JSON=ON -D BUILD_ADAPTER_NJSON=ON -D BUILD_ADAPTER_RAPIDJSON=ON -D BUILD_TESTING=ON
 ```
 
 NOTE: The above command can be altered based on your needs:
 
 - In this example, the "Ninja" generator is used as it is fast, but `-G Ninja` may be omitted to
 use the system default make system
-- With this example, all three adapters are to be built. By omitting one or more, they will not be
+- With this example, all adapters are to be built. By omitting one or more, they will not be
 built (example: `-D BUILD_ADAPTER_BOOST_JSON=ON` could be omitted or set to `=OFF`)
-  - `BUILD_ADAPTER_NJSON` is required for testing
+  - **NOTE:** `BUILD_ADAPTER_NJSON` is required for testing
 - If using Conan to auto-install dependencies, make sure to set its option (add `-D DEPENDS_CONAN=ON`)
 - If using vcpkg to manage dependencies, make sure to set its option (add `-D DEPENDS_VCPKG=ON`)
   - You may also need to provide CMake with a vcpkg toolchain file:
@@ -235,6 +235,7 @@ $ cmake --build build
 
 | Option | Description |
 |--|--|
+| `BUILD_ADAPTER_BITSERY` | Build the adapter for Bitsery |
 | `BUILD_ADAPTER_BOOST_JSON` | Build the adapter for Boost.JSON |
 | `BUILD_ADAPTER_NJSON` | Build the adapter for nlohmann/json |
 | `BUILD_ADAPTER_RAPIDJSON` | Build the adapter for rapidjson |

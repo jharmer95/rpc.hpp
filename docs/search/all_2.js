@@ -1,5 +1,5 @@
 var searchData=
 [
-  ['get_5ffunc_5fname_8',['get_func_name',['../classrpc_1_1pack__adapter.html#a97335816daece357925dadcd95ebbfde',1,'rpc::pack_adapter']]],
-  ['get_5fresult_9',['get_result',['../classrpc_1_1packed__func.html#a806c046cd6e9f2301da0a37c78f8e2d7',1,'rpc::packed_func']]]
+  ['function_5fmismatch_10',['function_mismatch',['../classrpc_1_1exceptions_1_1function__mismatch.html',1,'rpc::exceptions']]],
+  ['function_5fnot_5ffound_11',['function_not_found',['../classrpc_1_1exceptions_1_1function__not__found.html',1,'rpc::exceptions']]]
 ];

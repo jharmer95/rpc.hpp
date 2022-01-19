@@ -32,7 +32,7 @@ cmake_minimum_required(VERSION 3.16)
 
 project(
   "rpc.hpp"
-  VERSION 0.6.1
+  VERSION 0.7.1
   DESCRIPTION "Simple RPC Header-Only Library"
   LANGUAGES CXX
 )
@@ -162,6 +162,7 @@ elseif(CXX_CLANG)
       -Wno-documentation
       -Wno-documentation-unknown-command
       -Wno-weak-vtables
+      -Wno-reserved-identifier
       -Wno-reserved-id-macro
       -Wno-missing-braces
       -Wno-covered-switch-default)

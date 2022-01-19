@@ -11,11 +11,9 @@
 
 using rpc::adapters::njson_adapter;
 
-RpcClient::RpcClient(std::string module_path)
+RpcClient::RpcClient(const std::string& module_path) : m_module{ LoadLibrary(module_path.c_str()) }
 {
     // Load the module into the application's memory
-    m_module = LoadLibrary(std::move(module_path).c_str());
-
     if (m_module == nullptr)
     {
         throw std::runtime_error("Could not load module!");
@@ -47,6 +45,35 @@ void RpcClient::send(const std::string& mesg)
 
 #elif defined(__unix__)
     strcpy(buf, mesg.c_str());
+#endif
+
+    const auto result = m_func(buf, BUF_SZ);
+
+    if (result == 1)
+    {
+        throw std::runtime_error("String buffer was not big enough for response!");
+    }
+
+    m_result = std::string{ buf };
+}
+
+void RpcClient::send(std::string&& mesg)
+{
+    // Interoperable with C-compatible code, so need to create a character buffer (keeping it small for this example)
+    constexpr auto BUF_SZ = 128;
+
+    if (mesg.size() >= BUF_SZ)
+    {
+        throw std::runtime_error("String buffer was not big enough for request!");
+    }
+
+    char buf[BUF_SZ];
+
+#if defined(_WIN32)
+    strcpy_s(buf, std::move(mesg).c_str());
+
+#elif defined(__unix__)
+    strcpy(buf, std::move(mesg).c_str());
 #endif
 
     const auto result = m_func(buf, BUF_SZ);

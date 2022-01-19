@@ -1,7 +1,7 @@
 ///@file rpc.hpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Header-only library for serialized RPC usage
-///@version 0.6.1
+///@version 0.7.1
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -52,6 +52,7 @@
 #    error At least one implementation type must be defined using 'RPC_HPP_{CLIENT, SERVER, MODULE}_IMPL'
 #endif
 
+#include <cassert>     // for assert
 #include <cstddef>     // for size_t
 #include <optional>    // for nullopt, optional
 #include <stdexcept>   // for runtime_error
@@ -64,9 +65,177 @@
 #    include <unordered_map> // for unordered_map
 #endif
 
+#define RPC_HPP_PRECONDITION(EXPR) assert(EXPR)
+#define RPC_HPP_POSTCONDITION(EXPR) assert(EXPR)
+
 ///@brief Top-level namespace for rpc.hpp classes and functions
 namespace rpc
 {
+///@brief Array containing the version information for rpc.hpp
+static constexpr unsigned version[]{ 0, 7, 1 };
+
+namespace exceptions
+{
+    enum class Type
+    {
+        None,
+        FuncNotFound,
+        RemoteExec,
+        Serialization,
+        DeSerialization,
+        SignatureMismatch,
+        ClientSend,
+        ClientReceive,
+        ServerSend,
+        ServerReceive,
+    };
+
+    class rpc_exception : public std::runtime_error
+    {
+    public:
+        explicit rpc_exception(const std::string& mesg, Type type) noexcept
+            : std::runtime_error(mesg), m_type(type)
+        {
+        }
+
+        explicit rpc_exception(const char* mesg, Type type) noexcept
+            : std::runtime_error(mesg), m_type(type)
+        {
+        }
+
+        Type get_type() const noexcept { return m_type; }
+
+    private:
+        Type m_type;
+    };
+
+    class function_not_found : public rpc_exception
+    {
+    public:
+        explicit function_not_found(const std::string& mesg) noexcept
+            : rpc_exception(mesg, Type::FuncNotFound)
+        {
+        }
+
+        explicit function_not_found(const char* mesg) noexcept
+            : rpc_exception(mesg, Type::FuncNotFound)
+        {
+        }
+    };
+
+    class remote_exec_error : public rpc_exception
+    {
+    public:
+        explicit remote_exec_error(const std::string& mesg) noexcept
+            : rpc_exception(mesg, Type::RemoteExec)
+        {
+        }
+
+        explicit remote_exec_error(const char* mesg) noexcept
+            : rpc_exception(mesg, Type::RemoteExec)
+        {
+        }
+    };
+
+    class serialization_error : public rpc_exception
+    {
+    public:
+        explicit serialization_error(const std::string& mesg) noexcept
+            : rpc_exception(mesg, Type::Serialization)
+        {
+        }
+
+        explicit serialization_error(const char* mesg) noexcept
+            : rpc_exception(mesg, Type::Serialization)
+        {
+        }
+    };
+
+    class deserialization_error : public rpc_exception
+    {
+    public:
+        explicit deserialization_error(const std::string& mesg) noexcept
+            : rpc_exception(mesg, Type::DeSerialization)
+        {
+        }
+
+        explicit deserialization_error(const char* mesg) noexcept
+            : rpc_exception(mesg, Type::DeSerialization)
+        {
+        }
+    };
+
+    class function_mismatch : public rpc_exception
+    {
+    public:
+        explicit function_mismatch(const std::string& mesg) noexcept
+            : rpc_exception(mesg, Type::SignatureMismatch)
+        {
+        }
+
+        explicit function_mismatch(const char* mesg) noexcept
+            : rpc_exception(mesg, Type::SignatureMismatch)
+        {
+        }
+    };
+
+    class client_send_error : public rpc_exception
+    {
+    public:
+        explicit client_send_error(const std::string& mesg) noexcept
+            : rpc_exception(mesg, Type::ClientSend)
+        {
+        }
+
+        explicit client_send_error(const char* mesg) noexcept
+            : rpc_exception(mesg, Type::ClientSend)
+        {
+        }
+    };
+
+    class client_receive_error : public rpc_exception
+    {
+    public:
+        explicit client_receive_error(const std::string& mesg) noexcept
+            : rpc_exception(mesg, Type::ClientReceive)
+        {
+        }
+
+        explicit client_receive_error(const char* mesg) noexcept
+            : rpc_exception(mesg, Type::ClientReceive)
+        {
+        }
+    };
+
+    class server_send_error : public rpc_exception
+    {
+    public:
+        explicit server_send_error(const std::string& mesg) noexcept
+            : rpc_exception(mesg, Type::ServerSend)
+        {
+        }
+
+        explicit server_send_error(const char* mesg) noexcept
+            : rpc_exception(mesg, Type::ServerSend)
+        {
+        }
+    };
+
+    class server_receive_error : public rpc_exception
+    {
+    public:
+        explicit server_receive_error(const std::string& mesg) noexcept
+            : rpc_exception(mesg, Type::ServerReceive)
+        {
+        }
+
+        explicit server_receive_error(const char* mesg) noexcept
+            : rpc_exception(mesg, Type::ServerReceive)
+        {
+        }
+    };
+} // namespace exceptions
+
 ///@brief Namespace for implementation details, should not be used outside of the library
 namespace details
 {
@@ -197,7 +366,7 @@ namespace details
         [[maybe_unused]] std::index_sequence<Is...> iseq)
     {
         using expander = int[];
-        (void)expander{ 0, ((void)func(std::get<Is>(tuple)), 0)... };
+        std::ignore = expander{ 0, ((void)func(std::get<Is>(tuple)), 0)... };
     }
 
     template<typename F, typename... Ts>
@@ -213,7 +382,7 @@ namespace details
         std::index_sequence<Is...>, Args&&... dest)
     {
         using expander = int[];
-        (void)expander{ 0,
+        std::ignore = expander{ 0,
             (
                 (void)[](auto&& x, auto&& y)
                 {
@@ -241,40 +410,74 @@ namespace details
     public:
         using args_t = std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...>;
 
-        packed_func_base(std::string func_name, args_t args)
+        packed_func_base(std::string func_name, args_t args) noexcept
             : m_func_name(std::move(func_name)), m_args(std::move(args))
         {
+            RPC_HPP_POSTCONDITION(!m_func_name.empty());
         }
 
-        const std::string& get_err_mesg() const& { return m_err_mesg; }
-        [[nodiscard]] std::string get_err_mesg() && { return std::move(m_err_mesg); }
+        explicit operator bool() const noexcept { return m_except_type == exceptions::Type::None; }
+        const std::string& get_err_mesg() const noexcept { return m_err_mesg; }
+        const std::string& get_func_name() const noexcept { return m_func_name; }
+        exceptions::Type get_except_type() const noexcept { return m_except_type; }
 
-        const std::string& get_func_name() const& { return m_func_name; }
-        [[nodiscard]] std::string get_func_name() && { return std::move(m_func_name); }
-
-        void set_err_mesg(const std::string& mesg) & { m_err_mesg = mesg; }
-
-        virtual explicit operator bool() const { return m_err_mesg.empty(); }
-
-        const args_t& get_args() const& { return m_args; }
-        [[nodiscard]] args_t get_args() && { return std::move(m_args); }
-
-        void set_args(const args_t& args) & { m_args = args; }
-        void set_args(args_t&& args) & { m_args = std::move(args); }
-
-        template<size_t Index>
-        const auto& get_arg() const&
+        void set_exception(std::string&& mesg, exceptions::Type type) & noexcept
         {
-            return std::get<Index>(m_args);
+            m_except_type = type;
+            m_err_mesg = std::move(mesg);
         }
 
-        template<size_t Index>
-        [[nodiscard]] auto get_arg() &&
+        const args_t& get_args() const noexcept { return m_args; }
+        args_t& get_args() noexcept { return m_args; }
+
+    protected:
+        ~packed_func_base() noexcept = default;
+        packed_func_base(const packed_func_base&) = default;
+        packed_func_base(packed_func_base&&) noexcept = default;
+        packed_func_base& operator=(const packed_func_base&) & = default;
+        packed_func_base& operator=(packed_func_base&&) & noexcept = default;
+
+        [[noreturn]] void throw_ex() const noexcept(false)
         {
-            return std::get<Index>(std::move(m_args));
+            switch (m_except_type)
+            {
+                using namespace exceptions;
+
+                case Type::FuncNotFound:
+                    throw function_not_found(m_err_mesg);
+
+                case Type::RemoteExec:
+                    throw remote_exec_error(m_err_mesg);
+
+                case Type::Serialization:
+                    throw serialization_error(m_err_mesg);
+
+                case Type::DeSerialization:
+                    throw deserialization_error(m_err_mesg);
+
+                case Type::SignatureMismatch:
+                    throw function_mismatch(m_err_mesg);
+
+                case Type::ClientSend:
+                    throw client_send_error(m_err_mesg);
+
+                case Type::ClientReceive:
+                    throw client_receive_error(m_err_mesg);
+
+                case Type::ServerSend:
+                    throw server_send_error(m_err_mesg);
+
+                case Type::ServerReceive:
+                    throw server_receive_error(m_err_mesg);
+
+                case Type::None:
+                default:
+                    throw rpc_exception(m_err_mesg, Type::None);
+            }
         }
 
     private:
+        exceptions::Type m_except_type{ exceptions::Type::None };
         std::string m_func_name;
         std::string m_err_mesg{};
         args_t m_args;
@@ -286,114 +489,83 @@ namespace details
         using serial_t = T_Serial;
         using bytes_t = T_Bytes;
 
+        // nodiscard because a potentially expensive parse and copy is being done
         template<typename T>
-        static serial_t serialize(const T& val);
+        [[nodiscard]] static serial_t serialize(const T& val);
 
+        // nodiscard because a potentially expensive parse and copy is being done
         template<typename T>
-        static T deserialize(const serial_t& serial_obj);
+        [[nodiscard]] static T deserialize(const serial_t& serial_obj);
 
-        static serial_t from_bytes(const bytes_t& bytes);
+        // nodiscard because input bytes are lost after conversion
         [[nodiscard]] static serial_t from_bytes(bytes_t&& bytes);
 
-        static bytes_t to_bytes(const serial_t& serial_obj);
+        // nodiscard because input object is lost after conversion
         [[nodiscard]] static bytes_t to_bytes(serial_t&& serial_obj);
     };
-#endif
-} // namespace details
 
-///@brief Object representing a function call, including the function's name, arguments and result
-///
-///@tparam R Return type of the function
-///@tparam Args Variadic type(s) of the function's arguments
-template<typename R, typename... Args>
-class packed_func final : public details::packed_func_base<Args...>
-{
-public:
-    ///@brief Type alias for the return type
-    using result_t = R;
-
-    ///@brief Type alias for the argument type(s) in a tuple
-    using typename details::packed_func_base<Args...>::args_t;
-
-    ///@brief Constructs a packed_func
-    ///
-    ///@param func_name Function name
-    ///@param result Return value of the function (std::nullopt if not called yet or an error occurred)
-    ///@param args Tuple containing the argument(s)
-    packed_func(std::string func_name, std::optional<result_t> result, args_t args)
-        : details::packed_func_base<Args...>(std::move(func_name), std::move(args)),
-          m_result(std::move(result))
+    template<typename R, typename... Args>
+    class packed_func final : public packed_func_base<Args...>
     {
-    }
+    public:
+        using result_t = R;
+        using typename packed_func_base<Args...>::args_t;
 
-    ///@brief Indicates if the packed_func holds a return value and no error occurred
-    ///
-    ///@note If an error occurred, the reason may be retrieved from the get_err_mesg() function
-    ///@return true A return value exists and no error occurred
-    ///@return false A return value does not exist AND/OR an error occurred
-    explicit operator bool() const override
-    {
-        return m_result.has_value() && details::packed_func_base<Args...>::operator bool();
-    }
-
-    ///@brief Returns the result, throwing with the error message if it does not exist
-    ///
-    ///@return R The result of the function call
-    const R& get_result() const&
-    {
-        if (m_result.has_value())
+        packed_func(std::string func_name, std::optional<result_t> result, args_t args) noexcept
+            : packed_func_base<Args...>(std::move(func_name), std::move(args)),
+              m_result(std::move(result))
         {
+        }
+
+        explicit operator bool() const noexcept
+        {
+            return m_result.has_value() && packed_func_base<Args...>::operator bool();
+        }
+
+        const R& get_result() const
+        {
+            if (!static_cast<bool>(*this))
+            {
+                // throws exception based on except_type
+                this->throw_ex();
+            }
+
             return m_result.value();
         }
 
-        throw std::runtime_error(this->get_err_mesg());
-    }
+        void set_result(const R& value) & { m_result = value; }
 
-    [[nodiscard]] R get_result() &&
-    {
-        if (m_result.has_value())
+        void set_result(R&& value) & noexcept(std::is_nothrow_move_assignable_v<R>)
         {
-            return std::move(m_result).value();
+            m_result = std::move(value);
         }
 
-        throw std::runtime_error(this->get_err_mesg());
-    }
+        void clear_result() & noexcept { m_result.reset(); }
 
-    ///@brief Sets the result to a value
-    ///
-    ///@param value The value to store as the result
-    void set_result(const R& value) & { m_result = value; }
-    void set_result(R&& value) & { m_result = std::move(value); }
+    private:
+        std::optional<result_t> m_result{};
+    };
 
-    ///@brief Clears the result stored (sets it back to std::nullopt)
-    void clear_result() & { m_result = std::nullopt; }
-
-private:
-    std::optional<result_t> m_result{ std::nullopt };
-};
-
-///@brief Object representing a void returning function call, including the function's name and arguments
-///
-///@tparam Args Variadic type(s) of the function's arguments
-template<typename... Args>
-class packed_func<void, Args...> final : public details::packed_func_base<Args...>
-{
-public:
-    ///@brief Type alias for the return type (void)
-    using result_t = void;
-
-    ///@brief Type alias for the argument type(s) in a tuple
-    using typename details::packed_func_base<Args...>::args_t;
-
-    ///@brief Constructs a packed_func
-    ///
-    ///@param func_name Function name
-    ///@param args Tuple containing the argument(s)
-    packed_func(std::string func_name, args_t args)
-        : details::packed_func_base<Args...>(std::move(func_name), std::move(args))
+    template<typename... Args>
+    class packed_func<void, Args...> final : public packed_func_base<Args...>
     {
-    }
-};
+    public:
+        using result_t = void;
+        using typename packed_func_base<Args...>::args_t;
+        using packed_func_base<Args...>::packed_func_base;
+        using packed_func_base<Args...>::operator bool;
+
+        void get_result() const
+        {
+            if (!static_cast<bool>(*this))
+            {
+                // throws exception based on except_type
+                this->throw_ex();
+            }
+        }
+    };
+#endif
+} // namespace details
 
 ///@brief Class collecting several functions for interoperating between serial objects and a packed_func
 ///
@@ -408,8 +580,11 @@ public:
     ///@tparam Args Variadic argument type(s) of the packed_func
     ///@param pack packed_func to be serialized
     ///@return Serial::serial_t Serial representation of the packed_func
+
+    // nodiscard because a potentially expensive parse and copy is being done
     template<typename R, typename... Args>
-    static typename Serial::serial_t serialize_pack(const packed_func<R, Args...>& pack);
+    [[nodiscard]] static typename Serial::serial_t serialize_pack(
+        const details::packed_func<R, Args...>& pack);
 
     ///@brief De-serializes a serial object to a packed_func
     ///
@@ -417,20 +592,22 @@ public:
     ///@tparam Args Variadic argument type(s) of the packed_func
     ///@param serial_obj Serial object to be serialized
     ///@return packed_func<R, Args...> resulting packed_func
+
+    // nodiscard because a potentially expensive parse and copy is being done
     template<typename R, typename... Args>
-    static packed_func<R, Args...> deserialize_pack(const typename Serial::serial_t& serial_obj);
+    [[nodiscard]] static details::packed_func<R, Args...> deserialize_pack(
+        const typename Serial::serial_t& serial_obj);
 
     ///@brief Extracts the function name of a serialized function call
     ///
     ///@param serial_obj Serial object to be parsed
     ///@return std::string Name of the contained function
-    static std::string get_func_name(const typename Serial::serial_t& serial_obj);
 
-    ///@brief Sets the error message for the serialized function call
-    ///
-    ///@param serial_obj Serial object to be modified
-    ///@param mesg String to set as the error message
-    static void set_err_mesg(typename Serial::serial_t& serial_obj, const std::string& mesg);
+    // nodiscard because a potentially expensive parse and string allocation is being done
+    [[nodiscard]] static std::string get_func_name(const typename Serial::serial_t& serial_obj);
+
+    static void set_exception(
+        typename Serial::serial_t& serial_obj, const exceptions::rpc_exception& ex);
 };
 
 #if defined(RPC_HPP_SERVER_IMPL) || defined(RPC_HPP_MODULE_IMPL)
@@ -448,50 +625,51 @@ inline namespace server
     public:
         using adapter_t = Serial;
 
-        virtual ~server_interface() = default;
+        virtual ~server_interface() noexcept = default;
+        server_interface() noexcept = default;
 
-        ///@brief Runs the callback function and updates the result (and any changes to mutable arguments) in the packed_func
-        ///
-        ///@tparam R Return type of the callback function
-        ///@tparam Args Variadic argument type(s) for the function
-        ///@param func pointer to the callback function
-        ///@param pack packed_func representing the callback
-        template<typename R, typename... Args>
-        static void run_callback(R (*func)(Args...), packed_func<R, Args...>& pack)
-        {
-            auto args = pack.get_args();
-
-            if constexpr (std::is_void_v<R>)
-            {
-                std::apply(func, args);
-                pack.set_args(std::move(args));
-            }
-            else
-            {
-                auto result = std::apply(func, args);
-                pack.set_result(std::move(result));
-                pack.set_args(std::move(args));
-            }
-        }
+        server_interface(const server_interface&) = delete;
+        server_interface& operator=(const server_interface&) = delete;
+        server_interface& operator=(server_interface&&) = delete;
 
 #    if defined(RPC_HPP_SERVER_IMPL) && defined(RPC_HPP_ENABLE_SERVER_CACHE)
         template<typename Val>
         std::unordered_map<typename Serial::bytes_t, Val>& get_func_cache(
             const std::string& func_name)
         {
+            RPC_HPP_PRECONDITION(!func_name.empty());
+
             update_all_cache<Val>(func_name);
             return *static_cast<std::unordered_map<typename Serial::bytes_t, Val>*>(
                 m_cache_map.at(func_name));
         }
 
-        template<typename Val>
-        void update_all_cache(const std::string& func_name)
+        void clear_all_cache() noexcept { m_cache_map.clear(); }
+#    endif
+
+        ///@brief Parses the received serialized data and determines which function to call
+        ///
+        ///@param bytes Data to be parsed into/back out of a serial object
+        void dispatch(typename Serial::bytes_t& bytes)
         {
-            m_cache_map[func_name] = get_func_cache_impl<Val>(func_name);
+            auto serial_obj = Serial::from_bytes(std::move(bytes));
+
+            try
+            {
+                dispatch_impl(serial_obj);
+            }
+            catch (const exceptions::rpc_exception& ex)
+            {
+                pack_adapter<Serial>::set_exception(serial_obj, ex);
+            }
+
+            bytes = Serial::to_bytes(std::move(serial_obj));
         }
 
-        void clear_all_cache() { m_cache_map.clear(); }
+    protected:
+        server_interface(server_interface&&) noexcept = default;
 
+#    if defined(RPC_HPP_SERVER_IMPL) && defined(RPC_HPP_ENABLE_SERVER_CACHE)
         ///@brief Deserializes the serial object to a packed_func, calls the callback function, then serializes the result back to the serial object, using a server-side cache for performance.
         ///
         ///@note This feature is enabled by defining @ref RPC_HPP_ENABLE_SERVER_CACHE
@@ -502,7 +680,24 @@ inline namespace server
         template<typename R, typename... Args>
         void dispatch_cached_func(R (*func)(Args...), typename Serial::serial_t& serial_obj)
         {
-            auto pack = pack_adapter<Serial>::template deserialize_pack<R, Args...>(serial_obj);
+            RPC_HPP_PRECONDITION(func != nullptr);
+
+            auto pack = [&serial_obj]
+            {
+                try
+                {
+                    return pack_adapter<Serial>::template deserialize_pack<R, Args...>(serial_obj);
+                }
+                catch (const exceptions::rpc_exception&)
+                {
+                    throw;
+                }
+                catch (const std::exception& ex)
+                {
+                    throw exceptions::deserialization_error(ex.what());
+                }
+            }();
+
             auto& result_cache = get_func_cache<R>(pack.get_func_name());
 
             if constexpr (!std::is_void_v<R>)
@@ -514,9 +709,21 @@ inline namespace server
                 if (it != result_cache.end())
                 {
                     pack.set_result(it->second);
-                    serial_obj = pack_adapter<Serial>::template serialize_pack<R, Args...>(pack);
 
-                    return;
+                    try
+                    {
+                        serial_obj =
+                            pack_adapter<Serial>::template serialize_pack<R, Args...>(pack);
+                        return;
+                    }
+                    catch (const exceptions::rpc_exception&)
+                    {
+                        throw;
+                    }
+                    catch (const std::exception& ex)
+                    {
+                        throw exceptions::serialization_error(ex.what());
+                    }
                 }
 
                 run_callback(func, pack);
@@ -527,12 +734,26 @@ inline namespace server
                 run_callback(func, pack);
             }
 
-            serial_obj = pack_adapter<Serial>::template serialize_pack<R, Args...>(pack);
+            try
+            {
+                serial_obj = pack_adapter<Serial>::template serialize_pack<R, Args...>(pack);
+            }
+            catch (const exceptions::rpc_exception&)
+            {
+                throw;
+            }
+            catch (const std::exception& ex)
+            {
+                throw exceptions::serialization_error(ex.what());
+            }
         }
+
 #    else
         template<typename R, typename... Args>
         void dispatch_cached_func(R (*func)(Args...), typename Serial::serial_t& serial_obj)
         {
+            RPC_HPP_PRECONDITION(func != nullptr);
+
             dispatch_func(func, serial_obj);
         }
 #    endif
@@ -546,38 +767,82 @@ inline namespace server
         template<typename R, typename... Args>
         static void dispatch_func(R (*func)(Args...), typename Serial::serial_t& serial_obj)
         {
-            auto pack = pack_adapter<Serial>::template deserialize_pack<R, Args...>(serial_obj);
+            RPC_HPP_PRECONDITION(func != nullptr);
+
+            auto pack = [&serial_obj]
+            {
+                try
+                {
+                    return pack_adapter<Serial>::template deserialize_pack<R, Args...>(serial_obj);
+                }
+                catch (const exceptions::rpc_exception&)
+                {
+                    throw;
+                }
+                catch (const std::exception& ex)
+                {
+                    throw exceptions::deserialization_error(ex.what());
+                }
+            }();
 
             run_callback(func, pack);
-            serial_obj = pack_adapter<Serial>::template serialize_pack<R, Args...>(pack);
-        }
-
-        ///@brief Implementation component for the dispatch function
-        ///
-        ///@param serial_obj Serial object used to represent the function call
-        virtual void dispatch_impl(typename Serial::serial_t& serial_obj) = 0;
-
-        ///@brief Parses the received serialized data and determines which function to call
-        ///
-        ///@param bytes Data to be parsed into/back out of a serial object
-        void dispatch(typename Serial::bytes_t& bytes)
-        {
-            auto serial_obj = Serial::from_bytes(std::move(bytes));
 
             try
             {
-                dispatch_impl(serial_obj);
+                serial_obj = pack_adapter<Serial>::template serialize_pack<R, Args...>(pack);
+            }
+            catch (const exceptions::rpc_exception&)
+            {
+                throw;
             }
             catch (const std::exception& ex)
             {
-                pack_adapter<Serial>::set_err_mesg(serial_obj, ex.what());
+                throw exceptions::serialization_error(ex.what());
             }
+        }
 
-            bytes = Serial::to_bytes(std::move(serial_obj));
+    private:
+        virtual void dispatch_impl(typename Serial::serial_t& serial_obj) = 0;
+
+        ///@brief Runs the callback function and updates the result (and any changes to mutable arguments) in the packed_func
+        ///
+        ///@tparam R Return type of the callback function
+        ///@tparam Args Variadic argument type(s) for the function
+        ///@param func pointer to the callback function
+        ///@param pack packed_func representing the callback
+        template<typename R, typename... Args>
+        static void run_callback(R (*func)(Args...), details::packed_func<R, Args...>& pack)
+        {
+            RPC_HPP_PRECONDITION(func != nullptr);
+
+            auto& args = pack.get_args();
+
+            if constexpr (std::is_void_v<R>)
+            {
+                try
+                {
+                    std::apply(func, args);
+                }
+                catch (const std::exception& ex)
+                {
+                    throw exceptions::remote_exec_error(ex.what());
+                }
+            }
+            else
+            {
+                try
+                {
+                    auto result = std::apply(func, args);
+                    pack.set_result(std::move(result));
+                }
+                catch (const std::exception& ex)
+                {
+                    throw exceptions::remote_exec_error(ex.what());
+                }
+            }
         }
 
 #    if defined(RPC_HPP_SERVER_IMPL) && defined(RPC_HPP_ENABLE_SERVER_CACHE)
-    private:
         template<typename Val>
         static void* get_func_cache_impl(const std::string& func_name)
         {
@@ -585,16 +850,26 @@ inline namespace server
                 std::unordered_map<typename Serial::bytes_t, Val>>
                 cache{};
 
-            return static_cast<void*>(&cache[func_name]);
+            return &cache[func_name];
         }
 
-        std::unordered_map<std::string, void*> m_cache_map;
+        template<typename Val>
+        void update_all_cache(const std::string& func_name)
+        {
+            RPC_HPP_PRECONDITION(!func_name.empty());
+
+            m_cache_map.insert_or_assign(func_name, get_func_cache_impl<Val>(func_name));
+        }
+
+        std::unordered_map<std::string, void*> m_cache_map{};
 #    endif
     };
 } // namespace server
 #endif
 
 #if defined(RPC_HPP_CLIENT_IMPL)
+#    define call_header_func(FUNCNAME, ...) call_header_func_impl(FUNCNAME, #    FUNCNAME, __VA_ARGS__)
+
 ///@brief Namespace containing functions and classes only relevant to "client-side" implentations
 ///
 ///@note Is only compiled by defining @ref RPC_HPP_CLIENT_IMPL
@@ -607,7 +882,13 @@ inline namespace client
     class client_interface
     {
     public:
-        virtual ~client_interface() = default;
+        virtual ~client_interface() noexcept = default;
+        client_interface() noexcept = default;
+
+        client_interface(const client_interface&) = delete;
+        client_interface(client_interface&&) noexcept = default;
+        client_interface& operator=(const client_interface&) = delete;
+        client_interface& operator=(client_interface&&) = delete;
 
         ///@brief Sends an RPC call request to a server, waits for a response, then returns the result
         ///
@@ -616,45 +897,184 @@ inline namespace client
         ///@param func_name Name of the remote function to call
         ///@param args Argument(s) for the remote function
         ///@return R Result of the function call, will throw with server's error message if the result does not exist
+
+        // nodiscard because an expensive remote procedure call is being performed
         template<typename R = void, typename... Args>
-        R call_func(std::string func_name, Args&&... args)
+        [[nodiscard]] R call_func(const std::string& func_name, Args&&... args)
         {
-            packed_func<R, Args...> pack = [&]
+            RPC_HPP_PRECONDITION(!func_name.empty());
+
+            details::packed_func<R, Args...> pack = [&]() noexcept
             {
                 if constexpr (std::is_void_v<R>)
                 {
-                    return packed_func<void, Args...>{ std::move(func_name),
+                    return details::packed_func<void, Args...>{ func_name,
                         std::forward_as_tuple(args...) };
                 }
                 else
                 {
-                    return packed_func<R, Args...>{ std::move(func_name), std::nullopt,
+                    return details::packed_func<R, Args...>{ func_name, std::nullopt,
                         std::forward_as_tuple(args...) };
                 }
             }();
 
-            send(Serial::to_bytes(pack_adapter<Serial>::serialize_pack(pack)));
+            auto serial_obj = [&pack]
+            {
+                try
+                {
+                    return pack_adapter<Serial>::serialize_pack(pack);
+                }
+                catch (const exceptions::rpc_exception&)
+                {
+                    throw;
+                }
+                catch (const std::exception& ex)
+                {
+                    throw exceptions::serialization_error(ex.what());
+                }
+            }();
 
-            pack = pack_adapter<Serial>::template deserialize_pack<R, Args...>(
-                Serial::from_bytes(receive()));
+            auto bytes = Serial::to_bytes(std::move(serial_obj));
+
+            try
+            {
+                send(std::move(bytes));
+            }
+            catch (const std::exception& ex)
+            {
+                throw exceptions::client_send_error(ex.what());
+            }
+
+            try
+            {
+                bytes = receive();
+            }
+            catch (const std::exception& ex)
+            {
+                throw exceptions::client_receive_error(ex.what());
+            }
+
+            serial_obj = Serial::from_bytes(std::move(bytes));
+
+            try
+            {
+                pack = pack_adapter<Serial>::template deserialize_pack<R, Args...>(serial_obj);
+            }
+            catch (const exceptions::rpc_exception&)
+            {
+                throw;
+            }
+            catch (const std::exception& ex)
+            {
+                throw exceptions::deserialization_error(ex.what());
+            }
 
             // Assign values back to any (non-const) reference members
             details::tuple_bind(pack.get_args(), std::forward<Args>(args)...);
-
-            if constexpr (std::is_void_v<R>)
-            {
-                return;
-            }
-            else
-            {
-                return pack.get_result();
-            }
+            return pack.get_result();
         }
 
-        template<typename R, typename... Args>
-        R call_header_func_impl(
-            [[maybe_unused]] R (*func)(Args...), std::string func_name, Args&&... args)
+        ///@brief Sends an RPC call request to a server, waits for a response, then returns the result
+        ///
+        ///@tparam R Return type of the remote function to call
+        ///@tparam Args Variadic argument type(s) of the remote function to call
+        ///@param func_name Name of the remote function to call
+        ///@param args Argument(s) for the remote function
+        ///@return R Result of the function call, will throw with server's error message if the result does not exist
+
+        // nodiscard because an expensive remote procedure call is being performed
+        template<typename R = void, typename... Args>
+        [[nodiscard]] R call_func(std::string&& func_name, Args&&... args)
         {
+            RPC_HPP_PRECONDITION(!func_name.empty());
+
+            details::packed_func<R, Args...> pack = [&]() noexcept
+            {
+                if constexpr (std::is_void_v<R>)
+                {
+                    return details::packed_func<void, Args...>{ std::move(func_name),
+                        std::forward_as_tuple(args...) };
+                }
+                else
+                {
+                    return details::packed_func<R, Args...>{ std::move(func_name), std::nullopt,
+                        std::forward_as_tuple(args...) };
+                }
+            }();
+
+            auto serial_obj = [&pack]
+            {
+                try
+                {
+                    return pack_adapter<Serial>::serialize_pack(pack);
+                }
+                catch (const exceptions::rpc_exception&)
+                {
+                    throw;
+                }
+                catch (const std::exception& ex)
+                {
+                    throw exceptions::serialization_error(ex.what());
+                }
+            }();
+
+            auto bytes = Serial::to_bytes(std::move(serial_obj));
+
+            try
+            {
+                send(std::move(bytes));
+            }
+            catch (const std::exception& ex)
+            {
+                throw exceptions::client_send_error(ex.what());
+            }
+
+            try
+            {
+                bytes = receive();
+            }
+            catch (const std::exception& ex)
+            {
+                throw exceptions::client_receive_error(ex.what());
+            }
+
+            serial_obj = Serial::from_bytes(std::move(bytes));
+
+            try
+            {
+                pack = pack_adapter<Serial>::template deserialize_pack<R, Args...>(serial_obj);
+            }
+            catch (const exceptions::rpc_exception&)
+            {
+                throw;
+            }
+            catch (const std::exception& ex)
+            {
+                throw exceptions::deserialization_error(ex.what());
+            }
+
+            // Assign values back to any (non-const) reference members
+            details::tuple_bind(pack.get_args(), std::forward<Args>(args)...);
+            return pack.get_result();
+        }
+
+        // nodiscard because an expensive remote procedure call is being performed
+        template<typename R, typename... Args>
+        [[nodiscard]] R call_header_func_impl(
+            [[maybe_unused]] R (*func)(Args...), const std::string& func_name, Args&&... args)
+        {
+            RPC_HPP_PRECONDITION(!func_name.empty());
+
+            return call_func<R, Args...>(func_name, std::forward<Args>(args)...);
+        }
+
+        // nodiscard because an expensive remote procedure call is being performed
+        template<typename R, typename... Args>
+        [[nodiscard]] R call_header_func_impl(
+            [[maybe_unused]] R (*func)(Args...), std::string&& func_name, Args&&... args)
+        {
+            RPC_HPP_PRECONDITION(!func_name.empty());
+
             return call_func<R, Args...>(std::move(func_name), std::forward<Args>(args)...);
         }
 
@@ -664,13 +1084,16 @@ inline namespace client
         ///@param bytes Serialized data to be sent
         virtual void send(const typename Serial::bytes_t& bytes) = 0;
 
+        ///@brief Sends serialized data to a server or module
+        ///
+        ///@param bytes Serialized data to be sent
+        virtual void send(typename Serial::bytes_t&& bytes) = 0;
+
         ///@brief Receives serialized data from a server or module
         ///
         ///@return Serial::bytes_t Received serialized data
         virtual typename Serial::bytes_t receive() = 0;
     };
-
-#    define call_header_func(FUNCNAME, ...) call_header_func_impl(FUNCNAME, #    FUNCNAME, __VA_ARGS__)
 } // namespace client
 #endif
 } // namespace rpc

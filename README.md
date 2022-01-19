@@ -38,7 +38,6 @@ server.cpp
 
 ```C++
 #define RPC_HPP_SERVER_IMPL
-#define RPC_HPP_ENABLE_NJSON
 
 #include <rpc_adapters/rpc_njson.hpp>
 #include <rpc_dispatch_helper.hpp>
@@ -101,7 +100,6 @@ client.cpp
 
 ```C++
 #define RPC_HPP_CLIENT_IMPL
-#define RPC_HPP_ENABLE_NJSON
 
 #include <rpc_adapters/rpc_njson.hpp>
 
@@ -122,6 +120,11 @@ public:
 
 private:
     void send(const std::string& mesg) override
+    {
+        // Send mesg to server...
+    }
+
+	void send(std::string&& mesg) override
     {
         // Send mesg to server...
     }
