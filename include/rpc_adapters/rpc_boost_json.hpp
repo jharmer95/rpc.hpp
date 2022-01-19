@@ -98,9 +98,6 @@ namespace adapters
                 {
                     switch (obj.kind())
                     {
-                        case boost::json::kind::null:
-                            return "null";
-
                         case boost::json::kind::bool_:
                             return "bool";
 
@@ -121,6 +118,10 @@ namespace adapters
 
                         case boost::json::kind::object:
                             return "object";
+
+                        default:
+                        case boost::json::kind::null:
+                            return "null";
                     }
                 }();
 
@@ -207,7 +208,7 @@ namespace adapters
 
                     for (const auto& val : arr)
                     {
-                        container.push_back(parse_arg<subvalue_t>(val, j));
+                        container.push_back(parse_args<subvalue_t>(val, j));
                     }
 
                     return container;
@@ -260,8 +261,8 @@ template<typename R, typename... Args>
 {
     using namespace adapters::boost_json;
 
-    object_t ret_j{};
-    ret_j["func_name"] = pack.get_func_name();
+    object_t obj{};
+    obj["func_name"] = pack.get_func_name();
 
     auto& args = ret_j["args"].emplace_array();
     args.reserve(sizeof...(Args));
@@ -280,7 +281,7 @@ template<typename R, typename... Args>
     {
         if constexpr (!std::is_void_v<R>)
         {
-            ret_j["result"] = {};
+            obj["result"] = {};
             adapters::boost_json::details::push_arg(pack.get_result(), obj.at("result"));
         }
     }
@@ -317,14 +318,14 @@ template<typename R, typename... Args>
     }
     else
     {
-        if (obj.contains("result") && !obj.["result"].is_null())
+        if (obj.contains("result") && !obj["result"].is_null())
         {
             return ::rpc::details::packed_func<R, Args...>(obj.at("func_name").get_string().c_str(),
                 adapters::boost_json::details::parse_arg<R>(obj.at("result")),
                 { adapters::boost_json::details::parse_args<Args>(obj.at("args"), i)... });
         }
 
-        ::rpc::details::packed_func<R, Args...>(obj.at("func_name").get_string().c_str(),
+        ::rpc::details::packed_func<R, Args...> pack(obj.at("func_name").get_string().c_str(),
             std::nullopt,
             { adapters::boost_json::details::parse_args<Args>(obj.at("args"), i)... });
 
