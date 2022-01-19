@@ -55,7 +55,11 @@ namespace adapters
             template<typename T>
             [[nodiscard]] constexpr bool validate_arg(const njson_t& arg)
             {
-                if constexpr (std::is_integral_v<T>)
+                if constexpr (std::is_same_v<T, bool>)
+                {
+                    return arg.is_boolean();
+                }
+                else if constexpr (std::is_integral_v<T>)
                 {
                     return arg.is_number() && !arg.is_number_float();
                 }
@@ -67,6 +71,10 @@ namespace adapters
                 {
                     return arg.is_string();
                 }
+                else if constexpr (rpc::details::is_container_v<T>)
+                {
+                    return arg.is_array();
+                }
                 else
                 {
                     return !arg.is_null();
@@ -74,7 +82,7 @@ namespace adapters
             }
 
             template<typename T>
-            void push_args(T&& arg, njson_t& arg_arr);
+            void push_args(T&& arg, njson_t& obj_arr);
 
             template<typename T>
             void push_arg(T&& arg, njson_t& obj)
@@ -111,31 +119,9 @@ namespace adapters
             {
                 using no_ref_t = std::remove_cv_t<std::remove_reference_t<T>>;
 
-                if constexpr (std::is_arithmetic_v<
-                                  no_ref_t> || std::is_same_v<no_ref_t, std::string>)
-                {
-                    obj_arr.push_back(std::forward<T>(arg));
-                }
-                else if constexpr (rpc::details::is_container_v<no_ref_t>)
-                {
-                    auto& arr = obj_arr.emplace_back(njson_t::array());
-                    arr.get_ref<njson_t::array_t&>().reserve(arg.size());
-
-                    for (auto&& val : arg)
-                    {
-                        push_args(std::forward<decltype(val)>(val), arr);
-                    }
-                }
-                else if constexpr (rpc::details::is_serializable_v<njson_adapter, no_ref_t>)
-                {
-                    obj_arr.push_back(
-                        no_ref_t::template serialize<njson_adapter>(std::forward<T>(arg)));
-                }
-                else
-                {
-                    obj_arr.push_back(
-                        njson_adapter::template serialize<no_ref_t>(std::forward<T>(arg)));
-                }
+                njson_t tmp{};
+                push_arg(std::forward<T>(arg), tmp);
+                obj_arr.push_back(std::move(tmp));
             }
 
             template<typename T>
@@ -224,10 +210,8 @@ template<typename R, typename... Args>
 {
     using namespace adapters::njson;
 
-    njson_t obj;
-
+    njson_t obj{};
     obj["func_name"] = pack.get_func_name();
-
     obj["args"] = njson_t::array();
     auto& arg_arr = obj["args"];
     arg_arr.get_ref<njson_t::array_t&>().reserve(sizeof...(Args));
@@ -280,13 +264,6 @@ template<typename R, typename... Args>
     {
         if (serial_obj.contains("result") && !serial_obj["result"].is_null())
         {
-            if (!adapters::njson::details::validate_arg<R>(serial_obj["result"]))
-            {
-                throw exceptions::function_mismatch(std::string{ "njson expected type: " }
-                    + std::string{ typeid(R).name() } + std::string{ ", got type: " }
-                    + std::string{ serial_obj["result"].type_name() });
-            }
-
             return ::rpc::details::packed_func<R, Args...>(serial_obj["func_name"],
                 adapters::njson::details::parse_arg<R>(serial_obj["result"]),
                 { adapters::njson::details::parse_args<Args>(serial_obj["args"], i)... });
