@@ -171,8 +171,6 @@ namespace adapters
             template<typename T>
             void push_args(T&& arg, boost::json::array& obj_arr)
             {
-                using no_ref_t = std::remove_cv_t<std::remove_reference_t<T>>;
-
                 value_t tmp{};
                 push_arg(std::forward<T>(arg), tmp);
                 obj_arr.push_back(std::move(tmp));
@@ -229,8 +227,6 @@ namespace adapters
             [[nodiscard]] std::remove_cv_t<std::remove_reference_t<T>> parse_args(
                 const value_t& arg_arr, unsigned& index)
             {
-                using no_ref_t = std::remove_cv_t<std::remove_reference_t<T>>;
-
                 if (index >= arg_arr.as_array().size())
                 {
                     throw exceptions::function_mismatch("Argument count mismatch");

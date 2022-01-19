@@ -117,8 +117,6 @@ namespace adapters
             template<typename T>
             void push_args(T&& arg, njson_t& obj_arr)
             {
-                using no_ref_t = std::remove_cv_t<std::remove_reference_t<T>>;
-
                 njson_t tmp{};
                 push_arg(std::forward<T>(arg), tmp);
                 obj_arr.push_back(std::move(tmp));
@@ -175,8 +173,6 @@ namespace adapters
             [[nodiscard]] std::remove_cv_t<std::remove_reference_t<T>> parse_args(
                 const njson_t& arg_arr, unsigned& index)
             {
-                using no_ref_t = std::remove_cv_t<std::remove_reference_t<T>>;
-
                 if (index >= arg_arr.size())
                 {
                     throw exceptions::function_mismatch("Argument count mismatch");

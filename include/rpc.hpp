@@ -87,16 +87,16 @@ namespace exceptions
         ServerReceive,
     };
 
-    class rpc_exception : public std::exception
+    class rpc_exception : public std::runtime_error
     {
     public:
         explicit rpc_exception(const std::string& mesg, Type type) noexcept
-            : std::exception(mesg.c_str()), m_type(type)
+            : std::runtime_error(mesg), m_type(type)
         {
         }
 
         explicit rpc_exception(const char* mesg, Type type) noexcept
-            : std::exception(mesg), m_type(type)
+            : std::runtime_error(mesg), m_type(type)
         {
         }
 
@@ -381,7 +381,8 @@ namespace details
         using expander = int[];
         std::ignore = expander{ 0,
             (
-                (void)[](auto&& x, auto&& y) {
+                (void)[](auto&& x, auto&& y)
+                {
                     if constexpr (
                         std::is_reference_v<
                             decltype(x)> && !std::is_const_v<std::remove_reference_t<decltype(x)>>)
@@ -439,9 +440,6 @@ namespace details
             {
                 using namespace exceptions;
 
-                case Type::None:
-                    throw rpc_exception(m_err_mesg, Type::None);
-
                 case Type::FuncNotFound:
                     throw function_not_found(m_err_mesg);
 
@@ -456,6 +454,22 @@ namespace details
 
                 case Type::SignatureMismatch:
                     throw function_mismatch(m_err_mesg);
+
+                case Type::ClientSend:
+                    throw client_send_error(m_err_mesg);
+
+                case Type::ClientReceive:
+                    throw client_receive_error(m_err_mesg);
+
+                case Type::ServerSend:
+                    throw server_send_error(m_err_mesg);
+
+                case Type::ServerReceive:
+                    throw server_receive_error(m_err_mesg);
+
+                case Type::None:
+                default:
+                    throw rpc_exception(m_err_mesg, Type::None);
             }
         }
 

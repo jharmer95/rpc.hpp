@@ -236,8 +236,6 @@ namespace adapters
             template<typename T>
             void push_args(T&& arg, value_t& obj_arr, ::rapidjson::MemoryPoolAllocator<>& alloc)
             {
-                using no_ref_t = std::remove_cv_t<std::remove_reference_t<T>>;
-
                 value_t tmp{};
                 push_arg(std::forward<T>(arg), tmp, alloc);
                 obj_arr.PushBack(std::move(tmp), alloc);
@@ -313,8 +311,6 @@ namespace adapters
             [[nodiscard]] std::remove_cv_t<std::remove_reference_t<T>> parse_args(
                 const value_t& arg_arr, unsigned& index)
             {
-                using no_ref_t = std::remove_cv_t<std::remove_reference_t<T>>;
-
                 if (arg_arr.IsArray() && index >= arg_arr.GetArray().Size())
                 {
                     throw exceptions::function_mismatch("Argument count mismatch");
