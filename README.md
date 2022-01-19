@@ -26,6 +26,17 @@ features.
     - [Boost.JSON](https://github.com/boostorg/json)
     - [bitsery](https://github.com/fraillt/bitsery)
 
+## Known Limitations
+
+- Functions with default arguments _**should not**_ be used with remote procedure calls as the default argument(s) must be provided each time anyway
+- Function overloads _**will not**_ work across an RPC boundary as the server will have an ambiguous call
+  - This includes non-explicit template functions (see [examples](examples) for the syntax for calling template functions remotely)
+- Not (statically) type-safe across the RPC boundary
+  - This is the nature of a dynamic system like remote procedure calls
+  - Return type and explicit parameters must be specified at callsite
+  - Exceptions will be able to catch function signature mismatches
+  - Function signatures can be provided via a shared header to allow for compile-time type-checking
+
 ## Documentation
 
 See Doxygen docs [here](https://jharmer95.github.io/rpc.hpp/).
