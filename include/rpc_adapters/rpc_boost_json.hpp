@@ -264,7 +264,7 @@ template<typename R, typename... Args>
     object_t obj{};
     obj["func_name"] = pack.get_func_name();
 
-    auto& args = ret_j["args"].emplace_array();
+    auto& args = obj["args"].emplace_array();
     args.reserve(sizeof...(Args));
 
     const auto& argTup = pack.get_args();
@@ -286,7 +286,7 @@ template<typename R, typename... Args>
         }
     }
 
-    return ret_j;
+    return obj;
 }
 
 template<>
@@ -318,7 +318,7 @@ template<typename R, typename... Args>
     }
     else
     {
-        if (obj.contains("result") && !obj["result"].is_null())
+        if (obj.contains("result") && !obj.at("result").is_null())
         {
             return ::rpc::details::packed_func<R, Args...>(obj.at("func_name").get_string().c_str(),
                 adapters::boost_json::details::parse_arg<R>(obj.at("result")),
@@ -331,7 +331,7 @@ template<typename R, typename... Args>
 
         if (obj.contains("except_type"))
         {
-            pack.set_exception(obj.at("err_mesg").get_string.c_str(),
+            pack.set_exception(obj.at("err_mesg").get_string().c_str(),
                 static_cast<exceptions::Type>(obj.at("except_type").get_int64()));
         }
 

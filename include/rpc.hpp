@@ -1,7 +1,7 @@
 ///@file rpc.hpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Header-only library for serialized RPC usage
-///@version 0.6.2
+///@version 0.7.1
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -71,6 +71,9 @@
 ///@brief Top-level namespace for rpc.hpp classes and functions
 namespace rpc
 {
+///@brief Array containing the version information for rpc.hpp
+static constexpr unsigned version[]{ 0, 7, 1 };
+
 namespace exceptions
 {
     enum class Type
