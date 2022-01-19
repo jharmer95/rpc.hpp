@@ -61,38 +61,38 @@ class RpcServer : public rpc::server_interface<njson_adapter>
 {
 public:
     RpcServer(const char* address)
-	{
-	    // initialize server...
-	}
+    {
+        // initialize server...
+    }
 
-	// ...
+    // ...
 
-	void Run()
-	{
-	    std::string data;
+    void Run()
+    {
+        std::string data;
 
-		// Get data from client...
+        // Get data from client...
 
-		dispatch(data);
+        dispatch(data);
 
-		// Send data back to client...
-	}
+        // Send data back to client...
+    }
 
 private:
     void dispatch_impl(njson& serial_obj) override
-	{
-	   RPC_DEFAULT_DISPATCH(Add, AppendStr)
-	}
+    {
+       RPC_DEFAULT_DISPATCH(Add, AppendStr)
+    }
 };
 
 int main()
 {
-	RpcServer my_server{"address"};
+    RpcServer my_server{"address"};
 
-	while (true)
-	{
-		my_server.Run();
-	}
+    while (true)
+    {
+        my_server.Run();
+    }
 }
 ```
 
@@ -112,11 +112,11 @@ class RpcClient : public rpc::client_interface<njson_adapter>
 {
 public:
     RpcClient(const char* address)
-	{
-		// initialize client...
-	}
+    {
+        // initialize client...
+    }
 
-	// ...
+    // ...
 
 private:
     void send(const std::string& mesg) override
@@ -124,7 +124,7 @@ private:
         // Send mesg to server...
     }
 
-	void send(std::string&& mesg) override
+    void send(std::string&& mesg) override
     {
         // Send mesg to server...
     }
@@ -137,13 +137,13 @@ private:
 
 int main()
 {
-	RpcClient my_client{ "address" };
+    RpcClient my_client{ "address" };
 
-	const auto result = my_client.template call_func<int>("Sum", 1, 2);
-	assert(result == 3);
+    const auto result = my_client.template call_func<int>("Sum", 1, 2);
+    assert(result == 3);
 
-	std::string str{ "Hello" };
-	my_client.call_func("AppendStr", str, " world!");
-	assert(str == "Hello world!");
+    std::string str{ "Hello" };
+    my_client.call_func("AppendStr", str, " world!");
+    assert(str == "Hello world!");
 }
 ```
