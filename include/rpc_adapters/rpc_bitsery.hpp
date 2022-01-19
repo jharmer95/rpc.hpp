@@ -456,6 +456,7 @@ template<typename R, typename... Args>
                 throw rpc::exceptions::deserialization_error(
                     "Bitsery deserialization failed due to an invalid pointer");
 
+            case bitsery::ReaderError::NoError:
             default:
                 throw rpc::exceptions::deserialization_error(
                     "Bitsery deserialization failed due to extra data on the end");
