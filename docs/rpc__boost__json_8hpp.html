@@ -22,7 +22,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">rpc.hpp
-   &#160;<span id="projectnumber">0.6.2</span>
+   &#160;<span id="projectnumber">0.7.1</span>
    </div>
    <div id="projectbrief">Simple RPC Header-Only Library</div>
   </td>
@@ -86,18 +86,18 @@ Include dependency graph for rpc_boost_json.hpp:</div>
 <div class="dyncontent">
 <div class="center"><img src="rpc__boost__json_8hpp__incl.png" border="0" usemap="#ainclude_2rpc__adapters_2rpc__boost__json_8hpp" alt=""/></div>
 <map name="ainclude_2rpc__adapters_2rpc__boost__json_8hpp" id="ainclude_2rpc__adapters_2rpc__boost__json_8hpp">
-<area shape="rect" title="Implementation of adapting Boost.JSON (https://github.com/boostorg/json)" alt="" coords="307,5,464,47"/>
-<area shape="rect" href="rpc_8hpp.html" title="Header&#45;only library for serialized RPC usage." alt="" coords="344,95,427,121"/>
-<area shape="rect" title=" " alt="" coords="5,169,75,196"/>
-<area shape="rect" title=" " alt="" coords="451,95,591,121"/>
-<area shape="rect" title=" " alt="" coords="99,169,170,196"/>
-<area shape="rect" title=" " alt="" coords="195,169,269,196"/>
-<area shape="rect" title=" " alt="" coords="294,169,381,196"/>
-<area shape="rect" title=" " alt="" coords="405,169,464,196"/>
-<area shape="rect" title=" " alt="" coords="489,169,543,196"/>
-<area shape="rect" title=" " alt="" coords="567,169,659,196"/>
-<area shape="rect" title=" " alt="" coords="683,169,743,196"/>
-<area shape="rect" title=" " alt="" coords="767,169,891,196"/>
+<area shape="rect" title="Implementation of adapting Boost.JSON (https://github.com/boostorg/json)" alt="" coords="288,5,431,47"/>
+<area shape="rect" href="rpc_8hpp.html" title="Header&#45;only library for serialized RPC usage." alt="" coords="321,95,398,121"/>
+<area shape="rect" title=" " alt="" coords="5,169,71,196"/>
+<area shape="rect" title=" " alt="" coords="423,95,552,121"/>
+<area shape="rect" title=" " alt="" coords="95,169,159,196"/>
+<area shape="rect" title=" " alt="" coords="183,169,250,196"/>
+<area shape="rect" title=" " alt="" coords="275,169,353,196"/>
+<area shape="rect" title=" " alt="" coords="377,169,432,196"/>
+<area shape="rect" title=" " alt="" coords="457,169,507,196"/>
+<area shape="rect" title=" " alt="" coords="531,169,614,196"/>
+<area shape="rect" title=" " alt="" coords="638,169,691,196"/>
+<area shape="rect" title=" " alt="" coords="716,169,827,196"/>
 </map>
 </div>
 </div>
@@ -123,14 +123,29 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>rpc::adapters::boost
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a6cc821480e143aa3f34e413744be55ff"><td class="memTemplParams" colspan="2"><a id="a6cc821480e143aa3f34e413744be55ff"></a>
+<tr class="memitem:a619d83fe51a1b4c81303b848c7d1e0d6"><td class="memTemplParams" colspan="2"><a id="a619d83fe51a1b4c81303b848c7d1e0d6"></a>
 template&lt;typename T &gt; </td></tr>
-<tr class="memitem:a6cc821480e143aa3f34e413744be55ff"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>rpc::adapters::boost_json::details::push_arg</b> (T &amp;&amp;arg, boost::json::array &amp;arg_arr)</td></tr>
-<tr class="separator:a6cc821480e143aa3f34e413744be55ff"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afd91e5f57ad11a5a8ae6a6c880d06998"><td class="memTemplParams" colspan="2"><a id="afd91e5f57ad11a5a8ae6a6c880d06998"></a>
+<tr class="memitem:a619d83fe51a1b4c81303b848c7d1e0d6"><td class="memTemplItemLeft" align="right" valign="top">constexpr bool&#160;</td><td class="memTemplItemRight" valign="bottom"><b>rpc::adapters::boost_json::details::validate_arg</b> (const value_t &amp;arg)</td></tr>
+<tr class="separator:a619d83fe51a1b4c81303b848c7d1e0d6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a95574907e2e04cceb0035d14761d1850"><td class="memItemLeft" align="right" valign="top"><a id="a95574907e2e04cceb0035d14761d1850"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>rpc::adapters::boost_json::details::throw_mismatch</b> (std::string &amp;&amp;expect_type, const value_t &amp;obj) noexcept(false)</td></tr>
+<tr class="separator:a95574907e2e04cceb0035d14761d1850"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a213169504ed7e8b5bcc1791fb2f062eb"><td class="memTemplParams" colspan="2"><a id="a213169504ed7e8b5bcc1791fb2f062eb"></a>
 template&lt;typename T &gt; </td></tr>
-<tr class="memitem:afd91e5f57ad11a5a8ae6a6c880d06998"><td class="memTemplItemLeft" align="right" valign="top">std::remove_cv_t&lt; std::remove_reference_t&lt; T &gt; &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>rpc::adapters::boost_json::details::parse_arg</b> (const value_t &amp;arg_arr, unsigned &amp;index)</td></tr>
-<tr class="separator:afd91e5f57ad11a5a8ae6a6c880d06998"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a213169504ed7e8b5bcc1791fb2f062eb"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>rpc::adapters::boost_json::details::push_args</b> (T &amp;&amp;arg, boost::json::array &amp;obj)</td></tr>
+<tr class="separator:a213169504ed7e8b5bcc1791fb2f062eb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a12c544901ea3ee67f139f9b29779b660"><td class="memTemplParams" colspan="2"><a id="a12c544901ea3ee67f139f9b29779b660"></a>
+template&lt;typename T &gt; </td></tr>
+<tr class="memitem:a12c544901ea3ee67f139f9b29779b660"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>rpc::adapters::boost_json::details::push_arg</b> (T &amp;&amp;arg, value_t &amp;obj)</td></tr>
+<tr class="separator:a12c544901ea3ee67f139f9b29779b660"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a74cc774ac875426104ebdb503e9aad5d"><td class="memTemplParams" colspan="2"><a id="a74cc774ac875426104ebdb503e9aad5d"></a>
+template&lt;typename T &gt; </td></tr>
+<tr class="memitem:a74cc774ac875426104ebdb503e9aad5d"><td class="memTemplItemLeft" align="right" valign="top">std::remove_cv_t&lt; std::remove_reference_t&lt; T &gt; &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>rpc::adapters::boost_json::details::parse_args</b> (const value_t &amp;arg_arr, unsigned &amp;index)</td></tr>
+<tr class="separator:a74cc774ac875426104ebdb503e9aad5d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6beb3ce55da5600c7abcc1ed360615fb"><td class="memTemplParams" colspan="2"><a id="a6beb3ce55da5600c7abcc1ed360615fb"></a>
+template&lt;typename T &gt; </td></tr>
+<tr class="memitem:a6beb3ce55da5600c7abcc1ed360615fb"><td class="memTemplItemLeft" align="right" valign="top">std::remove_cv_t&lt; std::remove_reference_t&lt; T &gt; &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>rpc::adapters::boost_json::details::parse_arg</b> (const value_t &amp;arg)</td></tr>
+<tr class="separator:a6beb3ce55da5600c7abcc1ed360615fb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Implementation of adapting Boost.JSON (<a href="https://github.com/boostorg/json">https://github.com/boostorg/json</a>) </p>

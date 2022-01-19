@@ -22,7 +22,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">rpc.hpp
-   &#160;<span id="projectnumber">0.6.2</span>
+   &#160;<span id="projectnumber">0.7.1</span>
    </div>
    <div id="projectbrief">Simple RPC Header-Only Library</div>
   </td>
@@ -92,12 +92,9 @@ rpc::details::packed_func&lt; R, Args... &gt;&#160;</td><td class="memItemRight"
 <tr class="memitem:a4a58dfd6b5cfc2b2f7c991ec881383cf"><td class="memItemLeft" align="right" valign="top"><a id="a4a58dfd6b5cfc2b2f7c991ec881383cf"></a>
 std::string&#160;</td><td class="memItemRight" valign="bottom"><b>get_func_name</b> (const adapters::bitsery::bit_buffer &amp;serial_obj)</td></tr>
 <tr class="separator:a4a58dfd6b5cfc2b2f7c991ec881383cf"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae88ad6d7cf4fb4954268882ccd0093da"><td class="memItemLeft" align="right" valign="top"><a id="ae88ad6d7cf4fb4954268882ccd0093da"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>set_err_mesg</b> (adapters::bitsery::bit_buffer &amp;serial_obj, const std::string &amp;mesg)</td></tr>
-<tr class="separator:ae88ad6d7cf4fb4954268882ccd0093da"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a169368b57ef2d68a238cffa61588dbaf"><td class="memItemLeft" align="right" valign="top"><a id="a169368b57ef2d68a238cffa61588dbaf"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>set_err_mesg</b> (adapters::bitsery::bit_buffer &amp;serial_obj, std::string &amp;&amp;mesg)</td></tr>
-<tr class="separator:a169368b57ef2d68a238cffa61588dbaf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9a168ee057d6b1cd6c91f1cfdb249d0d"><td class="memItemLeft" align="right" valign="top"><a id="a9a168ee057d6b1cd6c91f1cfdb249d0d"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>set_exception</b> (adapters::bitsery::bit_buffer &amp;serial_obj, const <a class="el" href="classrpc_1_1exceptions_1_1rpc__exception.html">rpc::exceptions::rpc_exception</a> &amp;ex)</td></tr>
+<tr class="separator:a9a168ee057d6b1cd6c91f1cfdb249d0d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4ff0043acec419a3e29d5546eda5a46f"><td class="memItemLeft" align="right" valign="top"><a id="a4ff0043acec419a3e29d5546eda5a46f"></a>
 adapters::boost_json::value_t&#160;</td><td class="memItemRight" valign="bottom"><b>serialize_pack</b> (const ::rpc::details::packed_func&lt; R, Args... &gt; &amp;pack)</td></tr>
 <tr class="separator:a4ff0043acec419a3e29d5546eda5a46f"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -107,12 +104,9 @@ rpc::details::packed_func&lt; R, Args... &gt;&#160;</td><td class="memItemRight"
 <tr class="memitem:a2cc8a5b07313bac9aeac331aa2b8fc3e"><td class="memItemLeft" align="right" valign="top"><a id="a2cc8a5b07313bac9aeac331aa2b8fc3e"></a>
 std::string&#160;</td><td class="memItemRight" valign="bottom"><b>get_func_name</b> (const adapters::boost_json::value_t &amp;serial_obj)</td></tr>
 <tr class="separator:a2cc8a5b07313bac9aeac331aa2b8fc3e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6d83bc7911c44ccd8250d55120bff46c"><td class="memItemLeft" align="right" valign="top"><a id="a6d83bc7911c44ccd8250d55120bff46c"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>set_err_mesg</b> (adapters::boost_json::value_t &amp;serial_obj, const std::string &amp;mesg)</td></tr>
-<tr class="separator:a6d83bc7911c44ccd8250d55120bff46c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a16b94d2ae63bfbfc11d92d938d6564fc"><td class="memItemLeft" align="right" valign="top"><a id="a16b94d2ae63bfbfc11d92d938d6564fc"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>set_err_mesg</b> (adapters::boost_json::value_t &amp;serial_obj, std::string &amp;&amp;mesg)</td></tr>
-<tr class="separator:a16b94d2ae63bfbfc11d92d938d6564fc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae0ee5be2ef4eb8a145c243f9d68afd3b"><td class="memItemLeft" align="right" valign="top"><a id="ae0ee5be2ef4eb8a145c243f9d68afd3b"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>set_exception</b> (adapters::boost_json::value_t &amp;serial_obj, const <a class="el" href="classrpc_1_1exceptions_1_1rpc__exception.html">rpc::exceptions::rpc_exception</a> &amp;ex)</td></tr>
+<tr class="separator:ae0ee5be2ef4eb8a145c243f9d68afd3b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afa86df614f1790688bcffa87c2cd559f"><td class="memItemLeft" align="right" valign="top"><a id="afa86df614f1790688bcffa87c2cd559f"></a>
 adapters::njson::njson_t&#160;</td><td class="memItemRight" valign="bottom"><b>serialize_pack</b> (const ::rpc::details::packed_func&lt; R, Args... &gt; &amp;pack)</td></tr>
 <tr class="separator:afa86df614f1790688bcffa87c2cd559f"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -122,12 +116,9 @@ rpc::details::packed_func&lt; R, Args... &gt;&#160;</td><td class="memItemRight"
 <tr class="memitem:a50af34bc220985a0beb99fba99a96b05"><td class="memItemLeft" align="right" valign="top"><a id="a50af34bc220985a0beb99fba99a96b05"></a>
 std::string&#160;</td><td class="memItemRight" valign="bottom"><b>get_func_name</b> (const adapters::njson::njson_t &amp;serial_obj)</td></tr>
 <tr class="separator:a50af34bc220985a0beb99fba99a96b05"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afc4bc50b74ef510c5195e9eac549ade9"><td class="memItemLeft" align="right" valign="top"><a id="afc4bc50b74ef510c5195e9eac549ade9"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>set_err_mesg</b> (adapters::njson::njson_t &amp;serial_obj, const std::string &amp;mesg)</td></tr>
-<tr class="separator:afc4bc50b74ef510c5195e9eac549ade9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2107b7fb3af2848f36028a5efeff5d9d"><td class="memItemLeft" align="right" valign="top"><a id="a2107b7fb3af2848f36028a5efeff5d9d"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>set_err_mesg</b> (adapters::njson::njson_t &amp;serial_obj, std::string &amp;&amp;mesg)</td></tr>
-<tr class="separator:a2107b7fb3af2848f36028a5efeff5d9d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a389ca2c5187c7d1c8be82bb5f8dde7a2"><td class="memItemLeft" align="right" valign="top"><a id="a389ca2c5187c7d1c8be82bb5f8dde7a2"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>set_exception</b> (adapters::njson::njson_t &amp;serial_obj, const <a class="el" href="classrpc_1_1exceptions_1_1rpc__exception.html">rpc::exceptions::rpc_exception</a> &amp;ex)</td></tr>
+<tr class="separator:a389ca2c5187c7d1c8be82bb5f8dde7a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad8968d80a89ced669e572eb516eba203"><td class="memItemLeft" align="right" valign="top"><a id="ad8968d80a89ced669e572eb516eba203"></a>
 adapters::rapidjson::doc_t&#160;</td><td class="memItemRight" valign="bottom"><b>serialize_pack</b> (const ::rpc::details::packed_func&lt; R, Args... &gt; &amp;pack)</td></tr>
 <tr class="separator:ad8968d80a89ced669e572eb516eba203"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -137,12 +128,9 @@ rpc::details::packed_func&lt; R, Args... &gt;&#160;</td><td class="memItemRight"
 <tr class="memitem:a0df68377a0ea22d2cdda2d917f5dd367"><td class="memItemLeft" align="right" valign="top"><a id="a0df68377a0ea22d2cdda2d917f5dd367"></a>
 std::string&#160;</td><td class="memItemRight" valign="bottom"><b>get_func_name</b> (const adapters::rapidjson::doc_t &amp;serial_obj)</td></tr>
 <tr class="separator:a0df68377a0ea22d2cdda2d917f5dd367"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a86e16cdf3ac4da3637f583d00793f4f3"><td class="memItemLeft" align="right" valign="top"><a id="a86e16cdf3ac4da3637f583d00793f4f3"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>set_err_mesg</b> (adapters::rapidjson::doc_t &amp;serial_obj, const std::string &amp;mesg)</td></tr>
-<tr class="separator:a86e16cdf3ac4da3637f583d00793f4f3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aeaca612b1adafb28c804a9faddaea229"><td class="memItemLeft" align="right" valign="top"><a id="aeaca612b1adafb28c804a9faddaea229"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>set_err_mesg</b> (adapters::rapidjson::doc_t &amp;serial_obj, std::string &amp;&amp;mesg)</td></tr>
-<tr class="separator:aeaca612b1adafb28c804a9faddaea229"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a56569942c0a2633734f0f31d5aa831eb"><td class="memItemLeft" align="right" valign="top"><a id="a56569942c0a2633734f0f31d5aa831eb"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>set_exception</b> (adapters::rapidjson::doc_t &amp;serial_obj, const <a class="el" href="classrpc_1_1exceptions_1_1rpc__exception.html">rpc::exceptions::rpc_exception</a> &amp;ex)</td></tr>
+<tr class="separator:a56569942c0a2633734f0f31d5aa831eb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
@@ -157,12 +145,9 @@ Static Public Member Functions</h2></td></tr>
 <tr class="memitem:a97335816daece357925dadcd95ebbfde"><td class="memItemLeft" align="right" valign="top">static std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrpc_1_1pack__adapter.html#a97335816daece357925dadcd95ebbfde">get_func_name</a> (const typename Serial::serial_t &amp;serial_obj)</td></tr>
 <tr class="memdesc:a97335816daece357925dadcd95ebbfde"><td class="mdescLeft">&#160;</td><td class="mdescRight">Extracts the function name of a serialized function call.  <a href="classrpc_1_1pack__adapter.html#a97335816daece357925dadcd95ebbfde">More...</a><br /></td></tr>
 <tr class="separator:a97335816daece357925dadcd95ebbfde"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a44bcb2451187823a88c00c01e9a45a3f"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrpc_1_1pack__adapter.html#a44bcb2451187823a88c00c01e9a45a3f">set_err_mesg</a> (typename Serial::serial_t &amp;serial_obj, const std::string &amp;mesg)</td></tr>
-<tr class="memdesc:a44bcb2451187823a88c00c01e9a45a3f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the error message for the serialized function call.  <a href="classrpc_1_1pack__adapter.html#a44bcb2451187823a88c00c01e9a45a3f">More...</a><br /></td></tr>
-<tr class="separator:a44bcb2451187823a88c00c01e9a45a3f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8bb55296f424a1a25d84c824db71aef7"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrpc_1_1pack__adapter.html#a8bb55296f424a1a25d84c824db71aef7">set_err_mesg</a> (typename Serial::serial_t &amp;serial_obj, std::string &amp;&amp;mesg)</td></tr>
-<tr class="memdesc:a8bb55296f424a1a25d84c824db71aef7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the error message for the serialized function call.  <a href="classrpc_1_1pack__adapter.html#a8bb55296f424a1a25d84c824db71aef7">More...</a><br /></td></tr>
-<tr class="separator:a8bb55296f424a1a25d84c824db71aef7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a21a9f6cbd9008b4cf3a971eeb59254d2"><td class="memItemLeft" align="right" valign="top"><a id="a21a9f6cbd9008b4cf3a971eeb59254d2"></a>
+static void&#160;</td><td class="memItemRight" valign="bottom"><b>set_exception</b> (typename Serial::serial_t &amp;serial_obj, const <a class="el" href="classrpc_1_1exceptions_1_1rpc__exception.html">exceptions::rpc_exception</a> &amp;ex)</td></tr>
+<tr class="separator:a21a9f6cbd9008b4cf3a971eeb59254d2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><h3>template&lt;typename Serial&gt;<br />
@@ -302,100 +287,6 @@ template&lt;typename R , typename... Args&gt; </div>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Serial::serial_t Serial representation of the packed_func </dd></dl>
-
-</div>
-</div>
-<a id="a44bcb2451187823a88c00c01e9a45a3f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a44bcb2451187823a88c00c01e9a45a3f">&#9670;&nbsp;</a></span>set_err_mesg() <span class="overload">[1/2]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename Serial &gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">static void <a class="el" href="classrpc_1_1pack__adapter.html">rpc::pack_adapter</a>&lt; Serial &gt;::set_err_mesg </td>
-          <td>(</td>
-          <td class="paramtype">typename Serial::serial_t &amp;&#160;</td>
-          <td class="paramname"><em>serial_obj</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const std::string &amp;&#160;</td>
-          <td class="paramname"><em>mesg</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Sets the error message for the serialized function call. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">serial_obj</td><td>Serial object to be modified </td></tr>
-    <tr><td class="paramname">mesg</td><td>String to set as the error message </td></tr>
-  </table>
-  </dd>
-</dl>
-
-</div>
-</div>
-<a id="a8bb55296f424a1a25d84c824db71aef7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8bb55296f424a1a25d84c824db71aef7">&#9670;&nbsp;</a></span>set_err_mesg() <span class="overload">[2/2]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename Serial &gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">static void <a class="el" href="classrpc_1_1pack__adapter.html">rpc::pack_adapter</a>&lt; Serial &gt;::set_err_mesg </td>
-          <td>(</td>
-          <td class="paramtype">typename Serial::serial_t &amp;&#160;</td>
-          <td class="paramname"><em>serial_obj</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">std::string &amp;&amp;&#160;</td>
-          <td class="paramname"><em>mesg</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Sets the error message for the serialized function call. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">serial_obj</td><td>Serial object to be modified </td></tr>
-    <tr><td class="paramname">mesg</td><td>String to set as the error message </td></tr>
-  </table>
-  </dd>
-</dl>
 
 </div>
 </div>

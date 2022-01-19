@@ -1,4 +1,5 @@
 var searchData=
 [
-  ['get_5ffunc_5fname_7',['get_func_name',['../classrpc_1_1pack__adapter.html#a97335816daece357925dadcd95ebbfde',1,'rpc::pack_adapter']]]
+  ['function_5fmismatch_10',['function_mismatch',['../classrpc_1_1exceptions_1_1function__mismatch.html',1,'rpc::exceptions']]],
+  ['function_5fnot_5ffound_11',['function_not_found',['../classrpc_1_1exceptions_1_1function__not__found.html',1,'rpc::exceptions']]]
 ];
