@@ -117,18 +117,19 @@ public:
 
     void Run()
     {
+        static constexpr auto BUFFER_SZ = 64U * 1024UL;
+        std::array<uint8_t, BUFFER_SZ> data{};
+
         while (RUNNING)
         {
             tcp::socket sock = m_accept.accept();
-            constexpr auto BUFFER_SZ = 64U * 1024UL;
-            const auto data = std::make_unique<uint8_t[]>(BUFFER_SZ);
 
             try
             {
                 while (RUNNING)
                 {
                     asio::error_code error;
-                    const size_t len = sock.read_some(asio::buffer(data.get(), BUFFER_SZ), error);
+                    const size_t len = sock.read_some(asio::buffer(data.data(), BUFFER_SZ), error);
 
                     if (error == asio::error::eof)
                     {
@@ -141,7 +142,7 @@ public:
                         throw asio::system_error(error);
                     }
 
-                    typename Serial::bytes_t bytes{ &data[0], &data[len] };
+                    typename Serial::bytes_t bytes{ std::begin(data), std::begin(data) + len };
                     this->dispatch(bytes);
 
                     write(sock, asio::buffer(bytes, bytes.size()));

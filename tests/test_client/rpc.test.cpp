@@ -157,7 +157,7 @@ TEST_CASE_TEMPLATE("StrLen", TestType, RPC_TEST_TYPES)
 {
     auto& client = GetClient<TestType>();
 
-    constexpr auto test_str_len = 2048U;
+    static constexpr auto test_str_len = 2048U;
     const std::string test_str(test_str_len, 'f');
     const auto result = client.template call_func<size_t>("StrLen", test_str);
 
@@ -195,8 +195,8 @@ TEST_CASE_TEMPLATE("AddOneToEachRef", TestType, RPC_TEST_TYPES)
 
 TEST_CASE_TEMPLATE("Fibonacci", TestType, RPC_TEST_TYPES)
 {
-    constexpr uint64_t expected = 10946;
-    constexpr uint64_t input = 20;
+    static constexpr uint64_t expected = 10946;
+    static constexpr uint64_t input = 20;
     auto& client = GetClient<TestType>();
 
     const auto test = client.template call_func<uint64_t>("Fibonacci", input);
@@ -206,7 +206,7 @@ TEST_CASE_TEMPLATE("Fibonacci", TestType, RPC_TEST_TYPES)
 
 TEST_CASE_TEMPLATE("FibonacciRef", TestType, RPC_TEST_TYPES)
 {
-    constexpr uint64_t expected = 10946;
+    static constexpr uint64_t expected = 10946;
     auto& client = GetClient<TestType>();
 
     uint64_t test = 20;
@@ -217,7 +217,7 @@ TEST_CASE_TEMPLATE("FibonacciRef", TestType, RPC_TEST_TYPES)
 
 TEST_CASE_TEMPLATE("StdDev", TestType, RPC_TEST_TYPES)
 {
-    constexpr double expected = 3313.695594785;
+    static constexpr double expected = 3313.695594785;
     auto& client = GetClient<TestType>();
 
     const auto test = client.template call_func<double>("StdDev", 55.65, 125.325, 552.125, 12.767,
@@ -228,7 +228,7 @@ TEST_CASE_TEMPLATE("StdDev", TestType, RPC_TEST_TYPES)
 
 TEST_CASE_TEMPLATE("SquareRootRef", TestType, RPC_TEST_TYPES)
 {
-    constexpr double expected = 313.2216436152;
+    static constexpr double expected = 313.2216436152;
     auto& client = GetClient<TestType>();
 
     double n1 = 55.65;
@@ -251,7 +251,7 @@ TEST_CASE_TEMPLATE("SquareRootRef", TestType, RPC_TEST_TYPES)
 
 TEST_CASE_TEMPLATE("AverageContainer<double>", TestType, RPC_TEST_TYPES)
 {
-    constexpr double expected = 1731.8635996333;
+    static constexpr double expected = 1731.8635996333;
     auto& client = GetClient<TestType>();
 
     const std::vector<double> vec{ 55.65, 125.325, 552.125, 12.767, 2599.6, 1245.125663, 9783.49,

@@ -129,7 +129,7 @@ For building the unit tests, there are additional libraries required:
 
 Building the benchmarks also requires one library:
 
-- [catch2](https://github.com/catchorg/Catch2) >= 2.11 < 3.0
+- [nanobench](https://github.com/martinus/nanobench) >= 4.3.0
 
 These dependencies can be installed in one of three ways:
 
