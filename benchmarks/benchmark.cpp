@@ -272,7 +272,7 @@ TEST_CASE("By Reference (complex)")
             GetClient<boost_json_adapter>().call_func("HashComplexRef", cx, test);
         });
 
-    REQUIRE_THAT(expected == test);
+    REQUIRE(expected == test);
 #endif
 
 #if defined(RPC_HPP_ENABLE_BITSERY)
