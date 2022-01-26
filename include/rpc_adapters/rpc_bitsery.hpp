@@ -237,7 +237,7 @@ namespace adapters
             // nodiscard because a potentially expensive copy and allocation is being done
             template<typename R, typename... Args>
             [[nodiscard]] pack_helper<R, Args...> to_helper(
-                const ::rpc_hpp::details::packed_func<R, Args...>& pack)
+                const rpc_hpp::details::packed_func<R, Args...>& pack)
             {
                 pack_helper<R, Args...> helper;
 
@@ -276,7 +276,7 @@ namespace adapters
 
             // nodiscard because a potentially expensive copy and allocation is being done
             template<typename R, typename... Args>
-            [[nodiscard]] ::rpc_hpp::details::packed_func<R, Args...> from_helper(
+            [[nodiscard]] rpc_hpp::details::packed_func<R, Args...> from_helper(
                 pack_helper<R, Args...> helper)
             {
                 if constexpr (std::is_void_v<R>)
@@ -288,7 +288,7 @@ namespace adapters
                         };
                     }
 
-                    ::rpc_hpp::details::packed_func<void, Args...> pack{ std::move(helper.func_name),
+                    rpc_hpp::details::packed_func<void, Args...> pack{ std::move(helper.func_name),
                         std::move(helper.args) };
 
                     pack.set_exception(std::move(helper.err_mesg),
@@ -299,11 +299,12 @@ namespace adapters
                 {
                     if (helper.err_mesg.empty())
                     {
-                        return ::rpc_hpp::details::packed_func<R, Args...>{ std::move(helper.func_name),
+                        return ::rpc_hpp::details::packed_func<R, Args...>{ std::move(
+                                                                                helper.func_name),
                             std::move(helper.result), std::move(helper.args) };
                     }
 
-                    ::rpc_hpp::details::packed_func<R, Args...> pack{ std::move(helper.func_name),
+                    rpc_hpp::details::packed_func<R, Args...> pack{ std::move(helper.func_name),
                         std::nullopt, std::move(helper.args) };
 
                     pack.set_exception(std::move(helper.err_mesg),
@@ -407,7 +408,7 @@ template<>
 template<>
 template<typename R, typename... Args>
 [[nodiscard]] adapters::bitsery::bit_buffer pack_adapter<adapters::bitsery_adapter>::serialize_pack(
-    const ::rpc_hpp::details::packed_func<R, Args...>& pack)
+    const details::packed_func<R, Args...>& pack)
 {
     using namespace adapters::bitsery;
 
@@ -425,7 +426,7 @@ template<typename R, typename... Args>
 
 template<>
 template<typename R, typename... Args>
-[[nodiscard]] ::rpc_hpp::details::packed_func<R, Args...> pack_adapter<
+[[nodiscard]] details::packed_func<R, Args...> pack_adapter<
     adapters::bitsery_adapter>::deserialize_pack(const adapters::bitsery::bit_buffer& serial_obj)
 {
     using namespace adapters::bitsery;
@@ -440,25 +441,25 @@ template<typename R, typename... Args>
         switch (error)
         {
             case bitsery::ReaderError::ReadingError:
-                throw rpc_hpp::exceptions::deserialization_error(
+                throw exceptions::deserialization_error(
                     "Bitsery deserialization failed due to a reading error");
 
             case bitsery::ReaderError::DataOverflow:
-                throw rpc_hpp::exceptions::function_mismatch(
+                throw exceptions::function_mismatch(
                     "Bitsery deserialization failed due to data overflow (likely mismatched "
                     "function signature)");
 
             case bitsery::ReaderError::InvalidData:
-                throw rpc_hpp::exceptions::deserialization_error(
+                throw exceptions::deserialization_error(
                     "Bitsery deserialization failed due to a invalid data");
 
             case bitsery::ReaderError::InvalidPointer:
-                throw rpc_hpp::exceptions::deserialization_error(
+                throw exceptions::deserialization_error(
                     "Bitsery deserialization failed due to an invalid pointer");
 
             case bitsery::ReaderError::NoError:
             default:
-                throw rpc_hpp::exceptions::deserialization_error(
+                throw exceptions::deserialization_error(
                     "Bitsery deserialization failed due to extra data on the end");
         }
     }
@@ -481,7 +482,7 @@ template<>
 
 template<>
 inline void pack_adapter<adapters::bitsery_adapter>::set_exception(
-    adapters::bitsery::bit_buffer& serial_obj, const rpc_hpp::exceptions::rpc_exception& ex)
+    adapters::bitsery::bit_buffer& serial_obj, const exceptions::rpc_exception& ex)
 {
     // copy except_type into buffer
     const int ex_type = static_cast<int>(ex.get_type());

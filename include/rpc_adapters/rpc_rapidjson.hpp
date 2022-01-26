@@ -219,14 +219,14 @@ namespace adapters
                 }
                 else if constexpr (rpc_hpp::details::is_serializable_v<rapidjson_adapter, no_ref_t>)
                 {
-                    doc_t serialized =
+                    const doc_t serialized =
                         no_ref_t::template serialize<rapidjson_adapter>(std::forward<T>(arg));
 
                     obj.CopyFrom(serialized, alloc);
                 }
                 else
                 {
-                    doc_t serialized =
+                    const doc_t serialized =
                         rapidjson_adapter::template serialize<no_ref_t>(std::forward<T>(arg));
 
                     obj.CopyFrom(serialized, alloc);
@@ -346,7 +346,7 @@ template<>
 template<>
 template<typename R, typename... Args>
 [[nodiscard]] adapters::rapidjson::doc_t pack_adapter<adapters::rapidjson_adapter>::serialize_pack(
-    const ::rpc_hpp::details::packed_func<R, Args...>& pack)
+    const details::packed_func<R, Args...>& pack)
 {
     using namespace adapters::rapidjson;
 
@@ -374,7 +374,7 @@ template<typename R, typename... Args>
             {
                 const auto& container = pack.get_result();
                 result.SetArray();
-                result.Reserve(static_cast<::rapidjson::SizeType>(container.size()), alloc);
+                result.Reserve(static_cast<rapidjson::SizeType>(container.size()), alloc);
 
                 for (const auto& val : container)
                 {
@@ -402,7 +402,7 @@ template<typename R, typename... Args>
 
     value_t args{};
     args.SetArray();
-    args.Reserve(static_cast<::rapidjson::SizeType>(sizeof...(Args)), alloc);
+    args.Reserve(static_cast<rapidjson::SizeType>(sizeof...(Args)), alloc);
     const auto& argTup = pack.get_args();
 
     rpc_hpp::details::for_each_tuple(argTup,
@@ -415,26 +415,26 @@ template<typename R, typename... Args>
 
 template<>
 template<typename R, typename... Args>
-[[nodiscard]] ::rpc_hpp::details::packed_func<R, Args...> pack_adapter<
+[[nodiscard]] details::packed_func<R, Args...> pack_adapter<
     adapters::rapidjson_adapter>::deserialize_pack(const adapters::rapidjson::doc_t& serial_obj)
 {
     using namespace adapters::rapidjson;
 
     [[maybe_unused]] unsigned i = 0;
 
-    typename ::rpc_hpp::details::packed_func<R, Args...>::args_t args{
+    typename rpc_hpp::details::packed_func<R, Args...>::args_t args{
         adapters::rapidjson::details::parse_args<Args>(serial_obj["args"], i)...
     };
 
     if constexpr (std::is_void_v<R>)
     {
-        ::rpc_hpp::details::packed_func<void, Args...> pack(
+        rpc_hpp::details::packed_func<void, Args...> pack(
             serial_obj["func_name"].GetString(), std::move(args));
 
         if (serial_obj.HasMember("except_type"))
         {
             pack.set_exception(serial_obj["err_mesg"].GetString(),
-                static_cast<rpc_hpp::exceptions::exception_type>(serial_obj["except_type"].GetInt()));
+                static_cast<exceptions::exception_type>(serial_obj["except_type"].GetInt()));
         }
 
         return pack;
@@ -445,17 +445,17 @@ template<typename R, typename... Args>
         {
             const value_t& result = serial_obj["result"];
 
-            return ::rpc::details::packed_func<R, Args...>(serial_obj["func_name"].GetString(),
+            return rpc_hpp::details::packed_func<R, Args...>(serial_obj["func_name"].GetString(),
                 adapters::rapidjson::details::parse_arg<R>(result), std::move(args));
         }
 
-        ::rpc::details::packed_func<R, Args...> pack(
+        rpc_hpp::details::packed_func<R, Args...> pack(
             serial_obj["func_name"].GetString(), std::nullopt, std::move(args));
 
         if (serial_obj.HasMember("except_type"))
         {
             pack.set_exception(serial_obj["err_mesg"].GetString(),
-                static_cast<rpc_hpp::exceptions::exception_type>(serial_obj["except_type"].GetInt()));
+                static_cast<exceptions::exception_type>(serial_obj["except_type"].GetInt()));
         }
 
         return pack;
@@ -471,7 +471,7 @@ template<>
 
 template<>
 inline void pack_adapter<adapters::rapidjson_adapter>::set_exception(
-    adapters::rapidjson::doc_t& serial_obj, const rpc_hpp::exceptions::rpc_exception& ex)
+    adapters::rapidjson::doc_t& serial_obj, const exceptions::rpc_exception& ex)
 {
     auto& alloc = serial_obj.GetAllocator();
 

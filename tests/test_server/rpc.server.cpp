@@ -217,6 +217,31 @@ void HashComplexRef(ComplexObject& cx, std::string& hashStr)
     hashStr = hash.str();
 }
 
+template<typename Serial>
+void BindFuncs(TestServer<Serial>& server)
+{
+    server.bind("KillServer", &KillServer);
+    server.bind("ThrowError", &ThrowError);
+    server.bind("AddOneToEachRef", &AddOneToEachRef);
+    server.bind("FibonacciRef", &FibonacciRef);
+    server.bind("SquareRootRef", &SquareRootRef);
+    server.bind("GenRandInts", &GenRandInts);
+    server.bind("HashComplexRef", &HashComplexRef);
+    server.template bind<void, size_t&>("AddOne", [](size_t& n) { AddOne(n); });
+
+    server.bind_cached("SimpleSum", &SimpleSum);
+    server.bind_cached("StrLen", &StrLen);
+    server.bind_cached("AddOneToEach", &AddOneToEach);
+    server.bind_cached("Fibonacci", &Fibonacci);
+    server.bind_cached("Average", &Average);
+    server.bind_cached("StdDev", &StdDev);
+    server.bind_cached("AverageContainer<uint64_t>", &AverageContainer<uint64_t>);
+    server.bind_cached("AverageContainer<double>", &AverageContainer<double>);
+    server.bind_cached("HashComplex", &HashComplex);
+    server.bind_cached("CountChars", &CountChars);
+}
+
+#if defined(RPC_HPP_ENABLE_SERVER_CACHE)
 template<typename Serial, typename R, typename... Args>
 void dump_cache(TestServer<Serial>& server, [[maybe_unused]] R (*func)(Args...),
     const std::string& func_name, const std::string& dump_dir)
@@ -327,32 +352,9 @@ void load_cache(TestServer<Serial>& server, [[maybe_unused]] R (*func)(Args...),
     }
 }
 
-template<typename Serial>
-void BindFuncs(TestServer<Serial>& server)
-{
-    server.bind("KillServer", &KillServer);
-    server.bind("ThrowError", &ThrowError);
-    server.bind("AddOneToEachRef", &AddOneToEachRef);
-    server.bind("FibonacciRef", &FibonacciRef);
-    server.bind("SquareRootRef", &SquareRootRef);
-    server.bind("GenRandInts", &GenRandInts);
-    server.bind("HashComplexRef", &HashComplexRef);
-    server.template bind<void, size_t&>("AddOne", [](size_t& n) { AddOne(n); });
-
-    server.bind_cached("SimpleSum", &SimpleSum);
-    server.bind_cached("StrLen", &StrLen);
-    server.bind_cached("AddOneToEach", &AddOneToEach);
-    server.bind_cached("Fibonacci", &Fibonacci);
-    server.bind_cached("Average", &Average);
-    server.bind_cached("StdDev", &StdDev);
-    server.bind_cached("AverageContainer<uint64_t>", &AverageContainer<uint64_t>);
-    server.bind_cached("AverageContainer<double>", &AverageContainer<double>);
-    server.bind_cached("HashComplex", &HashComplex);
-    server.bind_cached("CountChars", &CountChars);
-}
-
-#define DUMP_CACHE(SERVER, FUNCNAME, DIR) dump_cache(SERVER, FUNCNAME, #FUNCNAME, DIR)
-#define LOAD_CACHE(SERVER, FUNCNAME, DIR) load_cache(SERVER, FUNCNAME, #FUNCNAME, DIR)
+#    define DUMP_CACHE(SERVER, FUNCNAME, DIR) dump_cache(SERVER, FUNCNAME, #    FUNCNAME, DIR)
+#    define LOAD_CACHE(SERVER, FUNCNAME, DIR) load_cache(SERVER, FUNCNAME, #    FUNCNAME, DIR)
+#endif
 
 int main(const int argc, char* argv[])
 {
@@ -372,6 +374,7 @@ int main(const int argc, char* argv[])
         TestServer<njson_adapter> njson_server{ io_context, 5000U };
         BindFuncs(njson_server);
 
+#    if defined(RPC_HPP_ENABLE_SERVER_CACHE)
         const std::string njson_dump_path("dump_cache");
 
         if (std::filesystem::exists(njson_dump_path)
@@ -388,6 +391,7 @@ int main(const int argc, char* argv[])
             LOAD_CACHE(njson_server, HashComplex, njson_dump_path);
             LOAD_CACHE(njson_server, CountChars, njson_dump_path);
         }
+#    endif
 
         threads.emplace_back(&TestServer<njson_adapter>::Run, &njson_server);
         std::cout << "Running njson server on port 5000...\n";
@@ -419,7 +423,7 @@ int main(const int argc, char* argv[])
             th.join();
         }
 
-#if defined(RPC_HPP_ENABLE_NJSON)
+#if defined(RPC_HPP_ENABLE_NJSON) && defined(RPC_HPP_ENABLE_SERVER_CACHE)
         DUMP_CACHE(njson_server, SimpleSum, njson_dump_path);
         DUMP_CACHE(njson_server, StrLen, njson_dump_path);
         DUMP_CACHE(njson_server, AddOneToEach, njson_dump_path);

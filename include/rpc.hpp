@@ -747,7 +747,7 @@ inline namespace server
         void dispatch(typename Serial::bytes_t& bytes) const
         {
             auto serial_obj = Serial::from_bytes(std::move(bytes));
-            const auto func_name = rpc::pack_adapter<adapter_t>::get_func_name(serial_obj);
+            const auto func_name = pack_adapter<adapter_t>::get_func_name(serial_obj);
 
             const auto it = m_dispatch_table.find(func_name);
 

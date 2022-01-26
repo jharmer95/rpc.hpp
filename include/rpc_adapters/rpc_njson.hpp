@@ -202,7 +202,7 @@ template<>
 template<>
 template<typename R, typename... Args>
 [[nodiscard]] adapters::njson::njson_t pack_adapter<adapters::njson_adapter>::serialize_pack(
-    const ::rpc_hpp::details::packed_func<R, Args...>& pack)
+    const details::packed_func<R, Args...>& pack)
 {
     using namespace adapters::njson;
 
@@ -236,7 +236,7 @@ template<typename R, typename... Args>
 
 template<>
 template<typename R, typename... Args>
-[[nodiscard]] ::rpc_hpp::details::packed_func<R, Args...> pack_adapter<
+[[nodiscard]] details::packed_func<R, Args...> pack_adapter<
     adapters::njson_adapter>::deserialize_pack(const adapters::njson::njson_t& serial_obj)
 {
     using namespace adapters::njson;
@@ -245,7 +245,7 @@ template<typename R, typename... Args>
 
     if constexpr (std::is_void_v<R>)
     {
-        ::rpc_hpp::details::packed_func<void, Args...> pack(serial_obj["func_name"],
+        rpc_hpp::details::packed_func<void, Args...> pack(serial_obj["func_name"],
             { adapters::njson::details::parse_args<Args>(serial_obj["args"], i)... });
 
         if (serial_obj.contains("except_type"))
@@ -260,12 +260,12 @@ template<typename R, typename... Args>
     {
         if (serial_obj.contains("result") && !serial_obj["result"].is_null())
         {
-            return ::rpc_hpp::details::packed_func<R, Args...>(serial_obj["func_name"],
+            return rpc_hpp::details::packed_func<R, Args...>(serial_obj["func_name"],
                 adapters::njson::details::parse_arg<R>(serial_obj["result"]),
                 { adapters::njson::details::parse_args<Args>(serial_obj["args"], i)... });
         }
 
-        ::rpc_hpp::details::packed_func<R, Args...> pack(serial_obj["func_name"], std::nullopt,
+        rpc_hpp::details::packed_func<R, Args...> pack(serial_obj["func_name"], std::nullopt,
             { adapters::njson::details::parse_args<Args>(serial_obj["args"], i)... });
 
         if (serial_obj.contains("except_type"))
@@ -287,7 +287,7 @@ template<>
 
 template<>
 inline void pack_adapter<adapters::njson_adapter>::set_exception(
-    adapters::njson::njson_t& serial_obj, const rpc_hpp::exceptions::rpc_exception& ex)
+    adapters::njson::njson_t& serial_obj, const exceptions::rpc_exception& ex)
 {
     serial_obj["except_type"] = ex.get_type();
     serial_obj["err_mesg"] = ex.what();
