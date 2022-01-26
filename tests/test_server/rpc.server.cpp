@@ -295,11 +295,11 @@ void load_cache(TestServer<Serial>& server, [[maybe_unused]] R (*func)(Args...),
             std::stringstream ss2(val_str);
 
             ss2 >> value;
-            cache[ss.str()] = value;
+            cache.emplace(ss.str(), value);
         }
         else if constexpr (std::is_same_v<R, std::string>)
         {
-            cache[ss.str()] = std::move(val_str);
+            cache.emplace(ss.str(), std::move(val_str));
         }
         else if constexpr (std::is_same_v<R, std::vector<int>>)
         {
@@ -319,7 +319,7 @@ void load_cache(TestServer<Serial>& server, [[maybe_unused]] R (*func)(Args...),
                 }
             }
 
-            cache[ss.str()] = std::move(value);
+            cache.emplace(ss.str(), std::move(value));
         }
 
         // clear stream and its buffer
@@ -337,7 +337,7 @@ void BindFuncs(TestServer<Serial>& server)
     server.bind("SquareRootRef", &SquareRootRef);
     server.bind("GenRandInts", &GenRandInts);
     server.bind("HashComplexRef", &HashComplexRef);
-    server.bind<void, size_t&>("AddOne", [](size_t& n) { AddOne(n); });
+    server.template bind<void, size_t&>("AddOne", [](size_t& n) { AddOne(n); });
 
     server.bind_cached("SimpleSum", &SimpleSum);
     server.bind_cached("StrLen", &StrLen);

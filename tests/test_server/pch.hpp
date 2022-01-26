@@ -13,7 +13,6 @@
 #include <functional>
 #include <iomanip>
 #include <iostream>
-#include <memory>
 #include <numeric>
 #include <optional>
 #include <sstream>

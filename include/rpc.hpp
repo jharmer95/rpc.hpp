@@ -69,8 +69,7 @@
 #if defined(RPC_HPP_SERVER_IMPL) || defined(RPC_HPP_MODULE_IMPL)
 #    define RPC_HEADER_FUNC(RETURN, FUNCNAME, ...) extern RETURN FUNCNAME(__VA_ARGS__)
 #elif defined(RPC_HPP_CLIENT_IMPL)
-#    define RPC_HEADER_FUNC(RETURN, FUNCNAME, ...) \
-        inline RETURN (*const FUNCNAME)(__VA_ARGS__) = nullptr
+#    define RPC_HEADER_FUNC(RETURN, FUNCNAME, ...) inline RETURN (*FUNCNAME)(__VA_ARGS__) = nullptr
 #endif
 
 #define RPC_HPP_PRECONDITION(EXPR) assert(EXPR)
@@ -384,18 +383,59 @@ namespace details
     }
 
 #    if defined(RPC_HPP_CLIENT_IMPL)
+    // Allows passing in string literals
+    template<typename T>
+    struct decay_str
+    {
+        static_assert(!std::is_pointer_v<std::remove_cv_t<std::remove_reference_t<T>>>,
+            "Pointer parameters are not allowed");
+
+        static_assert(!std::is_array_v<std::remove_cv_t<std::remove_reference_t<T>>>,
+            "C-style array parameters are not allowed");
+
+        using type = T;
+    };
+
+    template<>
+    struct decay_str<const char*>
+    {
+        using type = const std::string&;
+    };
+
+    template<>
+    struct decay_str<const char*&>
+    {
+        using type = const std::string&;
+    };
+
+    template<>
+    struct decay_str<const char* const&>
+    {
+        using type = const std::string&;
+    };
+
+    template<size_t N>
+    struct decay_str<const char (&)[N]>
+    {
+        using type = const std::string&;
+    };
+
+    template<typename T>
+    using decay_str_t = typename decay_str<T>::type;
+
     template<typename... Args, size_t... Is>
     constexpr void tuple_bind(
-        const std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...>& src,
+        const std::tuple<std::remove_cv_t<std::remove_reference_t<decay_str_t<Args>>>...>& src,
         std::index_sequence<Is...>, Args&&... dest)
     {
         using expander = int[];
         std::ignore = expander{ 0,
             (
-                (void)[](auto&& x, auto&& y) {
+                (void)[](auto&& x, auto&& y)
+                {
                     if constexpr (
                         std::is_reference_v<
-                            decltype(x)> && !std::is_const_v<std::remove_reference_t<decltype(x)>>)
+                            decltype(x)> && !std::is_const_v<std::remove_reference_t<decltype(x)>> && !std::is_pointer_v<std::remove_reference_t<decltype(x)>>)
                     {
                         x = std::forward<decltype(y)>(y);
                     }
@@ -405,7 +445,8 @@ namespace details
 
     template<typename... Args>
     constexpr void tuple_bind(
-        const std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...>& src, Args&&... dest)
+        const std::tuple<std::remove_cv_t<std::remove_reference_t<decay_str_t<Args>>>...>& src,
+        Args&&... dest)
     {
         tuple_bind(src, std::make_index_sequence<sizeof...(Args)>(), std::forward<Args>(dest)...);
     }
@@ -961,17 +1002,17 @@ inline namespace client
         {
             RPC_HPP_PRECONDITION(!func_name.empty());
 
-            details::packed_func<R, Args...> pack = [&]() noexcept
+            details::packed_func<R, details::decay_str_t<Args>...> pack = [&]() noexcept
             {
                 if constexpr (std::is_void_v<R>)
                 {
-                    return details::packed_func<void, Args...>{ func_name,
+                    return details::packed_func<void, details::decay_str_t<Args>...>{ func_name,
                         std::forward_as_tuple(args...) };
                 }
                 else
                 {
-                    return details::packed_func<R, Args...>{ func_name, std::nullopt,
-                        std::forward_as_tuple(args...) };
+                    return details::packed_func<R, details::decay_str_t<Args>...>{ func_name,
+                        std::nullopt, std::forward_as_tuple(args...) };
                 }
             }();
 
@@ -1015,7 +1056,8 @@ inline namespace client
 
             try
             {
-                pack = pack_adapter<Serial>::template deserialize_pack<R, Args...>(serial_obj);
+                pack = pack_adapter<Serial>::template deserialize_pack<R,
+                    details::decay_str_t<Args>...>(serial_obj);
             }
             catch (const exceptions::rpc_exception&)
             {
@@ -1045,17 +1087,19 @@ inline namespace client
         {
             RPC_HPP_PRECONDITION(!func_name.empty());
 
-            details::packed_func<R, Args...> pack = [&]() noexcept
+            details::packed_func<R, details::decay_str_t<Args>...> pack = [&]() noexcept
             {
                 if constexpr (std::is_void_v<R>)
                 {
-                    return details::packed_func<void, Args...>{ std::move(func_name),
-                        std::forward_as_tuple(args...) };
+                    return details::packed_func<void, details::decay_str_t<Args>...>{
+                        std::move(func_name), std::forward_as_tuple(args...)
+                    };
                 }
                 else
                 {
-                    return details::packed_func<R, Args...>{ std::move(func_name), std::nullopt,
-                        std::forward_as_tuple(args...) };
+                    return details::packed_func<R, details::decay_str_t<Args>...>{
+                        std::move(func_name), std::nullopt, std::forward_as_tuple(args...)
+                    };
                 }
             }();
 
@@ -1099,7 +1143,8 @@ inline namespace client
 
             try
             {
-                pack = pack_adapter<Serial>::template deserialize_pack<R, Args...>(serial_obj);
+                pack = pack_adapter<Serial>::template deserialize_pack<R,
+                    details::decay_str_t<Args>...>(serial_obj);
             }
             catch (const exceptions::rpc_exception&)
             {
