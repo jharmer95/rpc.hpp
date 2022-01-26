@@ -92,6 +92,8 @@ public:
 int main()
 {
     RpcServer my_server{"address"};
+    my_server.bind("Add", &Add);
+    my_server.bind("AppendStr", &AppendStr);
 
     while (true)
     {
