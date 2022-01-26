@@ -292,7 +292,7 @@ namespace adapters
                         std::move(helper.args) };
 
                     pack.set_exception(std::move(helper.err_mesg),
-                        static_cast<exceptions::Type>(helper.except_type));
+                        static_cast<exceptions::exception_type>(helper.except_type));
                     return pack;
                 }
                 else
@@ -307,7 +307,7 @@ namespace adapters
                         std::nullopt, std::move(helper.args) };
 
                     pack.set_exception(std::move(helper.err_mesg),
-                        static_cast<exceptions::Type>(helper.except_type));
+                        static_cast<exceptions::exception_type>(helper.except_type));
                     return pack;
                 }
             }

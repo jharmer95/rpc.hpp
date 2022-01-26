@@ -61,8 +61,16 @@
 #include <type_traits> // for declval, false_type, is_same, integral_constant
 #include <utility>     // for move, index_sequence, make_index_sequence
 
-#if defined(RPC_HPP_SERVER_IMPL) && defined(RPC_HPP_ENABLE_SERVER_CACHE)
+#if defined(RPC_HPP_MODULE_IMPL) || defined(RPC_HPP_SERVER_IMPL)
+#    include <functional>    // for function
 #    include <unordered_map> // for unordered_map
+#endif
+
+#if defined(RPC_HPP_SERVER_IMPL) || defined(RPC_HPP_MODULE_IMPL)
+#    define RPC_HEADER_FUNC(RETURN, FUNCNAME, ...) extern RETURN FUNCNAME(__VA_ARGS__)
+#elif defined(RPC_HPP_CLIENT_IMPL)
+#    define RPC_HEADER_FUNC(RETURN, FUNCNAME, ...) \
+        inline RETURN (*const FUNCNAME)(__VA_ARGS__) = nullptr
 #endif
 
 #define RPC_HPP_PRECONDITION(EXPR) assert(EXPR)
@@ -76,7 +84,7 @@ static constexpr unsigned version[]{ 0, 7, 1 };
 
 namespace exceptions
 {
-    enum class Type
+    enum class exception_type
     {
         None,
         FuncNotFound,
@@ -93,32 +101,32 @@ namespace exceptions
     class rpc_exception : public std::runtime_error
     {
     public:
-        explicit rpc_exception(const std::string& mesg, Type type) noexcept
+        explicit rpc_exception(const std::string& mesg, exception_type type) noexcept
             : std::runtime_error(mesg), m_type(type)
         {
         }
 
-        explicit rpc_exception(const char* mesg, Type type) noexcept
+        explicit rpc_exception(const char* mesg, exception_type type) noexcept
             : std::runtime_error(mesg), m_type(type)
         {
         }
 
-        Type get_type() const noexcept { return m_type; }
+        exception_type get_type() const noexcept { return m_type; }
 
     private:
-        Type m_type;
+        exception_type m_type;
     };
 
     class function_not_found : public rpc_exception
     {
     public:
         explicit function_not_found(const std::string& mesg) noexcept
-            : rpc_exception(mesg, Type::FuncNotFound)
+            : rpc_exception(mesg, exception_type::FuncNotFound)
         {
         }
 
         explicit function_not_found(const char* mesg) noexcept
-            : rpc_exception(mesg, Type::FuncNotFound)
+            : rpc_exception(mesg, exception_type::FuncNotFound)
         {
         }
     };
@@ -127,12 +135,12 @@ namespace exceptions
     {
     public:
         explicit remote_exec_error(const std::string& mesg) noexcept
-            : rpc_exception(mesg, Type::RemoteExec)
+            : rpc_exception(mesg, exception_type::RemoteExec)
         {
         }
 
         explicit remote_exec_error(const char* mesg) noexcept
-            : rpc_exception(mesg, Type::RemoteExec)
+            : rpc_exception(mesg, exception_type::RemoteExec)
         {
         }
     };
@@ -141,12 +149,12 @@ namespace exceptions
     {
     public:
         explicit serialization_error(const std::string& mesg) noexcept
-            : rpc_exception(mesg, Type::Serialization)
+            : rpc_exception(mesg, exception_type::Serialization)
         {
         }
 
         explicit serialization_error(const char* mesg) noexcept
-            : rpc_exception(mesg, Type::Serialization)
+            : rpc_exception(mesg, exception_type::Serialization)
         {
         }
     };
@@ -155,12 +163,12 @@ namespace exceptions
     {
     public:
         explicit deserialization_error(const std::string& mesg) noexcept
-            : rpc_exception(mesg, Type::DeSerialization)
+            : rpc_exception(mesg, exception_type::DeSerialization)
         {
         }
 
         explicit deserialization_error(const char* mesg) noexcept
-            : rpc_exception(mesg, Type::DeSerialization)
+            : rpc_exception(mesg, exception_type::DeSerialization)
         {
         }
     };
@@ -169,12 +177,12 @@ namespace exceptions
     {
     public:
         explicit function_mismatch(const std::string& mesg) noexcept
-            : rpc_exception(mesg, Type::SignatureMismatch)
+            : rpc_exception(mesg, exception_type::SignatureMismatch)
         {
         }
 
         explicit function_mismatch(const char* mesg) noexcept
-            : rpc_exception(mesg, Type::SignatureMismatch)
+            : rpc_exception(mesg, exception_type::SignatureMismatch)
         {
         }
     };
@@ -183,12 +191,12 @@ namespace exceptions
     {
     public:
         explicit client_send_error(const std::string& mesg) noexcept
-            : rpc_exception(mesg, Type::ClientSend)
+            : rpc_exception(mesg, exception_type::ClientSend)
         {
         }
 
         explicit client_send_error(const char* mesg) noexcept
-            : rpc_exception(mesg, Type::ClientSend)
+            : rpc_exception(mesg, exception_type::ClientSend)
         {
         }
     };
@@ -197,12 +205,12 @@ namespace exceptions
     {
     public:
         explicit client_receive_error(const std::string& mesg) noexcept
-            : rpc_exception(mesg, Type::ClientReceive)
+            : rpc_exception(mesg, exception_type::ClientReceive)
         {
         }
 
         explicit client_receive_error(const char* mesg) noexcept
-            : rpc_exception(mesg, Type::ClientReceive)
+            : rpc_exception(mesg, exception_type::ClientReceive)
         {
         }
     };
@@ -211,12 +219,12 @@ namespace exceptions
     {
     public:
         explicit server_send_error(const std::string& mesg) noexcept
-            : rpc_exception(mesg, Type::ServerSend)
+            : rpc_exception(mesg, exception_type::ServerSend)
         {
         }
 
         explicit server_send_error(const char* mesg) noexcept
-            : rpc_exception(mesg, Type::ServerSend)
+            : rpc_exception(mesg, exception_type::ServerSend)
         {
         }
     };
@@ -225,12 +233,12 @@ namespace exceptions
     {
     public:
         explicit server_receive_error(const std::string& mesg) noexcept
-            : rpc_exception(mesg, Type::ServerReceive)
+            : rpc_exception(mesg, exception_type::ServerReceive)
         {
         }
 
         explicit server_receive_error(const char* mesg) noexcept
-            : rpc_exception(mesg, Type::ServerReceive)
+            : rpc_exception(mesg, exception_type::ServerReceive)
         {
         }
     };
@@ -384,8 +392,7 @@ namespace details
         using expander = int[];
         std::ignore = expander{ 0,
             (
-                (void)[](auto&& x, auto&& y)
-                {
+                (void)[](auto&& x, auto&& y) {
                     if constexpr (
                         std::is_reference_v<
                             decltype(x)> && !std::is_const_v<std::remove_reference_t<decltype(x)>>)
@@ -416,12 +423,15 @@ namespace details
             RPC_HPP_POSTCONDITION(!m_func_name.empty());
         }
 
-        explicit operator bool() const noexcept { return m_except_type == exceptions::Type::None; }
+        explicit operator bool() const noexcept
+        {
+            return m_except_type == exceptions::exception_type::None;
+        }
         const std::string& get_err_mesg() const noexcept { return m_err_mesg; }
         const std::string& get_func_name() const noexcept { return m_func_name; }
-        exceptions::Type get_except_type() const noexcept { return m_except_type; }
+        exceptions::exception_type get_except_type() const noexcept { return m_except_type; }
 
-        void set_exception(std::string&& mesg, exceptions::Type type) & noexcept
+        void set_exception(std::string&& mesg, exceptions::exception_type type) & noexcept
         {
             m_except_type = type;
             m_err_mesg = std::move(mesg);
@@ -443,41 +453,41 @@ namespace details
             {
                 using namespace exceptions;
 
-                case Type::FuncNotFound:
+                case exception_type::FuncNotFound:
                     throw function_not_found(m_err_mesg);
 
-                case Type::RemoteExec:
+                case exception_type::RemoteExec:
                     throw remote_exec_error(m_err_mesg);
 
-                case Type::Serialization:
+                case exception_type::Serialization:
                     throw serialization_error(m_err_mesg);
 
-                case Type::DeSerialization:
+                case exception_type::DeSerialization:
                     throw deserialization_error(m_err_mesg);
 
-                case Type::SignatureMismatch:
+                case exception_type::SignatureMismatch:
                     throw function_mismatch(m_err_mesg);
 
-                case Type::ClientSend:
+                case exception_type::ClientSend:
                     throw client_send_error(m_err_mesg);
 
-                case Type::ClientReceive:
+                case exception_type::ClientReceive:
                     throw client_receive_error(m_err_mesg);
 
-                case Type::ServerSend:
+                case exception_type::ServerSend:
                     throw server_send_error(m_err_mesg);
 
-                case Type::ServerReceive:
+                case exception_type::ServerReceive:
                     throw server_receive_error(m_err_mesg);
 
-                case Type::None:
+                case exception_type::None:
                 default:
-                    throw rpc_exception(m_err_mesg, Type::None);
+                    throw rpc_exception(m_err_mesg, exception_type::None);
             }
         }
 
     private:
-        exceptions::Type m_except_type{ exceptions::Type::None };
+        exceptions::exception_type m_except_type{ exceptions::exception_type::None };
         std::string m_func_name;
         std::string m_err_mesg{};
         args_t m_args;
@@ -625,13 +635,6 @@ inline namespace server
     public:
         using adapter_t = Serial;
 
-        virtual ~server_interface() noexcept = default;
-        server_interface() noexcept = default;
-
-        server_interface(const server_interface&) = delete;
-        server_interface& operator=(const server_interface&) = delete;
-        server_interface& operator=(server_interface&&) = delete;
-
 #    if defined(RPC_HPP_SERVER_IMPL) && defined(RPC_HPP_ENABLE_SERVER_CACHE)
         template<typename Val>
         std::unordered_map<typename Serial::bytes_t, Val>& get_func_cache(
@@ -645,30 +648,68 @@ inline namespace server
         }
 
         void clear_all_cache() noexcept { m_cache_map.clear(); }
+
+        template<typename R, typename... Args>
+        void bind_cached(std::string func_name, R (*func_ptr)(Args...))
+        {
+            m_dispatch_table.insert_or_assign(std::move(func_name),
+                [this, func_ptr](typename Serial::serial_t& serial_obj)
+                {
+                    try
+                    {
+                        dispatch_cached_func(func_ptr, serial_obj);
+                    }
+                    catch (const exceptions::rpc_exception& ex)
+                    {
+                        pack_adapter<Serial>::set_exception(serial_obj, ex);
+                    }
+                });
+        }
 #    endif
+
+        template<typename R, typename... Args>
+        void bind(std::string func_name, R (*func_ptr)(Args...))
+        {
+            m_dispatch_table.insert_or_assign(std::move(func_name),
+                [this, func_ptr](typename Serial::serial_t& serial_obj)
+                {
+                    try
+                    {
+                        dispatch_func(func_ptr, serial_obj);
+                    }
+                    catch (const exceptions::rpc_exception& ex)
+                    {
+                        pack_adapter<Serial>::set_exception(serial_obj, ex);
+                    }
+                });
+        }
 
         ///@brief Parses the received serialized data and determines which function to call
         ///
         ///@param bytes Data to be parsed into/back out of a serial object
-        void dispatch(typename Serial::bytes_t& bytes)
+        void dispatch(typename Serial::bytes_t& bytes) const
         {
             auto serial_obj = Serial::from_bytes(std::move(bytes));
+            const auto func_name = rpc::pack_adapter<adapter_t>::get_func_name(serial_obj);
 
-            try
+            const auto it = m_dispatch_table.find(func_name);
+
+            if (it == m_dispatch_table.end())
             {
-                dispatch_impl(serial_obj);
+                pack_adapter<Serial>::set_exception(serial_obj,
+                    exceptions::function_not_found("RPC error: Called function: "
+                                                   " + func_name + "
+                                                   " not found!"));
             }
-            catch (const exceptions::rpc_exception& ex)
+            else
             {
-                pack_adapter<Serial>::set_exception(serial_obj, ex);
+                it->second(serial_obj);
             }
 
             bytes = Serial::to_bytes(std::move(serial_obj));
         }
 
     protected:
-        server_interface(server_interface&&) noexcept = default;
-
 #    if defined(RPC_HPP_SERVER_IMPL) && defined(RPC_HPP_ENABLE_SERVER_CACHE)
         ///@brief Deserializes the serial object to a packed_func, calls the callback function, then serializes the result back to the serial object, using a server-side cache for performance.
         ///
@@ -747,10 +788,9 @@ inline namespace server
                 throw exceptions::serialization_error(ex.what());
             }
         }
-
 #    else
         template<typename R, typename... Args>
-        void dispatch_cached_func(R (*func)(Args...), typename Serial::serial_t& serial_obj)
+        void dispatch_cached_func(R (*func)(Args...), typename Serial::serial_t& serial_obj) const
         {
             RPC_HPP_PRECONDITION(func != nullptr);
 
@@ -802,8 +842,6 @@ inline namespace server
         }
 
     private:
-        virtual void dispatch_impl(typename Serial::serial_t& serial_obj) = 0;
-
         ///@brief Runs the callback function and updates the result (and any changes to mutable arguments) in the packed_func
         ///
         ///@tparam R Return type of the callback function
@@ -863,6 +901,9 @@ inline namespace server
 
         std::unordered_map<std::string, void*> m_cache_map{};
 #    endif
+
+        std::unordered_map<std::string, std::function<void(typename Serial::serial_t&)>>
+            m_dispatch_table{};
     };
 } // namespace server
 #endif

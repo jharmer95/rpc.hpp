@@ -36,12 +36,11 @@
 
 #pragma once
 
-#include "../static_funcs.hpp"
 #include "../test_structs.hpp"
+#include "../static_funcs.hpp"
 
 #include <asio.hpp>
 #include <rpc.hpp>
-#include <rpc_dispatch_helper.hpp>
 
 #include <atomic>
 #include <cstddef>
@@ -156,20 +155,5 @@ public:
     }
 
 private:
-    void dispatch_impl(typename Serial::serial_t& serial_obj) override
-    {
-        const auto func_name = rpc::pack_adapter<Serial>::get_func_name(serial_obj);
-
-        RPC_ATTACH_FUNCS(KillServer, ThrowError, AddOneToEachRef, FibonacciRef, SquareRootRef,
-            GenRandInts, HashComplexRef, AddOne)
-
-        RPC_ATTACH_CACHED_FUNCS(SimpleSum, StrLen, AddOneToEach, Fibonacci, Average, StdDev,
-            AverageContainer<uint64_t>, AverageContainer<double>, HashComplex, CountChars)
-
-        throw rpc::exceptions::rpc_exception(
-            "RPC error: Called function: \"" + func_name + "\" not found!",
-            rpc::exceptions::Type::FuncNotFound);
-    }
-
     tcp::acceptor m_accept;
 };

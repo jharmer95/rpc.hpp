@@ -19,8 +19,6 @@ public:
     void Stop() noexcept { m_running = false; }
 
 private:
-    void dispatch_impl(rpc::adapters::njson::njson_t& serial_obj) override;
-
     asio::io_context& m_io;
     mutable std::atomic<bool> m_running{ false };
     uint16_t m_port;

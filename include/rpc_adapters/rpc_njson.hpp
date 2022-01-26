@@ -250,8 +250,8 @@ template<typename R, typename... Args>
 
         if (serial_obj.contains("except_type"))
         {
-            pack.set_exception(
-                serial_obj["err_mesg"], static_cast<exceptions::Type>(serial_obj["except_type"]));
+            pack.set_exception(serial_obj["err_mesg"],
+                static_cast<exceptions::exception_type>(serial_obj["except_type"]));
         }
 
         return pack;
@@ -270,8 +270,8 @@ template<typename R, typename... Args>
 
         if (serial_obj.contains("except_type"))
         {
-            pack.set_exception(
-                serial_obj["err_mesg"], static_cast<exceptions::Type>(serial_obj["except_type"]));
+            pack.set_exception(serial_obj["err_mesg"],
+                static_cast<exceptions::exception_type>(serial_obj["except_type"]));
         }
 
         return pack;

@@ -37,8 +37,8 @@
 #define RPC_HPP_CLIENT_IMPL
 
 #include "rpc.client.hpp"
-#include "../static_funcs.hpp"
 #include "../test_structs.hpp"
+#include "../static_funcs.hpp"
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include <doctest/doctest.h>
