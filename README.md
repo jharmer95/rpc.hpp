@@ -93,7 +93,11 @@ int main()
 {
     RpcServer my_server{"address"};
     my_server.bind("Add", &Add);
-    my_server.bind("AppendStr", &AppendStr);
+    my_server.bind("AppendStr",
+        [](std::string& str, const std::string& append) {
+            AppendStr(str, append.c_str());
+        }
+    );
 
     while (true)
     {
