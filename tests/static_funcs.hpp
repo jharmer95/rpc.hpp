@@ -36,8 +36,6 @@
 
 #pragma once
 
-#include "rpc_dispatch_helper.hpp"
-
 #include <cstddef>
 #include <string>
 

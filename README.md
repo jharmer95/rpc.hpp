@@ -35,7 +35,7 @@ features.
   - This is the nature of a dynamic system like remote procedure calls
   - Return type and explicit parameters must be specified at callsite
   - Exceptions will be able to catch function signature mismatches
-  - Function signatures can be provided via a shared header to allow for compile-time type-checking
+  - Function signatures can be provided via a shared header to allow for compile-time type-checking (ala `call_header_func()`)
 
 ## Documentation
 
@@ -51,7 +51,6 @@ server.cpp
 #define RPC_HPP_SERVER_IMPL
 
 #include <rpc_adapters/rpc_njson.hpp>
-#include <rpc_dispatch_helper.hpp>
 
 #include <string>
 
@@ -88,17 +87,17 @@ public:
 
         // Send data back to client...
     }
-
-private:
-    void dispatch_impl(njson& serial_obj) override
-    {
-       RPC_DEFAULT_DISPATCH(Add, AppendStr)
-    }
 };
 
 int main()
 {
     RpcServer my_server{"address"};
+    my_server.bind("Add", &Add);
+    my_server.bind("AppendStr",
+        [](std::string& str, const std::string& append) {
+            AppendStr(str, append.c_str());
+        }
+    );
 
     while (true)
     {

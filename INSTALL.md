@@ -185,7 +185,7 @@ $ vcpkg install catch2 doctest nlohmann-json rapidjson boost-json
   Conan, however
 2. Install Conan
 
-  - With pipx (preferred)
+  - With pipx (recommended)
 
   ```shell
   $ pipx install conan

@@ -38,9 +38,9 @@
 
 #include "../rpc.hpp"
 
-#include <cassert>
-
 #include <boost/json/src.hpp>
+
+#include <cassert>
 
 namespace rpc
 {
@@ -311,7 +311,7 @@ template<typename R, typename... Args>
         if (obj.contains("except_type"))
         {
             pack.set_exception(obj.at("err_mesg").get_string().c_str(),
-                static_cast<exceptions::Type>(obj.at("except_type").get_int64()));
+                static_cast<exceptions::exception_type>(obj.at("except_type").get_int64()));
         }
 
         return pack;
@@ -332,7 +332,7 @@ template<typename R, typename... Args>
         if (obj.contains("except_type"))
         {
             pack.set_exception(obj.at("err_mesg").get_string().c_str(),
-                static_cast<exceptions::Type>(obj.at("except_type").get_int64()));
+                static_cast<exceptions::exception_type>(obj.at("except_type").get_int64()));
         }
 
         return pack;

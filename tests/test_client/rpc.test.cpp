@@ -37,8 +37,8 @@
 #define RPC_HPP_CLIENT_IMPL
 
 #include "rpc.client.hpp"
-#include "../static_funcs.hpp"
 #include "../test_structs.hpp"
+#include "../static_funcs.hpp"
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include <doctest/doctest.h>
@@ -161,7 +161,11 @@ TEST_CASE_TEMPLATE("StrLen", TestType, RPC_TEST_TYPES)
     const std::string test_str(test_str_len, 'f');
     const auto result = client.template call_func<size_t>("StrLen", test_str);
 
+    const auto cstr = "12345";
+    const auto result2 = client.template call_func<size_t>("StrLen", cstr);
+
     REQUIRE(result == test_str_len);
+    REQUIRE(result2 == 5);
 }
 
 TEST_CASE_TEMPLATE("AddOneToEach", TestType, RPC_TEST_TYPES)

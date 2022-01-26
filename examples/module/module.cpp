@@ -2,8 +2,6 @@
 
 #include "module.hpp"
 
-#include <rpc_dispatch_helper.hpp>
-
 #include <cstring>
 
 static constexpr auto MODULE_NAME{ "rpc_module" };
@@ -27,9 +25,11 @@ void GetName(std::string& name_out)
     name_out.assign(MODULE_NAME);
 }
 
-void RpcModule::dispatch_impl(rpc::adapters::njson::njson_t& serial_obj)
+RpcModule::RpcModule()
 {
-    RPC_DEFAULT_DISPATCH(Sum, AddOneToEach, GetName)
+    bind("Sum", &Sum);
+    bind("AddOneToEach", &AddOneToEach);
+    bind("GetName", &GetName);
 }
 
 int RunRemoteFunc(char* const json_str, const size_t json_buf_len)

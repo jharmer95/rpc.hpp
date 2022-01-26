@@ -114,16 +114,16 @@ void AddOneToEachRef(std::vector<int>& vec)
     }
 }
 
-int (*const CountChars)(const std::string&, char) = [](const std::string& str, char c)
+int CountChars(const std::string& str, char c)
 {
     return static_cast<int>(
         std::count_if(str.begin(), str.end(), [c](const char x) { return x == c; }));
-};
+}
 
-void (*const AddOne)(size_t&) = [](size_t& n)
+void AddOne(size_t& n)
 {
     n += 1;
-};
+}
 
 void FibonacciRef(uint64_t& number)
 {
@@ -285,7 +285,7 @@ void load_cache(TestServer<Serial>& server, [[maybe_unused]] R (*func)(Args...),
     while (ifile.get(*ss.rdbuf(), '\034'))
     {
         // Toss out separator
-        [[maybe_unused]] auto unused = ifile.get();
+        std::ignore = ifile.get();
 
         std::getline(ifile, val_str);
 
@@ -295,11 +295,11 @@ void load_cache(TestServer<Serial>& server, [[maybe_unused]] R (*func)(Args...),
             std::stringstream ss2(val_str);
 
             ss2 >> value;
-            cache[ss.str()] = value;
+            cache.emplace(ss.str(), value);
         }
         else if constexpr (std::is_same_v<R, std::string>)
         {
-            cache[ss.str()] = std::move(val_str);
+            cache.emplace(ss.str(), std::move(val_str));
         }
         else if constexpr (std::is_same_v<R, std::vector<int>>)
         {
@@ -319,11 +319,36 @@ void load_cache(TestServer<Serial>& server, [[maybe_unused]] R (*func)(Args...),
                 }
             }
 
-            cache[ss.str()] = std::move(value);
+            cache.emplace(ss.str(), std::move(value));
         }
 
-        ss.clear();
+        // clear stream and its buffer
+        std::stringstream{}.swap(ss);
     }
+}
+
+template<typename Serial>
+void BindFuncs(TestServer<Serial>& server)
+{
+    server.bind("KillServer", &KillServer);
+    server.bind("ThrowError", &ThrowError);
+    server.bind("AddOneToEachRef", &AddOneToEachRef);
+    server.bind("FibonacciRef", &FibonacciRef);
+    server.bind("SquareRootRef", &SquareRootRef);
+    server.bind("GenRandInts", &GenRandInts);
+    server.bind("HashComplexRef", &HashComplexRef);
+    server.template bind<void, size_t&>("AddOne", [](size_t& n) { AddOne(n); });
+
+    server.bind_cached("SimpleSum", &SimpleSum);
+    server.bind_cached("StrLen", &StrLen);
+    server.bind_cached("AddOneToEach", &AddOneToEach);
+    server.bind_cached("Fibonacci", &Fibonacci);
+    server.bind_cached("Average", &Average);
+    server.bind_cached("StdDev", &StdDev);
+    server.bind_cached("AverageContainer<uint64_t>", &AverageContainer<uint64_t>);
+    server.bind_cached("AverageContainer<double>", &AverageContainer<double>);
+    server.bind_cached("HashComplex", &HashComplex);
+    server.bind_cached("CountChars", &CountChars);
 }
 
 #define DUMP_CACHE(SERVER, FUNCNAME, DIR) dump_cache(SERVER, FUNCNAME, #FUNCNAME, DIR)
@@ -345,6 +370,8 @@ int main(const int argc, char* argv[])
 
 #if defined(RPC_HPP_ENABLE_NJSON)
         TestServer<njson_adapter> njson_server{ io_context, 5000U };
+        BindFuncs(njson_server);
+
         const std::string njson_dump_path("dump_cache");
 
         if (std::filesystem::exists(njson_dump_path)
@@ -368,18 +395,21 @@ int main(const int argc, char* argv[])
 
 #if defined(RPC_HPP_ENABLE_RAPIDJSON)
         TestServer<rapidjson_adapter> rapidjson_server{ io_context, 5001U };
+        BindFuncs(rapidjson_server);
         threads.emplace_back(&TestServer<rapidjson_adapter>::Run, &rapidjson_server);
         std::cout << "Running rapidjson server on port 5001...\n";
 #endif
 
 #if defined(RPC_HPP_ENABLE_BOOST_JSON)
         TestServer<boost_json_adapter> bjson_server{ io_context, 5002U };
+        BindFuncs(bjson_server);
         threads.emplace_back(&TestServer<boost_json_adapter>::Run, &bjson_server);
         std::cout << "Running Boost.JSON server on port 5002...\n";
 #endif
 
 #if defined(RPC_HPP_ENABLE_BITSERY)
         TestServer<bitsery_adapter> bitsery_server{ io_context, 5003U };
+        BindFuncs(bitsery_server);
         threads.emplace_back(&TestServer<bitsery_adapter>::Run, &bitsery_server);
         std::cout << "Running Bitsery server on port 5003...\n";
 #endif
