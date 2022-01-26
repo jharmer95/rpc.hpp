@@ -21,9 +21,9 @@ using module_t = void*;
 
 #include <string>
 
-using rpc::adapters::njson_adapter;
+using rpc_hpp::adapters::njson_adapter;
 
-class RpcClient : public rpc::client::client_interface<njson_adapter>
+class RpcClient : public rpc_hpp::client::client_interface<njson_adapter>
 {
 public:
     using remote_func_type = int (*)(char*, size_t);

@@ -42,7 +42,7 @@
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
 
-namespace rpc
+namespace rpc_hpp
 {
 namespace adapters
 {
@@ -99,7 +99,7 @@ namespace adapters
                 {
                     return arg.IsString();
                 }
-                else if constexpr (rpc::details::is_container_v<T>)
+                else if constexpr (rpc_hpp::details::is_container_v<T>)
                 {
                     return arg.IsArray();
                 }
@@ -207,7 +207,7 @@ namespace adapters
                         obj.Set<no_ref_t>(arg);
                     }
                 }
-                else if constexpr (rpc::details::is_container_v<no_ref_t>)
+                else if constexpr (rpc_hpp::details::is_container_v<no_ref_t>)
                 {
                     obj.SetArray();
                     obj.Reserve(static_cast<::rapidjson::SizeType>(arg.size()), alloc);
@@ -217,7 +217,7 @@ namespace adapters
                         push_args(std::forward<decltype(val)>(val), obj, alloc);
                     }
                 }
-                else if constexpr (rpc::details::is_serializable_v<rapidjson_adapter, no_ref_t>)
+                else if constexpr (rpc_hpp::details::is_serializable_v<rapidjson_adapter, no_ref_t>)
                 {
                     doc_t serialized =
                         no_ref_t::template serialize<rapidjson_adapter>(std::forward<T>(arg));
@@ -278,7 +278,7 @@ namespace adapters
                         return arg.Get<no_ref_t>();
                     }
                 }
-                else if constexpr (rpc::details::is_container_v<no_ref_t>)
+                else if constexpr (rpc_hpp::details::is_container_v<no_ref_t>)
                 {
                     using subvalue_t = typename no_ref_t::value_type;
 
@@ -293,7 +293,7 @@ namespace adapters
 
                     return container;
                 }
-                else if constexpr (rpc::details::is_serializable_v<rapidjson_adapter, no_ref_t>)
+                else if constexpr (rpc_hpp::details::is_serializable_v<rapidjson_adapter, no_ref_t>)
                 {
                     doc_t d{};
                     d.CopyFrom(arg, d.GetAllocator());
@@ -346,7 +346,7 @@ template<>
 template<>
 template<typename R, typename... Args>
 [[nodiscard]] adapters::rapidjson::doc_t pack_adapter<adapters::rapidjson_adapter>::serialize_pack(
-    const ::rpc::details::packed_func<R, Args...>& pack)
+    const ::rpc_hpp::details::packed_func<R, Args...>& pack)
 {
     using namespace adapters::rapidjson;
 
@@ -370,7 +370,7 @@ template<typename R, typename... Args>
             {
                 result.SetString(pack.get_result().c_str(), alloc);
             }
-            else if constexpr (rpc::details::is_container_v<R>)
+            else if constexpr (rpc_hpp::details::is_container_v<R>)
             {
                 const auto& container = pack.get_result();
                 result.SetArray();
@@ -381,7 +381,7 @@ template<typename R, typename... Args>
                     result.PushBack(val, alloc);
                 }
             }
-            else if constexpr (rpc::details::is_serializable_v<adapters::rapidjson_adapter, R>)
+            else if constexpr (rpc_hpp::details::is_serializable_v<adapters::rapidjson_adapter, R>)
             {
                 doc_t tmp = R::template serialize<adapters::rapidjson_adapter>(pack.get_result());
                 result.CopyFrom(tmp, alloc);
@@ -405,7 +405,7 @@ template<typename R, typename... Args>
     args.Reserve(static_cast<::rapidjson::SizeType>(sizeof...(Args)), alloc);
     const auto& argTup = pack.get_args();
 
-    rpc::details::for_each_tuple(argTup,
+    rpc_hpp::details::for_each_tuple(argTup,
         [&args, &alloc](auto&& x)
         { adapters::rapidjson::details::push_args(std::forward<decltype(x)>(x), args, alloc); });
 
@@ -415,26 +415,26 @@ template<typename R, typename... Args>
 
 template<>
 template<typename R, typename... Args>
-[[nodiscard]] ::rpc::details::packed_func<R, Args...> pack_adapter<
+[[nodiscard]] ::rpc_hpp::details::packed_func<R, Args...> pack_adapter<
     adapters::rapidjson_adapter>::deserialize_pack(const adapters::rapidjson::doc_t& serial_obj)
 {
     using namespace adapters::rapidjson;
 
     [[maybe_unused]] unsigned i = 0;
 
-    typename ::rpc::details::packed_func<R, Args...>::args_t args{
+    typename ::rpc_hpp::details::packed_func<R, Args...>::args_t args{
         adapters::rapidjson::details::parse_args<Args>(serial_obj["args"], i)...
     };
 
     if constexpr (std::is_void_v<R>)
     {
-        ::rpc::details::packed_func<void, Args...> pack(
+        ::rpc_hpp::details::packed_func<void, Args...> pack(
             serial_obj["func_name"].GetString(), std::move(args));
 
         if (serial_obj.HasMember("except_type"))
         {
             pack.set_exception(serial_obj["err_mesg"].GetString(),
-                static_cast<rpc::exceptions::exception_type>(serial_obj["except_type"].GetInt()));
+                static_cast<rpc_hpp::exceptions::exception_type>(serial_obj["except_type"].GetInt()));
         }
 
         return pack;
@@ -455,7 +455,7 @@ template<typename R, typename... Args>
         if (serial_obj.HasMember("except_type"))
         {
             pack.set_exception(serial_obj["err_mesg"].GetString(),
-                static_cast<rpc::exceptions::exception_type>(serial_obj["except_type"].GetInt()));
+                static_cast<rpc_hpp::exceptions::exception_type>(serial_obj["except_type"].GetInt()));
         }
 
         return pack;
@@ -471,7 +471,7 @@ template<>
 
 template<>
 inline void pack_adapter<adapters::rapidjson_adapter>::set_exception(
-    adapters::rapidjson::doc_t& serial_obj, const rpc::exceptions::rpc_exception& ex)
+    adapters::rapidjson::doc_t& serial_obj, const rpc_hpp::exceptions::rpc_exception& ex)
 {
     auto& alloc = serial_obj.GetAllocator();
 
@@ -487,4 +487,4 @@ inline void pack_adapter<adapters::rapidjson_adapter>::set_exception(
             "err_mesg", adapters::rapidjson::value_t{}.SetString(ex.what(), alloc), alloc);
     }
 }
-} // namespace rpc
+} // namespace rpc_hpp

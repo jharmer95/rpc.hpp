@@ -39,25 +39,29 @@
 #if defined(RPC_HPP_ENABLE_BITSERY)
 #    include <rpc_adapters/rpc_bitsery.hpp>
 
-using rpc::adapters::bitsery_adapter;
+using rpc_hpp::adapters::bitsery_adapter;
 #endif
 
 #if defined(RPC_HPP_ENABLE_BOOST_JSON)
 #    include <rpc_adapters/rpc_boost_json.hpp>
 
-using rpc::adapters::boost_json_adapter;
+using rpc_hpp::adapters::boost_json_adapter;
 #endif
 
 #if defined(RPC_HPP_ENABLE_NJSON)
 #    include <rpc_adapters/rpc_njson.hpp>
 
-using rpc::adapters::njson_adapter;
+using rpc_hpp::adapters::njson_adapter;
 #endif
 
 #if defined(RPC_HPP_ENABLE_RAPIDJSON)
 #    include <rpc_adapters/rpc_rapidjson.hpp>
 
-using rpc::adapters::rapidjson_adapter;
+using rpc_hpp::adapters::rapidjson_adapter;
+#endif
+
+#if defined(RPC_HPP_BENCH_RPCLIB)
+#    include <rpc/client.h>
 #endif
 
 #include <algorithm>
@@ -72,6 +76,10 @@ struct ComplexObject
     bool flag1{};
     bool flag2{};
     std::array<uint8_t, 12> vals{};
+
+#if defined(RPC_HPP_BENCH_RPCLIB)
+    MSGPACK_DEFINE_ARRAY(id, name, flag1, flag2, vals);
+#endif
 };
 
 #if defined(RPC_HPP_ENABLE_BITSERY)
@@ -89,9 +97,10 @@ void serialize(S& s, ComplexObject& val)
 #if defined(RPC_HPP_ENABLE_BOOST_JSON)
 template<>
 template<>
-inline rpc::adapters::boost_json::value_t boost_json_adapter::serialize(const ComplexObject& val)
+inline rpc_hpp::adapters::boost_json::value_t boost_json_adapter::serialize(
+    const ComplexObject& val)
 {
-    rpc::adapters::boost_json::object_t obj_j;
+    rpc_hpp::adapters::boost_json::object_t obj_j;
     obj_j["id"] = val.id;
     obj_j["name"] = val.name;
     obj_j["flag1"] = val.flag1;
@@ -111,7 +120,7 @@ inline rpc::adapters::boost_json::value_t boost_json_adapter::serialize(const Co
 template<>
 template<>
 inline ComplexObject boost_json_adapter::deserialize(
-    const rpc::adapters::boost_json::value_t& serial_obj)
+    const rpc_hpp::adapters::boost_json::value_t& serial_obj)
 {
     ComplexObject cx;
     cx.id = static_cast<int>(serial_obj.at("id").get_int64());
@@ -142,7 +151,7 @@ inline ComplexObject boost_json_adapter::deserialize(
 #if defined(RPC_HPP_ENABLE_NJSON)
 template<>
 template<>
-inline rpc::adapters::njson::njson_t njson_adapter::serialize(const ComplexObject& val)
+inline rpc_hpp::adapters::njson::njson_t njson_adapter::serialize(const ComplexObject& val)
 {
     adapters::njson::njson_t obj_j;
     obj_j["id"] = val.id;
@@ -181,7 +190,7 @@ inline ComplexObject njson_adapter::deserialize(const adapters::njson::njson_t& 
 #if defined(RPC_HPP_ENABLE_RAPIDJSON)
 template<>
 template<>
-inline rpc::adapters::rapidjson::doc_t rapidjson_adapter::serialize(const ComplexObject& val)
+inline rpc_hpp::adapters::rapidjson::doc_t rapidjson_adapter::serialize(const ComplexObject& val)
 {
     adapters::rapidjson::doc_t d;
     d.SetObject();

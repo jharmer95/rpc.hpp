@@ -42,29 +42,29 @@
 #if defined(RPC_HPP_ENABLE_NJSON)
 #    include <rpc_adapters/rpc_njson.hpp>
 
-using rpc::adapters::njson_adapter;
+using rpc_hpp::adapters::njson_adapter;
 #endif
 
 #if defined(RPC_HPP_ENABLE_RAPIDJSON)
 #    include <rpc_adapters/rpc_rapidjson.hpp>
 
-using rpc::adapters::rapidjson_adapter;
+using rpc_hpp::adapters::rapidjson_adapter;
 #endif
 
 #if defined(RPC_HPP_ENABLE_BOOST_JSON)
 #    include <rpc_adapters/rpc_boost_json.hpp>
 
-using rpc::adapters::boost_json_adapter;
+using rpc_hpp::adapters::boost_json_adapter;
 #endif
 
 #if defined(RPC_HPP_ENABLE_BITSERY)
 #    include <rpc_adapters/rpc_bitsery.hpp>
 
-using rpc::adapters::bitsery_adapter;
+using rpc_hpp::adapters::bitsery_adapter;
 
-const uint64_t rpc::adapters::bitsery::config::max_func_name_size = 30;
-const uint64_t rpc::adapters::bitsery::config::max_string_size = 2048;
-const uint64_t rpc::adapters::bitsery::config::max_container_size = 1'000;
+const uint64_t rpc_hpp::adapters::bitsery::config::max_func_name_size = 30;
+const uint64_t rpc_hpp::adapters::bitsery::config::max_string_size = 2048;
+const uint64_t rpc_hpp::adapters::bitsery::config::max_container_size = 1'000;
 #endif
 
 #include <algorithm>

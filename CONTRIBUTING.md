@@ -64,7 +64,7 @@ Some features of the library are:
      code/pseudocode to indicate the usage or API of your request -->
 
     ```C++
-    class MyClient : public rpc::client_interface<some_serial_lib_adapter>
+    class MyClient : public rpc_hpp::client_interface<some_serial_lib_adapter>
     {
     };
 

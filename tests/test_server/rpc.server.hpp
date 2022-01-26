@@ -38,9 +38,11 @@
 
 #include "../test_structs.hpp"
 #include "../static_funcs.hpp"
+#include "../test_structs.hpp"
 
 #include <asio.hpp>
 #include <rpc.hpp>
+#include <rpc_dispatch_helper.hpp>
 
 #include <array>
 #include <atomic>
@@ -101,12 +103,12 @@ double AverageContainer(const std::vector<T>& vec)
     return sum / static_cast<double>(vec.size());
 }
 
-std::vector<uint64_t> GenRandInts(uint64_t min, uint64_t max, size_t sz = 1000);
+std::vector<uint64_t> GenRandInts(uint64_t min, uint64_t max, size_t sz);
 std::string HashComplex(const ComplexObject& cx);
 void HashComplexRef(ComplexObject& cx, std::string& hashStr);
 
 template<typename Serial>
-class TestServer final : public rpc::server_interface<Serial>
+class TestServer final : public rpc_hpp::server_interface<Serial>
 {
 public:
     TestServer(asio::io_context& io, const uint16_t port)

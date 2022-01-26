@@ -9,7 +9,7 @@
 #include <string>
 #include <vector>
 
-using rpc::adapters::njson_adapter;
+using rpc_hpp::adapters::njson_adapter;
 
 RpcClient::RpcClient(const std::string& module_path) : m_module{ LoadLibrary(module_path.c_str()) }
 {

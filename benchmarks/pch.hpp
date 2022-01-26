@@ -16,6 +16,7 @@
 
 // 3rd Party
 #include <asio.hpp>
+#include <rpc/client.h>
 
 #if defined(RPC_HPP_ENABLE_BITSERY)
 #    include <bitsery/bitsery.h>

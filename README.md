@@ -54,8 +54,8 @@ server.cpp
 
 #include <string>
 
-using rpc::adapters::njson;
-using rpc::adapters::njson_adapter;
+using rpc_hpp::adapters::njson;
+using rpc_hpp::adapters::njson_adapter;
 
 int Add(int n1, int n2)
 {
@@ -67,7 +67,7 @@ void AppendStr(std::string& str, const char* append)
     str.append(append);
 }
 
-class RpcServer : public rpc::server_interface<njson_adapter>
+class RpcServer : public rpc_hpp::server_interface<njson_adapter>
 {
 public:
     RpcServer(const char* address)
@@ -116,9 +116,9 @@ client.cpp
 #include <cassert>
 #include <string>
 
-using rpc::adapters::njson_adapter;
+using rpc_hpp::adapters::njson_adapter;
 
-class RpcClient : public rpc::client_interface<njson_adapter>
+class RpcClient : public rpc_hpp::client_interface<njson_adapter>
 {
 public:
     RpcClient(const char* address)

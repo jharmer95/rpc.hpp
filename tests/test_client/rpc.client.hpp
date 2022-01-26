@@ -41,31 +41,31 @@
 #if defined(RPC_HPP_ENABLE_BITSERY)
 #    include <rpc_adapters/rpc_bitsery.hpp>
 
-using rpc::adapters::bitsery_adapter;
+using rpc_hpp::adapters::bitsery_adapter;
 #endif
 
 #if defined(RPC_HPP_ENABLE_BOOST_JSON)
 #    include <rpc_adapters/rpc_boost_json.hpp>
 
-using rpc::adapters::boost_json_adapter;
+using rpc_hpp::adapters::boost_json_adapter;
 #endif
 
 #if defined(RPC_HPP_ENABLE_NJSON)
 #    include <rpc_adapters/rpc_njson.hpp>
 
-using rpc::adapters::njson_adapter;
+using rpc_hpp::adapters::njson_adapter;
 #endif
 
 #if defined(RPC_HPP_ENABLE_RAPIDJSON)
 #    include <rpc_adapters/rpc_rapidjson.hpp>
 
-using rpc::adapters::rapidjson_adapter;
+using rpc_hpp::adapters::rapidjson_adapter;
 #endif
 
 using asio::ip::tcp;
 
 template<typename Serial>
-class TestClient final : public rpc::client_interface<Serial>
+class TestClient final : public rpc_hpp::client_interface<Serial>
 {
 public:
     TestClient(const std::string_view host, const std::string_view port)

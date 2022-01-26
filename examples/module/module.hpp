@@ -2,7 +2,7 @@
 
 #include <rpc_adapters/rpc_njson.hpp>
 
-using rpc::adapters::njson_adapter;
+using rpc_hpp::adapters::njson_adapter;
 
 #include <string>
 #include <vector>
@@ -32,7 +32,7 @@ extern "C"
     DLL_PUBLIC int RunRemoteFunc(char* json_str, size_t json_buf_len);
 }
 
-class RpcModule : public rpc::server_interface<njson_adapter>
+class RpcModule : public rpc_hpp::server_interface<njson_adapter>
 {
 public:
     RpcModule();

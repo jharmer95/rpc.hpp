@@ -76,7 +76,7 @@
 #define RPC_HPP_POSTCONDITION(EXPR) assert(EXPR)
 
 ///@brief Top-level namespace for rpc.hpp classes and functions
-namespace rpc
+namespace rpc_hpp
 {
 ///@brief Array containing the version information for rpc.hpp
 static constexpr unsigned version[]{ 0, 7, 1 };
@@ -1198,4 +1198,4 @@ inline namespace client
     };
 } // namespace client
 #endif
-} // namespace rpc
+} // namespace rpc_hpp

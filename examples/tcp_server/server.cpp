@@ -10,7 +10,7 @@
 #include <thread>
 
 using asio::ip::tcp;
-using rpc::adapters::njson_adapter;
+using rpc_hpp::adapters::njson_adapter;
 
 static std::unique_ptr<RpcServer> P_SERVER;
 
