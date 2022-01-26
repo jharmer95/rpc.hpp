@@ -648,11 +648,12 @@ inline namespace server
         }
 
         void clear_all_cache() noexcept { m_cache_map.clear(); }
+#    endif
 
         template<typename R, typename... Args>
         void bind_cached(std::string func_name, R (*func_ptr)(Args...))
         {
-            m_dispatch_table.insert_or_assign(std::move(func_name),
+            m_dispatch_table.emplace(std::move(func_name),
                 [this, func_ptr](typename Serial::serial_t& serial_obj)
                 {
                     try
@@ -665,13 +666,20 @@ inline namespace server
                     }
                 });
         }
-#    endif
+
+        template<typename R, typename... Args, typename F>
+        void bind_cached(std::string func_name, F&& func)
+        {
+            using fptr_t = R (*)(Args...);
+
+            bind_cached(std::move(func_name), fptr_t{ std::forward<F>(func) });
+        }
 
         template<typename R, typename... Args>
         void bind(std::string func_name, R (*func_ptr)(Args...))
         {
-            m_dispatch_table.insert_or_assign(std::move(func_name),
-                [this, func_ptr](typename Serial::serial_t& serial_obj)
+            m_dispatch_table.emplace(std::move(func_name),
+                [func_ptr](typename Serial::serial_t& serial_obj)
                 {
                     try
                     {
@@ -682,6 +690,14 @@ inline namespace server
                         pack_adapter<Serial>::set_exception(serial_obj, ex);
                     }
                 });
+        }
+
+        template<typename R, typename... Args, typename F>
+        void bind(std::string func_name, F&& func)
+        {
+            using fptr_t = R (*)(Args...);
+
+            bind(std::move(func_name), fptr_t{ std::forward<F>(func) });
         }
 
         ///@brief Parses the received serialized data and determines which function to call

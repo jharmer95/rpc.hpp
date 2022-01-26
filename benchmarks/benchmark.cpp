@@ -21,7 +21,7 @@ TEST_CASE("By Value (simple)")
     uint64_t test = 1;
 
     ankerl::nanobench::Bench b;
-    b.title("By Value (simple)").warmup(1).relative(true).minEpochIterations(1'000);
+    b.title("By Value (simple)").warmup(1).relative(true).minEpochIterations(2'000);
 
     b.run("rpc.hpp (asio::tcp, njson)",
         [&]
@@ -71,7 +71,7 @@ TEST_CASE("By Value (complex)")
         { 0, 1, 4, 6, 7, 8, 11, 15, 17, 22, 25, 26 } };
 
     ankerl::nanobench::Bench b;
-    b.title("By Value (complex)").warmup(1).relative(true).minEpochIterations(1'000);
+    b.title("By Value (complex)").warmup(1).relative(true).minEpochIterations(2'000);
 
     b.run("rpc.hpp (asio::tcp, njson)",
         [&]
@@ -121,7 +121,7 @@ TEST_CASE("By Value (many)")
     double test = 1.0;
 
     ankerl::nanobench::Bench b;
-    b.title("By Value (many)").warmup(1).relative(true).minEpochIterations(1'000);
+    b.title("By Value (many)").warmup(1).relative(true).minEpochIterations(2'000);
 
     b.run("rpc.hpp (asio::tcp, njson)",
         [&]
@@ -405,7 +405,7 @@ TEST_CASE("With Container")
     double test = 1.0;
 
     ankerl::nanobench::Bench b;
-    b.title("With Container").warmup(1).relative(true).minEpochIterations(1'000);
+    b.title("With Container").warmup(1).relative(true).minEpochIterations(2'000);
 
     b.run("rpc.hpp (asio::tcp, njson)",
         [&]
@@ -467,7 +467,7 @@ TEST_CASE("Sequential")
     static constexpr size_t num_rands = 1'000;
 
     ankerl::nanobench::Bench b;
-    b.title("Sequential").warmup(1).relative(true).minEpochIterations(10);
+    b.title("Sequential").warmup(1).relative(true).minEpochIterations(3);
 
     b.run("rpc.hpp (asio::tcp, njson)",
         [&]

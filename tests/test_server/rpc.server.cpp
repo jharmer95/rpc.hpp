@@ -285,7 +285,7 @@ void load_cache(TestServer<Serial>& server, [[maybe_unused]] R (*func)(Args...),
     while (ifile.get(*ss.rdbuf(), '\034'))
     {
         // Toss out separator
-        [[maybe_unused]] auto unused = ifile.get();
+        std::ignore = ifile.get();
 
         std::getline(ifile, val_str);
 
@@ -322,7 +322,8 @@ void load_cache(TestServer<Serial>& server, [[maybe_unused]] R (*func)(Args...),
             cache[ss.str()] = std::move(value);
         }
 
-        ss.clear();
+        // clear stream and its buffer
+        std::stringstream{}.swap(ss);
     }
 }
 
@@ -336,7 +337,7 @@ void BindFuncs(TestServer<Serial>& server)
     server.bind("SquareRootRef", &SquareRootRef);
     server.bind("GenRandInts", &GenRandInts);
     server.bind("HashComplexRef", &HashComplexRef);
-    server.bind("AddOne", &AddOne);
+    server.bind<void, size_t&>("AddOne", [](size_t& n) { AddOne(n); });
 
     server.bind_cached("SimpleSum", &SimpleSum);
     server.bind_cached("StrLen", &StrLen);
