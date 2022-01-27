@@ -83,9 +83,10 @@ public:
 
         // Get data from client...
 
-        dispatch(data);
+        // Sink data into the dispatch function to get result data
+		auto result_data = dispatch(std::move(data));
 
-        // Send data back to client...
+        // Send result data back to client...
     }
 };
 

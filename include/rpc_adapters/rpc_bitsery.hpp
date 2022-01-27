@@ -241,38 +241,23 @@ namespace adapters
             {
                 pack_helper<R, Args...> helper;
 
+                helper.func_name = pack.get_func_name();
+                helper.args = pack.get_args();
+
                 if (!pack)
                 {
                     helper.except_type = static_cast<int>(pack.get_except_type());
                     helper.err_mesg = pack.get_err_mesg();
-                }
-                else
-                {
-                    if constexpr (!std::is_void_v<R>)
-                    {
-                        helper.result = pack.get_result();
-                    }
+                    return helper;
                 }
 
-                helper.func_name = pack.get_func_name();
-                helper.args = pack.get_args();
+                if constexpr (!std::is_void_v<R>)
+                {
+                    helper.result = pack.get_result();
+                }
 
                 return helper;
             }
-
-#if !defined(RPC_HPP_BITSERY_EXACT_SZ)
-#    if defined(_MSC_VER)
-#        pragma warning(push)
-#        pragma warning(disable : 4244)
-#    elif defined(__GNUC__)
-#        pragma GCC diagnostic push
-#        pragma GCC diagnostic ignored "-Wconversion"
-#    elif defined(__clang__)
-#        pragma clang diagnostic push
-#        pragma clang diagnostic ignored "-Wconversion"
-#        pragma clang diagnostic ignored "-Wshorten-64-to-32"
-#    endif
-#endif
 
             // nodiscard because a potentially expensive copy and allocation is being done
             template<typename R, typename... Args>
@@ -293,6 +278,7 @@ namespace adapters
 
                     pack.set_exception(std::move(helper.err_mesg),
                         static_cast<exceptions::exception_type>(helper.except_type));
+
                     return pack;
                 }
                 else
@@ -309,19 +295,10 @@ namespace adapters
 
                     pack.set_exception(std::move(helper.err_mesg),
                         static_cast<exceptions::exception_type>(helper.except_type));
+
                     return pack;
                 }
             }
-
-#if !defined(RPC_HPP_BITSERY_EXACT_SZ)
-#    if defined(_MSC_VER)
-#        pragma warning(pop)
-#    elif defined(__GNUC__)
-#        pragma GCC diagnostic pop
-#    elif defined(__clang__)
-#        pragma clang diagnostic pop
-#    endif
-#endif
 
             // Borrowed from Bitsery library for compatibility
             inline unsigned extract_length(const bit_buffer& bytes, size_t& index)
@@ -351,6 +328,9 @@ namespace adapters
             // Borrowed from Bitsery library for compatibility
             inline void write_length(bit_buffer& bytes, size_t size, size_t& index)
             {
+                static constexpr size_t max_sz = 0x40000000U;
+                RPC_HPP_PRECONDITION(size < max_sz);
+
                 if (size < 0x80U)
                 {
                     assert(index < size);
@@ -358,34 +338,32 @@ namespace adapters
 
                     bytes.insert(bytes.begin() + static_cast<ptrdiff_t>(index++),
                         static_cast<uint8_t>(size));
+
+                    return;
                 }
-                else
+
+                if (size < 0x4000U)
                 {
-                    if (size < 0x4000U)
-                    {
-                        bytes.insert(bytes.begin() + static_cast<ptrdiff_t>(index++),
-                            static_cast<uint8_t>((size >> 8) | 0x80U));
+                    bytes.insert(bytes.begin() + static_cast<ptrdiff_t>(index++),
+                        static_cast<uint8_t>((size >> 8) | 0x80U));
 
-                        bytes.insert(bytes.begin() + static_cast<ptrdiff_t>(index++),
-                            static_cast<uint8_t>(size));
-                    }
-                    else
-                    {
-                        assert(size < 0x40000000U);
+                    bytes.insert(bytes.begin() + static_cast<ptrdiff_t>(index++),
+                        static_cast<uint8_t>(size));
 
-                        bytes.insert(bytes.begin() + static_cast<ptrdiff_t>(index++),
-                            static_cast<uint8_t>((size >> 24) | 0xC0U));
-
-                        bytes.insert(bytes.begin() + static_cast<ptrdiff_t>(index++),
-                            static_cast<uint8_t>(size >> 16));
-
-                        bytes.insert(bytes.begin() + static_cast<ptrdiff_t>(index++),
-                            *reinterpret_cast<const uint8_t*>(&size));
-
-                        bytes.insert(bytes.begin() + static_cast<ptrdiff_t>(index++),
-                            *reinterpret_cast<const uint8_t*>(&size) + 1);
-                    }
+                    return;
                 }
+
+                bytes.insert(bytes.begin() + static_cast<ptrdiff_t>(index++),
+                    static_cast<uint8_t>((size >> 24) | 0xC0U));
+
+                bytes.insert(bytes.begin() + static_cast<ptrdiff_t>(index++),
+                    static_cast<uint8_t>(size >> 16));
+
+                bytes.insert(bytes.begin() + static_cast<ptrdiff_t>(index++),
+                    *reinterpret_cast<const uint8_t*>(&size));
+
+                bytes.insert(bytes.begin() + static_cast<ptrdiff_t>(index++),
+                    *reinterpret_cast<const uint8_t*>(&size) + 1);
             }
         } // namespace details
     }     // namespace bitsery
@@ -395,14 +373,14 @@ template<>
 [[nodiscard]] inline adapters::bitsery::bit_buffer adapters::bitsery_adapter::to_bytes(
     adapters::bitsery::bit_buffer&& serial_obj)
 {
-    return std::move(serial_obj);
+    return serial_obj;
 }
 
 template<>
 [[nodiscard]] inline adapters::bitsery::bit_buffer adapters::bitsery_adapter::from_bytes(
     adapters::bitsery::bit_buffer&& bytes)
 {
-    return std::move(bytes);
+    return bytes;
 }
 
 template<>
@@ -410,11 +388,9 @@ template<typename R, typename... Args>
 [[nodiscard]] adapters::bitsery::bit_buffer pack_adapter<adapters::bitsery_adapter>::serialize_pack(
     const details::packed_func<R, Args...>& pack)
 {
-    using namespace adapters::bitsery;
-
     const auto helper = adapters::bitsery::details::to_helper(pack);
 
-    bit_buffer buffer{};
+    adapters::bitsery::bit_buffer buffer{};
     buffer.reserve(64);
 
     const auto bytes_written =
@@ -429,8 +405,6 @@ template<typename R, typename... Args>
 [[nodiscard]] details::packed_func<R, Args...> pack_adapter<
     adapters::bitsery_adapter>::deserialize_pack(const adapters::bitsery::bit_buffer& serial_obj)
 {
-    using namespace adapters::bitsery;
-
     adapters::bitsery::details::pack_helper<R, Args...> helper;
 
     const auto [error, success] = bitsery::quickDeserialization(

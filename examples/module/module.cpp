@@ -34,8 +34,7 @@ RpcModule::RpcModule()
 
 int RunRemoteFunc(char* const json_str, const size_t json_buf_len)
 {
-    std::string input{ json_str };
-    rpc_mod.dispatch(input);
+    const auto input = rpc_mod.dispatch(json_str);
 
     if (input.size() >= json_buf_len)
     {

@@ -221,14 +221,13 @@ template<typename R, typename... Args>
     {
         obj["except_type"] = pack.get_except_type();
         obj["err_mesg"] = pack.get_err_mesg();
+        return obj;
     }
-    else
+
+    if constexpr (!std::is_void_v<R>)
     {
-        if constexpr (!std::is_void_v<R>)
-        {
-            obj["result"] = {};
-            adapters::njson::details::push_arg(pack.get_result(), obj["result"]);
-        }
+        obj["result"] = {};
+        adapters::njson::details::push_arg(pack.get_result(), obj["result"]);
     }
 
     return obj;

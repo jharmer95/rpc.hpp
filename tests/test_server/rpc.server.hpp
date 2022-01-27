@@ -141,9 +141,7 @@ public:
                         throw asio::system_error(error);
                     }
 
-                    typename Serial::bytes_t bytes{ std::begin(data), std::begin(data) + len };
-                    this->dispatch(bytes);
-
+                    const auto bytes = this->dispatch({ std::begin(data), std::begin(data) + len });
                     write(sock, asio::buffer(bytes, bytes.size()));
                 }
             }

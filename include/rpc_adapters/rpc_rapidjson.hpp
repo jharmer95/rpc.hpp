@@ -109,7 +109,7 @@ namespace adapters
                 }
             }
 
-            [[noreturn]] inline void throw_mismatch(
+            inline std::string mismatch_message(
                 std::string&& expect_type, const value_t& obj) noexcept(false)
             {
                 std::string type_str = [&obj]
@@ -172,8 +172,8 @@ namespace adapters
                     return "unknown";
                 }();
 
-                throw exceptions::function_mismatch("rapidjson expected type: "
-                    + std::move(expect_type) + ", got type: " + std::move(type_str));
+                return { "rapidjson expected type: " + std::move(expect_type)
+                    + ", got type: " + std::move(type_str) };
             }
 
             template<typename T>
@@ -252,7 +252,8 @@ namespace adapters
 
                 if (!validate_arg<no_ref_t>(arg))
                 {
-                    throw_mismatch(typeid(no_ref_t).name(), arg);
+                    throw exceptions::function_mismatch(
+                        mismatch_message(typeid(no_ref_t).name(), arg));
                 }
 
                 if constexpr (std::is_same_v<no_ref_t, std::string>)
@@ -391,10 +392,6 @@ template<typename R, typename... Args>
                 doc_t tmp = adapters::rapidjson_adapter::template serialize<R>(pack.get_result());
                 result.CopyFrom(tmp, alloc);
             }
-        }
-        else
-        {
-            result.SetNull();
         }
 
         d.AddMember("result", result, alloc);

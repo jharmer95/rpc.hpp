@@ -68,9 +68,7 @@ void RpcServer::Run()
                     throw asio::system_error(error);
                 }
 
-                std::string bytes(data, data + len);
-                dispatch(bytes);
-
+                const auto bytes = dispatch({data, data + len});
                 write(sock, asio::buffer(bytes, bytes.size()));
             }
         }

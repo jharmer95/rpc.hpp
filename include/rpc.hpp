@@ -744,26 +744,27 @@ inline namespace server
         ///@brief Parses the received serialized data and determines which function to call
         ///
         ///@param bytes Data to be parsed into/back out of a serial object
-        void dispatch(typename Serial::bytes_t& bytes) const
+
+        // nodiscard because original bytes are consumed
+        [[nodiscard]] typename Serial::bytes_t dispatch(typename Serial::bytes_t&& bytes) const
         {
             auto serial_obj = Serial::from_bytes(std::move(bytes));
             const auto func_name = pack_adapter<adapter_t>::get_func_name(serial_obj);
 
             const auto it = m_dispatch_table.find(func_name);
 
-            if (it == m_dispatch_table.end())
-            {
-                pack_adapter<Serial>::set_exception(serial_obj,
-                    exceptions::function_not_found("RPC error: Called function: "
-                                                   " + func_name + "
-                                                   " not found!"));
-            }
-            else
+            if (it != m_dispatch_table.end())
             {
                 it->second(serial_obj);
+                return Serial::to_bytes(std::move(serial_obj));
             }
 
-            bytes = Serial::to_bytes(std::move(serial_obj));
+            pack_adapter<Serial>::set_exception(serial_obj,
+                exceptions::function_not_found("RPC error: Called function: "
+                                               " + func_name + "
+                                               " not found!"));
+
+            return Serial::to_bytes(std::move(serial_obj));
         }
 
     protected:

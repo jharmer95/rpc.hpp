@@ -91,7 +91,7 @@ namespace adapters
                 }
             }
 
-            [[noreturn]] inline void throw_mismatch(
+            inline std::string mismatch_string(
                 std::string&& expect_type, const value_t& obj) noexcept(false)
             {
                 std::string type_str = [&obj]
@@ -125,8 +125,8 @@ namespace adapters
                     }
                 }();
 
-                throw exceptions::function_mismatch("Boost.JSON expected type: "
-                    + std::move(expect_type) + ", got type: " + std::move(type_str));
+                return { "Boost.JSON expected type: " + std::move(expect_type)
+                    + ", got type: " + std::move(type_str) };
             }
 
             template<typename T>
@@ -188,7 +188,8 @@ namespace adapters
 
                 if (!validate_arg<T>(arg))
                 {
-                    throw_mismatch(typeid(no_ref_t).name(), arg);
+                    throw exceptions::function_mismatch(
+                        mismatch_string(typeid(no_ref_t).name(), arg));
                 }
 
                 if constexpr (std::is_arithmetic_v<
@@ -276,14 +277,13 @@ template<typename R, typename... Args>
     {
         obj["except_type"] = static_cast<int>(pack.get_except_type());
         obj["err_mesg"] = pack.get_err_mesg();
+        return obj;
     }
-    else
+
+    if constexpr (!std::is_void_v<R>)
     {
-        if constexpr (!std::is_void_v<R>)
-        {
-            obj["result"] = {};
-            adapters::boost_json::details::push_arg(pack.get_result(), obj.at("result"));
-        }
+        obj["result"] = {};
+        adapters::boost_json::details::push_arg(pack.get_result(), obj.at("result"));
     }
 
     return obj;
@@ -305,7 +305,8 @@ template<typename R, typename... Args>
 
     if constexpr (std::is_void_v<R>)
     {
-        ::rpc_hpp::details::packed_func<void, Args...> pack(obj.at("func_name").get_string().c_str(),
+        ::rpc_hpp::details::packed_func<void, Args...> pack(
+            obj.at("func_name").get_string().c_str(),
             { adapters::boost_json::details::parse_args<Args>(args_val, i)... });
 
         if (obj.contains("except_type"))
@@ -320,7 +321,8 @@ template<typename R, typename... Args>
     {
         if (obj.contains("result") && !obj.at("result").is_null())
         {
-            return ::rpc_hpp::details::packed_func<R, Args...>(obj.at("func_name").get_string().c_str(),
+            return ::rpc_hpp::details::packed_func<R, Args...>(
+                obj.at("func_name").get_string().c_str(),
                 adapters::boost_json::details::parse_arg<R>(obj.at("result")),
                 { adapters::boost_json::details::parse_args<Args>(obj.at("args"), i)... });
         }
@@ -344,7 +346,6 @@ template<>
     const adapters::boost_json::value_t& serial_obj)
 {
     RPC_HPP_PRECONDITION(serial_obj.is_object());
-
     return { serial_obj.at("func_name").get_string().c_str() };
 }
 
