@@ -86,7 +86,7 @@ void bench_rpc(
         [&]
         {
             nanobench::doNotOptimizeAway(
-                test_val = GetClient<bjson_adapter>().template call_func<T>(
+                test_val = GetClient<boost_json_adapter>().template call_func<T>(
                     func_name, std::forward<Args>(args)...));
         });
 

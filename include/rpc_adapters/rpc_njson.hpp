@@ -149,7 +149,6 @@ namespace adapters
 
                     no_ref_t container{};
                     container.reserve(arg.size());
-
                     unsigned j = 0;
 
                     for (const auto& val : arg)
@@ -212,8 +211,8 @@ template<typename R, typename... Args>
     auto& arg_arr = obj["args"];
     arg_arr.get_ref<njson_t::array_t&>().reserve(sizeof...(Args));
 
-    const auto& argTup = pack.get_args();
-    rpc_hpp::details::for_each_tuple(argTup,
+    const auto& arg_tup = pack.get_args();
+    rpc_hpp::details::for_each_tuple(arg_tup,
         [&arg_arr](auto&& x)
         { adapters::njson::details::push_args(std::forward<decltype(x)>(x), arg_arr); });
 

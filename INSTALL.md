@@ -237,11 +237,11 @@ $ cmake --build build
 |--|--|
 | `BUILD_ADAPTER_BITSERY` | Build the adapter for Bitsery |
 | `BUILD_ADAPTER_BOOST_JSON` | Build the adapter for Boost.JSON |
-| `BUILD_ADAPTER_NJSON` | Build the adapter for nlohmann/json |
+| `BUILD_ADAPTER_NJSON` | Build the adapter for nlohmann/json (`ON` by default) |
 | `BUILD_ADAPTER_RAPIDJSON` | Build the adapter for rapidjson |
 | `BUILD_BENCHMARK` | Build the benchmarking suite |
 | `BUILD_EXAMPLES` | Build the examples |
-| `BUILD_TESTING` | Build the testing tree |
+| `BUILD_TESTING` | Build the testing tree (`ON` by default) |
 | `CODE_COVERAGE` | Enable coverage reporting |
 | `DEPENDS_CONAN` | Use Conan to manage C/C++ dependencies |
 | `DEPENDS_VCPKG` | User vcpkg to manage C/C++ dependencies |

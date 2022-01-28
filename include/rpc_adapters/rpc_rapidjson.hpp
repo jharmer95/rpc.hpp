@@ -109,8 +109,7 @@ namespace adapters
                 }
             }
 
-            inline std::string mismatch_message(
-                std::string&& expect_type, const value_t& obj) noexcept(false)
+            inline std::string mismatch_message(std::string&& expect_type, const value_t& obj)
             {
                 std::string type_str = [&obj]
                 {
@@ -354,7 +353,6 @@ template<typename R, typename... Args>
     doc_t d{};
     auto& alloc = d.GetAllocator();
     d.SetObject();
-
     d.AddMember("func_name", value_t{}.SetString(pack.get_func_name().c_str(), alloc), alloc);
 
     if constexpr (!std::is_void_v<R>)
@@ -400,9 +398,9 @@ template<typename R, typename... Args>
     value_t args{};
     args.SetArray();
     args.Reserve(static_cast<rapidjson::SizeType>(sizeof...(Args)), alloc);
-    const auto& argTup = pack.get_args();
 
-    rpc_hpp::details::for_each_tuple(argTup,
+    const auto& arg_tup = pack.get_args();
+    rpc_hpp::details::for_each_tuple(arg_tup,
         [&args, &alloc](auto&& x)
         { adapters::rapidjson::details::push_args(std::forward<decltype(x)>(x), args, alloc); });
 
@@ -441,7 +439,6 @@ template<typename R, typename... Args>
         if (serial_obj.HasMember("result") && !serial_obj["result"].IsNull())
         {
             const value_t& result = serial_obj["result"];
-
             return rpc_hpp::details::packed_func<R, Args...>(serial_obj["func_name"].GetString(),
                 adapters::rapidjson::details::parse_arg<R>(result), std::move(args));
         }

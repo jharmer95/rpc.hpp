@@ -28,7 +28,7 @@
 #endif
 
 #if defined(RPC_HPP_ENABLE_BOOST_JSON)
-#    include <boost/json/src.hpp>
+#    include <boost/json.hpp>
 #endif
 
 #if defined(RPC_HPP_ENABLE_NJSON)

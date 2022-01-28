@@ -13,12 +13,18 @@ features.
 
 - Cross-platform.
   - Supports every major compiler/operating system.
-- Modern.
-  - Utilizes features like C++17's [`constexpr if`](https://en.cppreference.com/w/cpp/language/if).
-- Type-safe support for various types.
-  - Supports most built-in/STL types out of the box.
-  - Users can create serialization methods for their own custom types.
 - Easy to use.
+  - Only requires a few lines of code to provide the implementation of your client or server.
+- Modern.
+  - Takes advantage of a lot of compile-time and generic programming features such as C++17's
+    `constexpr if`.
+- Fast.
+  - See [COMPARISON](COMPARISON.md) to see how this library compares to the likes of
+    `librpc` and `gRPC`.
+- Support for various types.
+  - `std::string` / `std::vector` supported out of the box (more STL containers to come).
+  - Users can create serialization member functions for their own custom types.
+    - Users can also provide `template` methods for serializing types outside of their control
 - Extensible support via "adapters".
   - Currently supported:
     - [nlohmann-json](https://github.com/nlohmann/json)
@@ -28,14 +34,20 @@ features.
 
 ## Known Limitations
 
-- Functions with default arguments _**should not**_ be used with remote procedure calls as the default argument(s) must be provided each time anyway
-- Function overloads _**will not**_ work across an RPC boundary as the server will have an ambiguous call
-  - This includes non-explicit template functions (see [examples](examples) for the syntax for calling template functions remotely)
-- Not (statically) type-safe across the RPC boundary
-  - This is the nature of a dynamic system like remote procedure calls
-  - Return type and explicit parameters must be specified at callsite
-  - Exceptions will be able to catch function signature mismatches
-  - Function signatures can be provided via a shared header to allow for compile-time type-checking (ala `call_header_func()`)
+- Pointers and arrays (other than `const char*` / `const char[]` for strings) _**cannot**_ be
+    passed across an RPC boundary.
+- Functions with default arguments _**should not**_ be used with remote procedure calls as the
+    default argument(s) must be provided each time anyway.
+- Function overloads _**will not work**_ across an RPC boundary as the server will have an
+    ambiguous call.
+  - This includes non-explicit template functions
+      (see [examples](examples) for the syntax for calling template functions remotely).
+- Not (statically) type-safe across the RPC boundary.
+  - This is the nature of a dynamic system like remote procedure calls.
+  - Return type and explicit parameters must be specified at call site.
+  - Exceptions will be able to catch function signature mismatches.
+  - Function signatures _can_ be provided via a shared header to allow for strict compile-time
+      type-checking (by using `call_header_func()`).
 
 ## Documentation
 

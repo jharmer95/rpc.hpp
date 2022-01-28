@@ -239,8 +239,7 @@ namespace adapters
             [[nodiscard]] pack_helper<R, Args...> to_helper(
                 const rpc_hpp::details::packed_func<R, Args...>& pack)
             {
-                pack_helper<R, Args...> helper;
-
+                pack_helper<R, Args...> helper{};
                 helper.func_name = pack.get_func_name();
                 helper.args = pack.get_args();
 
@@ -318,7 +317,6 @@ namespace adapters
                 {
                     assert(index < bytes.size());
                     const uint16_t lw = *reinterpret_cast<const uint16_t*>(&bytes[index++]);
-
                     return ((((hb & 0x3FU) << 8) | lb) << 16) | lw;
                 }
 
@@ -389,10 +387,8 @@ template<typename R, typename... Args>
     const details::packed_func<R, Args...>& pack)
 {
     const auto helper = adapters::bitsery::details::to_helper(pack);
-
     adapters::bitsery::bit_buffer buffer{};
     buffer.reserve(64);
-
     const auto bytes_written =
         bitsery::quickSerialization<adapters::bitsery::details::output_adapter>(buffer, helper);
 
@@ -406,7 +402,6 @@ template<typename R, typename... Args>
     adapters::bitsery_adapter>::deserialize_pack(const adapters::bitsery::bit_buffer& serial_obj)
 {
     adapters::bitsery::details::pack_helper<R, Args...> helper;
-
     const auto [error, success] = bitsery::quickDeserialization(
         adapters::bitsery::details::input_adapter{ serial_obj.begin(), serial_obj.size() }, helper);
 
@@ -461,7 +456,6 @@ inline void pack_adapter<adapters::bitsery_adapter>::set_exception(
     // copy except_type into buffer
     const int ex_type = static_cast<int>(ex.get_type());
     memcpy(&serial_obj[0], &ex_type, sizeof(int));
-
     const std::string_view mesg = ex.what();
 
     size_t index = sizeof(int);
