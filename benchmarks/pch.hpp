@@ -16,7 +16,6 @@
 
 // 3rd Party
 #include <asio.hpp>
-#include <rpc/client.h>
 
 #if defined(RPC_HPP_ENABLE_BITSERY)
 #    include <bitsery/bitsery.h>
@@ -39,4 +38,17 @@
 #    include <rapidjson/document.h>
 #    include <rapidjson/stringbuffer.h>
 #    include <rapidjson/writer.h>
+#endif
+
+#if defined(RPC_HPP_BENCH_GRPC)
+#    include <grpc/grpc.h>
+#    include <grpcpp/channel.h>
+#    include <grpcpp/client_context.h>
+#    include <grpcpp/create_channel.h>
+#    include <grpcpp/security/credentials.h>
+#    include "grpc/benchmark.grpc.pb.h"
+#endif
+
+#if defined(RPC_HPP_BENCH_RPCLIB)
+#    include <rpc/client.h>
 #endif

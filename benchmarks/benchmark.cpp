@@ -1,5 +1,12 @@
-#define RPC_HPP_BENCH_GRPC
-#define RPC_HPP_BENCH_RPCLIB
+#if defined(RPC_HPP_BENCH_GRPC)
+#    include "grpc/client.hpp"
+
+static gRPC_Client& GetGrpcClient()
+{
+    static gRPC_Client client{};
+    return client;
+}
+#endif
 
 #if defined(RPC_HPP_BENCH_RPCLIB)
 #    include <rpc/client.h>
@@ -20,16 +27,6 @@ static rpc::client& GetRpclibClient()
 
 #define ANKERL_NANOBENCH_IMPLEMENT
 #include <nanobench.h>
-
-#if defined(RPC_HPP_BENCH_GRPC)
-#    include "grpc/client.hpp"
-
-static gRPC_Client& GetGrpcClient()
-{
-    static gRPC_Client client{};
-    return client;
-}
-#endif
 
 namespace nanobench = ankerl::nanobench;
 

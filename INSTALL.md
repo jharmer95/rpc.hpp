@@ -235,6 +235,8 @@ $ cmake --build build
 
 | Option | Description |
 |--|--|
+| `BENCH_GRPC` | Build gRPC server and client for benchmark comparison |
+| `BENCH_RPCLIB` | Build rpclib server and client for benchmark comparison |
 | `BUILD_ADAPTER_BITSERY` | Build the adapter for Bitsery |
 | `BUILD_ADAPTER_BOOST_JSON` | Build the adapter for Boost.JSON |
 | `BUILD_ADAPTER_NJSON` | Build the adapter for nlohmann/json (`ON` by default) |
@@ -251,6 +253,7 @@ NOTE:
 
 - Only one or neither of `DEPENDS_CONAN` and `DEPENDS_VCPKG` may be defined
 - `BUILD_BENCHMARK` requires `BUILD_TESTING`
+- `BENCH_GRPC` and `BENCH_RPCLIB` are only available if `BUILD_BENCHMARK` is enabled
 - `GENERATE_DOXYGEN` and `CODE_COVERAGE` should only be defined when doing a documentation or
 coverage build, respectively
 
