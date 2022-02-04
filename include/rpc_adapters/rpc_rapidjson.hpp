@@ -311,13 +311,19 @@ namespace adapters
             [[nodiscard]] std::remove_cv_t<std::remove_reference_t<T>> parse_args(
                 const value_t& arg_arr, unsigned& index)
             {
-                if (arg_arr.IsArray() && index >= arg_arr.GetArray().Size())
+                if (!arg_arr.IsArray())
+                {
+                    return parse_arg<T>(arg_arr);
+                }
+
+                const auto& arr = arg_arr.GetArray();
+
+                if (index >= arr.Size())
                 {
                     throw exceptions::function_mismatch("Argument count mismatch");
                 }
 
-                const value_t& arg = arg_arr.IsArray() ? arg_arr.GetArray()[index++] : arg_arr;
-                return parse_arg<T>(arg);
+                return parse_arg<T>(arr[index++]);
             }
         } // namespace details
     }     // namespace rapidjson
@@ -334,12 +340,72 @@ template<>
 }
 
 template<>
-[[nodiscard]] inline adapters::rapidjson::doc_t adapters::rapidjson_adapter::from_bytes(
-    std::string&& bytes)
+[[nodiscard]] inline std::optional<adapters::rapidjson::doc_t> adapters::rapidjson_adapter::
+    from_bytes(std::string&& bytes)
 {
     adapters::rapidjson::doc_t d{};
     d.SetObject();
     d.Parse(std::move(bytes).c_str());
+
+    if (d.HasParseError())
+    {
+        return std::nullopt;
+    }
+
+    const auto ex_it = d.FindMember("except_type");
+
+    if (ex_it != d.MemberEnd())
+    {
+        const auto& ex_val = ex_it->value;
+
+        if (!ex_val.IsInt())
+        {
+            return std::nullopt;
+        }
+
+        if (ex_val.GetInt() != 0 && !d.HasMember("err_mesg"))
+        {
+            return std::nullopt;
+        }
+
+        // Objects with exceptions can be otherwise empty
+        return d;
+    }
+
+    const auto fname_it = d.FindMember("func_name");
+
+    if (fname_it == d.MemberEnd())
+    {
+        return std::nullopt;
+    }
+
+    const auto& fname_val = fname_it->value;
+
+    if (!fname_val.IsString() || fname_val.GetStringLength() == 0)
+    {
+        return std::nullopt;
+    }
+
+    const auto args_it = d.FindMember("args");
+
+    if (args_it == d.MemberEnd())
+    {
+        return std::nullopt;
+    }
+
+    if (!args_it->value.IsArray())
+    {
+        return std::nullopt;
+    }
+
+    return d;
+}
+
+template<>
+inline adapters::rapidjson::doc_t adapters::rapidjson_adapter::empty_object()
+{
+    adapters::rapidjson::doc_t d{};
+    d.SetObject();
     return d;
 }
 
@@ -464,14 +530,23 @@ template<>
 }
 
 template<>
+inline rpc_hpp::exceptions::rpc_exception pack_adapter<
+    adapters::rapidjson_adapter>::extract_exception(const adapters::rapidjson::doc_t& serial_obj)
+{
+    return rpc_hpp::exceptions::rpc_exception{ serial_obj["err_mesg"].GetString(),
+        static_cast<rpc_hpp::exceptions::exception_type>(serial_obj["except_type"].GetInt()) };
+}
+
+template<>
 inline void pack_adapter<adapters::rapidjson_adapter>::set_exception(
     adapters::rapidjson::doc_t& serial_obj, const exceptions::rpc_exception& ex)
 {
     auto& alloc = serial_obj.GetAllocator();
+    const auto ex_it = serial_obj.FindMember("except_type");
 
-    if (serial_obj.HasMember("except_type"))
+    if (ex_it != serial_obj.MemberEnd())
     {
-        serial_obj["except_type"].SetInt(static_cast<int>(ex.get_type()));
+        ex_it->value.SetInt(static_cast<int>(ex.get_type()));
         serial_obj["err_mesg"].SetString(ex.what(), alloc);
     }
     else

@@ -375,9 +375,10 @@ template<>
 }
 
 template<>
-[[nodiscard]] inline adapters::bitsery::bit_buffer adapters::bitsery_adapter::from_bytes(
+[[nodiscard]] inline std::optional<adapters::bitsery::bit_buffer> adapters::bitsery_adapter::from_bytes(
     adapters::bitsery::bit_buffer&& bytes)
 {
+    // TODO: Verify bitsery data somehow
     return bytes;
 }
 
@@ -394,6 +395,13 @@ template<typename R, typename... Args>
 
     buffer.resize(bytes_written);
     return buffer;
+}
+
+template<>
+inline adapters::bitsery::bit_buffer adapters::bitsery_adapter::empty_object()
+{
+    rpc_hpp::details::packed_func<void> pack{};
+    return rpc_hpp::pack_adapter<adapters::bitsery_adapter>::serialize_pack(pack);
 }
 
 template<>
@@ -447,6 +455,16 @@ template<>
     assert(index <= std::numeric_limits<ptrdiff_t>::max());
     return { serial_obj.begin() + static_cast<ptrdiff_t>(index),
         serial_obj.begin() + static_cast<ptrdiff_t>(index + len) };
+}
+
+template<>
+inline rpc_hpp::exceptions::rpc_exception pack_adapter<
+    adapters::bitsery_adapter>::extract_exception(const adapters::bitsery::bit_buffer& serial_obj)
+{
+    const auto pack =
+        rpc_hpp::pack_adapter<adapters::bitsery_adapter>::deserialize_pack<void>(serial_obj);
+
+    return rpc_hpp::exceptions::rpc_exception{ pack.get_err_mesg(), pack.get_except_type() };
 }
 
 template<>

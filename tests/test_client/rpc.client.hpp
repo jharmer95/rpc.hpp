@@ -80,7 +80,6 @@ public:
         return m_socket.remote_endpoint().address().to_string();
     }
 
-private:
     void send(const typename Serial::bytes_t& mesg) override
     {
         asio::write(m_socket, asio::buffer(mesg, mesg.size()));
@@ -99,6 +98,7 @@ private:
         return typename Serial::bytes_t{ &m_buffer[0], &m_buffer[numBytes] };
     }
 
+private:
     asio::io_context m_io{};
     tcp::socket m_socket;
     tcp::resolver m_resolver;

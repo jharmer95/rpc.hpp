@@ -431,8 +431,7 @@ namespace details
         using expander = int[];
         std::ignore = expander{ 0,
             (
-                (void)[](auto&& x, auto&& y)
-                {
+                (void)[](auto&& x, auto&& y) {
                     if constexpr (
                         std::is_reference_v<
                             decltype(x)> && !std::is_const_v<std::remove_reference_t<decltype(x)>> && !std::is_pointer_v<std::remove_reference_t<decltype(x)>>)
@@ -458,10 +457,10 @@ namespace details
     public:
         using args_t = std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...>;
 
+        packed_func_base();
         packed_func_base(std::string func_name, args_t args) noexcept
             : m_func_name(std::move(func_name)), m_args(std::move(args))
         {
-            RPC_HPP_POSTCONDITION(!m_func_name.empty());
         }
 
         explicit operator bool() const noexcept
@@ -534,6 +533,12 @@ namespace details
         args_t m_args;
     };
 
+    template<typename... Args>
+    packed_func_base<Args...>::packed_func_base() = delete;
+
+    template<>
+    packed_func_base<>::packed_func_base() = default;
+
     template<typename T_Serial, typename T_Bytes = std::string>
     struct serial_adapter
     {
@@ -549,10 +554,12 @@ namespace details
         [[nodiscard]] static T deserialize(const serial_t& serial_obj);
 
         // nodiscard because input bytes are lost after conversion
-        [[nodiscard]] static serial_t from_bytes(bytes_t&& bytes);
+        [[nodiscard]] static std::optional<serial_t> from_bytes(bytes_t&& bytes);
 
         // nodiscard because input object is lost after conversion
         [[nodiscard]] static bytes_t to_bytes(serial_t&& serial_obj);
+
+        static serial_t empty_object();
     };
 
     template<typename R, typename... Args>
@@ -657,6 +664,8 @@ public:
     // nodiscard because a potentially expensive parse and string allocation is being done
     [[nodiscard]] static std::string get_func_name(const typename Serial::serial_t& serial_obj);
 
+    static exceptions::rpc_exception extract_exception(const typename Serial::serial_t& serial_obj);
+
     static void set_exception(
         typename Serial::serial_t& serial_obj, const exceptions::rpc_exception& ex);
 };
@@ -749,22 +758,30 @@ inline namespace server
         [[nodiscard]] typename Serial::bytes_t dispatch(typename Serial::bytes_t&& bytes) const
         {
             auto serial_obj = Serial::from_bytes(std::move(bytes));
-            const auto func_name = pack_adapter<adapter_t>::get_func_name(serial_obj);
 
+            if (!serial_obj.has_value())
+            {
+                auto err_obj = Serial::empty_object();
+                pack_adapter<Serial>::set_exception(
+                    err_obj, exceptions::server_receive_error("Invalid RPC object received"));
+
+                return Serial::to_bytes(std::move(err_obj));
+            }
+
+            const auto func_name = pack_adapter<adapter_t>::get_func_name(serial_obj.value());
             const auto it = m_dispatch_table.find(func_name);
 
             if (it != m_dispatch_table.end())
             {
-                it->second(serial_obj);
-                return Serial::to_bytes(std::move(serial_obj));
+                it->second(serial_obj.value());
+                return Serial::to_bytes(std::move(serial_obj).value());
             }
 
-            pack_adapter<Serial>::set_exception(serial_obj,
-                exceptions::function_not_found("RPC error: Called function: "
-                                               " + func_name + "
-                                               " not found!"));
+            pack_adapter<Serial>::set_exception(serial_obj.value(),
+                exceptions::function_not_found(
+                    "RPC error: Called function: \"" + func_name + "\" not found"));
 
-            return Serial::to_bytes(std::move(serial_obj));
+            return Serial::to_bytes(std::move(serial_obj).value());
         }
 
     protected:
@@ -1053,12 +1070,17 @@ inline namespace client
                 throw exceptions::client_receive_error(ex.what());
             }
 
-            serial_obj = Serial::from_bytes(std::move(bytes));
+            auto ret_obj = Serial::from_bytes(std::move(bytes));
+
+            if (!ret_obj.has_value())
+            {
+                throw exceptions::client_receive_error("Client received invalid RPC object");
+            }
 
             try
             {
                 pack = pack_adapter<Serial>::template deserialize_pack<R,
-                    details::decay_str_t<Args>...>(serial_obj);
+                    details::decay_str_t<Args>...>(ret_obj.value());
             }
             catch (const exceptions::rpc_exception&)
             {
@@ -1140,12 +1162,17 @@ inline namespace client
                 throw exceptions::client_receive_error(ex.what());
             }
 
-            serial_obj = Serial::from_bytes(std::move(bytes));
+            auto ret_obj = Serial::from_bytes(std::move(bytes));
+
+            if (!ret_obj.has_value())
+            {
+                throw exceptions::client_receive_error("Client received invalid RPC object");
+            }
 
             try
             {
                 pack = pack_adapter<Serial>::template deserialize_pack<R,
-                    details::decay_str_t<Args>...>(serial_obj);
+                    details::decay_str_t<Args>...>(ret_obj.value());
             }
             catch (const exceptions::rpc_exception&)
             {

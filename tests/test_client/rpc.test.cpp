@@ -302,7 +302,7 @@ TEST_CASE_TEMPLATE("Function not found", TestType, RPC_TEST_TYPES)
 
     const auto exp = [&client]
     {
-        std::ignore = client.template call_func<int>("FUNC_WHICH_DOES_NOT_EXIST");
+        client.template call_func<void>("FUNC_WHICH_DOES_NOT_EXIST");
     };
 
     REQUIRE_THROWS_AS(exp(), rpc_hpp::exceptions::function_not_found);
@@ -362,6 +362,33 @@ TEST_CASE_TEMPLATE("ThrowError", TestType, RPC_TEST_TYPES)
     };
 
     REQUIRE_THROWS_AS(exp(), rpc_hpp::exceptions::remote_exec_error);
+}
+
+TEST_CASE_TEMPLATE("InvalidObject", TestType, RPC_TEST_TYPES)
+{
+#if defined(RPC_HPP_ENABLE_BITSERY)
+    if (std::is_same_v<TestType, rpc_hpp::adapters::bitsery_adapter>)
+    {
+        // TODO: Verify bitsery data somehow
+        return;
+    }
+#endif
+
+    typename TestType::bytes_t bytes{};
+
+    for (char i = 0; i < 8; ++i)
+    {
+        bytes.push_back(i);
+    }
+
+    auto& client = GetClient<TestType>();
+    client.send(std::move(bytes));
+    bytes = client.receive();
+    auto serial_obj = TestType::from_bytes(std::move(bytes));
+
+    REQUIRE(serial_obj.has_value());
+    REQUIRE(rpc_hpp::pack_adapter<TestType>::extract_exception(serial_obj.value()).get_type()
+        == rpc_hpp::exceptions::exception_type::ServerReceive);
 }
 
 TEST_CASE("KillServer")

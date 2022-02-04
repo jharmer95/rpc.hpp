@@ -35,7 +35,7 @@
 ///
 
 #define RPC_HPP_SERVER_IMPL
-#define RPC_HPP_ENABLE_SERVER_CACHE
+//#define RPC_HPP_ENABLE_SERVER_CACHE
 
 #include "rpc.server.hpp"
 

@@ -81,6 +81,13 @@ namespace adapters
                 }
             }
 
+            [[nodiscard]] inline std::string mismatch_string(
+                std::string&& expect_type, const njson_t& arg)
+            {
+                return std::string{ "njson expected type: " } + std::move(expect_type)
+                    + std::string{ ", got type: " } + std::string{ arg.type_name() };
+            }
+
             template<typename T>
             void push_args(T&& arg, njson_t& obj_arr);
 
@@ -133,9 +140,7 @@ namespace adapters
 
                 if (!validate_arg<T>(arg))
                 {
-                    throw exceptions::function_mismatch(std::string{ "njson expected type: " }
-                        + std::string{ typeid(no_ref_t).name() } + std::string{ ", got type: " }
-                        + std::string{ arg.type_name() });
+                    throw exceptions::function_mismatch(mismatch_string(typeid(T).name(), arg));
                 }
 
                 if constexpr (std::is_arithmetic_v<
@@ -192,10 +197,69 @@ template<>
 }
 
 template<>
-[[nodiscard]] inline adapters::njson::njson_t adapters::njson_adapter::from_bytes(
+[[nodiscard]] inline std::optional<adapters::njson::njson_t> adapters::njson_adapter::from_bytes(
     std::string&& bytes)
 {
-    return adapters::njson::njson_t::parse(std::move(bytes));
+    using namespace adapters::njson;
+
+    njson_t obj{};
+
+    try
+    {
+        obj = njson_t::parse(std::move(bytes));
+    }
+    catch (const njson_t::parse_error&)
+    {
+        return std::nullopt;
+    }
+
+    if (!obj.is_object())
+    {
+        return std::nullopt;
+    }
+
+    if (obj.contains("except_type"))
+    {
+        if (obj["except_type"] != 0 && !obj.contains("err_mesg"))
+        {
+            return std::nullopt;
+        }
+
+        // Objects with exceptions can be otherwise empty
+        return obj;
+    }
+
+    const auto fname_it = obj.find("func_name");
+
+    if (fname_it == obj.end())
+    {
+        return std::nullopt;
+    }
+
+    if (!fname_it->is_string() || fname_it->empty())
+    {
+        return std::nullopt;
+    }
+
+    const auto args_it = obj.find("args");
+
+    if (args_it == obj.end())
+    {
+        return std::nullopt;
+    }
+
+    if (!args_it->is_array())
+    {
+        return std::nullopt;
+    }
+
+    return obj;
+}
+
+template<>
+inline adapters::njson::njson_t adapters::njson_adapter::empty_object()
+{
+    return adapters::njson::njson_t::object();
 }
 
 template<>
@@ -241,10 +305,13 @@ template<typename R, typename... Args>
 
     [[maybe_unused]] unsigned i = 0;
 
+    typename rpc_hpp::details::packed_func<R, Args...>::args_t args{
+        adapters::njson::details::parse_args<Args>(serial_obj["args"], i)...
+    };
+
     if constexpr (std::is_void_v<R>)
     {
-        rpc_hpp::details::packed_func<void, Args...> pack(serial_obj["func_name"],
-            { adapters::njson::details::parse_args<Args>(serial_obj["args"], i)... });
+        rpc_hpp::details::packed_func<void, Args...> pack(serial_obj["func_name"], std::move(args));
 
         if (serial_obj.contains("except_type"))
         {
@@ -259,12 +326,11 @@ template<typename R, typename... Args>
         if (serial_obj.contains("result") && !serial_obj["result"].is_null())
         {
             return rpc_hpp::details::packed_func<R, Args...>(serial_obj["func_name"],
-                adapters::njson::details::parse_arg<R>(serial_obj["result"]),
-                { adapters::njson::details::parse_args<Args>(serial_obj["args"], i)... });
+                adapters::njson::details::parse_arg<R>(serial_obj["result"]), std::move(args));
         }
 
-        rpc_hpp::details::packed_func<R, Args...> pack(serial_obj["func_name"], std::nullopt,
-            { adapters::njson::details::parse_args<Args>(serial_obj["args"], i)... });
+        rpc_hpp::details::packed_func<R, Args...> pack(
+            serial_obj["func_name"], std::nullopt, std::move(args));
 
         if (serial_obj.contains("except_type"))
         {
@@ -281,6 +347,14 @@ template<>
     const adapters::njson::njson_t& serial_obj)
 {
     return serial_obj["func_name"];
+}
+
+template<>
+inline rpc_hpp::exceptions::rpc_exception pack_adapter<adapters::njson_adapter>::extract_exception(
+    const adapters::njson::njson_t& serial_obj)
+{
+    return rpc_hpp::exceptions::rpc_exception{ serial_obj.at("err_mesg").get<std::string>(),
+        static_cast<rpc_hpp::exceptions::exception_type>(serial_obj.at("except_type").get<int>()) };
 }
 
 template<>
