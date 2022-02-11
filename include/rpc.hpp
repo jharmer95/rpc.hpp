@@ -1214,11 +1214,6 @@ inline namespace client
         ///@param bytes Serialized data to be sent
         virtual void send(const typename Serial::bytes_t& bytes) = 0;
 
-        ///@brief Sends serialized data to a server or module
-        ///
-        ///@param bytes Serialized data to be sent
-        virtual void send(typename Serial::bytes_t&& bytes) = 0;
-
         ///@brief Receives serialized data from a server or module
         ///
         ///@return Serial::bytes_t Received serialized data

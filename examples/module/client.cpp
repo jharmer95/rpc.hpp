@@ -57,35 +57,6 @@ void RpcClient::send(const std::string& mesg)
     m_result = std::string{ buf };
 }
 
-void RpcClient::send(std::string&& mesg)
-{
-    // Interoperable with C-compatible code, so need to create a character buffer (keeping it small for this example)
-    constexpr auto BUF_SZ = 128;
-
-    if (mesg.size() >= BUF_SZ)
-    {
-        throw std::runtime_error("String buffer was not big enough for request!");
-    }
-
-    char buf[BUF_SZ];
-
-#if defined(_WIN32)
-    strcpy_s(buf, std::move(mesg).c_str());
-
-#elif defined(__unix__)
-    strcpy(buf, std::move(mesg).c_str());
-#endif
-
-    const auto result = m_func(buf, BUF_SZ);
-
-    if (result == 1)
-    {
-        throw std::runtime_error("String buffer was not big enough for response!");
-    }
-
-    m_result = std::string{ buf };
-}
-
 int main(int argc, char* argv[])
 {
     if (argc < 2)
