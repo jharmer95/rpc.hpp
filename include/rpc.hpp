@@ -81,170 +81,193 @@ namespace rpc_hpp
 ///@brief Array containing the version information for rpc.hpp
 static constexpr unsigned version[]{ 0, 7, 1 };
 
-namespace exceptions
+enum class exception_type
 {
-    enum class exception_type
+    none,
+    func_not_found,
+    remote_exec,
+    serialization,
+    deserialization,
+    signature_mismatch,
+    client_send,
+    client_receive,
+    server_send,
+    server_receive,
+};
+
+class rpc_exception : public std::runtime_error
+{
+public:
+    explicit rpc_exception(const std::string& mesg, exception_type type) noexcept
+        : std::runtime_error(mesg), m_type(type)
     {
-        None,
-        FuncNotFound,
-        RemoteExec,
-        Serialization,
-        DeSerialization,
-        SignatureMismatch,
-        ClientSend,
-        ClientReceive,
-        ServerSend,
-        ServerReceive,
-    };
+    }
 
-    class rpc_exception : public std::runtime_error
+    explicit rpc_exception(const char* mesg, exception_type type) noexcept
+        : std::runtime_error(mesg), m_type(type)
     {
-    public:
-        explicit rpc_exception(const std::string& mesg, exception_type type) noexcept
-            : std::runtime_error(mesg), m_type(type)
-        {
-        }
+    }
 
-        explicit rpc_exception(const char* mesg, exception_type type) noexcept
-            : std::runtime_error(mesg), m_type(type)
-        {
-        }
+    exception_type get_type() const noexcept { return m_type; }
 
-        exception_type get_type() const noexcept { return m_type; }
+private:
+    exception_type m_type;
+};
 
-    private:
-        exception_type m_type;
-    };
-
-    class function_not_found : public rpc_exception
+class function_not_found : public rpc_exception
+{
+public:
+    explicit function_not_found(const std::string& mesg) noexcept
+        : rpc_exception(mesg, exception_type::func_not_found)
     {
-    public:
-        explicit function_not_found(const std::string& mesg) noexcept
-            : rpc_exception(mesg, exception_type::FuncNotFound)
-        {
-        }
+    }
 
-        explicit function_not_found(const char* mesg) noexcept
-            : rpc_exception(mesg, exception_type::FuncNotFound)
-        {
-        }
-    };
-
-    class remote_exec_error : public rpc_exception
+    explicit function_not_found(const char* mesg) noexcept
+        : rpc_exception(mesg, exception_type::func_not_found)
     {
-    public:
-        explicit remote_exec_error(const std::string& mesg) noexcept
-            : rpc_exception(mesg, exception_type::RemoteExec)
-        {
-        }
+    }
+};
 
-        explicit remote_exec_error(const char* mesg) noexcept
-            : rpc_exception(mesg, exception_type::RemoteExec)
-        {
-        }
-    };
-
-    class serialization_error : public rpc_exception
+class remote_exec_error : public rpc_exception
+{
+public:
+    explicit remote_exec_error(const std::string& mesg) noexcept
+        : rpc_exception(mesg, exception_type::remote_exec)
     {
-    public:
-        explicit serialization_error(const std::string& mesg) noexcept
-            : rpc_exception(mesg, exception_type::Serialization)
-        {
-        }
+    }
 
-        explicit serialization_error(const char* mesg) noexcept
-            : rpc_exception(mesg, exception_type::Serialization)
-        {
-        }
-    };
-
-    class deserialization_error : public rpc_exception
+    explicit remote_exec_error(const char* mesg) noexcept
+        : rpc_exception(mesg, exception_type::remote_exec)
     {
-    public:
-        explicit deserialization_error(const std::string& mesg) noexcept
-            : rpc_exception(mesg, exception_type::DeSerialization)
-        {
-        }
+    }
+};
 
-        explicit deserialization_error(const char* mesg) noexcept
-            : rpc_exception(mesg, exception_type::DeSerialization)
-        {
-        }
-    };
-
-    class function_mismatch : public rpc_exception
+class serialization_error : public rpc_exception
+{
+public:
+    explicit serialization_error(const std::string& mesg) noexcept
+        : rpc_exception(mesg, exception_type::serialization)
     {
-    public:
-        explicit function_mismatch(const std::string& mesg) noexcept
-            : rpc_exception(mesg, exception_type::SignatureMismatch)
-        {
-        }
+    }
 
-        explicit function_mismatch(const char* mesg) noexcept
-            : rpc_exception(mesg, exception_type::SignatureMismatch)
-        {
-        }
-    };
-
-    class client_send_error : public rpc_exception
+    explicit serialization_error(const char* mesg) noexcept
+        : rpc_exception(mesg, exception_type::serialization)
     {
-    public:
-        explicit client_send_error(const std::string& mesg) noexcept
-            : rpc_exception(mesg, exception_type::ClientSend)
-        {
-        }
+    }
+};
 
-        explicit client_send_error(const char* mesg) noexcept
-            : rpc_exception(mesg, exception_type::ClientSend)
-        {
-        }
-    };
-
-    class client_receive_error : public rpc_exception
+class deserialization_error : public rpc_exception
+{
+public:
+    explicit deserialization_error(const std::string& mesg) noexcept
+        : rpc_exception(mesg, exception_type::deserialization)
     {
-    public:
-        explicit client_receive_error(const std::string& mesg) noexcept
-            : rpc_exception(mesg, exception_type::ClientReceive)
-        {
-        }
+    }
 
-        explicit client_receive_error(const char* mesg) noexcept
-            : rpc_exception(mesg, exception_type::ClientReceive)
-        {
-        }
-    };
-
-    class server_send_error : public rpc_exception
+    explicit deserialization_error(const char* mesg) noexcept
+        : rpc_exception(mesg, exception_type::deserialization)
     {
-    public:
-        explicit server_send_error(const std::string& mesg) noexcept
-            : rpc_exception(mesg, exception_type::ServerSend)
-        {
-        }
+    }
+};
 
-        explicit server_send_error(const char* mesg) noexcept
-            : rpc_exception(mesg, exception_type::ServerSend)
-        {
-        }
-    };
-
-    class server_receive_error : public rpc_exception
+class function_mismatch : public rpc_exception
+{
+public:
+    explicit function_mismatch(const std::string& mesg) noexcept
+        : rpc_exception(mesg, exception_type::signature_mismatch)
     {
-    public:
-        explicit server_receive_error(const std::string& mesg) noexcept
-            : rpc_exception(mesg, exception_type::ServerReceive)
-        {
-        }
+    }
 
-        explicit server_receive_error(const char* mesg) noexcept
-            : rpc_exception(mesg, exception_type::ServerReceive)
-        {
-        }
+    explicit function_mismatch(const char* mesg) noexcept
+        : rpc_exception(mesg, exception_type::signature_mismatch)
+    {
+    }
+};
+
+class client_send_error : public rpc_exception
+{
+public:
+    explicit client_send_error(const std::string& mesg) noexcept
+        : rpc_exception(mesg, exception_type::client_send)
+    {
+    }
+
+    explicit client_send_error(const char* mesg) noexcept
+        : rpc_exception(mesg, exception_type::client_send)
+    {
+    }
+};
+
+class client_receive_error : public rpc_exception
+{
+public:
+    explicit client_receive_error(const std::string& mesg) noexcept
+        : rpc_exception(mesg, exception_type::client_receive)
+    {
+    }
+
+    explicit client_receive_error(const char* mesg) noexcept
+        : rpc_exception(mesg, exception_type::client_receive)
+    {
+    }
+};
+
+class server_send_error : public rpc_exception
+{
+public:
+    explicit server_send_error(const std::string& mesg) noexcept
+        : rpc_exception(mesg, exception_type::server_send)
+    {
+    }
+
+    explicit server_send_error(const char* mesg) noexcept
+        : rpc_exception(mesg, exception_type::server_send)
+    {
+    }
+};
+
+class server_receive_error : public rpc_exception
+{
+public:
+    explicit server_receive_error(const std::string& mesg) noexcept
+        : rpc_exception(mesg, exception_type::server_receive)
+    {
+    }
+
+    explicit server_receive_error(const char* mesg) noexcept
+        : rpc_exception(mesg, exception_type::server_receive)
+    {
+    }
+};
+
+namespace adapters
+{
+    template<typename T_Serial, typename T_Bytes>
+    struct serial_adapter
+    {
+        using serial_t = T_Serial;
+        using bytes_t = T_Bytes;
+
+        // nodiscard because a potentially expensive parse and copy is being done
+        template<typename T>
+        [[nodiscard]] static serial_t serialize(const T& val);
+
+        // nodiscard because a potentially expensive parse and copy is being done
+        template<typename T>
+        [[nodiscard]] static T deserialize(const serial_t& serial_obj);
+
+        // nodiscard because input bytes are lost after conversion
+        [[nodiscard]] static std::optional<serial_t> from_bytes(bytes_t&& bytes);
+
+        // nodiscard because input object is lost after conversion
+        [[nodiscard]] static bytes_t to_bytes(serial_t&& serial_obj);
+
+        static serial_t empty_object();
     };
-} // namespace exceptions
+} // namespace adapters
 
 ///@brief Namespace for implementation details, should not be used outside of the library
-namespace details
+namespace detail
 {
 #if !defined(RPC_HPP_DOXYGEN_GEN)
     template<typename, typename T>
@@ -463,15 +486,12 @@ namespace details
         {
         }
 
-        explicit operator bool() const noexcept
-        {
-            return m_except_type == exceptions::exception_type::None;
-        }
+        explicit operator bool() const noexcept { return m_except_type == exception_type::none; }
         const std::string& get_err_mesg() const noexcept { return m_err_mesg; }
         const std::string& get_func_name() const noexcept { return m_func_name; }
-        exceptions::exception_type get_except_type() const noexcept { return m_except_type; }
+        exception_type get_except_type() const noexcept { return m_except_type; }
 
-        void set_exception(std::string&& mesg, exceptions::exception_type type) & noexcept
+        void set_exception(std::string&& mesg, exception_type type) & noexcept
         {
             m_except_type = type;
             m_err_mesg = std::move(mesg);
@@ -491,43 +511,41 @@ namespace details
         {
             switch (m_except_type)
             {
-                using namespace exceptions;
-
-                case exception_type::FuncNotFound:
+                case exception_type::func_not_found:
                     throw function_not_found(m_err_mesg);
 
-                case exception_type::RemoteExec:
+                case exception_type::remote_exec:
                     throw remote_exec_error(m_err_mesg);
 
-                case exception_type::Serialization:
+                case exception_type::serialization:
                     throw serialization_error(m_err_mesg);
 
-                case exception_type::DeSerialization:
+                case exception_type::deserialization:
                     throw deserialization_error(m_err_mesg);
 
-                case exception_type::SignatureMismatch:
+                case exception_type::signature_mismatch:
                     throw function_mismatch(m_err_mesg);
 
-                case exception_type::ClientSend:
+                case exception_type::client_send:
                     throw client_send_error(m_err_mesg);
 
-                case exception_type::ClientReceive:
+                case exception_type::client_receive:
                     throw client_receive_error(m_err_mesg);
 
-                case exception_type::ServerSend:
+                case exception_type::server_send:
                     throw server_send_error(m_err_mesg);
 
-                case exception_type::ServerReceive:
+                case exception_type::server_receive:
                     throw server_receive_error(m_err_mesg);
 
-                case exception_type::None:
+                case exception_type::none:
                 default:
-                    throw rpc_exception(m_err_mesg, exception_type::None);
+                    throw rpc_exception(m_err_mesg, exception_type::none);
             }
         }
 
     private:
-        exceptions::exception_type m_except_type{ exceptions::exception_type::None };
+        exception_type m_except_type{ exception_type::none };
         std::string m_func_name;
         std::string m_err_mesg{};
         args_t m_args;
@@ -538,29 +556,6 @@ namespace details
 
     template<>
     packed_func_base<>::packed_func_base() = default;
-
-    template<typename T_Serial, typename T_Bytes = std::string>
-    struct serial_adapter
-    {
-        using serial_t = T_Serial;
-        using bytes_t = T_Bytes;
-
-        // nodiscard because a potentially expensive parse and copy is being done
-        template<typename T>
-        [[nodiscard]] static serial_t serialize(const T& val);
-
-        // nodiscard because a potentially expensive parse and copy is being done
-        template<typename T>
-        [[nodiscard]] static T deserialize(const serial_t& serial_obj);
-
-        // nodiscard because input bytes are lost after conversion
-        [[nodiscard]] static std::optional<serial_t> from_bytes(bytes_t&& bytes);
-
-        // nodiscard because input object is lost after conversion
-        [[nodiscard]] static bytes_t to_bytes(serial_t&& serial_obj);
-
-        static serial_t empty_object();
-    };
 
     template<typename R, typename... Args>
     class packed_func final : public packed_func_base<Args...>
@@ -623,7 +618,7 @@ namespace details
         }
     };
 #endif
-} // namespace details
+} // namespace detail
 
 ///@brief Class collecting several functions for interoperating between serial objects and a packed_func
 ///
@@ -642,7 +637,7 @@ public:
     // nodiscard because a potentially expensive parse and copy is being done
     template<typename R, typename... Args>
     [[nodiscard]] static typename Serial::serial_t serialize_pack(
-        const details::packed_func<R, Args...>& pack);
+        const detail::packed_func<R, Args...>& pack);
 
     ///@brief De-serializes a serial object to a packed_func
     ///
@@ -653,7 +648,7 @@ public:
 
     // nodiscard because a potentially expensive parse and copy is being done
     template<typename R, typename... Args>
-    [[nodiscard]] static details::packed_func<R, Args...> deserialize_pack(
+    [[nodiscard]] static detail::packed_func<R, Args...> deserialize_pack(
         const typename Serial::serial_t& serial_obj);
 
     ///@brief Extracts the function name of a serialized function call
@@ -664,10 +659,8 @@ public:
     // nodiscard because a potentially expensive parse and string allocation is being done
     [[nodiscard]] static std::string get_func_name(const typename Serial::serial_t& serial_obj);
 
-    static exceptions::rpc_exception extract_exception(const typename Serial::serial_t& serial_obj);
-
-    static void set_exception(
-        typename Serial::serial_t& serial_obj, const exceptions::rpc_exception& ex);
+    static rpc_exception extract_exception(const typename Serial::serial_t& serial_obj);
+    static void set_exception(typename Serial::serial_t& serial_obj, const rpc_exception& ex);
 };
 
 #if defined(RPC_HPP_SERVER_IMPL) || defined(RPC_HPP_MODULE_IMPL)
@@ -710,7 +703,7 @@ inline namespace server
                     {
                         dispatch_cached_func(func_ptr, serial_obj);
                     }
-                    catch (const exceptions::rpc_exception& ex)
+                    catch (const rpc_exception& ex)
                     {
                         pack_adapter<Serial>::set_exception(serial_obj, ex);
                     }
@@ -735,7 +728,7 @@ inline namespace server
                     {
                         dispatch_func(func_ptr, serial_obj);
                     }
-                    catch (const exceptions::rpc_exception& ex)
+                    catch (const rpc_exception& ex)
                     {
                         pack_adapter<Serial>::set_exception(serial_obj, ex);
                     }
@@ -763,7 +756,7 @@ inline namespace server
             {
                 auto err_obj = Serial::empty_object();
                 pack_adapter<Serial>::set_exception(
-                    err_obj, exceptions::server_receive_error("Invalid RPC object received"));
+                    err_obj, server_receive_error("Invalid RPC object received"));
 
                 return Serial::to_bytes(std::move(err_obj));
             }
@@ -778,8 +771,7 @@ inline namespace server
             }
 
             pack_adapter<Serial>::set_exception(serial_obj.value(),
-                exceptions::function_not_found(
-                    "RPC error: Called function: \"" + func_name + "\" not found"));
+                function_not_found("RPC error: Called function: \"" + func_name + "\" not found"));
 
             return Serial::to_bytes(std::move(serial_obj).value());
         }
@@ -804,13 +796,13 @@ inline namespace server
                 {
                     return pack_adapter<Serial>::template deserialize_pack<R, Args...>(serial_obj);
                 }
-                catch (const exceptions::rpc_exception&)
+                catch (const rpc_exception&)
                 {
                     throw;
                 }
                 catch (const std::exception& ex)
                 {
-                    throw exceptions::deserialization_error(ex.what());
+                    throw deserialization_error(ex.what());
                 }
             }();
 
@@ -832,13 +824,13 @@ inline namespace server
                             pack_adapter<Serial>::template serialize_pack<R, Args...>(pack);
                         return;
                     }
-                    catch (const exceptions::rpc_exception&)
+                    catch (const rpc_exception&)
                     {
                         throw;
                     }
                     catch (const std::exception& ex)
                     {
-                        throw exceptions::serialization_error(ex.what());
+                        throw serialization_error(ex.what());
                     }
                 }
 
@@ -854,13 +846,13 @@ inline namespace server
             {
                 serial_obj = pack_adapter<Serial>::template serialize_pack<R, Args...>(pack);
             }
-            catch (const exceptions::rpc_exception&)
+            catch (const rpc_exception&)
             {
                 throw;
             }
             catch (const std::exception& ex)
             {
-                throw exceptions::serialization_error(ex.what());
+                throw serialization_error(ex.what());
             }
         }
 #    else
@@ -890,13 +882,13 @@ inline namespace server
                 {
                     return pack_adapter<Serial>::template deserialize_pack<R, Args...>(serial_obj);
                 }
-                catch (const exceptions::rpc_exception&)
+                catch (const rpc_exception&)
                 {
                     throw;
                 }
                 catch (const std::exception& ex)
                 {
-                    throw exceptions::deserialization_error(ex.what());
+                    throw deserialization_error(ex.what());
                 }
             }();
 
@@ -906,13 +898,13 @@ inline namespace server
             {
                 serial_obj = pack_adapter<Serial>::template serialize_pack<R, Args...>(pack);
             }
-            catch (const exceptions::rpc_exception&)
+            catch (const rpc_exception&)
             {
                 throw;
             }
             catch (const std::exception& ex)
             {
-                throw exceptions::serialization_error(ex.what());
+                throw serialization_error(ex.what());
             }
         }
 
@@ -924,7 +916,7 @@ inline namespace server
         ///@param func pointer to the callback function
         ///@param pack packed_func representing the callback
         template<typename R, typename... Args>
-        static void run_callback(R (*func)(Args...), details::packed_func<R, Args...>& pack)
+        static void run_callback(R (*func)(Args...), detail::packed_func<R, Args...>& pack)
         {
             RPC_HPP_PRECONDITION(func != nullptr);
 
@@ -938,7 +930,7 @@ inline namespace server
                 }
                 catch (const std::exception& ex)
                 {
-                    throw exceptions::remote_exec_error(ex.what());
+                    throw remote_exec_error(ex.what());
                 }
             }
             else
@@ -950,7 +942,7 @@ inline namespace server
                 }
                 catch (const std::exception& ex)
                 {
-                    throw exceptions::remote_exec_error(ex.what());
+                    throw remote_exec_error(ex.what());
                 }
             }
         }
@@ -1020,16 +1012,16 @@ inline namespace client
         {
             RPC_HPP_PRECONDITION(!func_name.empty());
 
-            details::packed_func<R, details::decay_str_t<Args>...> pack = [&]() noexcept
+            detail::packed_func<R, detail::decay_str_t<Args>...> pack = [&]() noexcept
             {
                 if constexpr (std::is_void_v<R>)
                 {
-                    return details::packed_func<void, details::decay_str_t<Args>...>{ func_name,
+                    return detail::packed_func<void, detail::decay_str_t<Args>...>{ func_name,
                         std::forward_as_tuple(args...) };
                 }
                 else
                 {
-                    return details::packed_func<R, details::decay_str_t<Args>...>{ func_name,
+                    return detail::packed_func<R, detail::decay_str_t<Args>...>{ func_name,
                         std::nullopt, std::forward_as_tuple(args...) };
                 }
             }();
@@ -1040,13 +1032,13 @@ inline namespace client
                 {
                     return pack_adapter<Serial>::serialize_pack(pack);
                 }
-                catch (const exceptions::rpc_exception&)
+                catch (const rpc_exception&)
                 {
                     throw;
                 }
                 catch (const std::exception& ex)
                 {
-                    throw exceptions::serialization_error(ex.what());
+                    throw serialization_error(ex.what());
                 }
             }();
 
@@ -1058,7 +1050,7 @@ inline namespace client
             }
             catch (const std::exception& ex)
             {
-                throw exceptions::client_send_error(ex.what());
+                throw client_send_error(ex.what());
             }
 
             try
@@ -1067,32 +1059,32 @@ inline namespace client
             }
             catch (const std::exception& ex)
             {
-                throw exceptions::client_receive_error(ex.what());
+                throw client_receive_error(ex.what());
             }
 
             auto ret_obj = Serial::from_bytes(std::move(bytes));
 
             if (!ret_obj.has_value())
             {
-                throw exceptions::client_receive_error("Client received invalid RPC object");
+                throw client_receive_error("Client received invalid RPC object");
             }
 
             try
             {
                 pack = pack_adapter<Serial>::template deserialize_pack<R,
-                    details::decay_str_t<Args>...>(ret_obj.value());
+                    detail::decay_str_t<Args>...>(ret_obj.value());
             }
-            catch (const exceptions::rpc_exception&)
+            catch (const rpc_exception&)
             {
                 throw;
             }
             catch (const std::exception& ex)
             {
-                throw exceptions::deserialization_error(ex.what());
+                throw deserialization_error(ex.what());
             }
 
             // Assign values back to any (non-const) reference members
-            details::tuple_bind(pack.get_args(), std::forward<Args>(args)...);
+            detail::tuple_bind(pack.get_args(), std::forward<Args>(args)...);
             return pack.get_result();
         }
 
@@ -1110,17 +1102,17 @@ inline namespace client
         {
             RPC_HPP_PRECONDITION(!func_name.empty());
 
-            details::packed_func<R, details::decay_str_t<Args>...> pack = [&]() noexcept
+            detail::packed_func<R, detail::decay_str_t<Args>...> pack = [&]() noexcept
             {
                 if constexpr (std::is_void_v<R>)
                 {
-                    return details::packed_func<void, details::decay_str_t<Args>...>{
+                    return detail::packed_func<void, detail::decay_str_t<Args>...>{
                         std::move(func_name), std::forward_as_tuple(args...)
                     };
                 }
                 else
                 {
-                    return details::packed_func<R, details::decay_str_t<Args>...>{
+                    return detail::packed_func<R, detail::decay_str_t<Args>...>{
                         std::move(func_name), std::nullopt, std::forward_as_tuple(args...)
                     };
                 }
@@ -1132,13 +1124,13 @@ inline namespace client
                 {
                     return pack_adapter<Serial>::serialize_pack(pack);
                 }
-                catch (const exceptions::rpc_exception&)
+                catch (const rpc_exception&)
                 {
                     throw;
                 }
                 catch (const std::exception& ex)
                 {
-                    throw exceptions::serialization_error(ex.what());
+                    throw serialization_error(ex.what());
                 }
             }();
 
@@ -1150,7 +1142,7 @@ inline namespace client
             }
             catch (const std::exception& ex)
             {
-                throw exceptions::client_send_error(ex.what());
+                throw client_send_error(ex.what());
             }
 
             try
@@ -1159,32 +1151,32 @@ inline namespace client
             }
             catch (const std::exception& ex)
             {
-                throw exceptions::client_receive_error(ex.what());
+                throw client_receive_error(ex.what());
             }
 
             auto ret_obj = Serial::from_bytes(std::move(bytes));
 
             if (!ret_obj.has_value())
             {
-                throw exceptions::client_receive_error("Client received invalid RPC object");
+                throw client_receive_error("Client received invalid RPC object");
             }
 
             try
             {
                 pack = pack_adapter<Serial>::template deserialize_pack<R,
-                    details::decay_str_t<Args>...>(ret_obj.value());
+                    detail::decay_str_t<Args>...>(ret_obj.value());
             }
-            catch (const exceptions::rpc_exception&)
+            catch (const rpc_exception&)
             {
                 throw;
             }
             catch (const std::exception& ex)
             {
-                throw exceptions::deserialization_error(ex.what());
+                throw deserialization_error(ex.what());
             }
 
             // Assign values back to any (non-const) reference members
-            details::tuple_bind(pack.get_args(), std::forward<Args>(args)...);
+            detail::tuple_bind(pack.get_args(), std::forward<Args>(args)...);
             return pack.get_result();
         }
 

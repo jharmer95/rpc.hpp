@@ -44,9 +44,9 @@
 #include <doctest/doctest.h>
 
 #if defined(RPC_HPP_ENABLE_BITSERY)
-const uint64_t rpc_hpp::adapters::bitsery::config::max_func_name_size = 30;
-const uint64_t rpc_hpp::adapters::bitsery::config::max_string_size = 2048;
-const uint64_t rpc_hpp::adapters::bitsery::config::max_container_size = 100;
+const uint64_t rpc_hpp::adapters::bitsery_detail::config::max_func_name_size = 30;
+const uint64_t rpc_hpp::adapters::bitsery_detail::config::max_string_size = 2048;
+const uint64_t rpc_hpp::adapters::bitsery_detail::config::max_container_size = 100;
 #endif
 
 template<typename Serial>
@@ -305,7 +305,7 @@ TEST_CASE_TEMPLATE("Function not found", TestType, RPC_TEST_TYPES)
         client.template call_func<void>("FUNC_WHICH_DOES_NOT_EXIST");
     };
 
-    REQUIRE_THROWS_AS(exp(), rpc_hpp::exceptions::function_not_found);
+    REQUIRE_THROWS_AS(exp(), rpc_hpp::function_not_found);
 }
 
 TEST_CASE_TEMPLATE("FunctionMismatch", TestType, RPC_TEST_TYPES)
@@ -344,12 +344,12 @@ TEST_CASE_TEMPLATE("FunctionMismatch", TestType, RPC_TEST_TYPES)
             2599.6, 1245.125663, 9783.49, 125.12, 553.3333333333, 2266.1, 111.222, 1234.56789);
     };
 
-    REQUIRE_THROWS_AS(wrong_param(), rpc_hpp::exceptions::function_mismatch);
-    REQUIRE_THROWS_AS(wrong_return(), rpc_hpp::exceptions::function_mismatch);
-    REQUIRE_THROWS_AS(float_to_int(), rpc_hpp::exceptions::function_mismatch);
-    REQUIRE_THROWS_AS(int_to_float(), rpc_hpp::exceptions::function_mismatch);
-    REQUIRE_THROWS_AS(less_params(), rpc_hpp::exceptions::function_mismatch);
-    REQUIRE_THROWS_AS(more_params(), rpc_hpp::exceptions::function_mismatch);
+    REQUIRE_THROWS_AS(wrong_param(), rpc_hpp::function_mismatch);
+    REQUIRE_THROWS_AS(wrong_return(), rpc_hpp::function_mismatch);
+    REQUIRE_THROWS_AS(float_to_int(), rpc_hpp::function_mismatch);
+    REQUIRE_THROWS_AS(int_to_float(), rpc_hpp::function_mismatch);
+    REQUIRE_THROWS_AS(less_params(), rpc_hpp::function_mismatch);
+    REQUIRE_THROWS_AS(more_params(), rpc_hpp::function_mismatch);
 }
 
 TEST_CASE_TEMPLATE("ThrowError", TestType, RPC_TEST_TYPES)
@@ -361,7 +361,7 @@ TEST_CASE_TEMPLATE("ThrowError", TestType, RPC_TEST_TYPES)
         client.call_func("ThrowError");
     };
 
-    REQUIRE_THROWS_AS(exp(), rpc_hpp::exceptions::remote_exec_error);
+    REQUIRE_THROWS_AS(exp(), rpc_hpp::remote_exec_error);
 }
 
 TEST_CASE_TEMPLATE("InvalidObject", TestType, RPC_TEST_TYPES)
@@ -388,7 +388,7 @@ TEST_CASE_TEMPLATE("InvalidObject", TestType, RPC_TEST_TYPES)
 
     REQUIRE(serial_obj.has_value());
     REQUIRE(rpc_hpp::pack_adapter<TestType>::extract_exception(serial_obj.value()).get_type()
-        == rpc_hpp::exceptions::exception_type::ServerReceive);
+        == rpc_hpp::exception_type::server_receive);
 }
 
 TEST_CASE("KillServer")
@@ -409,5 +409,5 @@ TEST_CASE("KillServer")
         // Exception is expected so continue
     }
 
-    REQUIRE_THROWS_AS(exp(), rpc_hpp::exceptions::client_receive_error);
+    REQUIRE_THROWS_AS(exp(), rpc_hpp::client_receive_error);
 }

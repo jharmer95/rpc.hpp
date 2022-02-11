@@ -97,10 +97,9 @@ void serialize(S& s, ComplexObject& val)
 #if defined(RPC_HPP_ENABLE_BOOST_JSON)
 template<>
 template<>
-inline rpc_hpp::adapters::boost_json::value_t boost_json_adapter::serialize(
-    const ComplexObject& val)
+inline boost::json::value boost_json_adapter::serialize(const ComplexObject& val)
 {
-    rpc_hpp::adapters::boost_json::object_t obj_j;
+    boost::json::object obj_j;
     obj_j["id"] = val.id;
     obj_j["name"] = val.name;
     obj_j["flag1"] = val.flag1;
@@ -119,8 +118,7 @@ inline rpc_hpp::adapters::boost_json::value_t boost_json_adapter::serialize(
 
 template<>
 template<>
-inline ComplexObject boost_json_adapter::deserialize(
-    const rpc_hpp::adapters::boost_json::value_t& serial_obj)
+inline ComplexObject boost_json_adapter::deserialize(const boost::json::value& serial_obj)
 {
     ComplexObject cx;
     cx.id = static_cast<int>(serial_obj.at("id").get_int64());
@@ -151,9 +149,9 @@ inline ComplexObject boost_json_adapter::deserialize(
 #if defined(RPC_HPP_ENABLE_NJSON)
 template<>
 template<>
-inline rpc_hpp::adapters::njson::njson_t njson_adapter::serialize(const ComplexObject& val)
+inline nlohmann::json njson_adapter::serialize(const ComplexObject& val)
 {
-    adapters::njson::njson_t obj_j;
+    nlohmann::json obj_j;
     obj_j["id"] = val.id;
     obj_j["name"] = val.name;
     obj_j["flag1"] = val.flag1;
@@ -165,7 +163,7 @@ inline rpc_hpp::adapters::njson::njson_t njson_adapter::serialize(const ComplexO
 
 template<>
 template<>
-inline ComplexObject njson_adapter::deserialize(const adapters::njson::njson_t& serial_obj)
+inline ComplexObject njson_adapter::deserialize(const nlohmann::json& serial_obj)
 {
     ComplexObject cx;
     cx.id = serial_obj["id"].get<int>();
@@ -190,29 +188,29 @@ inline ComplexObject njson_adapter::deserialize(const adapters::njson::njson_t& 
 #if defined(RPC_HPP_ENABLE_RAPIDJSON)
 template<>
 template<>
-inline rpc_hpp::adapters::rapidjson::doc_t rapidjson_adapter::serialize(const ComplexObject& val)
+inline rapidjson::Document rapidjson_adapter::serialize(const ComplexObject& val)
 {
-    adapters::rapidjson::doc_t d;
+    rapidjson::Document d;
     d.SetObject();
     auto& alloc = d.GetAllocator();
 
-    adapters::rapidjson::value_t id_v;
+    rapidjson::Value id_v;
     id_v.SetInt(val.id);
     d.AddMember("id", id_v, alloc);
 
-    adapters::rapidjson::value_t name_v;
+    rapidjson::Value name_v;
     name_v.SetString(val.name.c_str(), alloc);
     d.AddMember("name", name_v, alloc);
 
-    adapters::rapidjson::value_t flag1_v;
+    rapidjson::Value flag1_v;
     flag1_v.SetBool(val.flag1);
     d.AddMember("flag1", flag1_v, alloc);
 
-    adapters::rapidjson::value_t flag2_v;
+    rapidjson::Value flag2_v;
     flag2_v.SetBool(val.flag2);
     d.AddMember("flag2", flag2_v, alloc);
 
-    adapters::rapidjson::value_t vals_v;
+    rapidjson::Value vals_v;
     vals_v.SetArray();
 
     for (const auto byte : val.vals)
@@ -226,7 +224,7 @@ inline rpc_hpp::adapters::rapidjson::doc_t rapidjson_adapter::serialize(const Co
 
 template<>
 template<>
-inline ComplexObject rapidjson_adapter::deserialize(const adapters::rapidjson::doc_t& serial_obj)
+inline ComplexObject rapidjson_adapter::deserialize(const rapidjson::Document& serial_obj)
 {
     ComplexObject obj;
 

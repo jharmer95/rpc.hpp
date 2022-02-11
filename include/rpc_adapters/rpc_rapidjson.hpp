@@ -46,292 +46,288 @@ namespace rpc_hpp
 {
 namespace adapters
 {
-    using rapidjson_adapter = details::serial_adapter<rapidjson::Document, std::string>;
+    using rapidjson_adapter = serial_adapter<rapidjson::Document, std::string>;
 
-    namespace rapidjson
+    namespace rapidjson_detail
     {
-        using doc_t = ::rapidjson::Document;
-        using value_t = ::rapidjson::Value;
-
-        namespace details
+        template<typename T>
+        [[nodiscard]] constexpr bool validate_arg(const rapidjson::Value& arg)
         {
-            template<typename T>
-            [[nodiscard]] constexpr bool validate_arg(const value_t& arg)
+            if constexpr (std::is_same_v<T, bool>)
             {
-                if constexpr (std::is_same_v<T, bool>)
+                return arg.IsBool();
+            }
+            else if constexpr (std::is_integral_v<T>)
+            {
+                if constexpr (std::is_signed_v<T>)
                 {
-                    return arg.IsBool();
-                }
-                else if constexpr (std::is_integral_v<T>)
-                {
-                    if constexpr (std::is_signed_v<T>)
+                    if constexpr (sizeof(T) < 8)
                     {
-                        if constexpr (sizeof(T) < 8)
-                        {
-                            return arg.IsInt();
-                        }
-                        else
-                        {
-                            return arg.IsInt64();
-                        }
+                        return arg.IsInt();
                     }
                     else
                     {
-                        if constexpr (sizeof(T) < 8)
-                        {
-                            return arg.IsUint();
-                        }
-                        else
-                        {
-                            return arg.IsUint64();
-                        }
+                        return arg.IsInt64();
                     }
-                }
-                else if constexpr (std::is_same_v<T, float>)
-                {
-                    return arg.IsFloat();
-                }
-                else if constexpr (std::is_same_v<T, double>)
-                {
-                    return arg.IsDouble();
-                }
-                else if constexpr (std::is_same_v<T, std::string>)
-                {
-                    return arg.IsString();
-                }
-                else if constexpr (rpc_hpp::details::is_container_v<T>)
-                {
-                    return arg.IsArray();
                 }
                 else
                 {
-                    return !arg.IsNull();
-                }
-            }
-
-            inline std::string mismatch_message(std::string&& expect_type, const value_t& obj)
-            {
-                std::string type_str = [&obj]
-                {
-                    if (obj.IsNull())
+                    if constexpr (sizeof(T) < 8)
                     {
-                        return "null";
-                    }
-
-                    if (obj.IsInt64())
-                    {
-                        return "int64";
-                    }
-
-                    if (obj.IsInt())
-                    {
-                        return "int";
-                    }
-
-                    if (obj.IsUint64())
-                    {
-                        return "uint64";
-                    }
-
-                    if (obj.IsUint())
-                    {
-                        return "uint";
-                    }
-
-                    if (obj.IsDouble())
-                    {
-                        return "double";
-                    }
-
-                    if (obj.IsFloat())
-                    {
-                        return "float";
-                    }
-
-                    if (obj.IsBool())
-                    {
-                        return "bool";
-                    }
-
-                    if (obj.IsString())
-                    {
-                        return "string";
-                    }
-
-                    if (obj.IsArray())
-                    {
-                        return "array";
-                    }
-
-                    if (obj.IsObject())
-                    {
-                        return "object";
-                    }
-
-                    return "unknown";
-                }();
-
-                return { "rapidjson expected type: " + std::move(expect_type)
-                    + ", got type: " + std::move(type_str) };
-            }
-
-            template<typename T>
-            void push_args(T&& arg, value_t& obj_arr, ::rapidjson::MemoryPoolAllocator<>& alloc);
-
-            template<typename T>
-            void push_arg(T&& arg, value_t& obj, ::rapidjson::MemoryPoolAllocator<>& alloc)
-            {
-                using no_ref_t = std::remove_cv_t<std::remove_reference_t<T>>;
-
-                if constexpr (std::is_same_v<no_ref_t, std::string>)
-                {
-                    obj.SetString(arg.c_str(), alloc);
-                }
-                else if constexpr (std::is_arithmetic_v<no_ref_t>)
-                {
-                    // Rapidjson is silly and does not have generic support for 8/16 bit numbers, so upgrade to 32-bit
-                    if constexpr (
-                        std::is_same_v<no_ref_t,
-                            char> || std::is_same_v<no_ref_t, int8_t> || std::is_same_v<no_ref_t, int16_t>)
-                    {
-                        obj.SetInt(arg);
-                    }
-                    else if constexpr (std::is_same_v<no_ref_t,
-                                           uint8_t> || std::is_same_v<no_ref_t, uint16_t>)
-                    {
-                        obj.SetUint(arg);
+                        return arg.IsUint();
                     }
                     else
                     {
-                        obj.Set<no_ref_t>(arg);
+                        return arg.IsUint64();
                     }
                 }
-                else if constexpr (rpc_hpp::details::is_container_v<no_ref_t>)
-                {
-                    obj.SetArray();
-                    obj.Reserve(static_cast<::rapidjson::SizeType>(arg.size()), alloc);
+            }
+            else if constexpr (std::is_same_v<T, float>)
+            {
+                return arg.IsFloat();
+            }
+            else if constexpr (std::is_same_v<T, double>)
+            {
+                return arg.IsDouble();
+            }
+            else if constexpr (std::is_same_v<T, std::string>)
+            {
+                return arg.IsString();
+            }
+            else if constexpr (rpc_hpp::detail::is_container_v<T>)
+            {
+                return arg.IsArray();
+            }
+            else
+            {
+                return !arg.IsNull();
+            }
+        }
 
-                    for (auto&& val : arg)
-                    {
-                        push_args(std::forward<decltype(val)>(val), obj, alloc);
-                    }
+        inline std::string mismatch_message(std::string&& expect_type, const rapidjson::Value& obj)
+        {
+            std::string type_str = [&obj]
+            {
+                if (obj.IsNull())
+                {
+                    return "null";
                 }
-                else if constexpr (rpc_hpp::details::is_serializable_v<rapidjson_adapter, no_ref_t>)
-                {
-                    const doc_t serialized =
-                        no_ref_t::template serialize<rapidjson_adapter>(std::forward<T>(arg));
 
-                    obj.CopyFrom(serialized, alloc);
+                if (obj.IsInt64())
+                {
+                    return "int64";
+                }
+
+                if (obj.IsInt())
+                {
+                    return "int";
+                }
+
+                if (obj.IsUint64())
+                {
+                    return "uint64";
+                }
+
+                if (obj.IsUint())
+                {
+                    return "uint";
+                }
+
+                if (obj.IsDouble())
+                {
+                    return "double";
+                }
+
+                if (obj.IsFloat())
+                {
+                    return "float";
+                }
+
+                if (obj.IsBool())
+                {
+                    return "bool";
+                }
+
+                if (obj.IsString())
+                {
+                    return "string";
+                }
+
+                if (obj.IsArray())
+                {
+                    return "array";
+                }
+
+                if (obj.IsObject())
+                {
+                    return "object";
+                }
+
+                return "unknown";
+            }();
+
+            return { "rapidjson expected type: " + std::move(expect_type)
+                + ", got type: " + std::move(type_str) };
+        }
+
+        template<typename T>
+        void push_args(T&& arg, rapidjson::Value& obj_arr, rapidjson::MemoryPoolAllocator<>& alloc);
+
+        template<typename T>
+        void push_arg(T&& arg, rapidjson::Value& obj, rapidjson::MemoryPoolAllocator<>& alloc)
+        {
+            using no_ref_t = std::remove_cv_t<std::remove_reference_t<T>>;
+
+            if constexpr (std::is_same_v<no_ref_t, std::string>)
+            {
+                obj.SetString(arg.c_str(), alloc);
+            }
+            else if constexpr (std::is_arithmetic_v<no_ref_t>)
+            {
+                // Rapidjson does not have generic support for 8/16 bit numbers, so upgrade to 32-bit
+                if constexpr (
+                    std::is_same_v<no_ref_t,
+                        char> || std::is_same_v<no_ref_t, int8_t> || std::is_same_v<no_ref_t, int16_t>)
+                {
+                    obj.SetInt(arg);
+                }
+                else if constexpr (std::is_same_v<no_ref_t,
+                                       uint8_t> || std::is_same_v<no_ref_t, uint16_t>)
+                {
+                    obj.SetUint(arg);
                 }
                 else
                 {
-                    const doc_t serialized =
-                        rapidjson_adapter::template serialize<no_ref_t>(std::forward<T>(arg));
-
-                    obj.CopyFrom(serialized, alloc);
+                    obj.Set<no_ref_t>(arg);
                 }
             }
-
-            template<typename T>
-            void push_args(T&& arg, value_t& obj_arr, ::rapidjson::MemoryPoolAllocator<>& alloc)
+            else if constexpr (rpc_hpp::detail::is_container_v<no_ref_t>)
             {
-                value_t tmp{};
-                push_arg(std::forward<T>(arg), tmp, alloc);
-                obj_arr.PushBack(std::move(tmp), alloc);
+                obj.SetArray();
+                obj.Reserve(static_cast<rapidjson::SizeType>(arg.size()), alloc);
+
+                for (auto&& val : arg)
+                {
+                    push_args(std::forward<decltype(val)>(val), obj, alloc);
+                }
+            }
+            else if constexpr (rpc_hpp::detail::is_serializable_v<rapidjson_adapter, no_ref_t>)
+            {
+                // TODO: If we use the same allocator for `serialized`, we can simply move it into `obj`
+                const rapidjson::Document serialized =
+                    no_ref_t::template serialize<rapidjson_adapter>(std::forward<T>(arg));
+
+                obj.CopyFrom(serialized, alloc);
+            }
+            else
+            {
+                // TODO: If we use the same allocator for `serialized`, we can simply move it into `obj`
+                const rapidjson::Document serialized =
+                    rapidjson_adapter::template serialize<no_ref_t>(std::forward<T>(arg));
+
+                obj.CopyFrom(serialized, alloc);
+            }
+        }
+
+        template<typename T>
+        void push_args(T&& arg, rapidjson::Value& obj_arr, rapidjson::MemoryPoolAllocator<>& alloc)
+        {
+            rapidjson::Value tmp{};
+            push_arg(std::forward<T>(arg), tmp, alloc);
+            obj_arr.PushBack(std::move(tmp), alloc);
+        }
+
+        template<typename T>
+        [[nodiscard]] std::remove_cv_t<std::remove_reference_t<T>> parse_args(
+            const rapidjson::Value& arg_arr, unsigned& index);
+
+        template<typename T>
+        [[nodiscard]] std::remove_cv_t<std::remove_reference_t<T>> parse_arg(
+            const rapidjson::Value& arg)
+        {
+            using no_ref_t = std::remove_cv_t<std::remove_reference_t<T>>;
+
+            if (!validate_arg<no_ref_t>(arg))
+            {
+                throw function_mismatch(mismatch_message(typeid(no_ref_t).name(), arg));
             }
 
-            template<typename T>
-            [[nodiscard]] std::remove_cv_t<std::remove_reference_t<T>> parse_args(
-                const value_t& arg_arr, unsigned& index);
-
-            template<typename T>
-            [[nodiscard]] std::remove_cv_t<std::remove_reference_t<T>> parse_arg(const value_t& arg)
+            if constexpr (std::is_same_v<no_ref_t, std::string>)
             {
-                using no_ref_t = std::remove_cv_t<std::remove_reference_t<T>>;
-
-                if (!validate_arg<no_ref_t>(arg))
+                return arg.GetString();
+            }
+            else if constexpr (std::is_arithmetic_v<no_ref_t>)
+            {
+                // Rapidjson does not have generic support for 8/16 bit numbers, so upgrade to 32-bit
+                if constexpr (
+                    std::is_same_v<no_ref_t,
+                        char> || std::is_same_v<no_ref_t, int8_t> || std::is_same_v<no_ref_t, int16_t>)
                 {
-                    throw exceptions::function_mismatch(
-                        mismatch_message(typeid(no_ref_t).name(), arg));
+                    return static_cast<no_ref_t>(arg.GetInt());
                 }
-
-                if constexpr (std::is_same_v<no_ref_t, std::string>)
+                else if constexpr (std::is_same_v<no_ref_t,
+                                       uint8_t> || std::is_same_v<no_ref_t, uint16_t>)
                 {
-                    return arg.GetString();
-                }
-                else if constexpr (std::is_arithmetic_v<no_ref_t>)
-                {
-                    // Rapidjson is silly and does not have generic support for 8/16 bit numbers, so upgrade to 32-bit
-                    if constexpr (
-                        std::is_same_v<no_ref_t,
-                            char> || std::is_same_v<no_ref_t, int8_t> || std::is_same_v<no_ref_t, int16_t>)
-                    {
-                        return static_cast<no_ref_t>(arg.GetInt());
-                    }
-                    else if constexpr (std::is_same_v<no_ref_t,
-                                           uint8_t> || std::is_same_v<no_ref_t, uint16_t>)
-                    {
-                        return static_cast<no_ref_t>(arg.GetUint());
-                    }
-                    else
-                    {
-                        return arg.Get<no_ref_t>();
-                    }
-                }
-                else if constexpr (rpc_hpp::details::is_container_v<no_ref_t>)
-                {
-                    using subvalue_t = typename no_ref_t::value_type;
-
-                    no_ref_t container{};
-                    container.reserve(arg.Size());
-                    unsigned j = 0;
-
-                    for (const auto& val : arg.GetArray())
-                    {
-                        container.push_back(parse_args<subvalue_t>(val, j));
-                    }
-
-                    return container;
-                }
-                else if constexpr (rpc_hpp::details::is_serializable_v<rapidjson_adapter, no_ref_t>)
-                {
-                    doc_t d{};
-                    d.CopyFrom(arg, d.GetAllocator());
-                    return no_ref_t::template deserialize<rapidjson_adapter>(d);
+                    return static_cast<no_ref_t>(arg.GetUint());
                 }
                 else
                 {
-                    doc_t d{};
-                    d.CopyFrom(arg, d.GetAllocator());
-                    return rapidjson_adapter::template deserialize<no_ref_t>(d);
+                    return arg.Get<no_ref_t>();
                 }
             }
-
-            template<typename T>
-            [[nodiscard]] std::remove_cv_t<std::remove_reference_t<T>> parse_args(
-                const value_t& arg_arr, unsigned& index)
+            else if constexpr (rpc_hpp::detail::is_container_v<no_ref_t>)
             {
-                if (!arg_arr.IsArray())
+                using subvalue_t = typename no_ref_t::value_type;
+
+                no_ref_t container{};
+                container.reserve(arg.Size());
+                unsigned arg_counter = 0;
+
+                for (const auto& val : arg.GetArray())
                 {
-                    return parse_arg<T>(arg_arr);
+                    container.push_back(parse_args<subvalue_t>(val, arg_counter));
                 }
 
-                const auto& arr = arg_arr.GetArray();
-
-                if (index >= arr.Size())
-                {
-                    throw exceptions::function_mismatch("Argument count mismatch");
-                }
-
-                return parse_arg<T>(arr[index++]);
+                return container;
             }
-        } // namespace details
-    }     // namespace rapidjson
+            else if constexpr (rpc_hpp::detail::is_serializable_v<rapidjson_adapter, no_ref_t>)
+            {
+                rapidjson::Document d{};
+                d.CopyFrom(arg, d.GetAllocator());
+                return no_ref_t::template deserialize<rapidjson_adapter>(d);
+            }
+            else
+            {
+                rapidjson::Document d{};
+                d.CopyFrom(arg, d.GetAllocator());
+                return rapidjson_adapter::template deserialize<no_ref_t>(d);
+            }
+        }
+
+        template<typename T>
+        [[nodiscard]] std::remove_cv_t<std::remove_reference_t<T>> parse_args(
+            const rapidjson::Value& arg_arr, unsigned& index)
+        {
+            if (!arg_arr.IsArray())
+            {
+                return parse_arg<T>(arg_arr);
+            }
+
+            const auto& arr = arg_arr.GetArray();
+
+            if (index >= arr.Size())
+            {
+                throw function_mismatch("Argument count mismatch");
+            }
+
+            return parse_arg<T>(arr[index++]);
+        }
+    } // namespace rapidjson_detail
 } // namespace adapters
 
 template<>
 [[nodiscard]] inline std::string adapters::rapidjson_adapter::to_bytes(
-    adapters::rapidjson::doc_t&& serial_obj)
+    rapidjson::Document&& serial_obj)
 {
     rapidjson::StringBuffer buffer{};
     rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
@@ -340,10 +336,10 @@ template<>
 }
 
 template<>
-[[nodiscard]] inline std::optional<adapters::rapidjson::doc_t> adapters::rapidjson_adapter::
-    from_bytes(std::string&& bytes)
+[[nodiscard]] inline std::optional<rapidjson::Document> adapters::rapidjson_adapter::from_bytes(
+    std::string&& bytes)
 {
-    adapters::rapidjson::doc_t d{};
+    rapidjson::Document d{};
     d.SetObject();
     d.Parse(std::move(bytes).c_str());
 
@@ -402,28 +398,27 @@ template<>
 }
 
 template<>
-inline adapters::rapidjson::doc_t adapters::rapidjson_adapter::empty_object()
+inline rapidjson::Document adapters::rapidjson_adapter::empty_object()
 {
-    adapters::rapidjson::doc_t d{};
+    rapidjson::Document d{};
     d.SetObject();
     return d;
 }
 
 template<>
 template<typename R, typename... Args>
-[[nodiscard]] adapters::rapidjson::doc_t pack_adapter<adapters::rapidjson_adapter>::serialize_pack(
-    const details::packed_func<R, Args...>& pack)
+[[nodiscard]] rapidjson::Document pack_adapter<adapters::rapidjson_adapter>::serialize_pack(
+    const detail::packed_func<R, Args...>& pack)
 {
-    using namespace adapters::rapidjson;
-
-    doc_t d{};
+    rapidjson::Document d{};
     auto& alloc = d.GetAllocator();
     d.SetObject();
-    d.AddMember("func_name", value_t{}.SetString(pack.get_func_name().c_str(), alloc), alloc);
+    d.AddMember(
+        "func_name", rapidjson::Value{}.SetString(pack.get_func_name().c_str(), alloc), alloc);
 
     if constexpr (!std::is_void_v<R>)
     {
-        value_t result{};
+        rapidjson::Value result{};
 
         if (pack)
         {
@@ -435,7 +430,7 @@ template<typename R, typename... Args>
             {
                 result.SetString(pack.get_result().c_str(), alloc);
             }
-            else if constexpr (rpc_hpp::details::is_container_v<R>)
+            else if constexpr (rpc_hpp::detail::is_container_v<R>)
             {
                 const auto& container = pack.get_result();
                 result.SetArray();
@@ -446,14 +441,20 @@ template<typename R, typename... Args>
                     result.PushBack(val, alloc);
                 }
             }
-            else if constexpr (rpc_hpp::details::is_serializable_v<adapters::rapidjson_adapter, R>)
+            else if constexpr (rpc_hpp::detail::is_serializable_v<adapters::rapidjson_adapter, R>)
             {
-                doc_t tmp = R::template serialize<adapters::rapidjson_adapter>(pack.get_result());
+                // TODO: If we use the same allocator for `tmp`, we can simply move it into `result`
+                const rapidjson::Document tmp =
+                    R::template serialize<adapters::rapidjson_adapter>(pack.get_result());
+
                 result.CopyFrom(tmp, alloc);
             }
             else
             {
-                doc_t tmp = adapters::rapidjson_adapter::template serialize<R>(pack.get_result());
+                // TODO: If we use the same allocator for `tmp`, we can simply move it into `result`
+                const rapidjson::Document tmp =
+                    adapters::rapidjson_adapter::template serialize<R>(pack.get_result());
+
                 result.CopyFrom(tmp, alloc);
             }
         }
@@ -461,14 +462,15 @@ template<typename R, typename... Args>
         d.AddMember("result", result, alloc);
     }
 
-    value_t args{};
+    rapidjson::Value args{};
     args.SetArray();
     args.Reserve(static_cast<rapidjson::SizeType>(sizeof...(Args)), alloc);
 
     const auto& arg_tup = pack.get_args();
-    rpc_hpp::details::for_each_tuple(arg_tup,
-        [&args, &alloc](auto&& x)
-        { adapters::rapidjson::details::push_args(std::forward<decltype(x)>(x), args, alloc); });
+    rpc_hpp::detail::for_each_tuple(arg_tup,
+        [&args, &alloc](auto&& elem) {
+            adapters::rapidjson_detail::push_args(std::forward<decltype(elem)>(elem), args, alloc);
+        });
 
     d.AddMember("args", std::move(args), alloc);
     return d;
@@ -476,26 +478,24 @@ template<typename R, typename... Args>
 
 template<>
 template<typename R, typename... Args>
-[[nodiscard]] details::packed_func<R, Args...> pack_adapter<
-    adapters::rapidjson_adapter>::deserialize_pack(const adapters::rapidjson::doc_t& serial_obj)
+[[nodiscard]] detail::packed_func<R, Args...> pack_adapter<
+    adapters::rapidjson_adapter>::deserialize_pack(const rapidjson::Document& serial_obj)
 {
-    using namespace adapters::rapidjson;
+    [[maybe_unused]] unsigned arg_counter = 0;
 
-    [[maybe_unused]] unsigned i = 0;
-
-    typename rpc_hpp::details::packed_func<R, Args...>::args_t args{
-        adapters::rapidjson::details::parse_args<Args>(serial_obj["args"], i)...
+    typename rpc_hpp::detail::packed_func<R, Args...>::args_t args{
+        adapters::rapidjson_detail::parse_args<Args>(serial_obj["args"], arg_counter)...
     };
 
     if constexpr (std::is_void_v<R>)
     {
-        rpc_hpp::details::packed_func<void, Args...> pack(
+        rpc_hpp::detail::packed_func<void, Args...> pack(
             serial_obj["func_name"].GetString(), std::move(args));
 
         if (serial_obj.HasMember("except_type"))
         {
             pack.set_exception(serial_obj["err_mesg"].GetString(),
-                static_cast<exceptions::exception_type>(serial_obj["except_type"].GetInt()));
+                static_cast<exception_type>(serial_obj["except_type"].GetInt()));
         }
 
         return pack;
@@ -504,18 +504,18 @@ template<typename R, typename... Args>
     {
         if (serial_obj.HasMember("result") && !serial_obj["result"].IsNull())
         {
-            const value_t& result = serial_obj["result"];
-            return rpc_hpp::details::packed_func<R, Args...>(serial_obj["func_name"].GetString(),
-                adapters::rapidjson::details::parse_arg<R>(result), std::move(args));
+            const rapidjson::Value& result = serial_obj["result"];
+            return rpc_hpp::detail::packed_func<R, Args...>(serial_obj["func_name"].GetString(),
+                adapters::rapidjson_detail::parse_arg<R>(result), std::move(args));
         }
 
-        rpc_hpp::details::packed_func<R, Args...> pack(
+        rpc_hpp::detail::packed_func<R, Args...> pack(
             serial_obj["func_name"].GetString(), std::nullopt, std::move(args));
 
         if (serial_obj.HasMember("except_type"))
         {
             pack.set_exception(serial_obj["err_mesg"].GetString(),
-                static_cast<exceptions::exception_type>(serial_obj["except_type"].GetInt()));
+                static_cast<exception_type>(serial_obj["except_type"].GetInt()));
         }
 
         return pack;
@@ -524,22 +524,22 @@ template<typename R, typename... Args>
 
 template<>
 [[nodiscard]] inline std::string pack_adapter<adapters::rapidjson_adapter>::get_func_name(
-    const adapters::rapidjson::doc_t& serial_obj)
+    const rapidjson::Document& serial_obj)
 {
     return serial_obj["func_name"].GetString();
 }
 
 template<>
-inline rpc_hpp::exceptions::rpc_exception pack_adapter<
-    adapters::rapidjson_adapter>::extract_exception(const adapters::rapidjson::doc_t& serial_obj)
+inline rpc_hpp::rpc_exception pack_adapter<adapters::rapidjson_adapter>::extract_exception(
+    const rapidjson::Document& serial_obj)
 {
-    return rpc_hpp::exceptions::rpc_exception{ serial_obj["err_mesg"].GetString(),
-        static_cast<rpc_hpp::exceptions::exception_type>(serial_obj["except_type"].GetInt()) };
+    return rpc_hpp::rpc_exception{ serial_obj["err_mesg"].GetString(),
+        static_cast<rpc_hpp::exception_type>(serial_obj["except_type"].GetInt()) };
 }
 
 template<>
 inline void pack_adapter<adapters::rapidjson_adapter>::set_exception(
-    adapters::rapidjson::doc_t& serial_obj, const exceptions::rpc_exception& ex)
+    rapidjson::Document& serial_obj, const rpc_exception& ex)
 {
     auto& alloc = serial_obj.GetAllocator();
     const auto ex_it = serial_obj.FindMember("except_type");
@@ -552,8 +552,7 @@ inline void pack_adapter<adapters::rapidjson_adapter>::set_exception(
     else
     {
         serial_obj.AddMember("except_type", static_cast<int>(ex.get_type()), alloc);
-        serial_obj.AddMember(
-            "err_mesg", adapters::rapidjson::value_t{}.SetString(ex.what(), alloc), alloc);
+        serial_obj.AddMember("err_mesg", rapidjson::Value{}.SetString(ex.what(), alloc), alloc);
     }
 }
 } // namespace rpc_hpp
