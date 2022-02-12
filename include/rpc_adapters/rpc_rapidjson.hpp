@@ -46,12 +46,20 @@ namespace rpc_hpp
 {
 namespace adapters
 {
-    using rapidjson_adapter = serial_adapter<rapidjson::Document, std::string>;
+    struct rapidjson_adapter;
 
-    namespace rapidjson_detail
+    template<>
+    struct serial_traits<rapidjson_adapter>
     {
+        using serial_t = rapidjson::Document;
+        using bytes_t = std::string;
+    };
+
+    struct rapidjson_adapter : public detail::serial_adapter_base<rapidjson_adapter>
+    {
+    private:
         template<typename T>
-        [[nodiscard]] constexpr bool validate_arg(const rapidjson::Value& arg)
+        [[nodiscard]] static constexpr bool validate_arg(const rapidjson::Value& arg)
         {
             if constexpr (std::is_same_v<T, bool>)
             {
@@ -104,7 +112,7 @@ namespace adapters
             }
         }
 
-        inline std::string mismatch_message(std::string&& expect_type, const rapidjson::Value& obj)
+        static std::string mismatch_message(std::string&& expect_type, const rapidjson::Value& obj)
         {
             std::string type_str = [&obj]
             {
@@ -171,10 +179,8 @@ namespace adapters
         }
 
         template<typename T>
-        void push_args(T&& arg, rapidjson::Value& obj_arr, rapidjson::MemoryPoolAllocator<>& alloc);
-
-        template<typename T>
-        void push_arg(T&& arg, rapidjson::Value& obj, rapidjson::MemoryPoolAllocator<>& alloc)
+        static void push_arg(
+            T&& arg, rapidjson::Value& obj, rapidjson::MemoryPoolAllocator<>& alloc)
         {
             using no_ref_t = std::remove_cv_t<std::remove_reference_t<T>>;
 
@@ -213,7 +219,6 @@ namespace adapters
             }
             else if constexpr (rpc_hpp::detail::is_serializable_v<rapidjson_adapter, no_ref_t>)
             {
-                // TODO: If we use the same allocator for `serialized`, we can simply move it into `obj`
                 const rapidjson::Document serialized =
                     no_ref_t::template serialize<rapidjson_adapter>(std::forward<T>(arg));
 
@@ -221,16 +226,13 @@ namespace adapters
             }
             else
             {
-                // TODO: If we use the same allocator for `serialized`, we can simply move it into `obj`
-                const rapidjson::Document serialized =
-                    rapidjson_adapter::template serialize<no_ref_t>(std::forward<T>(arg));
-
-                obj.CopyFrom(serialized, alloc);
+                obj = serialize<no_ref_t>(std::forward<T>(arg), alloc);
             }
         }
 
         template<typename T>
-        void push_args(T&& arg, rapidjson::Value& obj_arr, rapidjson::MemoryPoolAllocator<>& alloc)
+        static void push_args(
+            T&& arg, rapidjson::Value& obj_arr, rapidjson::MemoryPoolAllocator<>& alloc)
         {
             rapidjson::Value tmp{};
             push_arg(std::forward<T>(arg), tmp, alloc);
@@ -238,11 +240,7 @@ namespace adapters
         }
 
         template<typename T>
-        [[nodiscard]] std::remove_cv_t<std::remove_reference_t<T>> parse_args(
-            const rapidjson::Value& arg_arr, unsigned& index);
-
-        template<typename T>
-        [[nodiscard]] std::remove_cv_t<std::remove_reference_t<T>> parse_arg(
+        [[nodiscard]] static std::remove_cv_t<std::remove_reference_t<T>> parse_arg(
             const rapidjson::Value& arg)
         {
             using no_ref_t = std::remove_cv_t<std::remove_reference_t<T>>;
@@ -298,14 +296,12 @@ namespace adapters
             }
             else
             {
-                rapidjson::Document d{};
-                d.CopyFrom(arg, d.GetAllocator());
-                return rapidjson_adapter::template deserialize<no_ref_t>(d);
+                return deserialize<no_ref_t>(arg);
             }
         }
 
         template<typename T>
-        [[nodiscard]] std::remove_cv_t<std::remove_reference_t<T>> parse_args(
+        [[nodiscard]] static std::remove_cv_t<std::remove_reference_t<T>> parse_args(
             const rapidjson::Value& arg_arr, unsigned& index)
         {
             if (!arg_arr.IsArray())
@@ -322,237 +318,225 @@ namespace adapters
 
             return parse_arg<T>(arr[index++]);
         }
-    } // namespace rapidjson_detail
-} // namespace adapters
 
-template<>
-[[nodiscard]] inline std::string adapters::rapidjson_adapter::to_bytes(
-    rapidjson::Document&& serial_obj)
-{
-    rapidjson::StringBuffer buffer{};
-    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
-    std::move(serial_obj).Accept(writer);
-    return buffer.GetString();
-}
-
-template<>
-[[nodiscard]] inline std::optional<rapidjson::Document> adapters::rapidjson_adapter::from_bytes(
-    std::string&& bytes)
-{
-    rapidjson::Document d{};
-    d.SetObject();
-    d.Parse(std::move(bytes).c_str());
-
-    if (d.HasParseError())
-    {
-        return std::nullopt;
-    }
-
-    const auto ex_it = d.FindMember("except_type");
-
-    if (ex_it != d.MemberEnd())
-    {
-        const auto& ex_val = ex_it->value;
-
-        if (!ex_val.IsInt())
+    public:
+        [[nodiscard]] static std::string to_bytes_impl(rapidjson::Document&& serial_obj)
         {
-            return std::nullopt;
+            rapidjson::StringBuffer buffer{};
+            rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+            std::move(serial_obj).Accept(writer);
+            return buffer.GetString();
         }
 
-        if (ex_val.GetInt() != 0 && !d.HasMember("err_mesg"))
+        [[nodiscard]] static std::optional<rapidjson::Document> from_bytes_impl(std::string&& bytes)
         {
-            return std::nullopt;
-        }
+            rapidjson::Document d{};
+            d.SetObject();
+            d.Parse(std::move(bytes).c_str());
 
-        // Objects with exceptions can be otherwise empty
-        return d;
-    }
-
-    const auto fname_it = d.FindMember("func_name");
-
-    if (fname_it == d.MemberEnd())
-    {
-        return std::nullopt;
-    }
-
-    const auto& fname_val = fname_it->value;
-
-    if (!fname_val.IsString() || fname_val.GetStringLength() == 0)
-    {
-        return std::nullopt;
-    }
-
-    const auto args_it = d.FindMember("args");
-
-    if (args_it == d.MemberEnd())
-    {
-        return std::nullopt;
-    }
-
-    if (!args_it->value.IsArray())
-    {
-        return std::nullopt;
-    }
-
-    return d;
-}
-
-template<>
-inline rapidjson::Document adapters::rapidjson_adapter::empty_object()
-{
-    rapidjson::Document d{};
-    d.SetObject();
-    return d;
-}
-
-template<>
-template<typename R, typename... Args>
-[[nodiscard]] rapidjson::Document pack_adapter<adapters::rapidjson_adapter>::serialize_pack(
-    const detail::packed_func<R, Args...>& pack)
-{
-    rapidjson::Document d{};
-    auto& alloc = d.GetAllocator();
-    d.SetObject();
-    d.AddMember(
-        "func_name", rapidjson::Value{}.SetString(pack.get_func_name().c_str(), alloc), alloc);
-
-    if constexpr (!std::is_void_v<R>)
-    {
-        rapidjson::Value result{};
-
-        if (pack)
-        {
-            if constexpr (std::is_arithmetic_v<R>)
+            if (d.HasParseError())
             {
-                result.Set<R>(pack.get_result());
+                return std::nullopt;
             }
-            else if constexpr (std::is_same_v<R, std::string>)
-            {
-                result.SetString(pack.get_result().c_str(), alloc);
-            }
-            else if constexpr (rpc_hpp::detail::is_container_v<R>)
-            {
-                const auto& container = pack.get_result();
-                result.SetArray();
-                result.Reserve(static_cast<rapidjson::SizeType>(container.size()), alloc);
 
-                for (const auto& val : container)
+            const auto ex_it = d.FindMember("except_type");
+
+            if (ex_it != d.MemberEnd())
+            {
+                const auto& ex_val = ex_it->value;
+
+                if (!ex_val.IsInt())
                 {
-                    result.PushBack(val, alloc);
+                    return std::nullopt;
                 }
-            }
-            else if constexpr (rpc_hpp::detail::is_serializable_v<adapters::rapidjson_adapter, R>)
-            {
-                // TODO: If we use the same allocator for `tmp`, we can simply move it into `result`
-                const rapidjson::Document tmp =
-                    R::template serialize<adapters::rapidjson_adapter>(pack.get_result());
 
-                result.CopyFrom(tmp, alloc);
+                if (ex_val.GetInt() != 0 && !d.HasMember("err_mesg"))
+                {
+                    return std::nullopt;
+                }
+
+                // Objects with exceptions can be otherwise empty
+                return d;
+            }
+
+            const auto fname_it = d.FindMember("func_name");
+
+            if (fname_it == d.MemberEnd())
+            {
+                return std::nullopt;
+            }
+
+            const auto& fname_val = fname_it->value;
+
+            if (!fname_val.IsString() || fname_val.GetStringLength() == 0)
+            {
+                return std::nullopt;
+            }
+
+            const auto args_it = d.FindMember("args");
+
+            if (args_it == d.MemberEnd())
+            {
+                return std::nullopt;
+            }
+
+            if (!args_it->value.IsArray())
+            {
+                return std::nullopt;
+            }
+
+            return d;
+        }
+
+        static rapidjson::Document empty_object_impl()
+        {
+            rapidjson::Document d{};
+            d.SetObject();
+            return d;
+        }
+
+        template<typename R, typename... Args>
+        [[nodiscard]] static rapidjson::Document serialize_pack_impl(
+            const detail::packed_func<R, Args...>& pack)
+        {
+            rapidjson::Document d{};
+            auto& alloc = d.GetAllocator();
+            d.SetObject();
+            d.AddMember("func_name",
+                rapidjson::Value{}.SetString(pack.get_func_name().c_str(), alloc), alloc);
+
+            if constexpr (!std::is_void_v<R>)
+            {
+                rapidjson::Value result{};
+
+                if (pack)
+                {
+                    if constexpr (std::is_arithmetic_v<R>)
+                    {
+                        result.Set<R>(pack.get_result());
+                    }
+                    else if constexpr (std::is_same_v<R, std::string>)
+                    {
+                        result.SetString(pack.get_result().c_str(), alloc);
+                    }
+                    else if constexpr (rpc_hpp::detail::is_container_v<R>)
+                    {
+                        const auto& container = pack.get_result();
+                        result.SetArray();
+                        result.Reserve(static_cast<rapidjson::SizeType>(container.size()), alloc);
+
+                        for (const auto& val : container)
+                        {
+                            result.PushBack(val, alloc);
+                        }
+                    }
+                    else if constexpr (rpc_hpp::detail::is_serializable_v<rapidjson_adapter, R>)
+                    {
+                        const rapidjson::Document tmp =
+                            R::template serialize<rapidjson_adapter>(pack.get_result());
+
+                        result.CopyFrom(tmp, alloc);
+                    }
+                    else
+                    {
+                        result = serialize<R>(pack.get_result(), alloc);
+                    }
+                }
+
+                d.AddMember("result", result, alloc);
+            }
+
+            rapidjson::Value args{};
+            args.SetArray();
+            args.Reserve(static_cast<rapidjson::SizeType>(sizeof...(Args)), alloc);
+
+            const auto& arg_tup = pack.get_args();
+            rpc_hpp::detail::for_each_tuple(arg_tup,
+                [&args, &alloc](auto&& elem)
+                { push_args(std::forward<decltype(elem)>(elem), args, alloc); });
+
+            d.AddMember("args", std::move(args), alloc);
+            return d;
+        }
+
+        template<typename R, typename... Args>
+        [[nodiscard]] static detail::packed_func<R, Args...> deserialize_pack_impl(
+            const rapidjson::Document& serial_obj)
+        {
+            [[maybe_unused]] unsigned arg_counter = 0;
+
+            typename rpc_hpp::detail::packed_func<R, Args...>::args_t args{ parse_args<Args>(
+                serial_obj["args"], arg_counter)... };
+
+            if constexpr (std::is_void_v<R>)
+            {
+                rpc_hpp::detail::packed_func<void, Args...> pack(
+                    serial_obj["func_name"].GetString(), std::move(args));
+
+                if (serial_obj.HasMember("except_type"))
+                {
+                    pack.set_exception(serial_obj["err_mesg"].GetString(),
+                        static_cast<exception_type>(serial_obj["except_type"].GetInt()));
+                }
+
+                return pack;
             }
             else
             {
-                // TODO: If we use the same allocator for `tmp`, we can simply move it into `result`
-                const rapidjson::Document tmp =
-                    adapters::rapidjson_adapter::template serialize<R>(pack.get_result());
+                if (serial_obj.HasMember("result") && !serial_obj["result"].IsNull())
+                {
+                    const rapidjson::Value& result = serial_obj["result"];
+                    return rpc_hpp::detail::packed_func<R, Args...>(
+                        serial_obj["func_name"].GetString(), parse_arg<R>(result), std::move(args));
+                }
 
-                result.CopyFrom(tmp, alloc);
+                rpc_hpp::detail::packed_func<R, Args...> pack(
+                    serial_obj["func_name"].GetString(), std::nullopt, std::move(args));
+
+                if (serial_obj.HasMember("except_type"))
+                {
+                    pack.set_exception(serial_obj["err_mesg"].GetString(),
+                        static_cast<exception_type>(serial_obj["except_type"].GetInt()));
+                }
+
+                return pack;
             }
         }
 
-        d.AddMember("result", result, alloc);
-    }
+        [[nodiscard]] static std::string get_func_name_impl(const rapidjson::Document& serial_obj)
+        {
+            return serial_obj["func_name"].GetString();
+        }
 
-    rapidjson::Value args{};
-    args.SetArray();
-    args.Reserve(static_cast<rapidjson::SizeType>(sizeof...(Args)), alloc);
+        static rpc_hpp::rpc_exception extract_exception_impl(const rapidjson::Document& serial_obj)
+        {
+            return rpc_hpp::rpc_exception{ serial_obj["err_mesg"].GetString(),
+                static_cast<rpc_hpp::exception_type>(serial_obj["except_type"].GetInt()) };
+        }
 
-    const auto& arg_tup = pack.get_args();
-    rpc_hpp::detail::for_each_tuple(arg_tup,
-        [&args, &alloc](auto&& elem) {
-            adapters::rapidjson_detail::push_args(std::forward<decltype(elem)>(elem), args, alloc);
-        });
+        static void set_exception(rapidjson::Document& serial_obj, const rpc_exception& ex)
+        {
+            auto& alloc = serial_obj.GetAllocator();
+            const auto ex_it = serial_obj.FindMember("except_type");
 
-    d.AddMember("args", std::move(args), alloc);
-    return d;
-}
+            if (ex_it != serial_obj.MemberEnd())
+            {
+                ex_it->value.SetInt(static_cast<int>(ex.get_type()));
+                serial_obj["err_mesg"].SetString(ex.what(), alloc);
+            }
+            else
+            {
+                serial_obj.AddMember("except_type", static_cast<int>(ex.get_type()), alloc);
+                serial_obj.AddMember(
+                    "err_mesg", rapidjson::Value{}.SetString(ex.what(), alloc), alloc);
+            }
+        }
 
-template<>
-template<typename R, typename... Args>
-[[nodiscard]] detail::packed_func<R, Args...> pack_adapter<
-    adapters::rapidjson_adapter>::deserialize_pack(const rapidjson::Document& serial_obj)
-{
-    [[maybe_unused]] unsigned arg_counter = 0;
+        template<typename T>
+        static rapidjson::Value serialize(const T& val, rapidjson::MemoryPoolAllocator<>& alloc);
 
-    typename rpc_hpp::detail::packed_func<R, Args...>::args_t args{
-        adapters::rapidjson_detail::parse_args<Args>(serial_obj["args"], arg_counter)...
+        template<typename T>
+        static T deserialize(const rapidjson::Value& serial_obj);
     };
-
-    if constexpr (std::is_void_v<R>)
-    {
-        rpc_hpp::detail::packed_func<void, Args...> pack(
-            serial_obj["func_name"].GetString(), std::move(args));
-
-        if (serial_obj.HasMember("except_type"))
-        {
-            pack.set_exception(serial_obj["err_mesg"].GetString(),
-                static_cast<exception_type>(serial_obj["except_type"].GetInt()));
-        }
-
-        return pack;
-    }
-    else
-    {
-        if (serial_obj.HasMember("result") && !serial_obj["result"].IsNull())
-        {
-            const rapidjson::Value& result = serial_obj["result"];
-            return rpc_hpp::detail::packed_func<R, Args...>(serial_obj["func_name"].GetString(),
-                adapters::rapidjson_detail::parse_arg<R>(result), std::move(args));
-        }
-
-        rpc_hpp::detail::packed_func<R, Args...> pack(
-            serial_obj["func_name"].GetString(), std::nullopt, std::move(args));
-
-        if (serial_obj.HasMember("except_type"))
-        {
-            pack.set_exception(serial_obj["err_mesg"].GetString(),
-                static_cast<exception_type>(serial_obj["except_type"].GetInt()));
-        }
-
-        return pack;
-    }
-}
-
-template<>
-[[nodiscard]] inline std::string pack_adapter<adapters::rapidjson_adapter>::get_func_name(
-    const rapidjson::Document& serial_obj)
-{
-    return serial_obj["func_name"].GetString();
-}
-
-template<>
-inline rpc_hpp::rpc_exception pack_adapter<adapters::rapidjson_adapter>::extract_exception(
-    const rapidjson::Document& serial_obj)
-{
-    return rpc_hpp::rpc_exception{ serial_obj["err_mesg"].GetString(),
-        static_cast<rpc_hpp::exception_type>(serial_obj["except_type"].GetInt()) };
-}
-
-template<>
-inline void pack_adapter<adapters::rapidjson_adapter>::set_exception(
-    rapidjson::Document& serial_obj, const rpc_exception& ex)
-{
-    auto& alloc = serial_obj.GetAllocator();
-    const auto ex_it = serial_obj.FindMember("except_type");
-
-    if (ex_it != serial_obj.MemberEnd())
-    {
-        ex_it->value.SetInt(static_cast<int>(ex.get_type()));
-        serial_obj["err_mesg"].SetString(ex.what(), alloc);
-    }
-    else
-    {
-        serial_obj.AddMember("except_type", static_cast<int>(ex.get_type()), alloc);
-        serial_obj.AddMember("err_mesg", rapidjson::Value{}.SetString(ex.what(), alloc), alloc);
-    }
-}
+} // namespace adapters
 } // namespace rpc_hpp

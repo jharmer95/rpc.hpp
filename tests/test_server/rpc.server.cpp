@@ -62,9 +62,9 @@ using rpc_hpp::adapters::boost_json_adapter;
 
 using rpc_hpp::adapters::bitsery_adapter;
 
-const uint64_t rpc_hpp::adapters::bitsery_detail::config::max_func_name_size = 30;
-const uint64_t rpc_hpp::adapters::bitsery_detail::config::max_string_size = 2048;
-const uint64_t rpc_hpp::adapters::bitsery_detail::config::max_container_size = 1'000;
+const uint64_t rpc_hpp::adapters::bitsery_adapter::config::max_func_name_size = 30;
+const uint64_t rpc_hpp::adapters::bitsery_adapter::config::max_string_size = 2048;
+const uint64_t rpc_hpp::adapters::bitsery_adapter::config::max_container_size = 1'000;
 #endif
 
 #include <algorithm>

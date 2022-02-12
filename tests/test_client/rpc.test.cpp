@@ -44,9 +44,9 @@
 #include <doctest/doctest.h>
 
 #if defined(RPC_HPP_ENABLE_BITSERY)
-const uint64_t rpc_hpp::adapters::bitsery_detail::config::max_func_name_size = 30;
-const uint64_t rpc_hpp::adapters::bitsery_detail::config::max_string_size = 2048;
-const uint64_t rpc_hpp::adapters::bitsery_detail::config::max_container_size = 100;
+const uint64_t rpc_hpp::adapters::bitsery_adapter::config::max_func_name_size = 30;
+const uint64_t rpc_hpp::adapters::bitsery_adapter::config::max_string_size = 2048;
+const uint64_t rpc_hpp::adapters::bitsery_adapter::config::max_container_size = 100;
 #endif
 
 template<typename Serial>
@@ -387,7 +387,7 @@ TEST_CASE_TEMPLATE("InvalidObject", TestType, RPC_TEST_TYPES)
     auto serial_obj = TestType::from_bytes(std::move(bytes));
 
     REQUIRE(serial_obj.has_value());
-    REQUIRE(rpc_hpp::pack_adapter<TestType>::extract_exception(serial_obj.value()).get_type()
+    REQUIRE(TestType::extract_exception(serial_obj.value()).get_type()
         == rpc_hpp::exception_type::server_receive);
 }
 

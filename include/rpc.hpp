@@ -75,6 +75,14 @@
 #define RPC_HPP_PRECONDITION(EXPR) assert(EXPR)
 #define RPC_HPP_POSTCONDITION(EXPR) assert(EXPR)
 
+#if defined(__GNUC__) || defined(__clang__)
+#    define RPC_HPP_INLINE __attribute__((always_inline))
+#elif defined(_MSC_VER)
+#    define RPC_HPP_INLINE __forceinline
+#else
+#    define RPC_HPP_INLINE
+#endif
+
 ///@brief Top-level namespace for rpc.hpp classes and functions
 namespace rpc_hpp
 {
@@ -242,29 +250,9 @@ public:
 
 namespace adapters
 {
-    template<typename T_Serial, typename T_Bytes>
-    struct serial_adapter
-    {
-        using serial_t = T_Serial;
-        using bytes_t = T_Bytes;
-
-        // nodiscard because a potentially expensive parse and copy is being done
-        template<typename T>
-        [[nodiscard]] static serial_t serialize(const T& val);
-
-        // nodiscard because a potentially expensive parse and copy is being done
-        template<typename T>
-        [[nodiscard]] static T deserialize(const serial_t& serial_obj);
-
-        // nodiscard because input bytes are lost after conversion
-        [[nodiscard]] static std::optional<serial_t> from_bytes(bytes_t&& bytes);
-
-        // nodiscard because input object is lost after conversion
-        [[nodiscard]] static bytes_t to_bytes(serial_t&& serial_obj);
-
-        static serial_t empty_object();
-    };
-} // namespace adapters
+    template<typename T>
+    struct serial_traits;
+}
 
 ///@brief Namespace for implementation details, should not be used outside of the library
 namespace detail
@@ -617,51 +605,59 @@ namespace detail
             }
         }
     };
+
+    template<typename Adapter>
+    struct serial_adapter_base
+    {
+        using serial_t = typename adapters::serial_traits<Adapter>::serial_t;
+        using bytes_t = typename adapters::serial_traits<Adapter>::bytes_t;
+
+        [[nodiscard]] RPC_HPP_INLINE static std::optional<serial_t> from_bytes(bytes_t&& bytes)
+        {
+            return Adapter::from_bytes_impl(std::move(bytes));
+        }
+
+        [[nodiscard]] RPC_HPP_INLINE static bytes_t to_bytes(serial_t&& serial_obj)
+        {
+            return Adapter::to_bytes_impl(std::move(serial_obj));
+        }
+
+        static serial_t empty_object() { return Adapter::empty_object_impl(); }
+
+        // nodiscard because a potentially expensive parse and copy is being done
+        template<typename R, typename... Args>
+        [[nodiscard]] RPC_HPP_INLINE static serial_t serialize_pack(
+            const detail::packed_func<R, Args...>& pack)
+        {
+            return Adapter::template serialize_pack_impl<R, Args...>(pack);
+        }
+
+        // nodiscard because a potentially expensive parse and copy is being done
+        template<typename R, typename... Args>
+        [[nodiscard]] RPC_HPP_INLINE static detail::packed_func<R, Args...> deserialize_pack(
+            const serial_t& serial_obj)
+        {
+            return Adapter::template deserialize_pack_impl<R, Args...>(serial_obj);
+        }
+
+        // nodiscard because a potentially expensive parse and string allocation is being done
+        [[nodiscard]] RPC_HPP_INLINE static std::string get_func_name(const serial_t& serial_obj)
+        {
+            return Adapter::get_func_name_impl(serial_obj);
+        }
+
+        RPC_HPP_INLINE static rpc_exception extract_exception(const serial_t& serial_obj)
+        {
+            return Adapter::extract_exception_impl(serial_obj);
+        }
+
+        RPC_HPP_INLINE static void set_exception(serial_t& serial_obj, const rpc_exception& ex)
+        {
+            return Adapter::set_exception_impl(serial_obj, ex);
+        }
+    };
 #endif
 } // namespace detail
-
-///@brief Class collecting several functions for interoperating between serial objects and a packed_func
-///
-///@tparam Serial serial_adapter type that controls how objects are serialized/deserialized
-template<typename Serial>
-class pack_adapter
-{
-public:
-    ///@brief Serializes a packed_func to a serial object
-    ///
-    ///@tparam R Return type of the packed_func
-    ///@tparam Args Variadic argument type(s) of the packed_func
-    ///@param pack packed_func to be serialized
-    ///@return Serial::serial_t Serial representation of the packed_func
-
-    // nodiscard because a potentially expensive parse and copy is being done
-    template<typename R, typename... Args>
-    [[nodiscard]] static typename Serial::serial_t serialize_pack(
-        const detail::packed_func<R, Args...>& pack);
-
-    ///@brief De-serializes a serial object to a packed_func
-    ///
-    ///@tparam R Return type of the packed_func
-    ///@tparam Args Variadic argument type(s) of the packed_func
-    ///@param serial_obj Serial object to be serialized
-    ///@return packed_func<R, Args...> resulting packed_func
-
-    // nodiscard because a potentially expensive parse and copy is being done
-    template<typename R, typename... Args>
-    [[nodiscard]] static detail::packed_func<R, Args...> deserialize_pack(
-        const typename Serial::serial_t& serial_obj);
-
-    ///@brief Extracts the function name of a serialized function call
-    ///
-    ///@param serial_obj Serial object to be parsed
-    ///@return std::string Name of the contained function
-
-    // nodiscard because a potentially expensive parse and string allocation is being done
-    [[nodiscard]] static std::string get_func_name(const typename Serial::serial_t& serial_obj);
-
-    static rpc_exception extract_exception(const typename Serial::serial_t& serial_obj);
-    static void set_exception(typename Serial::serial_t& serial_obj, const rpc_exception& ex);
-};
 
 #if defined(RPC_HPP_SERVER_IMPL) || defined(RPC_HPP_MODULE_IMPL)
 ///@brief Namespace containing functions and classes only relevant to "server-side" implentations
@@ -705,7 +701,7 @@ inline namespace server
                     }
                     catch (const rpc_exception& ex)
                     {
-                        pack_adapter<Serial>::set_exception(serial_obj, ex);
+                        Serial::set_exception(serial_obj, ex);
                     }
                 });
         }
@@ -730,7 +726,7 @@ inline namespace server
                     }
                     catch (const rpc_exception& ex)
                     {
-                        pack_adapter<Serial>::set_exception(serial_obj, ex);
+                        Serial::set_exception(serial_obj, ex);
                     }
                 });
         }
@@ -755,13 +751,12 @@ inline namespace server
             if (!serial_obj.has_value())
             {
                 auto err_obj = Serial::empty_object();
-                pack_adapter<Serial>::set_exception(
-                    err_obj, server_receive_error("Invalid RPC object received"));
+                Serial::set_exception(err_obj, server_receive_error("Invalid RPC object received"));
 
                 return Serial::to_bytes(std::move(err_obj));
             }
 
-            const auto func_name = pack_adapter<adapter_t>::get_func_name(serial_obj.value());
+            const auto func_name = adapter_t::get_func_name(serial_obj.value());
             const auto it = m_dispatch_table.find(func_name);
 
             if (it != m_dispatch_table.end())
@@ -770,7 +765,7 @@ inline namespace server
                 return Serial::to_bytes(std::move(serial_obj).value());
             }
 
-            pack_adapter<Serial>::set_exception(serial_obj.value(),
+            Serial::set_exception(serial_obj.value(),
                 function_not_found("RPC error: Called function: \"" + func_name + "\" not found"));
 
             return Serial::to_bytes(std::move(serial_obj).value());
@@ -794,7 +789,7 @@ inline namespace server
             {
                 try
                 {
-                    return pack_adapter<Serial>::template deserialize_pack<R, Args...>(serial_obj);
+                    return Serial::template deserialize_pack<R, Args...>(serial_obj);
                 }
                 catch (const rpc_exception&)
                 {
@@ -820,8 +815,7 @@ inline namespace server
 
                     try
                     {
-                        serial_obj =
-                            pack_adapter<Serial>::template serialize_pack<R, Args...>(pack);
+                        serial_obj = Serial::template serialize_pack<R, Args...>(pack);
                         return;
                     }
                     catch (const rpc_exception&)
@@ -844,7 +838,7 @@ inline namespace server
 
             try
             {
-                serial_obj = pack_adapter<Serial>::template serialize_pack<R, Args...>(pack);
+                serial_obj = Serial::template serialize_pack<R, Args...>(pack);
             }
             catch (const rpc_exception&)
             {
@@ -880,7 +874,7 @@ inline namespace server
             {
                 try
                 {
-                    return pack_adapter<Serial>::template deserialize_pack<R, Args...>(serial_obj);
+                    return Serial::template deserialize_pack<R, Args...>(serial_obj);
                 }
                 catch (const rpc_exception&)
                 {
@@ -896,7 +890,7 @@ inline namespace server
 
             try
             {
-                serial_obj = pack_adapter<Serial>::template serialize_pack<R, Args...>(pack);
+                serial_obj = Serial::template serialize_pack<R, Args...>(pack);
             }
             catch (const rpc_exception&)
             {
@@ -1030,7 +1024,7 @@ inline namespace client
             {
                 try
                 {
-                    return pack_adapter<Serial>::serialize_pack(pack);
+                    return Serial::serialize_pack(pack);
                 }
                 catch (const rpc_exception&)
                 {
@@ -1071,8 +1065,8 @@ inline namespace client
 
             try
             {
-                pack = pack_adapter<Serial>::template deserialize_pack<R,
-                    detail::decay_str_t<Args>...>(ret_obj.value());
+                pack = Serial::template deserialize_pack<R, detail::decay_str_t<Args>...>(
+                    ret_obj.value());
             }
             catch (const rpc_exception&)
             {
@@ -1122,7 +1116,7 @@ inline namespace client
             {
                 try
                 {
-                    return pack_adapter<Serial>::serialize_pack(pack);
+                    return Serial::serialize_pack(pack);
                 }
                 catch (const rpc_exception&)
                 {
@@ -1163,8 +1157,8 @@ inline namespace client
 
             try
             {
-                pack = pack_adapter<Serial>::template deserialize_pack<R,
-                    detail::decay_str_t<Args>...>(ret_obj.value());
+                pack = Serial::template deserialize_pack<R, detail::decay_str_t<Args>...>(
+                    ret_obj.value());
             }
             catch (const rpc_exception&)
             {
