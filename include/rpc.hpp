@@ -468,7 +468,7 @@ namespace detail
     public:
         using args_t = std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...>;
 
-        packed_func_base();
+        packed_func_base() = delete;
         packed_func_base(std::string func_name, args_t args) noexcept
             : m_func_name(std::move(func_name)), m_args(std::move(args))
         {
@@ -538,9 +538,6 @@ namespace detail
         std::string m_err_mesg{};
         args_t m_args;
     };
-
-    template<typename... Args>
-    packed_func_base<Args...>::packed_func_base() = delete;
 
     template<>
     packed_func_base<>::packed_func_base() = default;

@@ -47,7 +47,7 @@ if(${BUILD_ADAPTER_BITSERY})
     find_package(Bitsery CONFIG REQUIRED)
     target_link_libraries(bitsery_adapter INTERFACE Bitsery::bitsery)
   else()
-    find_path(bitsery_path bitsery/bitsery.h)
+    find_path(bitsery_path "bitsery/bitsery.h" REQUIRED)
     target_include_directories(bitsery_adapter SYSTEM
                                INTERFACE bitsery_path)
   endif()
@@ -68,13 +68,9 @@ if(${BUILD_ADAPTER_BOOST_JSON})
     run_conan()
     target_include_directories(boost_json_adapter SYSTEM
                                INTERFACE ${CONAN_INCLUDE_DIRS_BOOST})
-  elseif(${DEPENDS_VCPKG})
+  else()
     find_package(Boost 1.75.0 REQUIRED COMPONENTS json)
     target_link_libraries(boost_json_adapter INTERFACE Boost::headers Boost::json)
-  else()
-    find_path(boost_json_path boost/json/src.hpp)
-    target_include_directories(boost_json_adapter SYSTEM
-                               INTERFACE boost_json_path)
   endif()
 
   install(FILES "rpc_boost_json.hpp"
@@ -95,7 +91,7 @@ if(${BUILD_ADAPTER_NJSON})
     find_package(nlohmann_json CONFIG REQUIRED)
     target_link_libraries(njson_adapter INTERFACE nlohmann_json::nlohmann_json)
   else()
-    find_path(njson_path nlohmann/json.hpp)
+    find_path(njson_path "nlohmann/json.hpp" REQUIRED)
     target_include_directories(njson_adapter SYSTEM INTERFACE njson_path)
   endif()
 
@@ -118,7 +114,7 @@ if(${BUILD_ADAPTER_RAPIDJSON})
     target_include_directories(rpdjson_adapter SYSTEM
                                INTERFACE ${RAPIDJSON_INCLUDE_DIRS})
   else()
-    find_path(rpdjson_path rapidjson/document.h)
+    find_path(rpdjson_path "rapidjson/document.h" REQUIRED)
     target_include_directories(rpdjson_adapter SYSTEM INTERFACE rpdjson_path)
   endif()
 

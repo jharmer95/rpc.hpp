@@ -375,11 +375,9 @@ TEST_CASE_TEMPLATE("InvalidObject", TestType, RPC_TEST_TYPES)
 #endif
 
     typename TestType::bytes_t bytes{};
+    bytes.resize(8);
 
-    for (char i = 0; i < 8; ++i)
-    {
-        bytes.push_back(i);
-    }
+    std::iota(bytes.begin(), bytes.end(), 0);
 
     auto& client = GetClient<TestType>();
     client.send(std::move(bytes));

@@ -138,6 +138,72 @@ namespace adapters
             std::string err_mesg{};
             R result{};
             args_t args{};
+
+            template<typename S>
+            void serialize(S& s)
+            {
+                s.template value<sizeof(int)>(except_type);
+                s.text1b(func_name, bitsery_adapter::config::max_func_name_size);
+                s.text1b(err_mesg, bitsery_adapter::config::max_string_size);
+
+                if constexpr (std::is_arithmetic_v<R>)
+                {
+                    s.template value<sizeof(R)>(result);
+                }
+                else if constexpr (rpc_hpp::detail::is_container_v<R>)
+                {
+                    if constexpr (std::is_arithmetic_v<typename R::value_type>)
+                    {
+                        s.template container<sizeof(typename R::value_type)>(
+                            result, bitsery_adapter::config::max_container_size);
+                    }
+                    else
+                    {
+                        s.container(result, bitsery_adapter::config::max_container_size);
+                    }
+                }
+                else
+                {
+                    s.object(result);
+                }
+
+                s.ext(args,
+                    ::bitsery::ext::StdTuple{ [](S& s2, std::string& str)
+                        { s2.text1b(str, bitsery_adapter::config::max_string_size); },
+                        // Fallback serializer for integers, floats, and enums
+                        [](auto& s2, auto& val)
+                        {
+                            using T = std::remove_cv_t<std::remove_reference_t<decltype(val)>>;
+
+                            if constexpr (std::is_arithmetic_v<T>)
+                            {
+                                if constexpr (bitsery_adapter::config::use_exact_size)
+                                {
+                                    s2.template value<sizeof(val)>(val);
+                                }
+                                else
+                                {
+                                    s2.value8b(val);
+                                }
+                            }
+                            else if constexpr (rpc_hpp::detail::is_container_v<T>)
+                            {
+                                if constexpr (std::is_arithmetic_v<typename T::value_type>)
+                                {
+                                    s2.template container<sizeof(typename T::value_type)>(
+                                        val, bitsery_adapter::config::max_container_size);
+                                }
+                                else
+                                {
+                                    s2.container(val, bitsery_adapter::config::max_container_size);
+                                }
+                            }
+                            else
+                            {
+                                s2.object(val);
+                            }
+                        } });
+            }
         };
 
         template<typename... Args>
@@ -156,6 +222,51 @@ namespace adapters
             std::string func_name{};
             std::string err_mesg{};
             args_t args{};
+
+            template<typename S>
+            void serialize(S& s)
+            {
+                s.template value<sizeof(int)>(except_type);
+                s.text1b(func_name, bitsery_adapter::config::max_func_name_size);
+                s.text1b(err_mesg, bitsery_adapter::config::max_string_size);
+
+                s.ext(args,
+                    ::bitsery::ext::StdTuple{ [](S& s2, std::string& str)
+                        { s2.text1b(str, bitsery_adapter::config::max_string_size); },
+                        // Fallback serializer for integers, floats, and enums
+                        [](auto& s2, auto& val)
+                        {
+                            using T = std::remove_cv_t<std::remove_reference_t<decltype(val)>>;
+
+                            if constexpr (std::is_arithmetic_v<T>)
+                            {
+                                if constexpr (bitsery_adapter::config::use_exact_size)
+                                {
+                                    s2.template value<sizeof(val)>(val);
+                                }
+                                else
+                                {
+                                    s2.value8b(val);
+                                }
+                            }
+                            else if constexpr (rpc_hpp::detail::is_container_v<T>)
+                            {
+                                if constexpr (std::is_arithmetic_v<typename T::value_type>)
+                                {
+                                    s2.template container<sizeof(typename T::value_type)>(
+                                        val, bitsery_adapter::config::max_container_size);
+                                }
+                                else
+                                {
+                                    s2.container(val, bitsery_adapter::config::max_container_size);
+                                }
+                            }
+                            else
+                            {
+                                s2.object(val);
+                            }
+                        } });
+            }
         };
 
         // nodiscard because a potentially expensive copy and allocation is being done
@@ -436,71 +547,5 @@ namespace adapters
             }
         }
     };
-
-    template<typename S, typename R, typename... Args>
-    void serialize(S& s, bitsery_adapter::pack_helper<R, Args...>& o)
-    {
-        s.template value<sizeof(int)>(o.except_type);
-        s.text1b(o.func_name, bitsery_adapter::config::max_func_name_size);
-        s.text1b(o.err_mesg, bitsery_adapter::config::max_string_size);
-
-        if constexpr (std::is_arithmetic_v<R>)
-        {
-            s.template value<sizeof(R)>(o.result);
-        }
-        else if constexpr (rpc_hpp::detail::is_container_v<R>)
-        {
-            if constexpr (std::is_arithmetic_v<typename R::value_type>)
-            {
-                s.template container<sizeof(typename R::value_type)>(
-                    o.result, bitsery_adapter::config::max_container_size);
-            }
-            else
-            {
-                s.container(o.result, bitsery_adapter::config::max_container_size);
-            }
-        }
-        else if constexpr (!std::is_void_v<R>)
-        {
-            s.object(o.result);
-        }
-
-        s.ext(o.args,
-            ::bitsery::ext::StdTuple{ [](S& s2, std::string& str)
-                { s2.text1b(str, bitsery_adapter::config::max_string_size); },
-                // Fallback serializer for integers, floats, and enums
-                [](auto& s2, auto& val)
-                {
-                    using T = std::remove_cv_t<std::remove_reference_t<decltype(val)>>;
-
-                    if constexpr (std::is_arithmetic_v<T>)
-                    {
-                        if constexpr (bitsery_adapter::config::use_exact_size)
-                        {
-                            s2.template value<sizeof(val)>(val);
-                        }
-                        else
-                        {
-                            s2.value8b(val);
-                        }
-                    }
-                    else if constexpr (rpc_hpp::detail::is_container_v<T>)
-                    {
-                        if constexpr (std::is_arithmetic_v<typename T::value_type>)
-                        {
-                            s2.template container<sizeof(typename T::value_type)>(
-                                val, bitsery_adapter::config::max_container_size);
-                        }
-                        else
-                        {
-                            s2.container(val, bitsery_adapter::config::max_container_size);
-                        }
-                    }
-                    else
-                    {
-                        s2.object(val);
-                    }
-                } });
-    }
 } // namespace adapters
 } // namespace rpc_hpp
