@@ -609,49 +609,20 @@ namespace detail
         using serial_t = typename adapters::serial_traits<Adapter>::serial_t;
         using bytes_t = typename adapters::serial_traits<Adapter>::bytes_t;
 
-        [[nodiscard]] RPC_HPP_INLINE static std::optional<serial_t> from_bytes(bytes_t&& bytes)
-        {
-            return Adapter::from_bytes_impl(std::move(bytes));
-        }
+        static std::optional<serial_t> from_bytes(bytes_t&& bytes) = delete;
+        static bytes_t to_bytes(serial_t&& serial_obj) = delete;
+        static serial_t empty_object() = delete;
 
-        [[nodiscard]] RPC_HPP_INLINE static bytes_t to_bytes(serial_t&& serial_obj)
-        {
-            return Adapter::to_bytes_impl(std::move(serial_obj));
-        }
-
-        static serial_t empty_object() { return Adapter::empty_object_impl(); }
-
-        // nodiscard because a potentially expensive parse and copy is being done
         template<typename R, typename... Args>
-        [[nodiscard]] RPC_HPP_INLINE static serial_t serialize_pack(
-            const detail::packed_func<R, Args...>& pack)
-        {
-            return Adapter::template serialize_pack_impl<R, Args...>(pack);
-        }
+        static serial_t serialize_pack(const detail::packed_func<R, Args...>& pack) = delete;
 
-        // nodiscard because a potentially expensive parse and copy is being done
         template<typename R, typename... Args>
-        [[nodiscard]] RPC_HPP_INLINE static detail::packed_func<R, Args...> deserialize_pack(
-            const serial_t& serial_obj)
-        {
-            return Adapter::template deserialize_pack_impl<R, Args...>(serial_obj);
-        }
+        static detail::packed_func<R, Args...> deserialize_pack(
+            const serial_t& serial_obj) = delete;
 
-        // nodiscard because a potentially expensive parse and string allocation is being done
-        [[nodiscard]] RPC_HPP_INLINE static std::string get_func_name(const serial_t& serial_obj)
-        {
-            return Adapter::get_func_name_impl(serial_obj);
-        }
-
-        RPC_HPP_INLINE static rpc_exception extract_exception(const serial_t& serial_obj)
-        {
-            return Adapter::extract_exception_impl(serial_obj);
-        }
-
-        RPC_HPP_INLINE static void set_exception(serial_t& serial_obj, const rpc_exception& ex)
-        {
-            return Adapter::set_exception_impl(serial_obj, ex);
-        }
+        static std::string get_func_name(const serial_t& serial_obj) = delete;
+        static rpc_exception extract_exception(const serial_t& serial_obj) = delete;
+        static void set_exception(serial_t& serial_obj, const rpc_exception& ex) = delete;
     };
 #endif
 } // namespace detail

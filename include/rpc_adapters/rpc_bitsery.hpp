@@ -412,19 +412,19 @@ namespace adapters
             static const uint64_t max_container_size;
         };
 
-        [[nodiscard]] static std::vector<uint8_t> to_bytes_impl(std::vector<uint8_t>&& serial_obj)
+        [[nodiscard]] static std::vector<uint8_t> to_bytes(std::vector<uint8_t>&& serial_obj)
         {
             return serial_obj;
         }
 
-        [[nodiscard]] static std::optional<std::vector<uint8_t>> from_bytes_impl(
+        [[nodiscard]] static std::optional<std::vector<uint8_t>> from_bytes(
             std::vector<uint8_t>&& bytes)
         {
             // TODO: Verify bitsery data somehow
             return bytes;
         }
 
-        static std::vector<uint8_t> empty_object_impl()
+        static std::vector<uint8_t> empty_object()
         {
             pack_helper<void> helper;
             std::vector<uint8_t> buffer{};
@@ -436,7 +436,7 @@ namespace adapters
         }
 
         template<typename R, typename... Args>
-        [[nodiscard]] static std::vector<uint8_t> serialize_pack_impl(
+        [[nodiscard]] static std::vector<uint8_t> serialize_pack(
             const detail::packed_func<R, Args...>& pack)
         {
             const auto helper = to_helper(pack);
@@ -450,7 +450,7 @@ namespace adapters
         }
 
         template<typename R, typename... Args>
-        [[nodiscard]] static detail::packed_func<R, Args...> deserialize_pack_impl(
+        [[nodiscard]] static detail::packed_func<R, Args...> deserialize_pack(
             const std::vector<uint8_t>& serial_obj)
         {
             pack_helper<R, Args...> helper;
@@ -488,7 +488,7 @@ namespace adapters
             return from_helper(helper);
         }
 
-        [[nodiscard]] static std::string get_func_name_impl(const std::vector<uint8_t>& serial_obj)
+        [[nodiscard]] static std::string get_func_name(const std::vector<uint8_t>& serial_obj)
         {
             size_t index = sizeof(int);
             const auto len = extract_length(serial_obj, index);
@@ -500,13 +500,13 @@ namespace adapters
                 serial_obj.begin() + static_cast<ptrdiff_t>(index + len) };
         }
 
-        static rpc_hpp::rpc_exception extract_exception_impl(const std::vector<uint8_t>& serial_obj)
+        static rpc_hpp::rpc_exception extract_exception(const std::vector<uint8_t>& serial_obj)
         {
             const auto pack = deserialize_pack<void>(serial_obj);
             return rpc_hpp::rpc_exception{ pack.get_err_mesg(), pack.get_except_type() };
         }
 
-        static void set_exception_impl(std::vector<uint8_t>& serial_obj, const rpc_exception& ex)
+        static void set_exception(std::vector<uint8_t>& serial_obj, const rpc_exception& ex)
         {
             // copy except_type into buffer
             const int ex_type = static_cast<int>(ex.get_type());

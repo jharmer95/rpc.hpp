@@ -227,12 +227,12 @@ namespace adapters
         }
 
     public:
-        [[nodiscard]] static std::string to_bytes_impl(boost::json::value&& serial_obj)
+        [[nodiscard]] static std::string to_bytes(boost::json::value&& serial_obj)
         {
             return boost::json::serialize(std::move(serial_obj));
         }
 
-        [[nodiscard]] static std::optional<boost::json::object> from_bytes_impl(std::string&& bytes)
+        [[nodiscard]] static std::optional<boost::json::object> from_bytes(std::string&& bytes)
         {
             boost::system::error_code ec;
             boost::json::value val = boost::json::parse(std::move(bytes), ec);
@@ -297,10 +297,10 @@ namespace adapters
             return obj;
         }
 
-        static boost::json::object empty_object_impl() { return boost::json::object{}; }
+        static boost::json::object empty_object() { return boost::json::object{}; }
 
         template<typename R, typename... Args>
-        [[nodiscard]] static boost::json::object serialize_pack_impl(
+        [[nodiscard]] static boost::json::object serialize_pack(
             const detail::packed_func<R, Args...>& pack)
         {
             boost::json::object obj{};
@@ -329,7 +329,7 @@ namespace adapters
         }
 
         template<typename R, typename... Args>
-        [[nodiscard]] static detail::packed_func<R, Args...> deserialize_pack_impl(
+        [[nodiscard]] static detail::packed_func<R, Args...> deserialize_pack(
             const boost::json::object& serial_obj)
         {
             auto& args_val = serial_obj.at("args");
@@ -373,18 +373,18 @@ namespace adapters
             }
         }
 
-        [[nodiscard]] static std::string get_func_name_impl(const boost::json::object& serial_obj)
+        [[nodiscard]] static std::string get_func_name(const boost::json::object& serial_obj)
         {
             return { serial_obj.at("func_name").get_string().c_str() };
         }
 
-        static rpc_hpp::rpc_exception extract_exception_impl(const boost::json::object& serial_obj)
+        static rpc_hpp::rpc_exception extract_exception(const boost::json::object& serial_obj)
         {
             return rpc_hpp::rpc_exception{ serial_obj.at("err_mesg").as_string().c_str(),
                 static_cast<rpc_hpp::exception_type>(serial_obj.at("except_type").as_int64()) };
         }
 
-        static void set_exception_impl(boost::json::object& serial_obj, const rpc_exception& ex)
+        static void set_exception(boost::json::object& serial_obj, const rpc_exception& ex)
         {
             serial_obj["except_type"] = static_cast<int>(ex.get_type());
             serial_obj["err_mesg"] = boost::json::string{ ex.what() };

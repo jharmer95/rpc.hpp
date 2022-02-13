@@ -183,12 +183,12 @@ namespace adapters
         }
 
     public:
-        [[nodiscard]] static std::string to_bytes_impl(nlohmann::json&& serial_obj)
+        [[nodiscard]] static std::string to_bytes(nlohmann::json&& serial_obj)
         {
             return std::move(serial_obj).dump();
         }
 
-        [[nodiscard]] static std::optional<nlohmann::json> from_bytes_impl(std::string&& bytes)
+        [[nodiscard]] static std::optional<nlohmann::json> from_bytes(std::string&& bytes)
         {
             nlohmann::json obj{};
 
@@ -244,10 +244,10 @@ namespace adapters
             return obj;
         }
 
-        static nlohmann::json empty_object_impl() { return nlohmann::json::object(); }
+        static nlohmann::json empty_object() { return nlohmann::json::object(); }
 
         template<typename R, typename... Args>
-        [[nodiscard]] static nlohmann::json serialize_pack_impl(
+        [[nodiscard]] static nlohmann::json serialize_pack(
             const detail::packed_func<R, Args...>& pack)
         {
             nlohmann::json obj{};
@@ -278,7 +278,7 @@ namespace adapters
         }
 
         template<typename R, typename... Args>
-        [[nodiscard]] static detail::packed_func<R, Args...> deserialize_pack_impl(
+        [[nodiscard]] static detail::packed_func<R, Args...> deserialize_pack(
             const nlohmann::json& serial_obj)
         {
             [[maybe_unused]] unsigned arg_counter = 0;
@@ -320,18 +320,18 @@ namespace adapters
             }
         }
 
-        [[nodiscard]] static std::string get_func_name_impl(const nlohmann::json& serial_obj)
+        [[nodiscard]] static std::string get_func_name(const nlohmann::json& serial_obj)
         {
             return serial_obj["func_name"];
         }
 
-        static rpc_hpp::rpc_exception extract_exception_impl(const nlohmann::json& serial_obj)
+        static rpc_hpp::rpc_exception extract_exception(const nlohmann::json& serial_obj)
         {
             return rpc_hpp::rpc_exception{ serial_obj.at("err_mesg").get<std::string>(),
                 static_cast<rpc_hpp::exception_type>(serial_obj.at("except_type").get<int>()) };
         }
 
-        static void set_exception_impl(nlohmann::json& serial_obj, const rpc_exception& ex)
+        static void set_exception(nlohmann::json& serial_obj, const rpc_exception& ex)
         {
             serial_obj["except_type"] = ex.get_type();
             serial_obj["err_mesg"] = ex.what();

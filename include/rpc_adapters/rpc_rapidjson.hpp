@@ -320,7 +320,7 @@ namespace adapters
         }
 
     public:
-        [[nodiscard]] static std::string to_bytes_impl(rapidjson::Document&& serial_obj)
+        [[nodiscard]] static std::string to_bytes(rapidjson::Document&& serial_obj)
         {
             rapidjson::StringBuffer buffer{};
             rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
@@ -328,7 +328,7 @@ namespace adapters
             return buffer.GetString();
         }
 
-        [[nodiscard]] static std::optional<rapidjson::Document> from_bytes_impl(std::string&& bytes)
+        [[nodiscard]] static std::optional<rapidjson::Document> from_bytes(std::string&& bytes)
         {
             rapidjson::Document d{};
             d.SetObject();
@@ -388,7 +388,7 @@ namespace adapters
             return d;
         }
 
-        static rapidjson::Document empty_object_impl()
+        static rapidjson::Document empty_object()
         {
             rapidjson::Document d{};
             d.SetObject();
@@ -396,7 +396,7 @@ namespace adapters
         }
 
         template<typename R, typename... Args>
-        [[nodiscard]] static rapidjson::Document serialize_pack_impl(
+        [[nodiscard]] static rapidjson::Document serialize_pack(
             const detail::packed_func<R, Args...>& pack)
         {
             rapidjson::Document d{};
@@ -460,7 +460,7 @@ namespace adapters
         }
 
         template<typename R, typename... Args>
-        [[nodiscard]] static detail::packed_func<R, Args...> deserialize_pack_impl(
+        [[nodiscard]] static detail::packed_func<R, Args...> deserialize_pack(
             const rapidjson::Document& serial_obj)
         {
             [[maybe_unused]] unsigned arg_counter = 0;
@@ -503,12 +503,12 @@ namespace adapters
             }
         }
 
-        [[nodiscard]] static std::string get_func_name_impl(const rapidjson::Document& serial_obj)
+        [[nodiscard]] static std::string get_func_name(const rapidjson::Document& serial_obj)
         {
             return serial_obj["func_name"].GetString();
         }
 
-        static rpc_hpp::rpc_exception extract_exception_impl(const rapidjson::Document& serial_obj)
+        static rpc_hpp::rpc_exception extract_exception(const rapidjson::Document& serial_obj)
         {
             return rpc_hpp::rpc_exception{ serial_obj["err_mesg"].GetString(),
                 static_cast<rpc_hpp::exception_type>(serial_obj["except_type"].GetInt()) };
