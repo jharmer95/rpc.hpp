@@ -37,7 +37,6 @@
 #pragma once
 
 #include "../test_structs.hpp"
-#include "../static_funcs.hpp"
 
 #include <asio.hpp>
 #include <rpc.hpp>
@@ -46,8 +45,7 @@
 #include <atomic>
 #include <cstddef>
 #include <cstdint>
-#include <iomanip>
-#include <iostream>
+#include <cstdio>
 #include <numeric>
 #include <stdexcept>
 #include <string>
@@ -147,7 +145,7 @@ public:
             }
             catch (const std::exception& ex)
             {
-                std::cerr << "Exception in thread: " << ex.what() << '\n';
+                fprintf(stderr, "Exception in thread: %s\n", ex.what());
             }
         }
     }

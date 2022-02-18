@@ -5,7 +5,7 @@
 ///@copyright
 ///BSD 3-Clause License
 ///
-///Copyright (c) 2020-2021, Jackson Harmer
+///Copyright (c) 2020-2022, Jackson Harmer
 ///All rights reserved.
 ///
 ///Redistribution and use in source and binary forms, with or without
@@ -38,6 +38,7 @@
 //#define RPC_HPP_ENABLE_SERVER_CACHE
 
 #include "rpc.server.hpp"
+#include "../static_funcs.hpp"
 
 #if defined(RPC_HPP_ENABLE_NJSON)
 #    include <rpc_adapters/rpc_njson.hpp>
@@ -62,21 +63,23 @@ using rpc_hpp::adapters::boost_json_adapter;
 
 using rpc_hpp::adapters::bitsery_adapter;
 
-const uint64_t rpc_hpp::adapters::bitsery_adapter::config::max_func_name_size = 30;
-const uint64_t rpc_hpp::adapters::bitsery_adapter::config::max_string_size = 2048;
-const uint64_t rpc_hpp::adapters::bitsery_adapter::config::max_container_size = 1'000;
+constexpr uint64_t bitsery_adapter::config::max_func_name_size = 30;
+constexpr uint64_t bitsery_adapter::config::max_string_size = 2048;
+constexpr uint64_t bitsery_adapter::config::max_container_size = 1'000;
 #endif
 
 #include <algorithm>
 #include <cmath>
-#include <filesystem>
-#include <fstream>
-#include <iostream>
 #include <sstream>
 #include <thread>
-#include <utility>
 
-std::atomic<bool> RUNNING{ false };
+#if defined(RPC_HPP_ENABLE_SERVER_CACHE)
+#    include <filesystem>
+#    include <fstream>
+#    include <utility>
+#endif
+
+std::atomic_bool RUNNING{ false };
 
 [[noreturn]] void ThrowError() noexcept(false)
 {
@@ -86,6 +89,7 @@ std::atomic<bool> RUNNING{ false };
 // NOTE: This function is only for testing purposes. Obviously you would not want this in a production server!
 void KillServer() noexcept
 {
+    puts("\nShutting down from remote KillServer call...");
     RUNNING = false;
 }
 
@@ -300,7 +304,7 @@ void load_cache(TestServer<Serial>& server, [[maybe_unused]] R (*func)(Args...),
 
     if (!ifile.is_open())
     {
-        std::cout << "Could not load cache for function: " << func_name << '\n';
+        printf("Could not load cache for function: %s\n", func_name.c_str());
         return;
     }
 
@@ -394,28 +398,28 @@ int main(const int argc, char* argv[])
 #    endif
 
         threads.emplace_back(&TestServer<njson_adapter>::Run, &njson_server);
-        std::cout << "Running njson server on port 5000...\n";
+        puts("Running njson server on port 5000...");
 #endif
 
 #if defined(RPC_HPP_ENABLE_RAPIDJSON)
         TestServer<rapidjson_adapter> rapidjson_server{ io_context, 5001U };
         BindFuncs(rapidjson_server);
         threads.emplace_back(&TestServer<rapidjson_adapter>::Run, &rapidjson_server);
-        std::cout << "Running rapidjson server on port 5001...\n";
+        puts("Running rapidjson server on port 5001...");
 #endif
 
 #if defined(RPC_HPP_ENABLE_BOOST_JSON)
         TestServer<boost_json_adapter> bjson_server{ io_context, 5002U };
         BindFuncs(bjson_server);
         threads.emplace_back(&TestServer<boost_json_adapter>::Run, &bjson_server);
-        std::cout << "Running Boost.JSON server on port 5002...\n";
+        puts("Running Boost.JSON server on port 5002...");
 #endif
 
 #if defined(RPC_HPP_ENABLE_BITSERY)
         TestServer<bitsery_adapter> bitsery_server{ io_context, 5003U };
         BindFuncs(bitsery_server);
         threads.emplace_back(&TestServer<bitsery_adapter>::Run, &bitsery_server);
-        std::cout << "Running Bitsery server on port 5003...\n";
+        puts("Running Bitsery server on port 5003...");
 #endif
 
         for (auto& th : threads)
@@ -436,11 +440,12 @@ int main(const int argc, char* argv[])
         DUMP_CACHE(njson_server, CountChars, njson_dump_path);
 #endif
 
+        puts("Exited normally");
         return 0;
     }
     catch (const std::exception& ex)
     {
-        std::cerr << "Exception: " << ex.what() << '\n';
+        fprintf(stderr, "Exception: %s\n", ex.what());
         return 1;
     }
 }

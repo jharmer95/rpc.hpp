@@ -5,7 +5,7 @@
 ///@copyright
 ///BSD 3-Clause License
 ///
-///Copyright (c) 2020-2021, Jackson Harmer
+///Copyright (c) 2020-2022, Jackson Harmer
 ///All rights reserved.
 ///
 ///Redistribution and use in source and binary forms, with or without
@@ -44,9 +44,9 @@
 #include <doctest/doctest.h>
 
 #if defined(RPC_HPP_ENABLE_BITSERY)
-const uint64_t rpc_hpp::adapters::bitsery_adapter::config::max_func_name_size = 30;
-const uint64_t rpc_hpp::adapters::bitsery_adapter::config::max_string_size = 2048;
-const uint64_t rpc_hpp::adapters::bitsery_adapter::config::max_container_size = 100;
+constexpr uint64_t bitsery_adapter::config::max_func_name_size = 30;
+constexpr uint64_t bitsery_adapter::config::max_string_size = 2048;
+constexpr uint64_t bitsery_adapter::config::max_container_size = 100;
 #endif
 
 template<typename Serial>
@@ -367,7 +367,7 @@ TEST_CASE_TEMPLATE("ThrowError", TestType, RPC_TEST_TYPES)
 TEST_CASE_TEMPLATE("InvalidObject", TestType, RPC_TEST_TYPES)
 {
 #if defined(RPC_HPP_ENABLE_BITSERY)
-    if (std::is_same_v<TestType, rpc_hpp::adapters::bitsery_adapter>)
+    if (std::is_same_v<TestType, bitsery_adapter>)
     {
         // TODO: Verify bitsery data somehow
         return;
