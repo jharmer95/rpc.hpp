@@ -1,5 +1,5 @@
 <map id="include/rpc.hpp" name="include/rpc.hpp">
-<area shape="rect" id="node1" title="Header&#45;only library for serialized RPC usage." alt="" coords="349,5,460,32"/>
+<area shape="rect" id="node1" title="Header&#45;only library for serialized RPC usage." alt="" coords="388,5,499,32"/>
 <area shape="rect" id="node2" title=" " alt="" coords="5,80,71,107"/>
 <area shape="rect" id="node3" title=" " alt="" coords="95,80,159,107"/>
 <area shape="rect" id="node4" title=" " alt="" coords="183,80,250,107"/>
@@ -8,5 +8,6 @@
 <area shape="rect" id="node7" title=" " alt="" coords="457,80,507,107"/>
 <area shape="rect" id="node8" title=" " alt="" coords="531,80,614,107"/>
 <area shape="rect" id="node9" title=" " alt="" coords="638,80,691,107"/>
-<area shape="rect" id="node10" title=" " alt="" coords="716,80,827,107"/>
+<area shape="rect" id="node10" title=" " alt="" coords="715,80,793,107"/>
+<area shape="rect" id="node11" title=" " alt="" coords="817,80,928,107"/>
 </map>

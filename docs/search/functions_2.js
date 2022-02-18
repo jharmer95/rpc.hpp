@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['get_5ffunc_5fname_84',['get_func_name',['../classrpc_1_1pack__adapter.html#a97335816daece357925dadcd95ebbfde',1,'rpc::pack_adapter']]]
+  ['dispatch_88',['dispatch',['../classrpc__hpp_1_1server_1_1server__interface.html#a24bb7ca7f3add539f8247f425efd64a1',1,'rpc_hpp::server::server_interface']]]
 ];

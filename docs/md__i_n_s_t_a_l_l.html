@@ -67,21 +67,21 @@ $(function() {
 <div class="title">Installation Guide </div>  </div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><h1><a class="anchor" id="autotoc_md31"></a>
+<div class="textblock"><h1><a class="anchor" id="autotoc_md47"></a>
 Header Installation</h1>
 <p>As <code><a class="el" href="rpc_8hpp.html" title="Header-only library for serialized RPC usage.">rpc.hpp</a></code> is a header-only library, you only need to install the header files to your system.</p>
 <p>This can be done by cloning the project's <code>main</code> branch or downloading it as an archive from GitHub. Once you have the files, you may copy the contents of the <code>include</code> directory to your system or user's include path, or to the relevant place in your project's directory.</p>
-<h1><a class="anchor" id="autotoc_md32"></a>
+<h1><a class="anchor" id="autotoc_md48"></a>
 Installing With CMake</h1>
 <p>You may also install the headers by cloning the repository and running the following commands:</p>
 <div class="fragment"><div class="line">$ mkdir build</div>
 </div><!-- fragment --><div class="fragment"><div class="line">$ cmake -B build -D BUILD_ADAPTER_BOOST_JSON=ON -D BUILD_ADAPTER_NJSON=ON -D BUILD_ADAPTER_RAPIDJSON=ON</div>
 </div><!-- fragment --><div class="fragment"><div class="line">$ cmake --install build</div>
 </div><!-- fragment --><p>CMake version 3.16 or newer is required for this method, see below for instructions to install CMake if it is not already installed.</p>
-<h1><a class="anchor" id="autotoc_md33"></a>
+<h1><a class="anchor" id="autotoc_md49"></a>
 Building and Testing the Project</h1>
 <p>If you are looking to contribute to <code><a class="el" href="rpc_8hpp.html" title="Header-only library for serialized RPC usage.">rpc.hpp</a></code>, or just want to run the tests/benchmarks, you will need to make sure that you can build the project and its test suite.</p>
-<h2><a class="anchor" id="autotoc_md34"></a>
+<h2><a class="anchor" id="autotoc_md50"></a>
 Setting Up Your Environment</h2>
 <p>While <code><a class="el" href="rpc_8hpp.html" title="Header-only library for serialized RPC usage.">rpc.hpp</a></code> is a header-only library, the project relies on using a buildsystem to perform certain tasks. It is therefore required that CMake (version 3.16 or newer) is installed on your machine and available on your <code>$PATH</code> to build the project.</p>
 <p>Additionally, <code><a class="el" href="rpc_8hpp.html" title="Header-only library for serialized RPC usage.">rpc.hpp</a></code> requires at least one C++ compiler that fully supports C++17 or newer:</p>
@@ -112,7 +112,7 @@ Setting Up Your Environment</h2>
 <div class="fragment"><div class="line">&gt; choco install cmake ninja</div>
 </div><!-- fragment --><p><b>Windows - Scoop</b></p>
 <div class="fragment"><div class="line">&gt; scoop install cmake ninja</div>
-</div><!-- fragment --><h3><a class="anchor" id="autotoc_md35"></a>
+</div><!-- fragment --><h3><a class="anchor" id="autotoc_md51"></a>
 Library Dependencies</h3>
 <p>While not strictly <em>required</em>, the adapter headers are considered a core part of the library and therefore should build without issue after any code change, and should be tested.</p>
 <p>(NOTE: if the community ends up creating a lot of adapters, this may change)</p>
@@ -130,7 +130,7 @@ Library Dependencies</h3>
 </ul>
 <p>Building the benchmarks also requires one library:</p>
 <ul>
-<li><a href="https://github.com/catchorg/Catch2">catch2</a> &gt;= 2.11 &lt; 3.0</li>
+<li><a href="https://github.com/martinus/nanobench">nanobench</a> &gt;= 4.3.0</li>
 </ul>
 <p>These dependencies can be installed in one of three ways:</p>
 <ol type="1">
@@ -138,7 +138,7 @@ Library Dependencies</h3>
 <li>Install via <a href="https://github.com/Microsoft/vcpkg">vcpkg</a></li>
 <li>Auto-install via <a href="https://conan.io">Conan</a></li>
 </ol>
-<h4><a class="anchor" id="autotoc_md37"></a>
+<h4><a class="anchor" id="autotoc_md53"></a>
 Setting up &lt;tt&gt;vcpkg&lt;/tt&gt;</h4>
 <ol type="1">
 <li>In a terminal, navigate to the location where <code>vcpkg</code> should be installed (<code>$HOME</code> is fine for most)</li>
@@ -162,7 +162,7 @@ Setting up &lt;tt&gt;vcpkg&lt;/tt&gt;</h4>
 <li>Install dependencies</li>
 </ol>
 <div class="fragment"><div class="line">$ vcpkg install catch2 doctest nlohmann-json rapidjson boost-json</div>
-</div><!-- fragment --><h4><a class="anchor" id="autotoc_md38"></a>
+</div><!-- fragment --><h4><a class="anchor" id="autotoc_md54"></a>
 Setting up Conan</h4>
 <ol type="1">
 <li>Make sure you have Python 3 and pip installed.<ul>
@@ -170,7 +170,7 @@ Setting up Conan</h4>
 </ul>
 </li>
 <li>Install Conan<ul>
-<li>With pipx (preferred)</li>
+<li>With pipx (recommended)</li>
 </ul>
 </li>
 </ol>
@@ -179,7 +179,7 @@ Setting up Conan</h4>
 <li>With pip</li>
 </ul>
 <div class="fragment"><div class="line">$ pip install --user conan</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md39"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md55"></a>
 Building the Project</h2>
 <ol type="1">
 <li>Enter the top-level directory of the project</li>
@@ -208,17 +208,21 @@ Building the Project</h2>
 <li>Build the project</li>
 </ol>
 <div class="fragment"><div class="line">$ cmake --build build</div>
-</div><!-- fragment --><h3><a class="anchor" id="autotoc_md40"></a>
+</div><!-- fragment --><h3><a class="anchor" id="autotoc_md56"></a>
 Build Options</h3>
 <table class="markdownTable">
 <tr class="markdownTableHead">
 <th class="markdownTableHeadNone">Option   </th><th class="markdownTableHeadNone">Description    </th></tr>
 <tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone"><code>BENCH_GRPC</code>   </td><td class="markdownTableBodyNone">Build gRPC server and client for benchmark comparison    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone"><code>BENCH_RPCLIB</code>   </td><td class="markdownTableBodyNone">Build rpclib server and client for benchmark comparison    </td></tr>
+<tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone"><code>BUILD_ADAPTER_BITSERY</code>   </td><td class="markdownTableBodyNone">Build the adapter for Bitsery    </td></tr>
 <tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone"><code>BUILD_ADAPTER_BOOST_JSON</code>   </td><td class="markdownTableBodyNone">Build the adapter for Boost.JSON    </td></tr>
 <tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone"><code>BUILD_ADAPTER_NJSON</code>   </td><td class="markdownTableBodyNone">Build the adapter for nlohmann/json    </td></tr>
+<td class="markdownTableBodyNone"><code>BUILD_ADAPTER_NJSON</code>   </td><td class="markdownTableBodyNone">Build the adapter for nlohmann/json (<code>ON</code> by default)    </td></tr>
 <tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone"><code>BUILD_ADAPTER_RAPIDJSON</code>   </td><td class="markdownTableBodyNone">Build the adapter for rapidjson    </td></tr>
 <tr class="markdownTableRowOdd">
@@ -226,7 +230,7 @@ Build Options</h3>
 <tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone"><code>BUILD_EXAMPLES</code>   </td><td class="markdownTableBodyNone">Build the examples    </td></tr>
 <tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone"><code>BUILD_TESTING</code>   </td><td class="markdownTableBodyNone">Build the testing tree    </td></tr>
+<td class="markdownTableBodyNone"><code>BUILD_TESTING</code>   </td><td class="markdownTableBodyNone">Build the testing tree (<code>ON</code> by default)    </td></tr>
 <tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone"><code>CODE_COVERAGE</code>   </td><td class="markdownTableBodyNone">Enable coverage reporting    </td></tr>
 <tr class="markdownTableRowOdd">
@@ -240,9 +244,10 @@ Build Options</h3>
 <ul>
 <li>Only one or neither of <code>DEPENDS_CONAN</code> and <code>DEPENDS_VCPKG</code> may be defined</li>
 <li><code>BUILD_BENCHMARK</code> requires <code>BUILD_TESTING</code></li>
+<li><code>BENCH_GRPC</code> and <code>BENCH_RPCLIB</code> are only available if <code>BUILD_BENCHMARK</code> is enabled</li>
 <li><code>GENERATE_DOXYGEN</code> and <code>CODE_COVERAGE</code> should only be defined when doing a documentation or coverage build, respectively</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md41"></a>
+<h2><a class="anchor" id="autotoc_md57"></a>
 Running Tests</h2>
 <p>To build the tests, make sure your build environment is set up. Also make sure that the <code>BUILD_TESTING</code> option is set in your <code>CMakeCache.txt</code>.</p>
 <p><b>NOTE:</b> The test server will have to be running for the tests to succeed. You could run it in a separate terminal session, or add <code>tests/test_server &amp;</code> at the beginning of the <code>ctest</code> command below. The tests will successfully kill the serer on completion.</p>

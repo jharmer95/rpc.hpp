@@ -1,4 +1,5 @@
 var searchData=
 [
-  ['call_5ffunc_79',['call_func',['../classrpc_1_1client_1_1client__interface.html#a13cb1ee5075bba41f2a26d6cf3b420b3',1,'rpc::client::client_interface::call_func(const std::string &amp;func_name, Args &amp;&amp;... args)'],['../classrpc_1_1client_1_1client__interface.html#a61ef1336c96e7c6a4740391665b1c198',1,'rpc::client::client_interface::call_func(std::string &amp;&amp;func_name, Args &amp;&amp;... args)']]]
+  ['bind_83',['bind',['../classrpc__hpp_1_1server_1_1server__interface.html#a396b02c90c5a94f8cb8aa964b4e0f568',1,'rpc_hpp::server::server_interface::bind(std::string func_name, R(*func_ptr)(Args...))'],['../classrpc__hpp_1_1server_1_1server__interface.html#a08d2d093d685e0eb25458a1b04f38d0f',1,'rpc_hpp::server::server_interface::bind(std::string func_name, F &amp;&amp;func)']]],
+  ['bind_5fcached_84',['bind_cached',['../classrpc__hpp_1_1server_1_1server__interface.html#ad3d4b0e1529e5fc308fb9615427edcf6',1,'rpc_hpp::server::server_interface::bind_cached(std::string func_name, R(*func_ptr)(Args...))'],['../classrpc__hpp_1_1server_1_1server__interface.html#ab8d7b8848677ced104da47f1203fa31f',1,'rpc_hpp::server::server_interface::bind_cached(std::string func_name, F &amp;&amp;func)']]]
 ];

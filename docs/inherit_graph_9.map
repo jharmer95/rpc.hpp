@@ -1,13 +1,12 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" title=" " alt="" coords="5,274,129,301"/>
-<area shape="rect" id="node2" href="$classrpc_1_1exceptions_1_1rpc__exception.html" title=" " alt="" coords="177,267,315,308"/>
-<area shape="rect" id="node3" href="$classrpc_1_1exceptions_1_1client__receive__error.html" title=" " alt="" coords="389,5,539,47"/>
-<area shape="rect" id="node4" href="$classrpc_1_1exceptions_1_1client__send__error.html" title=" " alt="" coords="389,71,539,112"/>
-<area shape="rect" id="node5" href="$classrpc_1_1exceptions_1_1deserialization__error.html" title=" " alt="" coords="363,136,565,177"/>
-<area shape="rect" id="node6" href="$classrpc_1_1exceptions_1_1function__mismatch.html" title=" " alt="" coords="382,201,546,243"/>
-<area shape="rect" id="node7" href="$classrpc_1_1exceptions_1_1function__not__found.html" title=" " alt="" coords="382,267,546,308"/>
-<area shape="rect" id="node8" href="$classrpc_1_1exceptions_1_1remote__exec__error.html" title=" " alt="" coords="385,332,543,373"/>
-<area shape="rect" id="node9" href="$classrpc_1_1exceptions_1_1serialization__error.html" title=" " alt="" coords="370,397,558,439"/>
-<area shape="rect" id="node10" href="$classrpc_1_1exceptions_1_1server__receive__error.html" title=" " alt="" coords="387,463,541,504"/>
-<area shape="rect" id="node11" href="$classrpc_1_1exceptions_1_1server__send__error.html" title=" " alt="" coords="387,528,541,569"/>
+<area shape="rect" id="node1" href="$classrpc__hpp_1_1function__not__found.html" title=" " alt="" coords="5,224,152,265"/>
+<area shape="rect" id="node2" href="$classrpc__hpp_1_1rpc__exception.html" title=" " alt="" coords="200,231,357,258"/>
+<area shape="rect" id="node3" href="$classrpc__hpp_1_1client__receive__error.html" title=" " alt="" coords="421,5,575,47"/>
+<area shape="rect" id="node4" href="$classrpc__hpp_1_1client__send__error.html" title=" " alt="" coords="427,71,569,112"/>
+<area shape="rect" id="node5" href="$classrpc__hpp_1_1deserialization__error.html" title=" " alt="" coords="419,136,577,177"/>
+<area shape="rect" id="node6" href="$classrpc__hpp_1_1function__mismatch.html" title=" " alt="" coords="405,202,591,229"/>
+<area shape="rect" id="node7" href="$classrpc__hpp_1_1remote__exec__error.html" title=" " alt="" coords="423,253,573,295"/>
+<area shape="rect" id="node8" href="$classrpc__hpp_1_1serialization__error.html" title=" " alt="" coords="425,319,571,360"/>
+<area shape="rect" id="node9" href="$classrpc__hpp_1_1server__receive__error.html" title=" " alt="" coords="419,384,577,425"/>
+<area shape="rect" id="node10" href="$classrpc__hpp_1_1server__send__error.html" title=" " alt="" coords="425,449,571,491"/>
 </map>
