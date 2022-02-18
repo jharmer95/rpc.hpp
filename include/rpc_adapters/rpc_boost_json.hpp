@@ -5,7 +5,7 @@
 ///@copyright
 ///BSD 3-Clause License
 ///
-///Copyright (c) 2020-2021, Jackson Harmer
+///Copyright (c) 2020-2022, Jackson Harmer
 ///All rights reserved.
 ///
 ///Redistribution and use in source and binary forms, with or without
@@ -87,7 +87,7 @@ namespace adapters
                 }
 
                 // Objects with exceptions can be otherwise empty
-                return obj;
+                return std::make_optional(std::move(obj));
             }
 
             if (const auto fname_it = obj.find("func_name"); fname_it == obj.end()
@@ -102,7 +102,7 @@ namespace adapters
                 return std::nullopt;
             }
 
-            return obj;
+            return std::make_optional(std::move(obj));
         }
 
         static boost::json::object empty_object() { return boost::json::object{}; }

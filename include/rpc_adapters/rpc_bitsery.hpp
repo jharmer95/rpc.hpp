@@ -5,7 +5,7 @@
 ///@copyright
 ///BSD 3-Clause License
 ///
-///Copyright (c) 2020-2021, Jackson Harmer
+///Copyright (c) 2020-2022, Jackson Harmer
 ///All rights reserved.
 ///
 ///Redistribution and use in source and binary forms, with or without
@@ -98,14 +98,14 @@ namespace adapters
 
         [[nodiscard]] static std::vector<uint8_t> to_bytes(std::vector<uint8_t>&& serial_obj)
         {
-            return serial_obj;
+            return std::move(serial_obj);
         }
 
         [[nodiscard]] static std::optional<std::vector<uint8_t>> from_bytes(
             std::vector<uint8_t>&& bytes)
         {
             // TODO: Verify bitsery data somehow
-            return bytes;
+            return std::make_optional(std::move(bytes));
         }
 
         static std::vector<uint8_t> empty_object()
@@ -157,6 +157,7 @@ namespace adapters
                         throw deserialization_error(
                             "Bitsery deserialization failed due to an invalid pointer");
 
+                    case bitsery::ReaderError::NoError:
                     default:
                         throw deserialization_error(
                             "Bitsery deserialization failed due to extra data on the end");

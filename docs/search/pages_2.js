@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['how_20to_20contribute_99',['How to Contribute',['../md__c_o_n_t_r_i_b_u_t_i_n_g.html',1,'']]]
+  ['installation_20guide_98',['Installation Guide',['../md__i_n_s_t_a_l_l.html',1,'']]]
 ];

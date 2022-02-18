@@ -162,7 +162,6 @@ elseif(CXX_CLANG)
       -Wno-documentation
       -Wno-documentation-unknown-command
       -Wno-weak-vtables
-      -Wno-reserved-identifier
       -Wno-reserved-id-macro
       -Wno-missing-braces
       -Wno-covered-switch-default)

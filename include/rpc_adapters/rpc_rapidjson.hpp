@@ -5,7 +5,7 @@
 ///@copyright
 ///BSD 3-Clause License
 ///
-///Copyright (c) 2020-2021, Jackson Harmer
+///Copyright (c) 2020-2022, Jackson Harmer
 ///All rights reserved.
 ///
 ///Redistribution and use in source and binary forms, with or without
@@ -61,7 +61,7 @@ namespace adapters
         [[nodiscard]] static std::string to_bytes(rapidjson::Document&& serial_obj)
         {
             rapidjson::StringBuffer buffer{};
-            rapidjson::Writer writer(buffer);
+            rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
             std::move(serial_obj).Accept(writer);
             return buffer.GetString();
         }
@@ -86,7 +86,7 @@ namespace adapters
                 }
 
                 // Objects with exceptions can be otherwise empty
-                return d;
+                return std::make_optional(std::move(d));
             }
 
             if (const auto fname_it = d.FindMember("func_name"); fname_it == d.MemberEnd()
@@ -101,7 +101,7 @@ namespace adapters
                 return std::nullopt;
             }
 
-            return d;
+            return std::make_optional(std::move(d));
         }
 
         static rapidjson::Document empty_object()
