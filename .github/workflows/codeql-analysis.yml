@@ -63,8 +63,10 @@ jobs:
         sudo apt install cmake ninja-build gcc
     - name: Bootstrap vcpkg
       run: |
-        git submodule update --remote
-        vcpkg/bootstrap-vcpkg.sh
+        git submodule update --init
+        cd vcpkg
+        git pull
+        bootstrap-vcpkg.sh
     - name: Build with CMake
       run: |
         cmake -B build -G Ninja -DBUILD_ADAPTER_BITSERY=ON -DBUILD_ADAPTER_NJSON=ON -DBUILD_ADAPTER_RAPIDJSON=ON -DBUILD_EXAMPLES=ON -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug
