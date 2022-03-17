@@ -65,7 +65,7 @@ jobs:
       run: |
         git submodule update --init
         git submodule update --remote --merge
-        bootstrap-vcpkg.sh
+        vcpkg/bootstrap-vcpkg.sh
     - name: Build with CMake
       run: |
         cmake -B build -G Ninja -DBUILD_ADAPTER_BITSERY=ON -DBUILD_ADAPTER_NJSON=ON -DBUILD_ADAPTER_RAPIDJSON=ON -DBUILD_EXAMPLES=ON -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug
