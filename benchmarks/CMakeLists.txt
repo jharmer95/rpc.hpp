@@ -40,7 +40,14 @@ if(NOT TARGET RpcHpp::rpc_hpp)
 endif()
 
 option(BENCH_GRPC "Include gRPC in the benchmark comparison" OFF)
+if(BENCH_GRPC)
+  list(APPEND VCPKG_MANIFEST_FEATURES "benchmarks-grpc")
+endif()
+
 option(BENCH_RPCLIB "Include rpclib in the benchmark comparison" OFF)
+if(BENCH_RPCLIB)
+  list(APPEND VCPKG_MANIFEST_FEATURES "benchmarks-rpclib")
+endif()
 
 if(NOT TARGET asio_lib)
   find_package(Threads REQUIRED)

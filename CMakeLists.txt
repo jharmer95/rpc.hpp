@@ -30,6 +30,43 @@
 
 cmake_minimum_required(VERSION 3.16)
 
+# ==== Build Options ====
+
+option(BUILD_ADAPTER_BITSERY "Build the adapter for Bitsery" OFF)
+if(BUILD_ADAPTER_BITSERY)
+  list(APPEND VCPKG_MANIFEST_FEATURES "bitsery")
+endif()
+
+option(BUILD_ADAPTER_BOOST_JSON "Build the adapter for Boost.JSON" OFF)
+if(BUILD_ADAPTER_BOOST_JSON)
+  list(APPEND VCPKG_MANIFEST_FEATURES "boost")
+endif()
+
+option(BUILD_ADAPTER_NJSON "Build the adapter for nlohmann/json" ON)
+if(BUILD_ADAPTER_NJSON)
+  list(APPEND VCPKG_MANIFEST_FEATURES "nlohmann-json")
+endif()
+
+option(BUILD_ADAPTER_RAPIDJSON "Build the adapter for rapidjson" OFF)
+if(BUILD_ADAPTER_RAPIDJSON)
+  list(APPEND VCPKG_MANIFEST_FEATURES "rapidjson")
+endif()
+
+option(BUILD_BENCHMARK "Build the benchmarking suite" OFF)
+if(BUILD_BENCHMARK)
+  list(APPEND VCPKG_MANIFEST_FEATURES "benchmarks")
+endif()
+
+option(BUILD_EXAMPLES "Build the examples" OFF)
+if(BUILD_EXAMPLES)
+  list(APPEND VCPKG_MANIFEST_FEATURES "examples")
+endif()
+
+option(BUILD_TESTING "Build the testing tree" ON)
+if(BUILD_TESTING)
+  list(APPEND VCPKG_MANIFEST_FEATURES "tests")
+endif()
+
 project(
   "rpc.hpp"
   VERSION 0.7.1
@@ -40,15 +77,6 @@ project(
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# ==== Build Options ====
-
-option(BUILD_ADAPTER_BITSERY "Build the adapter for Bitsery" OFF)
-option(BUILD_ADAPTER_BOOST_JSON "Build the adapter for Boost.JSON" OFF)
-option(BUILD_ADAPTER_NJSON "Build the adapter for nlohmann/json" ON)
-option(BUILD_ADAPTER_RAPIDJSON "Build the adapter for rapidjson" OFF)
-option(BUILD_BENCHMARK "Build the benchmarking suite" OFF)
-option(BUILD_EXAMPLES "Build the examples" OFF)
-option(BUILD_TESTING "Build the testing tree" ON)
 option(CODE_COVERAGE "Enable coverage reporting" OFF)
 option(DEPENDS_CONAN "Use Conan to manage C/C++ dependencies" OFF)
 option(DEPENDS_VCPKG "Use vcpkg to manage C/C++ dependencies" OFF)
