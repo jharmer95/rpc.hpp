@@ -10,14 +10,12 @@ user's include path, or to the relevant place in your project's directory.
 
 ## Installing With CMake
 
-You may also install the headers by cloning the repository and running the following commands:
+You may also install the headers by cloning the repository and running the
+following commands (this will only install nlohmann/json adapter
+see [Build Options](#build-options) on how to enable more):
 
 ```shell
-$ mkdir build
-```
-
-```shell
-$ cmake -B build -D BUILD_ADAPTER_BOOST_JSON=ON -D BUILD_ADAPTER_NJSON=ON -D BUILD_ADAPTER_RAPIDJSON=ON
+$ cmake -B build -DBUILD_ADAPTER_NJSON=ON
 ```
 
 ```shell
@@ -131,82 +129,36 @@ Building the benchmarks also requires one library:
 
 - [nanobench](https://github.com/martinus/nanobench) >= 4.3.0
 
-These dependencies can be installed in one of three ways:
-
-1. Installing manually from source, binary, or system package manager
-2. Install via [vcpkg](https://github.com/Microsoft/vcpkg)
-3. Auto-install via [Conan](https://conan.io)
+These dependencies are installed via vcpkg (a submodule of this project)
 
 ##### Setting up `vcpkg`
 
-1. In a terminal, navigate to the location where `vcpkg` should be installed
-(`$HOME` is fine for most)
-2. Clone the `vcpkg` project and enter the source directory
+1. Make sure the submodule is initialized
+
+From the project root:
 
 ```shell
-$ git clone https://github.com/Microsoft/vcpkg
+$ git submodule update --init
 ```
 
-```shell
-$ cd vcpkg
-```
-
-3. "Bootstrap" `vcpkg`
+2. "Boostrap" `vcpkg`
 
 **Linux/macOS/BSD**
 
 ```shell
-$ ./bootstrap-vcpkg.sh
+$ vcpkg/bootstrap-vcpkg.sh
 ```
 
 **Windows**
 
 ```powershell
-> .\bootstrap-vcpkg.bat
+> vcpkg\bootstrap-vcpkg.bat
 ```
-
-4. Add `vcpkg` to your path (optional)
-5. Integrate your vcpkg installation into CMake/Visual Studio
-
-```shell
-$ vcpkg integrate install
-```
-
-6. Install dependencies
-
-```shell
-$ vcpkg install catch2 doctest nlohmann-json rapidjson boost-json
-```
-
-##### Setting up Conan
-
-1. Make sure you have Python 3 and pip installed.
-  - It is recommended to install and use `pipx` rather than `pip` for installing applications like
-  Conan, however
-2. Install Conan
-
-  - With pipx (recommended)
-
-  ```shell
-  $ pipx install conan
-  ```
-
-  - With pip
-
-  ```shell
-  $ pip install --user conan
-  ```
 
 ### Building the Project
 
 1. Enter the top-level directory of the project
-2. Create the build directory
-
-```shell
-$ mkdir build
-```
-
-3. Configure the project
+2. Configure the project
 
 ```shell
 $ cmake -B build -G Ninja -D BUILD_ADAPTER_BITSERY -D BUILD_ADAPTER_BOOST_JSON=ON -D BUILD_ADAPTER_NJSON=ON -D BUILD_ADAPTER_RAPIDJSON=ON -D BUILD_TESTING=ON
@@ -219,13 +171,9 @@ use the system default make system
 - With this example, all adapters are to be built. By omitting one or more, they will not be
 built (example: `-D BUILD_ADAPTER_BOOST_JSON=ON` could be omitted or set to `=OFF`)
   - **NOTE:** `BUILD_ADAPTER_NJSON` is required for testing
-- If using Conan to auto-install dependencies, make sure to set its option (add `-D DEPENDS_CONAN=ON`)
-- If using vcpkg to manage dependencies, make sure to set its option (add `-D DEPENDS_VCPKG=ON`)
-  - You may also need to provide CMake with a vcpkg toolchain file:
-  (`-D CMAKE_TOOLCHAIN_FILE="/path/to/vcpkg/scripts/buildsystems/vcpkg.cmake"`)
 - See [Build Options](#build-options) for more details on these and other configuration options
 
-4. Build the project
+3. Build the project
 
 ```shell
 $ cmake --build build
@@ -245,15 +193,12 @@ $ cmake --build build
 | `BUILD_EXAMPLES` | Build the examples |
 | `BUILD_TESTING` | Build the testing tree (`ON` by default) |
 | `CODE_COVERAGE` | Enable coverage reporting |
-| `DEPENDS_CONAN` | Use Conan to manage C/C++ dependencies |
-| `DEPENDS_VCPKG` | User vcpkg to manage C/C++ dependencies |
 | `GENERATE_DOXYGEN` | Generate Doxygen documentation from comments |
 
 NOTE:
 
-- Only one or neither of `DEPENDS_CONAN` and `DEPENDS_VCPKG` may be defined
 - `BUILD_BENCHMARK` requires `BUILD_TESTING`
-- `BENCH_GRPC` and `BENCH_RPCLIB` are only available if `BUILD_BENCHMARK` is enabled
+- `BENCH_GRPC` and `BENCH_RPCLIB` require `BUILD_BENCHMARK`
 - `GENERATE_DOXYGEN` and `CODE_COVERAGE` should only be defined when doing a documentation or
 coverage build, respectively
 
@@ -264,7 +209,7 @@ To build the tests, make sure your build environment is set up. Also make sure t
 
 **NOTE:** The test server will have to be running for the tests to succeed. You could run it in a
 separate terminal session, or add `tests/test_server & ` at the beginning of the `ctest` command
-below. The tests will successfully kill the serer on completion.
+below. The tests will successfully kill the server on completion.
 
 From the project _build_ directory run:
 
