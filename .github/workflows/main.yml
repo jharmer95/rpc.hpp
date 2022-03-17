@@ -35,18 +35,15 @@ jobs:
         run: |
           sudo apt update
           sudo apt install cmake ninja-build gcc clang
-      - name: Install vcpkg dependencies
+      - name: Bootstrap vcpkg
         run: |
-          /usr/local/share/vcpkg/vcpkg install asio bitsery doctest nlohmann-json rapidjson
-          /usr/local/share/vcpkg/vcpkg integrate install
+          git submodule update --init
+          vcpkg/bootstrap-vcpkg.sh
       - name: Build with CMake
         run: |
-          mkdir build
-          cd build
-          cmake .. -G Ninja -DBUILD_ADAPTER_BITSERY=ON -DBUILD_ADAPTER_NJSON=ON -DBUILD_ADAPTER_RAPIDJSON=ON -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=${{ matrix.compiler }} -DCMAKE_TOOLCHAIN_FILE=/usr/local/share/vcpkg/scripts/buildsystems/vcpkg.cmake -DDEPENDS_VCPKG=ON
-          ninja
+          cmake -B build -G Ninja -DBUILD_ADAPTER_BITSERY=ON -DBUILD_ADAPTER_NJSON=ON -DBUILD_ADAPTER_RAPIDJSON=ON -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=${{ matrix.compiler }}
+          cmake --build build
       - name: Run unit tests
         run: |
           cd build/tests
-          ls -l
           ./test_server & ctest
