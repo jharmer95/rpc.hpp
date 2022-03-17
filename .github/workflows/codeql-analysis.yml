@@ -64,8 +64,7 @@ jobs:
     - name: Bootstrap vcpkg
       run: |
         git submodule update --init
-        cd vcpkg
-        git pull
+        git submodule update --remote --merge
         bootstrap-vcpkg.sh
     - name: Build with CMake
       run: |
