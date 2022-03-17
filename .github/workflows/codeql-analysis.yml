@@ -63,7 +63,7 @@ jobs:
         sudo apt install cmake ninja-build gcc
     - name: Bootstrap vcpkg
       run: |
-        git submodule update --init
+        git submodule update --remote
         vcpkg/bootstrap-vcpkg.sh
     - name: Build with CMake
       run: |
