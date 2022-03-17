@@ -30,7 +30,15 @@
 
 cmake_minimum_required(VERSION 3.16)
 
+if(DEFINED ENV{VCPKG_ROOT} AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
+  set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
+      CACHE STRING "")
+endif()
+
 # ==== Build Options ====
+
+option(CODE_COVERAGE "Enable coverage reporting" OFF)
+option(GENERATE_DOXYGEN "Generate Doxygen documentation from comments" OFF)
 
 option(BUILD_ADAPTER_BITSERY "Build the adapter for Bitsery" OFF)
 if(BUILD_ADAPTER_BITSERY)
@@ -57,6 +65,16 @@ if(BUILD_BENCHMARK)
   list(APPEND VCPKG_MANIFEST_FEATURES "benchmarks")
 endif()
 
+option(BENCH_GRPC "Include gRPC in the benchmark comparison" OFF)
+if(BENCH_GRPC AND BUILD_BENCHMARK)
+  list(APPEND VCPKG_MANIFEST_FEATURES "benchmarks-grpc")
+endif()
+
+option(BENCH_RPCLIB "Include rpclib in the benchmark comparison" OFF)
+if(BENCH_RPCLIB AND BUILD_BENCHMARK)
+  list(APPEND VCPKG_MANIFEST_FEATURES "benchmarks-rpclib")
+endif()
+
 option(BUILD_EXAMPLES "Build the examples" OFF)
 if(BUILD_EXAMPLES)
   list(APPEND VCPKG_MANIFEST_FEATURES "examples")
@@ -76,11 +94,6 @@ project(
 
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
-option(CODE_COVERAGE "Enable coverage reporting" OFF)
-option(DEPENDS_CONAN "Use Conan to manage C/C++ dependencies" OFF)
-option(DEPENDS_VCPKG "Use vcpkg to manage C/C++ dependencies" OFF)
-option(GENERATE_DOXYGEN "Generate Doxygen documentation from comments" OFF)
 
 # ==== Machine/Compiler Configs ====
 
@@ -223,18 +236,6 @@ if(CODE_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
   else()
     target_link_libraries(coverage_config INTERFACE --coverage)
   endif()
-endif()
-
-# ==== Dependency Management ====
-
-if(${DEPENDS_CONAN})
-  if(${DEPENDS_VCPKG})
-    message(FATAL_ERROR "Using both vcpkg and Conan is not supported!")
-  endif()
-
-  set(CONAN_EXTRA_REQUIRES "")
-  set(CONAN_EXTRA_OPTIONS "")
-  include(cmake/Conan.cmake)
 endif()
 
 # ==== Target(s) ====

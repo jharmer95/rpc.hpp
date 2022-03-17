@@ -78,7 +78,7 @@ struct ComplexObject
     std::array<uint8_t, 12> vals{};
 
 #if defined(RPC_HPP_BENCH_RPCLIB)
-    MSGPACK_DEFINE_ARRAY(id, name, flag1, flag2, vals);
+    MSGPACK_DEFINE_ARRAY(id, name, flag1, flag2, vals)
 #endif
 };
 

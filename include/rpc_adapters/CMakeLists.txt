@@ -35,22 +35,11 @@ endif()
 if(${BUILD_ADAPTER_BITSERY})
   add_library(bitsery_adapter INTERFACE)
   target_include_directories(bitsery_adapter
-                             INTERFACE "${PROJECT_SOURCE_DIR}/include")
+                            INTERFACE "${PROJECT_SOURCE_DIR}/include")
   target_compile_definitions(bitsery_adapter
-                             INTERFACE RPC_HPP_ENABLE_BITSERY)
-
-  if(${DEPENDS_CONAN})
-    set(CONAN_EXTRA_REQUIRES bitsery/[>=5.2.0])
-    run_conan()
-    target_link_libraries(bitsery_adapter INTERFACE CONAN_PKG::bitsery)
-  elseif(${DEPENDS_VCPKG})
-    find_package(Bitsery CONFIG REQUIRED)
-    target_link_libraries(bitsery_adapter INTERFACE Bitsery::bitsery)
-  else()
-    find_path(bitsery_path "bitsery/bitsery.h" REQUIRED)
-    target_include_directories(bitsery_adapter SYSTEM
-                               INTERFACE bitsery_path)
-  endif()
+                            INTERFACE RPC_HPP_ENABLE_BITSERY)
+  find_package(Bitsery CONFIG REQUIRED)
+  target_link_libraries(bitsery_adapter INTERFACE Bitsery::bitsery)
 
   install(FILES "rpc_bitsery.hpp"
           DESTINATION "${CMAKE_INSTALL_PREFIX}/include/rpc_adapters")
@@ -59,19 +48,11 @@ endif()
 if(${BUILD_ADAPTER_BOOST_JSON})
   add_library(boost_json_adapter INTERFACE)
   target_include_directories(boost_json_adapter
-                             INTERFACE "${PROJECT_SOURCE_DIR}/include")
+                            INTERFACE "${PROJECT_SOURCE_DIR}/include")
   target_compile_definitions(boost_json_adapter
-                             INTERFACE RPC_HPP_ENABLE_BOOST_JSON)
-
-  if(${DEPENDS_CONAN})
-    set(CONAN_EXTRA_REQUIRES boost/[>=1.75.0])
-    run_conan()
-    target_include_directories(boost_json_adapter SYSTEM
-                               INTERFACE ${CONAN_INCLUDE_DIRS_BOOST})
-  else()
-    find_package(Boost 1.75.0 REQUIRED COMPONENTS json)
-    target_link_libraries(boost_json_adapter INTERFACE Boost::headers Boost::json)
-  endif()
+                            INTERFACE RPC_HPP_ENABLE_BOOST_JSON)
+  find_package(Boost 1.75.0 REQUIRED COMPONENTS json)
+  target_link_libraries(boost_json_adapter INTERFACE Boost::headers Boost::json)
 
   install(FILES "rpc_boost_json.hpp"
           DESTINATION "${CMAKE_INSTALL_PREFIX}/include/rpc_adapters")
@@ -80,20 +61,10 @@ endif()
 if(${BUILD_ADAPTER_NJSON})
   add_library(njson_adapter INTERFACE)
   target_include_directories(njson_adapter
-                             INTERFACE "${PROJECT_SOURCE_DIR}/include")
+                            INTERFACE "${PROJECT_SOURCE_DIR}/include")
   target_compile_definitions(njson_adapter INTERFACE RPC_HPP_ENABLE_NJSON)
-
-  if(${DEPENDS_CONAN})
-    set(CONAN_EXTRA_REQUIRES nlohmann_json/[>=3.9.0])
-    run_conan()
-    target_link_libraries(njson_adapter INTERFACE CONAN_PKG::nlohmann_json)
-  elseif(${DEPENDS_VCPKG})
-    find_package(nlohmann_json CONFIG REQUIRED)
-    target_link_libraries(njson_adapter INTERFACE nlohmann_json::nlohmann_json)
-  else()
-    find_path(njson_path "nlohmann/json.hpp" REQUIRED)
-    target_include_directories(njson_adapter SYSTEM INTERFACE njson_path)
-  endif()
+  find_package(nlohmann_json CONFIG REQUIRED)
+  target_link_libraries(njson_adapter INTERFACE nlohmann_json::nlohmann_json)
 
   install(FILES "rpc_njson.hpp"
           DESTINATION "${CMAKE_INSTALL_PREFIX}/include/rpc_adapters")
@@ -102,21 +73,11 @@ endif()
 if(${BUILD_ADAPTER_RAPIDJSON})
   add_library(rpdjson_adapter INTERFACE)
   target_include_directories(rpdjson_adapter
-                             INTERFACE "${PROJECT_SOURCE_DIR}/include")
+                            INTERFACE "${PROJECT_SOURCE_DIR}/include")
   target_compile_definitions(rpdjson_adapter INTERFACE RPC_HPP_ENABLE_RAPIDJSON)
-
-  if(${DEPENDS_CONAN})
-    set(CONAN_EXTRA_REQUIRES rapidjson/[>=1.1.0])
-    run_conan()
-    target_link_libraries(rpdjson_adapter INTERFACE CONAN_PKG::rapidjson)
-  elseif(${DEPENDS_VCPKG})
-    find_package(RapidJSON CONFIG REQUIRED)
-    target_include_directories(rpdjson_adapter SYSTEM
-                               INTERFACE ${RAPIDJSON_INCLUDE_DIRS})
-  else()
-    find_path(rpdjson_path "rapidjson/document.h" REQUIRED)
-    target_include_directories(rpdjson_adapter SYSTEM INTERFACE rpdjson_path)
-  endif()
+  find_package(RapidJSON CONFIG REQUIRED)
+  target_include_directories(rpdjson_adapter SYSTEM
+                              INTERFACE ${RAPIDJSON_INCLUDE_DIRS})
 
   install(FILES "rpc_rapidjson.hpp"
           DESTINATION "${CMAKE_INSTALL_PREFIX}/include/rpc_adapters")

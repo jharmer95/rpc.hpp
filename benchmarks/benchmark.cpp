@@ -121,7 +121,9 @@ void bench_rpc(
         [&]
         {
             nanobench::doNotOptimizeAway(
-                test_val = GetRpclibClient().call(func_name, std::forward<Args>(args)...).as<T>());
+                test_val = GetRpclibClient()
+                               .call(func_name, std::forward<Args>(args)...)
+                               .template as<T>());
         });
 
     if constexpr (std::is_floating_point_v<T>)
