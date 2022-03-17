@@ -53,7 +53,7 @@ jobs:
       - name: Bootstrap vcpkg
         run: |
           git submodule --init
-          cmd.exe /c '.\vcpkg\bootstrap-vcpkg.bat'
+          cmd.exe /c "${{ github.workspace }}\vcpkg\bootstrap-vcpkg.bat"
 
       - name: Configure CMake
         run: cmake -B ${{ env.build }} -DBUILD_ADAPTER_BITSERY=ON -DBUILD_ADAPTER_NJSON=ON -DBUILD_ADAPTER_RAPIDJSON=ON -DBUILD_TESTING=ON -DBUILD_BENCHMARK=ON -DBUILD_EXAMPLES=ON -DCMAKE_BUILD_TYPE=Debug
