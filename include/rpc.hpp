@@ -668,7 +668,10 @@ inline namespace server
         }
 
         ///@brief Clears the server's function cache
-        void clear_all_cache() noexcept { m_cache_map.clear(); }
+        void clear_all_cache() noexcept
+        {
+            m_cache_map.clear();
+        }
 #    endif
 
         ///@brief Binds a string to a callback, utilizing the server's cache

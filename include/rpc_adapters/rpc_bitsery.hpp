@@ -175,8 +175,8 @@ namespace adapters
             assert(index < serial_obj.size());
             assert(index <= std::numeric_limits<ptrdiff_t>::max());
 
-            return { serial_obj.begin() + static_cast<ptrdiff_t>(index),
-                serial_obj.begin() + static_cast<ptrdiff_t>(index + len) };
+            return { std::next(serial_obj.begin(), index),
+                std::next(serial_obj.begin(), index + len) };
         }
 
         [[nodiscard]] static rpc_exception extract_exception(const std::vector<uint8_t>& serial_obj)
@@ -206,9 +206,8 @@ namespace adapters
                     assert(index < serial_obj.size());
                     assert(index <= std::numeric_limits<ptrdiff_t>::max());
 
-                    serial_obj.erase(serial_obj.begin() + static_cast<ptrdiff_t>(name_sz_len)
-                            + static_cast<ptrdiff_t>(name_len),
-                        serial_obj.begin() + static_cast<ptrdiff_t>(index + err_len));
+                    serial_obj.erase(std::next(serial_obj.begin(), name_sz_len + name_len),
+                        std::next(serial_obj.begin(), index + err_len));
                 }
 
                 index = name_sz_len + name_len;
@@ -220,8 +219,8 @@ namespace adapters
                 assert(index < serial_obj.size());
                 assert(index <= std::numeric_limits<ptrdiff_t>::max());
 
-                serial_obj.insert(serial_obj.begin() + static_cast<ptrdiff_t>(index++),
-                    static_cast<unsigned char>(mesg[i]));
+                serial_obj.insert(
+                    std::next(serial_obj.begin(), index++), static_cast<unsigned char>(mesg[i]));
             }
         }
 
@@ -513,34 +512,29 @@ namespace adapters
                 assert(index < size);
                 assert(index <= std::numeric_limits<ptrdiff_t>::max());
 
-                bytes.insert(
-                    bytes.begin() + static_cast<ptrdiff_t>(index++), static_cast<uint8_t>(size));
-
+                bytes.insert(std::next(bytes.begin(), index++), static_cast<uint8_t>(size));
                 return;
             }
 
             if (size < 0x4000U)
             {
-                bytes.insert(bytes.begin() + static_cast<ptrdiff_t>(index++),
-                    static_cast<uint8_t>((size >> 8) | 0x80U));
-
                 bytes.insert(
-                    bytes.begin() + static_cast<ptrdiff_t>(index++), static_cast<uint8_t>(size));
+                    std::next(bytes.begin(), index++), static_cast<uint8_t>((size >> 8) | 0x80U));
 
+                bytes.insert(std::next(bytes.begin(), index++), static_cast<uint8_t>(size));
                 return;
             }
 
-            bytes.insert(bytes.begin() + static_cast<ptrdiff_t>(index++),
-                static_cast<uint8_t>((size >> 24) | 0xC0U));
+            bytes.insert(
+                std::next(bytes.begin(), index++), static_cast<uint8_t>((size >> 24) | 0xC0U));
+
+            bytes.insert(std::next(bytes.begin(), index++), static_cast<uint8_t>(size >> 16));
 
             bytes.insert(
-                bytes.begin() + static_cast<ptrdiff_t>(index++), static_cast<uint8_t>(size >> 16));
+                std::next(bytes.begin(), index++), *reinterpret_cast<const uint8_t*>(&size));
 
-            bytes.insert(bytes.begin() + static_cast<ptrdiff_t>(index++),
-                *reinterpret_cast<const uint8_t*>(&size));
-
-            bytes.insert(bytes.begin() + static_cast<ptrdiff_t>(index++),
-                *reinterpret_cast<const uint8_t*>(&size) + 1);
+            bytes.insert(
+                std::next(bytes.begin(), index++), *reinterpret_cast<const uint8_t*>(&size) + 1);
         }
     };
 } // namespace adapters

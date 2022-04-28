@@ -88,15 +88,15 @@ public:
     // nodiscard because data is lost after receive
     [[nodiscard]] typename Serial::bytes_t receive() override
     {
-        const auto numBytes = m_socket.read_some(asio::buffer(m_buffer, 64UL * 1024UL));
-        return typename Serial::bytes_t{ &m_buffer[0], &m_buffer[numBytes] };
+        const auto sz = m_socket.read_some(asio::buffer(m_buffer, m_buffer.size()));
+        return typename Serial::bytes_t{ m_buffer.begin(), m_buffer.begin() + sz };
     }
 
 private:
     asio::io_context m_io{};
     tcp::socket m_socket;
     tcp::resolver m_resolver;
-    uint8_t m_buffer[64U * 1024UL]{};
+    std::array<uint8_t, 64UL * 1024UL> m_buffer;
 };
 
 template<typename Serial>
