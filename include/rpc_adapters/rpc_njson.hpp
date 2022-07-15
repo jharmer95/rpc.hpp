@@ -210,6 +210,10 @@ namespace adapters
             {
                 return arg.is_boolean();
             }
+            else if constexpr (std::is_pointer_v<T> || std::is_array_v<T>)
+            {
+                return arg.is_array();
+            }
             else if constexpr (std::is_integral_v<T>)
             {
                 return arg.is_number() && !arg.is_number_float();
@@ -248,6 +252,11 @@ namespace adapters
             if constexpr (std::is_arithmetic_v<no_ref_t> || std::is_same_v<no_ref_t, std::string>)
             {
                 obj = std::forward<T>(arg);
+            }
+            else if constexpr (std::is_pointer_v<no_ref_t>)
+            {
+                // TODO: Probably need a higher function inside rpc to create a span
+                return;
             }
             else if constexpr (detail::is_container_v<no_ref_t>)
             {
@@ -292,6 +301,45 @@ namespace adapters
             if constexpr (std::is_arithmetic_v<no_ref_t> || std::is_same_v<no_ref_t, std::string>)
             {
                 return arg.get<no_ref_t>();
+            }
+            else if constexpr (std::is_pointer_v<no_ref_t>)
+            {
+                using value_t = std::remove_pointer_t<no_ref_t>;
+
+                // TODO: Need a better storage location
+                thread_local std::vector<value_t> vals;
+                vals.reserve(arg.size());
+                unsigned arg_counter = 0;
+
+                for (const auto& val : arg)
+                {
+                    vals.push_back(parse_args<value_t>(val, arg_counter));
+                }
+
+                return vals.data();
+            }
+            else if constexpr (detail::is_span_v<no_ref_t>)
+            {
+                using value_t = typename no_ref_t::value_type;
+
+                // TODO: Need a better storage location
+                thread_local std::vector<value_t> vals;
+                vals.reserve(arg.size());
+                unsigned arg_counter = 0;
+
+                for (const auto& val : arg)
+                {
+                    vals.push_back(parse_args<value_t>(val, arg_counter));
+                }
+
+                if constexpr (no_ref_t::max_size() == std::numeric_limits<size_t>::max())
+                {
+                    return no_ref_t{ vals.data(), vals.size() };
+                }
+                else
+                {
+                    return no_ref_t{ vals.data() };
+                }
             }
             else if constexpr (detail::is_container_v<no_ref_t>)
             {

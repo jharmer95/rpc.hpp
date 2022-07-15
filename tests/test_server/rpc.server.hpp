@@ -99,6 +99,9 @@ double AverageContainer(const std::vector<T>& vec)
     return sum / static_cast<double>(vec.size());
 }
 
+void WriteNums(int* vals_in, size_t num_vals);
+void ReadNums(size_t num_vals, int* vals_out);
+
 std::vector<uint64_t> GenRandInts(uint64_t min, uint64_t max, size_t sz);
 std::string HashComplex(const ComplexObject& cx);
 void HashComplexRef(ComplexObject& cx, std::string& hashStr);

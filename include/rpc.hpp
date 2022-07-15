@@ -54,6 +54,7 @@
 
 #include <cassert>     // for assert
 #include <cstddef>     // for size_t
+#include <limits>      // for numeric_limits
 #include <optional>    // for nullopt, optional
 #include <stdexcept>   // for runtime_error
 #include <string>      // for string
@@ -87,7 +88,7 @@
 namespace rpc_hpp
 {
 ///@brief Array containing the version information for rpc.hpp
-static constexpr unsigned version[]{ 0, 7, 1 };
+[[maybe_unused]] static constexpr unsigned version[]{ 0, 7, 1 };
 
 enum class exception_type
 {
@@ -248,6 +249,129 @@ public:
     }
 };
 
+template<typename T, size_t EX>
+class span
+{
+public:
+    using value_type = T;
+    using iterator = T*;
+    using const_iterator = const T*;
+    using size_type = size_t;
+    using reference = T&;
+    using const_reference = const T&;
+
+    explicit span(value_type* ptr) noexcept : m_ptr{ ptr } {}
+
+    reference operator[](size_type index) { return at(index); }
+    const_reference operator[](size_type index) const { return at(index); }
+
+    value_type* data() noexcept { return m_ptr; }
+    const value_type* data() const noexcept { return m_ptr; }
+    constexpr size_type size() const noexcept { return s_extent; }
+    static constexpr size_type max_size() noexcept { return s_extent; }
+    iterator begin() noexcept { return m_ptr; }
+    iterator end() noexcept { return m_ptr + s_extent; }
+    const_iterator begin() const noexcept { return m_ptr; }
+    const_iterator end() const noexcept { return m_ptr + s_extent; }
+    const_iterator cbegin() const noexcept { return m_ptr; }
+    const_iterator cend() const noexcept { return m_ptr + s_extent; }
+
+    reference at(size_type index)
+    {
+        if (index >= s_extent)
+        {
+            throw std::out_of_range("index exceeded extent of span");
+        }
+
+        return m_ptr[index];
+    }
+
+    const_reference at(size_type index) const
+    {
+        if (index >= s_extent)
+        {
+            throw std::out_of_range("index exceeded extent of span");
+        }
+
+        return m_ptr[index];
+    }
+
+private:
+    static constexpr size_type s_extent = EX;
+
+    value_type* m_ptr;
+};
+
+template<typename T>
+class span<T, std::numeric_limits<size_t>::max()>
+{
+public:
+    using value_type = T;
+    using iterator = T*;
+    using const_iterator = const T*;
+    using size_type = size_t;
+    using reference = T&;
+    using const_reference = const T&;
+
+    explicit span(value_type* ptr, size_type extent) noexcept : m_ptr{ ptr }, m_extent{ extent } {}
+
+    reference operator[](size_type index) { return at(index); }
+    const_reference operator[](size_type index) const { return at(index); }
+
+    value_type* data() noexcept { return m_ptr; }
+    const value_type* data() const noexcept { return m_ptr; }
+    constexpr size_type size() const noexcept { return m_extent; }
+    static constexpr size_type max_size() noexcept { return std::numeric_limits<size_t>::max(); }
+    iterator begin() noexcept { return m_ptr; }
+    iterator end() noexcept { return m_ptr + m_extent; }
+    const_iterator begin() const noexcept { return m_ptr; }
+    const_iterator end() const noexcept { return m_ptr + m_extent; }
+    const_iterator cbegin() const noexcept { return m_ptr; }
+    const_iterator cend() const noexcept { return m_ptr + m_extent; }
+
+    reference at(size_type index)
+    {
+        if (index >= m_extent)
+        {
+            throw std::out_of_range("index exceeded extent of span");
+        }
+
+        return m_ptr[index];
+    }
+
+    const_reference at(size_type index) const
+    {
+        if (index >= m_extent)
+        {
+            throw std::out_of_range("index exceeded extent of span");
+        }
+
+        return m_ptr[index];
+    }
+
+private:
+    value_type* m_ptr;
+    size_type m_extent;
+};
+
+template<typename T, size_t EX>
+span<T, EX> wrap_ptr(T (&array)[EX])
+{
+    return span<T, EX>{ &array[0] };
+}
+
+template<typename T>
+span<T, std::numeric_limits<size_t>::max()> wrap_ptr(T* ptr, size_t extent)
+{
+    return span<T, std::numeric_limits<size_t>::max()>{ ptr, extent };
+}
+
+template<typename T>
+span<T, 1> wrap_ptr(T*& ptr)
+{
+    return span<T, 1>{ ptr };
+}
+
 namespace adapters
 {
     template<typename T>
@@ -379,6 +503,22 @@ namespace detail
     template<typename C>
     inline constexpr bool is_container_v = is_container<C>::value;
 
+    template<typename>
+    struct is_span : public std::false_type
+    {
+    };
+
+    template<typename T, size_t EX>
+    struct is_span<span<T, EX>> : public std::true_type
+    {
+    };
+
+    template<typename T>
+    inline constexpr bool is_span_v = is_span<T>::value;
+
+    static_assert(is_span_v<span<int, 20>>, "span is not a span");
+    static_assert(is_container_v<span<int, 20>>, "span is not a container");
+
     template<typename F, typename... Ts, size_t... Is>
     constexpr void for_each_tuple(const std::tuple<Ts...>& tuple, const F& func,
         [[maybe_unused]] std::index_sequence<Is...> iseq)
@@ -448,6 +588,13 @@ namespace detail
                             decltype(x)> && !std::is_const_v<std::remove_reference_t<decltype(x)>> && !std::is_pointer_v<std::remove_reference_t<decltype(x)>>)
                     {
                         x = std::forward<decltype(y)>(y);
+                    }
+                    else if constexpr (is_span_v<decltype(x)>)
+                    {
+                        for (size_t i = 0; i < x.size(); ++i)
+                        {
+                            x[i] = y[i];
+                        }
                     }
                 }(dest, std::get<Is>(src)),
                 0)... };

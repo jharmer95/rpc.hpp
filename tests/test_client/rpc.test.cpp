@@ -168,6 +168,24 @@ TEST_CASE_TEMPLATE("StrLen", TestType, RPC_TEST_TYPES)
     REQUIRE(result2 == 5);
 }
 
+TEST_CASE("WriteNums")
+{
+    auto& client = GetClient<njson_adapter>();
+
+    int nums[10]{ 1, 2, 3, 4, 6, 8, 10, 11, 12, 20 };
+    client.call_func("WriteNums", rpc_hpp::wrap_ptr(nums), 10);
+}
+
+TEST_CASE("ReadNums")
+{
+    auto& client = GetClient<njson_adapter>();
+
+    int nums[10]{};
+    client.call_func("ReadNums", rpc_hpp::wrap_ptr(nums), 10);
+
+    REQUIRE(nums[9] == 20);
+}
+
 TEST_CASE_TEMPLATE("AddOneToEach", TestType, RPC_TEST_TYPES)
 {
     auto& client = GetClient<TestType>();

@@ -170,6 +170,24 @@ void SquareRootRef(double& n1, double& n2, double& n3, double& n4, double& n5, d
     n10 = std::sqrt(n10);
 }
 
+static std::vector<int> nums_vec{};
+
+void WriteNums(int* vals_in, size_t num_vals)
+{
+    for (size_t i = 0; i < num_vals; ++i)
+    {
+        nums_vec.push_back(vals_in[i]);
+    }
+}
+
+void ReadNums(size_t num_vals, int* vals_out)
+{
+    for (size_t i = 0; i < num_vals; ++i)
+    {
+        vals_out[i] = nums_vec[i];
+    }
+}
+
 std::vector<uint64_t> GenRandInts(const uint64_t min, const uint64_t max, const size_t sz)
 {
     std::vector<uint64_t> vec;
@@ -231,6 +249,8 @@ void BindFuncs(TestServer<Serial>& server)
     server.bind("SquareRootRef", &SquareRootRef);
     server.bind("GenRandInts", &GenRandInts);
     server.bind("HashComplexRef", &HashComplexRef);
+    server.bind("WriteNums", &WriteNums);
+    server.bind("ReadNums", &ReadNums);
     server.template bind<void, size_t&>("AddOne", [](size_t& n) { AddOne(n); });
 
     server.bind_cached("SimpleSum", &SimpleSum);
