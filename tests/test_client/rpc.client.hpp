@@ -96,7 +96,7 @@ private:
     asio::io_context m_io{};
     tcp::socket m_socket;
     tcp::resolver m_resolver;
-    std::array<uint8_t, 64UL * 1024UL> m_buffer;
+    std::array<uint8_t, 64UL * 1024UL> m_buffer{};
 };
 
 template<typename Serial>
