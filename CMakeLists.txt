@@ -47,7 +47,7 @@ endif()
 
 option(BUILD_ADAPTER_BOOST_JSON "Build the adapter for Boost.JSON" OFF)
 if(BUILD_ADAPTER_BOOST_JSON)
-  list(APPEND VCPKG_MANIFEST_FEATURES "boost")
+  list(APPEND VCPKG_MANIFEST_FEATURES "boost-json")
 endif()
 
 option(BUILD_ADAPTER_NJSON "Build the adapter for nlohmann/json" ON)
@@ -87,7 +87,7 @@ endif()
 
 project(
   "rpc.hpp"
-  VERSION 0.7.1
+  VERSION 0.8.1
   DESCRIPTION "Simple RPC Header-Only Library"
   LANGUAGES CXX
 )

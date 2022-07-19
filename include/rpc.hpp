@@ -1,7 +1,7 @@
 ///@file rpc.hpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Header-only library for serialized RPC usage
-///@version 0.7.1
+///@version 0.8.1
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -39,17 +39,17 @@
 
 #if defined(RPC_HPP_DOXYGEN_GEN)
 ///@brief Enables server-side caching abilities
-#    define RPC_HPP_ENABLE_SERVER_CACHE
+#  define RPC_HPP_ENABLE_SERVER_CACHE
 ///@brief Indicates that rpc.hpp is being consumed by a client translation unit
-#    define RPC_HPP_CLIENT_IMPL
+#  define RPC_HPP_CLIENT_IMPL
 ///@brief Indicates that rpc.hpp is being consumed by a module (dynamically loaded .dll/.so) translation unit
-#    define RPC_HPP_MODULE_IMPL
+#  define RPC_HPP_MODULE_IMPL
 ///@brief Indicates that rpc.hpp is being consumed by a server translation unit
-#    define RPC_HPP_SERVER_IMPL
+#  define RPC_HPP_SERVER_IMPL
 #endif
 
 #if !defined(RPC_HPP_CLIENT_IMPL) && !defined(RPC_HPP_SERVER_IMPL) && !defined(RPC_HPP_MODULE_IMPL)
-#    error At least one implementation type must be defined using 'RPC_HPP_{CLIENT, SERVER, MODULE}_IMPL'
+#  error At least one implementation type must be defined using 'RPC_HPP_{CLIENT, SERVER, MODULE}_IMPL'
 #endif
 
 #include <cassert>     // for assert
@@ -62,32 +62,32 @@
 #include <utility>     // for move, index_sequence, make_index_sequence
 
 #if defined(RPC_HPP_MODULE_IMPL) || defined(RPC_HPP_SERVER_IMPL)
-#    include <functional>    // for function
-#    include <unordered_map> // for unordered_map
+#  include <functional>    // for function
+#  include <unordered_map> // for unordered_map
 #endif
 
 #if defined(RPC_HPP_SERVER_IMPL) || defined(RPC_HPP_MODULE_IMPL)
-#    define RPC_HEADER_FUNC(RETURN, FUNCNAME, ...) extern RETURN FUNCNAME(__VA_ARGS__)
+#  define RPC_HEADER_FUNC(RETURN, FUNCNAME, ...) extern RETURN FUNCNAME(__VA_ARGS__)
 #elif defined(RPC_HPP_CLIENT_IMPL)
-#    define RPC_HEADER_FUNC(RETURN, FUNCNAME, ...) inline RETURN (*FUNCNAME)(__VA_ARGS__) = nullptr
+#  define RPC_HEADER_FUNC(RETURN, FUNCNAME, ...) inline RETURN (*FUNCNAME)(__VA_ARGS__) = nullptr
 #endif
 
 #define RPC_HPP_PRECONDITION(EXPR) assert(EXPR)
 #define RPC_HPP_POSTCONDITION(EXPR) assert(EXPR)
 
 #if defined(__GNUC__) || defined(__clang__)
-#    define RPC_HPP_INLINE __attribute__((always_inline))
+#  define RPC_HPP_INLINE __attribute__((always_inline))
 #elif defined(_MSC_VER)
-#    define RPC_HPP_INLINE __forceinline
+#  define RPC_HPP_INLINE __forceinline
 #else
-#    define RPC_HPP_INLINE
+#  define RPC_HPP_INLINE
 #endif
 
 ///@brief Top-level namespace for rpc.hpp classes and functions
 namespace rpc_hpp
 {
 ///@brief Array containing the version information for rpc.hpp
-static constexpr unsigned version[]{ 0, 7, 1 };
+static constexpr unsigned version[]{ 0, 8, 1 };
 
 enum class exception_type
 {
@@ -309,10 +309,10 @@ namespace detail
     };
 
     template<typename Serial, typename Value>
-    struct is_serializable
-        : std::integral_constant<bool,
-              is_serializable_base<Value, typename Serial::serial_t(const Value&)>::value
-                  && is_deserializable_base<Value, Value(const typename Serial::serial_t&)>::value>
+    struct is_serializable :
+        std::integral_constant<bool,
+            is_serializable_base<Value, typename Serial::serial_t(const Value&)>::value
+                && is_deserializable_base<Value, Value(const typename Serial::serial_t&)>::value>
     {
     };
 
@@ -371,8 +371,8 @@ namespace detail
     };
 
     template<typename C>
-    struct is_container : std::integral_constant<bool,
-                              has_size<C>::value && has_begin<C>::value && has_end<C>::value>
+    struct is_container :
+        std::integral_constant<bool, has_size<C>::value && has_begin<C>::value && has_end<C>::value>
     {
     };
 
@@ -393,7 +393,7 @@ namespace detail
         for_each_tuple(tuple, func, std::make_index_sequence<sizeof...(Ts)>());
     }
 
-#    if defined(RPC_HPP_CLIENT_IMPL)
+#  if defined(RPC_HPP_CLIENT_IMPL)
     // Allows passing in string literals
     template<typename T>
     struct decay_str
@@ -460,7 +460,7 @@ namespace detail
     {
         tuple_bind(src, std::make_index_sequence<sizeof...(Args)>(), std::forward<Args>(dest)...);
     }
-#    endif
+#  endif
 
     template<typename... Args>
     class packed_func_base
@@ -650,7 +650,7 @@ inline namespace server
         server_interface(server_interface&&) noexcept = default;
         server_interface& operator=(server_interface&&) noexcept = default;
 
-#    if defined(RPC_HPP_SERVER_IMPL) && defined(RPC_HPP_ENABLE_SERVER_CACHE)
+#  if defined(RPC_HPP_SERVER_IMPL) && defined(RPC_HPP_ENABLE_SERVER_CACHE)
         ///@brief Gets a reference to the server's function cache
         ///
         ///@tparam Val Type of the return value for a function
@@ -668,11 +668,8 @@ inline namespace server
         }
 
         ///@brief Clears the server's function cache
-        void clear_all_cache() noexcept
-        {
-            m_cache_map.clear();
-        }
-#    endif
+        RPC_HPP_INLINE void clear_all_cache() noexcept { m_cache_map.clear(); }
+#  endif
 
         ///@brief Binds a string to a callback, utilizing the server's cache
         ///
@@ -705,7 +702,7 @@ inline namespace server
         ///@param func_name Name to bind the callback to
         ///@param func Callback to run when dispatch is called with bound name
         template<typename R, typename... Args, typename F>
-        void bind_cached(std::string func_name, F&& func)
+        RPC_HPP_INLINE void bind_cached(std::string func_name, F&& func)
         {
             using fptr_t = R (*)(Args...);
 
@@ -743,7 +740,7 @@ inline namespace server
         ///@param func_name Name to bind the callback to
         ///@param func Callback to run when dispatch is called with bound name
         template<typename R, typename... Args, typename F>
-        void bind(std::string func_name, F&& func)
+        RPC_HPP_INLINE void bind(std::string func_name, F&& func)
         {
             using fptr_t = R (*)(Args...);
 
@@ -783,7 +780,7 @@ inline namespace server
     protected:
         ~server_interface() noexcept = default;
 
-#    if defined(RPC_HPP_SERVER_IMPL) && defined(RPC_HPP_ENABLE_SERVER_CACHE)
+#  if defined(RPC_HPP_SERVER_IMPL) && defined(RPC_HPP_ENABLE_SERVER_CACHE)
         template<typename R, typename... Args>
         void dispatch_cached_func(R (*func)(Args...), typename Serial::serial_t& serial_obj)
         {
@@ -851,15 +848,14 @@ inline namespace server
                 throw serialization_error(ex.what());
             }
         }
-#    else
+#  else
         template<typename R, typename... Args>
-        void dispatch_cached_func(R (*func)(Args...), typename Serial::serial_t& serial_obj) const
+        RPC_HPP_INLINE void dispatch_cached_func(
+            R (*func)(Args...), typename Serial::serial_t& serial_obj) const
         {
-            RPC_HPP_PRECONDITION(func != nullptr);
-
             dispatch_func(func, serial_obj);
         }
-#    endif
+#  endif
 
         template<typename R, typename... Args>
         static void dispatch_func(R (*func)(Args...), typename Serial::serial_t& serial_obj)
@@ -931,7 +927,7 @@ inline namespace server
             }
         }
 
-#    if defined(RPC_HPP_SERVER_IMPL) && defined(RPC_HPP_ENABLE_SERVER_CACHE)
+#  if defined(RPC_HPP_SERVER_IMPL) && defined(RPC_HPP_ENABLE_SERVER_CACHE)
         template<typename Val>
         static void* get_func_cache_impl(const std::string& func_name)
         {
@@ -951,7 +947,7 @@ inline namespace server
         }
 
         std::unordered_map<std::string, void*> m_cache_map{};
-#    endif
+#  endif
 
         std::unordered_map<std::string, std::function<void(typename Serial::serial_t&)>>
             m_dispatch_table{};
@@ -960,7 +956,7 @@ inline namespace server
 #endif
 
 #if defined(RPC_HPP_CLIENT_IMPL)
-#    define call_header_func(FUNCNAME, ...) call_header_func_impl(FUNCNAME, #    FUNCNAME, __VA_ARGS__)
+#  define call_header_func(FUNCNAME, ...) call_header_func_impl(FUNCNAME, #  FUNCNAME, __VA_ARGS__)
 
 ///@brief Namespace containing functions and classes only relevant to "client-side" implentations
 ///

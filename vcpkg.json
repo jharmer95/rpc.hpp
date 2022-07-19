@@ -4,7 +4,7 @@
     "description": [
         "Simple RPC Header-Only Library"
     ],
-    "version": "0.7.1",
+    "version": "0.8.1",
     "default-features": [
         "nlohmann-json"
     ],
@@ -18,16 +18,12 @@
                 }
             ]
         },
-        "boost": {
+        "boost-json": {
             "description": "Adapter for JSON serialization using Boost",
             "dependencies": [
                 {
-                    "name": "boost",
-                    "default-features": false,
-                    "version>=": "1.75.0",
-                    "features": [
-                        "json"
-                    ]
+                    "name": "boost-json",
+                    "version>=": "1.75.0"
                 }
             ]
         },
