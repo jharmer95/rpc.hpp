@@ -27,7 +27,7 @@
 #endif
 
 #if defined(RPC_HPP_ENABLE_BOOST_JSON)
-#    include <boost/json/src.hpp>
+#    include <boost/json.hpp>
 #endif
 
 #if defined(RPC_HPP_ENABLE_NJSON)
@@ -38,4 +38,17 @@
 #    include <rapidjson/document.h>
 #    include <rapidjson/stringbuffer.h>
 #    include <rapidjson/writer.h>
+#endif
+
+#if defined(RPC_HPP_BENCH_GRPC)
+#    include <grpc/grpc.h>
+#    include <grpcpp/channel.h>
+#    include <grpcpp/client_context.h>
+#    include <grpcpp/create_channel.h>
+#    include <grpcpp/security/credentials.h>
+#    include "grpc/benchmark.grpc.pb.h"
+#endif
+
+#if defined(RPC_HPP_BENCH_RPCLIB)
+#    include <rpc/client.h>
 #endif

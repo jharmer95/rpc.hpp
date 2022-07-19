@@ -6,9 +6,9 @@
 #include <string>
 
 using asio::ip::tcp;
-using rpc::adapters::njson_adapter;
+using rpc_hpp::adapters::njson_adapter;
 
-class RpcClient : public rpc::client::client_interface<njson_adapter>
+class RpcClient : public rpc_hpp::client::client_interface<njson_adapter>
 {
 public:
     static constexpr auto BUF_SZ = 256;
@@ -24,12 +24,6 @@ private:
     void send(const std::string& mesg) override
     {
         asio::write(m_socket, asio::buffer(mesg, mesg.size()));
-    }
-
-    void send(std::string&& mesg) override
-    {
-        const auto sz = mesg.size();
-        asio::write(m_socket, asio::buffer(std::move(mesg), sz));
     }
 
     std::string receive() override

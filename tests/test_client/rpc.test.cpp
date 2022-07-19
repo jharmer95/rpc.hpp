@@ -5,7 +5,7 @@
 ///@copyright
 ///BSD 3-Clause License
 ///
-///Copyright (c) 2020-2021, Jackson Harmer
+///Copyright (c) 2020-2022, Jackson Harmer
 ///All rights reserved.
 ///
 ///Redistribution and use in source and binary forms, with or without
@@ -37,16 +37,16 @@
 #define RPC_HPP_CLIENT_IMPL
 
 #include "rpc.client.hpp"
-#include "../static_funcs.hpp"
 #include "../test_structs.hpp"
+#include "../static_funcs.hpp"
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include <doctest/doctest.h>
 
 #if defined(RPC_HPP_ENABLE_BITSERY)
-const uint64_t rpc::adapters::bitsery::config::max_func_name_size = 30;
-const uint64_t rpc::adapters::bitsery::config::max_string_size = 2048;
-const uint64_t rpc::adapters::bitsery::config::max_container_size = 100;
+constexpr uint64_t bitsery_adapter::config::max_func_name_size = 30;
+constexpr uint64_t bitsery_adapter::config::max_string_size = 2048;
+constexpr uint64_t bitsery_adapter::config::max_container_size = 100;
 #endif
 
 template<typename Serial>
@@ -161,7 +161,11 @@ TEST_CASE_TEMPLATE("StrLen", TestType, RPC_TEST_TYPES)
     const std::string test_str(test_str_len, 'f');
     const auto result = client.template call_func<size_t>("StrLen", test_str);
 
+    const auto cstr = "12345";
+    const auto result2 = client.template call_func<size_t>("StrLen", cstr);
+
     REQUIRE(result == test_str_len);
+    REQUIRE(result2 == 5);
 }
 
 TEST_CASE_TEMPLATE("AddOneToEach", TestType, RPC_TEST_TYPES)
@@ -298,10 +302,10 @@ TEST_CASE_TEMPLATE("Function not found", TestType, RPC_TEST_TYPES)
 
     const auto exp = [&client]
     {
-        std::ignore = client.template call_func<int>("FUNC_WHICH_DOES_NOT_EXIST");
+        client.template call_func<void>("FUNC_WHICH_DOES_NOT_EXIST");
     };
 
-    REQUIRE_THROWS_AS(exp(), rpc::exceptions::function_not_found);
+    REQUIRE_THROWS_AS(exp(), rpc_hpp::function_not_found);
 }
 
 TEST_CASE_TEMPLATE("FunctionMismatch", TestType, RPC_TEST_TYPES)
@@ -340,12 +344,12 @@ TEST_CASE_TEMPLATE("FunctionMismatch", TestType, RPC_TEST_TYPES)
             2599.6, 1245.125663, 9783.49, 125.12, 553.3333333333, 2266.1, 111.222, 1234.56789);
     };
 
-    REQUIRE_THROWS_AS(wrong_param(), rpc::exceptions::function_mismatch);
-    REQUIRE_THROWS_AS(wrong_return(), rpc::exceptions::function_mismatch);
-    REQUIRE_THROWS_AS(float_to_int(), rpc::exceptions::function_mismatch);
-    REQUIRE_THROWS_AS(int_to_float(), rpc::exceptions::function_mismatch);
-    REQUIRE_THROWS_AS(less_params(), rpc::exceptions::function_mismatch);
-    REQUIRE_THROWS_AS(more_params(), rpc::exceptions::function_mismatch);
+    REQUIRE_THROWS_AS(wrong_param(), rpc_hpp::function_mismatch);
+    REQUIRE_THROWS_AS(wrong_return(), rpc_hpp::function_mismatch);
+    REQUIRE_THROWS_AS(float_to_int(), rpc_hpp::function_mismatch);
+    REQUIRE_THROWS_AS(int_to_float(), rpc_hpp::function_mismatch);
+    REQUIRE_THROWS_AS(less_params(), rpc_hpp::function_mismatch);
+    REQUIRE_THROWS_AS(more_params(), rpc_hpp::function_mismatch);
 }
 
 TEST_CASE_TEMPLATE("ThrowError", TestType, RPC_TEST_TYPES)
@@ -357,7 +361,32 @@ TEST_CASE_TEMPLATE("ThrowError", TestType, RPC_TEST_TYPES)
         client.call_func("ThrowError");
     };
 
-    REQUIRE_THROWS_AS(exp(), rpc::exceptions::remote_exec_error);
+    REQUIRE_THROWS_AS(exp(), rpc_hpp::remote_exec_error);
+}
+
+TEST_CASE_TEMPLATE("InvalidObject", TestType, RPC_TEST_TYPES)
+{
+#if defined(RPC_HPP_ENABLE_BITSERY)
+    if (std::is_same_v<TestType, bitsery_adapter>)
+    {
+        // TODO: Verify bitsery data somehow
+        return;
+    }
+#endif
+
+    typename TestType::bytes_t bytes{};
+    bytes.resize(8);
+
+    std::iota(bytes.begin(), bytes.end(), 0);
+
+    auto& client = GetClient<TestType>();
+    client.send(std::move(bytes));
+    bytes = client.receive();
+    auto serial_obj = TestType::from_bytes(std::move(bytes));
+
+    REQUIRE(serial_obj.has_value());
+    REQUIRE(TestType::extract_exception(serial_obj.value()).get_type()
+        == rpc_hpp::exception_type::server_receive);
 }
 
 TEST_CASE("KillServer")
@@ -378,5 +407,5 @@ TEST_CASE("KillServer")
         // Exception is expected so continue
     }
 
-    REQUIRE_THROWS_AS(exp(), rpc::exceptions::client_receive_error);
+    REQUIRE_THROWS_AS(exp(), rpc_hpp::client_receive_error);
 }

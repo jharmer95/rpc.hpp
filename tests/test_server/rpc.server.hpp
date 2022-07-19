@@ -5,7 +5,7 @@
 ///@copyright
 ///BSD 3-Clause License
 ///
-///Copyright (c) 2020-2021, Jackson Harmer
+///Copyright (c) 2020-2022, Jackson Harmer
 ///All rights reserved.
 ///
 ///Redistribution and use in source and binary forms, with or without
@@ -36,19 +36,16 @@
 
 #pragma once
 
-#include "../static_funcs.hpp"
 #include "../test_structs.hpp"
 
 #include <asio.hpp>
 #include <rpc.hpp>
-#include <rpc_dispatch_helper.hpp>
 
+#include <array>
 #include <atomic>
 #include <cstddef>
 #include <cstdint>
-#include <iomanip>
-#include <iostream>
-#include <memory>
+#include <cstdio>
 #include <numeric>
 #include <stdexcept>
 #include <string>
@@ -102,12 +99,12 @@ double AverageContainer(const std::vector<T>& vec)
     return sum / static_cast<double>(vec.size());
 }
 
-std::vector<uint64_t> GenRandInts(uint64_t min, uint64_t max, size_t sz = 1000);
+std::vector<uint64_t> GenRandInts(uint64_t min, uint64_t max, size_t sz);
 std::string HashComplex(const ComplexObject& cx);
 void HashComplexRef(ComplexObject& cx, std::string& hashStr);
 
 template<typename Serial>
-class TestServer final : public rpc::server_interface<Serial>
+class TestServer final : public rpc_hpp::server_interface<Serial>
 {
 public:
     TestServer(asio::io_context& io, const uint16_t port)
@@ -142,34 +139,17 @@ public:
                         throw asio::system_error(error);
                     }
 
-                    typename Serial::bytes_t bytes{ std::begin(data), std::begin(data) + len };
-                    this->dispatch(bytes);
-
+                    const auto bytes = this->dispatch({ std::begin(data), std::begin(data) + len });
                     write(sock, asio::buffer(bytes, bytes.size()));
                 }
             }
             catch (const std::exception& ex)
             {
-                std::cerr << "Exception in thread: " << ex.what() << '\n';
+                fprintf(stderr, "Exception in thread: %s\n", ex.what());
             }
         }
     }
 
 private:
-    void dispatch_impl(typename Serial::serial_t& serial_obj) override
-    {
-        const auto func_name = rpc::pack_adapter<Serial>::get_func_name(serial_obj);
-
-        RPC_ATTACH_FUNCS(KillServer, ThrowError, AddOneToEachRef, FibonacciRef, SquareRootRef,
-            GenRandInts, HashComplexRef, AddOne)
-
-        RPC_ATTACH_CACHED_FUNCS(SimpleSum, StrLen, AddOneToEach, Fibonacci, Average, StdDev,
-            AverageContainer<uint64_t>, AverageContainer<double>, HashComplex, CountChars)
-
-        throw rpc::exceptions::rpc_exception(
-            "RPC error: Called function: \"" + func_name + "\" not found!",
-            rpc::exceptions::Type::FuncNotFound);
-    }
-
     tcp::acceptor m_accept;
 };

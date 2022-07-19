@@ -5,7 +5,7 @@
 ///@copyright
 ///BSD 3-Clause License
 ///
-///Copyright (c) 2020-2021, Jackson Harmer
+///Copyright (c) 2020-2022, Jackson Harmer
 ///All rights reserved.
 ///
 ///Redistribution and use in source and binary forms, with or without
@@ -39,25 +39,29 @@
 #if defined(RPC_HPP_ENABLE_BITSERY)
 #    include <rpc_adapters/rpc_bitsery.hpp>
 
-using rpc::adapters::bitsery_adapter;
+using rpc_hpp::adapters::bitsery_adapter;
 #endif
 
 #if defined(RPC_HPP_ENABLE_BOOST_JSON)
 #    include <rpc_adapters/rpc_boost_json.hpp>
 
-using rpc::adapters::boost_json_adapter;
+using rpc_hpp::adapters::boost_json_adapter;
 #endif
 
 #if defined(RPC_HPP_ENABLE_NJSON)
 #    include <rpc_adapters/rpc_njson.hpp>
 
-using rpc::adapters::njson_adapter;
+using rpc_hpp::adapters::njson_adapter;
 #endif
 
 #if defined(RPC_HPP_ENABLE_RAPIDJSON)
 #    include <rpc_adapters/rpc_rapidjson.hpp>
 
-using rpc::adapters::rapidjson_adapter;
+using rpc_hpp::adapters::rapidjson_adapter;
+#endif
+
+#if defined(RPC_HPP_BENCH_RPCLIB)
+#    include <rpc/client.h>
 #endif
 
 #include <algorithm>
@@ -72,6 +76,10 @@ struct ComplexObject
     bool flag1{};
     bool flag2{};
     std::array<uint8_t, 12> vals{};
+
+#if defined(RPC_HPP_BENCH_RPCLIB)
+    MSGPACK_DEFINE_ARRAY(id, name, flag1, flag2, vals)
+#endif
 };
 
 #if defined(RPC_HPP_ENABLE_BITSERY)
@@ -88,10 +96,9 @@ void serialize(S& s, ComplexObject& val)
 
 #if defined(RPC_HPP_ENABLE_BOOST_JSON)
 template<>
-template<>
-inline rpc::adapters::boost_json::value_t boost_json_adapter::serialize(const ComplexObject& val)
+inline boost::json::object boost_json_adapter::serialize(const ComplexObject& val)
 {
-    rpc::adapters::boost_json::object_t obj_j;
+    boost::json::object obj_j;
     obj_j["id"] = val.id;
     obj_j["name"] = val.name;
     obj_j["flag1"] = val.flag1;
@@ -109,9 +116,7 @@ inline rpc::adapters::boost_json::value_t boost_json_adapter::serialize(const Co
 }
 
 template<>
-template<>
-inline ComplexObject boost_json_adapter::deserialize(
-    const rpc::adapters::boost_json::value_t& serial_obj)
+inline ComplexObject boost_json_adapter::deserialize(const boost::json::object& serial_obj)
 {
     ComplexObject cx;
     cx.id = static_cast<int>(serial_obj.at("id").get_int64());
@@ -141,10 +146,9 @@ inline ComplexObject boost_json_adapter::deserialize(
 
 #if defined(RPC_HPP_ENABLE_NJSON)
 template<>
-template<>
-inline rpc::adapters::njson::njson_t njson_adapter::serialize(const ComplexObject& val)
+inline nlohmann::json njson_adapter::serialize(const ComplexObject& val)
 {
-    adapters::njson::njson_t obj_j;
+    nlohmann::json obj_j;
     obj_j["id"] = val.id;
     obj_j["name"] = val.name;
     obj_j["flag1"] = val.flag1;
@@ -155,8 +159,7 @@ inline rpc::adapters::njson::njson_t njson_adapter::serialize(const ComplexObjec
 }
 
 template<>
-template<>
-inline ComplexObject njson_adapter::deserialize(const adapters::njson::njson_t& serial_obj)
+inline ComplexObject njson_adapter::deserialize(const nlohmann::json& serial_obj)
 {
     ComplexObject cx;
     cx.id = serial_obj["id"].get<int>();
@@ -180,30 +183,29 @@ inline ComplexObject njson_adapter::deserialize(const adapters::njson::njson_t& 
 
 #if defined(RPC_HPP_ENABLE_RAPIDJSON)
 template<>
-template<>
-inline rpc::adapters::rapidjson::doc_t rapidjson_adapter::serialize(const ComplexObject& val)
+inline rapidjson::Value rapidjson_adapter::serialize(
+    const ComplexObject& val, rapidjson::MemoryPoolAllocator<>& alloc)
 {
-    adapters::rapidjson::doc_t d;
-    d.SetObject();
-    auto& alloc = d.GetAllocator();
+    rapidjson::Value v;
+    v.SetObject();
 
-    adapters::rapidjson::value_t id_v;
+    rapidjson::Value id_v;
     id_v.SetInt(val.id);
-    d.AddMember("id", id_v, alloc);
+    v.AddMember("id", id_v, alloc);
 
-    adapters::rapidjson::value_t name_v;
+    rapidjson::Value name_v;
     name_v.SetString(val.name.c_str(), alloc);
-    d.AddMember("name", name_v, alloc);
+    v.AddMember("name", name_v, alloc);
 
-    adapters::rapidjson::value_t flag1_v;
+    rapidjson::Value flag1_v;
     flag1_v.SetBool(val.flag1);
-    d.AddMember("flag1", flag1_v, alloc);
+    v.AddMember("flag1", flag1_v, alloc);
 
-    adapters::rapidjson::value_t flag2_v;
+    rapidjson::Value flag2_v;
     flag2_v.SetBool(val.flag2);
-    d.AddMember("flag2", flag2_v, alloc);
+    v.AddMember("flag2", flag2_v, alloc);
 
-    adapters::rapidjson::value_t vals_v;
+    rapidjson::Value vals_v;
     vals_v.SetArray();
 
     for (const auto byte : val.vals)
@@ -211,38 +213,37 @@ inline rpc::adapters::rapidjson::doc_t rapidjson_adapter::serialize(const Comple
         vals_v.PushBack(byte, alloc);
     }
 
-    d.AddMember("vals", vals_v, alloc);
-    return d;
+    v.AddMember("vals", vals_v, alloc);
+    return v;
 }
 
 template<>
-template<>
-inline ComplexObject rapidjson_adapter::deserialize(const adapters::rapidjson::doc_t& serial_obj)
+inline ComplexObject rapidjson_adapter::deserialize(const rapidjson::Value& serial_obj)
 {
-    ComplexObject obj;
+    ComplexObject cx;
 
     const auto id_v = serial_obj.FindMember("id");
-    obj.id = id_v->value.GetInt();
+    cx.id = id_v->value.GetInt();
 
     const auto name_v = serial_obj.FindMember("name");
-    obj.name = std::string(name_v->value.GetString(), name_v->value.GetStringLength());
+    cx.name = std::string(name_v->value.GetString(), name_v->value.GetStringLength());
 
     const auto flag1_v = serial_obj.FindMember("flag1");
-    obj.flag1 = flag1_v->value.GetBool();
+    cx.flag1 = flag1_v->value.GetBool();
 
     const auto flag2_v = serial_obj.FindMember("flag2");
-    obj.flag2 = flag2_v->value.GetBool();
+    cx.flag2 = flag2_v->value.GetBool();
 
     const auto vals_v = serial_obj.FindMember("vals");
     const auto& arr = vals_v->value.GetArray();
 
-    assert(arr.Size() == obj.vals.size());
+    assert(arr.Size() == cx.vals.size());
 
-    for (unsigned i = 0; i < obj.vals.size(); ++i)
+    for (unsigned i = 0; i < cx.vals.size(); ++i)
     {
-        obj.vals[i] = static_cast<uint8_t>(arr[i].GetUint());
+        cx.vals[i] = static_cast<uint8_t>(arr[i].GetUint());
     }
 
-    return obj;
+    return cx;
 }
 #endif

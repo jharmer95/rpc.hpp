@@ -2,8 +2,6 @@
 
 #include "server.hpp"
 
-#include <rpc_dispatch_helper.hpp>
-
 #include <cstdlib>
 #include <exception>
 #include <iostream>
@@ -12,7 +10,7 @@
 #include <thread>
 
 using asio::ip::tcp;
-using rpc::adapters::njson_adapter;
+using rpc_hpp::adapters::njson_adapter;
 
 static std::unique_ptr<RpcServer> P_SERVER;
 
@@ -70,9 +68,7 @@ void RpcServer::Run()
                     throw asio::system_error(error);
                 }
 
-                std::string bytes(data, data + len);
-                dispatch(bytes);
-
+                const auto bytes = dispatch({data, data + len});
                 write(sock, asio::buffer(bytes, bytes.size()));
             }
         }
@@ -82,14 +78,6 @@ void RpcServer::Run()
                       << ex.what() << '\n';
         }
     }
-}
-
-void RpcServer::dispatch_impl(rpc::adapters::njson::njson_t& serial_obj)
-{
-    // IMPORTANT: Template functions must be given explicitly with the supported types
-    // or they will not be instantiated on the server
-    RPC_DEFAULT_DISPATCH(Sum, AddOneToEach, GetTypeName<int>, GetTypeName<double>,
-        GetTypeName<std::string>, KillServer)
 }
 
 int main(int argc, char* argv[])
@@ -107,6 +95,12 @@ int main(int argc, char* argv[])
         asio::io_context io_context{};
 
         P_SERVER = std::make_unique<RpcServer>(io_context, port_num);
+        P_SERVER->bind("KillServer", &KillServer);
+        P_SERVER->bind("Sum", &Sum);
+        P_SERVER->bind("AddOneToEach", &AddOneToEach);
+        P_SERVER->bind("GetTypeName<int>", &GetTypeName<int>);
+        P_SERVER->bind("GetTypeName<double>", &GetTypeName<double>);
+        P_SERVER->bind("GetTypeName<std::string>", &GetTypeName<std::string>);
 
         std::thread server_thread{ &RpcServer::Run, P_SERVER.get() };
         std::cout << "Running server on port: " << port_num << "...\n";

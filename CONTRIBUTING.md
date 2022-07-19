@@ -3,7 +3,7 @@
 ## Code of Conduct
 
 This project and everyone participating in it is governed by the
-[rpc.hpp Code of Conduct](CODE_OF_CONDUCT.md).
+rpc.hpp [Code of Conduct](CODE_OF_CONDUCT.md).
 By participating, you are expected to uphold this code.\
 Please report unacceptable behavior to jharmer95@gmail.com.
 
@@ -14,7 +14,7 @@ You may report an issue from the [issues](https://github.com/jharmer95/rpc.hpp/i
 Before submitting a new issue, please go through the following steps:
 
 1. Check if you are running the latest version
-  - The easiest way to do this is to open the file `rcp.hpp` on your system
+  - The easiest way to do this is to open the file `rpc.hpp` on your system
   - The version number will be in a comment near the top of the file
   - Compare that to the [latest release](https://github.com/jharmer95/rpc.hpp/releases/latest)
   - If your version is out of date, please update to the newest version before reporting an issue
@@ -22,9 +22,9 @@ Before submitting a new issue, please go through the following steps:
   - If your issue is the same, give that issue a :+1:
     - **Please don't add additional comments like _"Me too"_ or _"I need this fix"_**,
     a :+1: conveys this much more succinctly and allows for an easy way to visualize the
-    popularity/demand for this issue.
+    popularity/demand for this issue and prevents flooding contributors inboxes.
   - Even if your issue is not _exactly_ the same, it may be more beneficial to provide some extra
-    context or details for your situation via a comment vs. a new issue.
+    context or details for your situation via a comment instead of opening a new issue.
     - Sometimes it's easier to understand the scope of an issue this way and can allow for one patch
     to be made instead of multiple
 
@@ -64,7 +64,7 @@ Some features of the library are:
      code/pseudocode to indicate the usage or API of your request -->
 
     ```C++
-    class MyClient : public rpc::client_interface<some_serial_lib_adapter>
+    class MyClient : public rpc_hpp::client_interface<some_serial_lib_adapter>
     {
     };
 
@@ -195,15 +195,15 @@ few exceptions:
   - `SCREAMING_SNAKE_CASE`:
     - Macros
     - Global variables
-    - `constexpr` variables
+    - `static constexpr` variables
   - `CamelCase`
     - `template` parameters
 - `private`/`protected` non-static member variables should have a `m_` prefix
 - `private`/`protected` static member variables should have a `s_` prefix
-- Type aliases should have a `_t` suffix
+- Type aliases should have a `_t` (or sometimes `_type`) suffix
 - Boolean variables and boolean-returning functions should indicate what they are testing,
 (ex. `is_full`, `has_value()`, `was_used`)
-  - Booleans should only be named in the _affirmative_ (**no** `is_not_empty`, `no_value`)
+  - Booleans should only be named in the _affirmative_ (**do not** use something like: `is_not_empty`, `no_value`)
 
 #### Documentation Comments
 
@@ -269,8 +269,8 @@ When creating git commits, there are a few guidelines you should keep in mind:
 - To the best of your ability, try to address only one issue or add only one feature per commit.
   - For example, a single commit should not "Fix bug #1234 and add cool new feature".
 - When writing commit messages, use the present-tense and imperative mood to describe the change(s).
-  - A good way to think about this is: if you added "This commit will" before your message, it would
-  be accurate and form a proper sentence.
+  - A good way to think about this is: if you added _"This commit will"_ before your message, it
+  would be accurate and form a proper sentence.
   - i.e. "Add logging" not "Adds logging" or "Added logging".
 - Specific issues may be referenced by their number, ex: "... fixes #123".
   - When possible, please use a more detailed description of the issue or feature in the commit, you
@@ -318,7 +318,7 @@ A few basic requirements will need to be made before _any_ PR is accepted:
 - If the API changes, external documentation must be updated
 - No new warnings may occur (must build with `-Werror`)
 
-If all these conditions are met, the code will be reviewed. Once the code has been reviewed on of
+If all these conditions are met, the code will be reviewed. Once the code has been reviewed one of
 the following may occur:
 
 - :heavy_check_mark: The merge will be accepted, a new version will be generated, and you will be
@@ -330,5 +330,5 @@ provided.
   - After receiving the notification, you can make the necessary alterations and push those changes.
   to your fork. You will **not** need to submit a new PR, the push will update the existing PR
   automatically.
-  - Once these new changes are received the review process will start over.
+  - Once these new changes are received, the review process will start over.
 - :x: The merge will be rejected with a detailed reason as to why.

@@ -5,7 +5,7 @@
 ///@copyright
 ///BSD 3-Clause License
 ///
-///Copyright (c) 2020-2021, Jackson Harmer
+///Copyright (c) 2020-2022, Jackson Harmer
 ///All rights reserved.
 ///
 ///Redistribution and use in source and binary forms, with or without
@@ -41,31 +41,31 @@
 #if defined(RPC_HPP_ENABLE_BITSERY)
 #    include <rpc_adapters/rpc_bitsery.hpp>
 
-using rpc::adapters::bitsery_adapter;
+using rpc_hpp::adapters::bitsery_adapter;
 #endif
 
 #if defined(RPC_HPP_ENABLE_BOOST_JSON)
 #    include <rpc_adapters/rpc_boost_json.hpp>
 
-using rpc::adapters::boost_json_adapter;
+using rpc_hpp::adapters::boost_json_adapter;
 #endif
 
 #if defined(RPC_HPP_ENABLE_NJSON)
 #    include <rpc_adapters/rpc_njson.hpp>
 
-using rpc::adapters::njson_adapter;
+using rpc_hpp::adapters::njson_adapter;
 #endif
 
 #if defined(RPC_HPP_ENABLE_RAPIDJSON)
 #    include <rpc_adapters/rpc_rapidjson.hpp>
 
-using rpc::adapters::rapidjson_adapter;
+using rpc_hpp::adapters::rapidjson_adapter;
 #endif
 
 using asio::ip::tcp;
 
 template<typename Serial>
-class TestClient final : public rpc::client_interface<Serial>
+class TestClient final : public rpc_hpp::client_interface<Serial>
 {
 public:
     TestClient(const std::string_view host, const std::string_view port)
@@ -80,29 +80,23 @@ public:
         return m_socket.remote_endpoint().address().to_string();
     }
 
-private:
     void send(const typename Serial::bytes_t& mesg) override
     {
         asio::write(m_socket, asio::buffer(mesg, mesg.size()));
     }
 
-    void send(typename Serial::bytes_t&& mesg) override
-    {
-        const auto sz = mesg.size();
-        asio::write(m_socket, asio::buffer(std::move(mesg), sz));
-    }
-
     // nodiscard because data is lost after receive
     [[nodiscard]] typename Serial::bytes_t receive() override
     {
-        const auto numBytes = m_socket.read_some(asio::buffer(m_buffer, 64UL * 1024UL));
-        return typename Serial::bytes_t{ &m_buffer[0], &m_buffer[numBytes] };
+        const auto sz = m_socket.read_some(asio::buffer(m_buffer, m_buffer.size()));
+        return typename Serial::bytes_t{ m_buffer.begin(), m_buffer.begin() + sz };
     }
 
+private:
     asio::io_context m_io{};
     tcp::socket m_socket;
     tcp::resolver m_resolver;
-    uint8_t m_buffer[64U * 1024UL]{};
+    std::array<uint8_t, 64UL * 1024UL> m_buffer{};
 };
 
 template<typename Serial>

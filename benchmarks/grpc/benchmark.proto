@@ -1,0 +1,64 @@
+syntax = "proto3";
+
+package grpc_benchmark;
+
+service RpcBenchmark {
+    rpc Fibonacci(Uint64) returns (Uint64) {}
+    rpc GenRandInts(GenRandInts_Msg) returns (Vec_Uint64) {}
+    rpc StdDev(TenDoubles) returns (Double) {}
+    rpc AverageContainer_uint64(Vec_Uint64) returns (Double) {}
+    rpc AverageContainer_double(Vec_Double) returns (Double) {}
+    rpc HashComplex(ComplexObject) returns (String) {}
+    rpc KillServer(Empty) returns (Empty) {}
+}
+
+message Uint64 {
+    uint64 val = 1;
+}
+
+message Double {
+    double val = 1;
+}
+
+message String {
+    string val = 1;
+}
+
+message Vec_Uint64 {
+    repeated uint64 val = 1;
+}
+
+message Vec_Double {
+    repeated double val = 1;
+}
+
+message GenRandInts_Msg {
+    uint64 min = 1;
+    uint64 max = 2;
+    uint64 sz = 3;
+}
+
+message TenDoubles {
+    double d1 = 1;
+    double d2 = 2;
+    double d3 = 3;
+    double d4 = 4;
+    double d5 = 5;
+    double d6 = 6;
+    double d7 = 7;
+    double d8 = 8;
+    double d9 = 9;
+    double d10 = 10;
+}
+
+message ComplexObject {
+    int32 id = 1;
+    string name = 2;
+    bool flag1 = 3;
+    bool flag2 = 4;
+    bytes vals = 5;
+}
+
+message Empty {
+    // Intentionally blank
+}

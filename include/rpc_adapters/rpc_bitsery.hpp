@@ -5,7 +5,7 @@
 ///@copyright
 ///BSD 3-Clause License
 ///
-///Copyright (c) 2020-2021, Jackson Harmer
+///Copyright (c) 2020-2022, Jackson Harmer
 ///All rights reserved.
 ///
 ///Redistribution and use in source and binary forms, with or without
@@ -45,38 +45,45 @@
 #include <bitsery/traits/string.h>
 #include <bitsery/traits/vector.h>
 
+#include <cassert>
 #include <vector>
 
 #if defined(RPC_HPP_ENABLE_SERVER_CACHE)
+#    include <numeric>
+
 template<>
 struct std::hash<std::vector<uint8_t>>
 {
-    [[nodiscard]] size_t operator()(const std::vector<uint8_t>& vec) const noexcept
+    [[nodiscard]] inline size_t operator()(const std::vector<uint8_t>& vec) const noexcept
     {
-        size_t seed = vec.size();
-
-        for (const auto i : vec)
+        static constexpr auto seed_hash = [](size_t seed, size_t val) noexcept
         {
-            seed ^= static_cast<size_t>(i) + size_t{ 0x9E3779B9UL } + (seed << 6) + (seed >> 2);
-        }
+            static constexpr size_t magic_hash_val = 0x9E3779B9UL;
+            return seed ^ (val + magic_hash_val + (seed << 6) + (seed >> 2));
+        };
 
-        return seed;
+        return std::accumulate(vec.begin(), vec.end(), vec.size(), seed_hash);
     }
 };
 #endif
 
-namespace rpc
+namespace rpc_hpp
 {
 namespace adapters
 {
-    using bitsery_adapter =
-        details::serial_adapter<std::vector<uint8_t>, std::vector<std::uint8_t>>;
+    class bitsery_adapter;
 
-    namespace bitsery
+    template<>
+    struct serial_traits<bitsery_adapter>
     {
-        using bit_buffer = std::vector<uint8_t>;
+        using serial_t = std::vector<uint8_t>;
+        using bytes_t = std::vector<uint8_t>;
+    };
 
-        namespace config
+    class bitsery_adapter : public detail::serial_adapter_base<bitsery_adapter>
+    {
+    public:
+        struct config
         {
 #if defined(RPC_HPP_BITSERY_EXACT_SZ)
             static constexpr bool use_exact_size = true;
@@ -84,119 +91,228 @@ namespace adapters
             static constexpr bool use_exact_size = false;
 #endif
 
-            extern const uint64_t max_func_name_size;
-            extern const uint64_t max_string_size;
-            extern const uint64_t max_container_size;
-        } // namespace config
+            static const uint64_t max_func_name_size;
+            static const uint64_t max_string_size;
+            static const uint64_t max_container_size;
+        };
 
-        namespace details
+        [[nodiscard]] static std::vector<uint8_t> to_bytes(std::vector<uint8_t>&& serial_obj)
         {
-            using output_adapter = ::bitsery::OutputBufferAdapter<bit_buffer>;
-            using input_adapter = ::bitsery::InputBufferAdapter<bit_buffer>;
+            return std::move(serial_obj);
+        }
 
-            // NOTE: This jank can be replaced once C++20 is adopted
-            template<typename T,
-                int = std::is_arithmetic_v<T> + std::is_integral_v<T> * 2 + std::is_signed_v<T> * 3>
-            struct largest;
+        [[nodiscard]] static std::optional<std::vector<uint8_t>> from_bytes(
+            std::vector<uint8_t>&& bytes)
+        {
+            // TODO: Verify bitsery data somehow
+            return std::make_optional(std::move(bytes));
+        }
 
-            template<typename T>
-            struct largest<T, 0>
+        static std::vector<uint8_t> empty_object()
+        {
+            std::vector<uint8_t> buffer(sizeof(int) + 2);
+            bitsery::quickSerialization<output_adapter>(buffer, pack_helper<void>{});
+            return buffer;
+        }
+
+        template<typename R, typename... Args>
+        [[nodiscard]] static std::vector<uint8_t> serialize_pack(
+            const detail::packed_func<R, Args...>& pack)
+        {
+            const auto helper = to_helper(pack);
+            std::vector<uint8_t> buffer{};
+            buffer.reserve(64);
+
+            const auto bytes_written = bitsery::quickSerialization<output_adapter>(buffer, helper);
+            buffer.resize(bytes_written);
+            return buffer;
+        }
+
+        template<typename R, typename... Args>
+        [[nodiscard]] static detail::packed_func<R, Args...> deserialize_pack(
+            const std::vector<uint8_t>& serial_obj)
+        {
+            pack_helper<R, Args...> helper{};
+
+            if (const auto [error, _] = bitsery::quickDeserialization(
+                    input_adapter{ serial_obj.begin(), serial_obj.size() }, helper);
+                error != bitsery::ReaderError::NoError)
             {
-                using type = T;
-            };
+                switch (error)
+                {
+                    case bitsery::ReaderError::ReadingError:
+                        throw deserialization_error(
+                            "Bitsery deserialization failed due to a reading error");
 
-            template<typename T>
-            struct largest<T, 3>
+                    case bitsery::ReaderError::DataOverflow:
+                        throw function_mismatch("Bitsery deserialization failed due to data "
+                                                "overflow (likely mismatched "
+                                                "function signature)");
+
+                    case bitsery::ReaderError::InvalidData:
+                        throw deserialization_error(
+                            "Bitsery deserialization failed due to a invalid data");
+
+                    case bitsery::ReaderError::InvalidPointer:
+                        throw deserialization_error(
+                            "Bitsery deserialization failed due to an invalid pointer");
+
+                    case bitsery::ReaderError::NoError:
+                    default:
+                        throw deserialization_error(
+                            "Bitsery deserialization failed due to extra data on the end");
+                }
+            }
+
+            return from_helper(helper);
+        }
+
+        [[nodiscard]] static std::string get_func_name(const std::vector<uint8_t>& serial_obj)
+        {
+            size_t index = sizeof(int);
+            const auto len = extract_length(serial_obj, index);
+
+            assert(index < serial_obj.size());
+            assert(index <= std::numeric_limits<ptrdiff_t>::max());
+
+            return { std::next(serial_obj.begin(), index),
+                std::next(serial_obj.begin(), index + len) };
+        }
+
+        [[nodiscard]] static rpc_exception extract_exception(const std::vector<uint8_t>& serial_obj)
+        {
+            const auto pack = deserialize_pack<void>(serial_obj);
+            return rpc_exception{ pack.get_err_mesg(), pack.get_except_type() };
+        }
+
+        static void set_exception(std::vector<uint8_t>& serial_obj, const rpc_exception& ex)
+        {
+            // copy except_type into buffer
+            const int ex_type = static_cast<int>(ex.get_type());
+            memcpy(&serial_obj[0], &ex_type, sizeof(int));
+            const std::string_view mesg = ex.what();
+            const auto new_err_len = static_cast<unsigned>(mesg.size());
+
+            size_t index = sizeof(int);
+            const auto name_len = extract_length(serial_obj, index);
+            const size_t name_sz_len = index;
+
+            index += name_len;
+
+            if (const auto err_len = extract_length(serial_obj, index); new_err_len != err_len)
             {
-                using type = uint64_t;
-            };
+                if (err_len != 0)
+                {
+                    assert(index < serial_obj.size());
+                    assert(index <= std::numeric_limits<ptrdiff_t>::max());
 
-            template<typename T>
-            struct largest<T, 4>
+                    serial_obj.erase(std::next(serial_obj.begin(), name_sz_len + name_len),
+                        std::next(serial_obj.begin(), index + err_len));
+                }
+
+                index = name_sz_len + name_len;
+                write_length(serial_obj, new_err_len, index);
+            }
+
+            for (unsigned i = 0; i < new_err_len; ++i)
             {
-                static_assert(!std::is_same_v<T, long double>,
-                    "long double is not supported for RPC bitsery serialization!");
-                using type = double;
-            };
+                assert(index < serial_obj.size());
+                assert(index <= std::numeric_limits<ptrdiff_t>::max());
 
-            template<typename T>
-            struct largest<T, 6>
-            {
-                using type = int64_t;
-            };
+                serial_obj.insert(
+                    std::next(serial_obj.begin(), index++), static_cast<unsigned char>(mesg[i]));
+            }
+        }
 
-            template<typename T>
-            using largest_t = typename largest<T>::type;
+    private:
+        using bit_buffer = std::vector<uint8_t>;
+        using output_adapter = bitsery::OutputBufferAdapter<bit_buffer>;
+        using input_adapter = bitsery::InputBufferAdapter<bit_buffer>;
 
-            template<typename R, typename... Args>
-            struct pack_helper
-            {
-                static_assert(!std::is_same_v<R, long double>,
-                    "long double is not supported for RPC bitsery serialization!");
+        // NOTE: This jank can be replaced once C++20 is adopted
+        template<typename T,
+            int = std::is_arithmetic_v<T> + std::is_integral_v<T> * 2 + std::is_signed_v<T> * 3>
+        struct largest;
+
+        template<typename T>
+        struct largest<T, 0>
+        {
+            using type = T;
+        };
+
+        template<typename T>
+        struct largest<T, 3>
+        {
+            using type = uint64_t;
+        };
+
+        template<typename T>
+        struct largest<T, 4>
+        {
+            static_assert(!std::is_same_v<T, long double>,
+                "long double is not supported for RPC bitsery serialization!");
+            using type = double;
+        };
+
+        template<typename T>
+        struct largest<T, 6>
+        {
+            using type = int64_t;
+        };
+
+        template<typename T>
+        using largest_t = typename largest<T>::type;
+
+        template<typename R, typename... Args>
+        struct pack_helper
+        {
+            static_assert(!std::is_same_v<R, long double>,
+                "long double is not supported for RPC bitsery serialization!");
 
 #if defined(RPC_HPP_BITSERY_EXACT_SZ)
-                using args_t = std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...>;
+            using args_t = std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...>;
 #else
-                using args_t =
-                    std::tuple<largest_t<std::remove_cv_t<std::remove_reference_t<Args>>>...>;
+            using args_t =
+                std::tuple<largest_t<std::remove_cv_t<std::remove_reference_t<Args>>>...>;
 #endif
 
-                pack_helper() = default;
+            pack_helper() = default;
 
-                int except_type{};
-                std::string func_name{};
-                std::string err_mesg{};
-                R result{};
-                args_t args{};
-            };
+            int except_type{};
+            std::string func_name{};
+            std::string err_mesg{};
+            R result{};
+            args_t args{};
 
-            template<typename... Args>
-            struct pack_helper<void, Args...>
+            template<typename S>
+            void serialize(S& s)
             {
-#if defined(RPC_HPP_BITSERY_EXACT_SZ)
-                using args_t = std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...>;
-#else
-                using args_t =
-                    std::tuple<largest_t<std::remove_cv_t<std::remove_reference_t<Args>>>...>;
-#endif
-
-                pack_helper() = default;
-
-                int except_type{};
-                std::string func_name{};
-                std::string err_mesg{};
-                args_t args{};
-            };
-
-            template<typename S, typename R, typename... Args>
-            void serialize(S& s, pack_helper<R, Args...>& o)
-            {
-                s.template value<sizeof(int)>(o.except_type);
-                s.text1b(o.func_name, config::max_func_name_size);
-                s.text1b(o.err_mesg, config::max_string_size);
+                s.template value<sizeof(int)>(except_type);
+                s.text1b(func_name, config::max_func_name_size);
+                s.text1b(err_mesg, config::max_string_size);
 
                 if constexpr (std::is_arithmetic_v<R>)
                 {
-                    s.template value<sizeof(R)>(o.result);
+                    s.template value<sizeof(R)>(result);
                 }
-                else if constexpr (rpc::details::is_container_v<R>)
+                else if constexpr (rpc_hpp::detail::is_container_v<R>)
                 {
                     if constexpr (std::is_arithmetic_v<typename R::value_type>)
                     {
                         s.template container<sizeof(typename R::value_type)>(
-                            o.result, config::max_container_size);
+                            result, config::max_container_size);
                     }
                     else
                     {
-                        s.container(o.result, config::max_container_size);
+                        s.container(result, config::max_container_size);
                     }
                 }
-                else if constexpr (!std::is_void_v<R>)
+                else
                 {
-                    s.object(o.result);
+                    s.object(result);
                 }
 
-                s.ext(o.args,
+                s.ext(args,
                     ::bitsery::ext::StdTuple{ [](S& s2, std::string& str)
                         { s2.text1b(str, config::max_string_size); },
                         // Fallback serializer for integers, floats, and enums
@@ -215,7 +331,7 @@ namespace adapters
                                     s2.value8b(val);
                                 }
                             }
-                            else if constexpr (rpc::details::is_container_v<T>)
+                            else if constexpr (rpc_hpp::detail::is_container_v<T>)
                             {
                                 if constexpr (std::is_arithmetic_v<typename T::value_type>)
                                 {
@@ -233,293 +349,193 @@ namespace adapters
                             }
                         } });
             }
+        };
 
-            // nodiscard because a potentially expensive copy and allocation is being done
-            template<typename R, typename... Args>
-            [[nodiscard]] pack_helper<R, Args...> to_helper(
-                const ::rpc::details::packed_func<R, Args...>& pack)
+        template<typename... Args>
+        struct pack_helper<void, Args...>
+        {
+#if defined(RPC_HPP_BITSERY_EXACT_SZ)
+            using args_t = std::tuple<std::remove_cv_t<std::remove_reference_t<Args>>...>;
+#else
+            using args_t =
+                std::tuple<largest_t<std::remove_cv_t<std::remove_reference_t<Args>>>...>;
+#endif
+
+            pack_helper() = default;
+
+            int except_type{};
+            std::string func_name{};
+            std::string err_mesg{};
+            args_t args{};
+
+            template<typename S>
+            void serialize(S& s)
             {
-                pack_helper<R, Args...> helper;
+                s.template value<sizeof(int)>(except_type);
+                s.text1b(func_name, config::max_func_name_size);
+                s.text1b(err_mesg, config::max_string_size);
 
-                if (!pack)
-                {
-                    helper.except_type = static_cast<int>(pack.get_except_type());
-                    helper.err_mesg = pack.get_err_mesg();
-                }
-                else
-                {
-                    if constexpr (!std::is_void_v<R>)
-                    {
-                        helper.result = pack.get_result();
-                    }
-                }
+                s.ext(args,
+                    bitsery::ext::StdTuple{ [](S& s2, std::string& str)
+                        { s2.text1b(str, config::max_string_size); },
+                        // Fallback serializer for integers, floats, and enums
+                        [](auto& s2, auto& val)
+                        {
+                            using T = std::remove_cv_t<std::remove_reference_t<decltype(val)>>;
 
-                helper.func_name = pack.get_func_name();
-                helper.args = pack.get_args();
+                            if constexpr (std::is_arithmetic_v<T>)
+                            {
+                                if constexpr (config::use_exact_size)
+                                {
+                                    s2.template value<sizeof(val)>(val);
+                                }
+                                else
+                                {
+                                    s2.value8b(val);
+                                }
+                            }
+                            else if constexpr (rpc_hpp::detail::is_container_v<T>)
+                            {
+                                if constexpr (std::is_arithmetic_v<typename T::value_type>)
+                                {
+                                    s2.template container<sizeof(typename T::value_type)>(
+                                        val, config::max_container_size);
+                                }
+                                else
+                                {
+                                    s2.container(val, config::max_container_size);
+                                }
+                            }
+                            else
+                            {
+                                s2.object(val);
+                            }
+                        } });
+            }
+        };
 
+        // nodiscard because a potentially expensive copy and allocation is being done
+        template<typename R, typename... Args>
+        [[nodiscard]] static pack_helper<R, Args...> to_helper(
+            const detail::packed_func<R, Args...>& pack)
+        {
+            pack_helper<R, Args...> helper{};
+            helper.func_name = pack.get_func_name();
+            helper.args = pack.get_args();
+
+            if (!pack)
+            {
+                helper.except_type = static_cast<int>(pack.get_except_type());
+                helper.err_mesg = pack.get_err_mesg();
                 return helper;
             }
 
-#if !defined(RPC_HPP_BITSERY_EXACT_SZ)
-#    if defined(_MSC_VER)
-#        pragma warning(push)
-#        pragma warning(disable : 4244)
-#    elif defined(__GNUC__)
-#        pragma GCC diagnostic push
-#        pragma GCC diagnostic ignored "-Wconversion"
-#    elif defined(__clang__)
-#        pragma clang diagnostic push
-#        pragma clang diagnostic ignored "-Wconversion"
-#        pragma clang diagnostic ignored "-Wshorten-64-to-32"
-#    endif
-#endif
-
-            // nodiscard because a potentially expensive copy and allocation is being done
-            template<typename R, typename... Args>
-            [[nodiscard]] ::rpc::details::packed_func<R, Args...> from_helper(
-                pack_helper<R, Args...> helper)
+            if constexpr (!std::is_void_v<R>)
             {
-                if constexpr (std::is_void_v<R>)
-                {
-                    if (helper.except_type == 0)
-                    {
-                        return ::rpc::details::packed_func<void, Args...>{
-                            std::move(helper.func_name), std::move(helper.args)
-                        };
-                    }
+                helper.result = pack.get_result();
+            }
 
-                    ::rpc::details::packed_func<void, Args...> pack{ std::move(helper.func_name),
+            return helper;
+        }
+
+        // nodiscard because a potentially expensive copy and allocation is being done
+        template<typename R, typename... Args>
+        [[nodiscard]] static detail::packed_func<R, Args...> from_helper(
+            pack_helper<R, Args...> helper)
+        {
+            if constexpr (std::is_void_v<R>)
+            {
+                if (helper.except_type == 0)
+                {
+                    return detail::packed_func<void, Args...>{ std::move(helper.func_name),
                         std::move(helper.args) };
-
-                    pack.set_exception(std::move(helper.err_mesg),
-                        static_cast<exceptions::Type>(helper.except_type));
-                    return pack;
                 }
-                else
+
+                detail::packed_func<void, Args...> pack{ std::move(helper.func_name),
+                    std::move(helper.args) };
+
+                pack.set_exception(
+                    std::move(helper.err_mesg), static_cast<exception_type>(helper.except_type));
+
+                return pack;
+            }
+            else
+            {
+                if (helper.err_mesg.empty())
                 {
-                    if (helper.err_mesg.empty())
-                    {
-                        return ::rpc::details::packed_func<R, Args...>{ std::move(helper.func_name),
-                            std::move(helper.result), std::move(helper.args) };
-                    }
-
-                    ::rpc::details::packed_func<R, Args...> pack{ std::move(helper.func_name),
-                        std::nullopt, std::move(helper.args) };
-
-                    pack.set_exception(std::move(helper.err_mesg),
-                        static_cast<exceptions::Type>(helper.except_type));
-                    return pack;
+                    return detail::packed_func<R, Args...>{ std::move(helper.func_name),
+                        std::move(helper.result), std::move(helper.args) };
                 }
+
+                detail::packed_func<R, Args...> pack{ std::move(helper.func_name), std::nullopt,
+                    std::move(helper.args) };
+
+                pack.set_exception(
+                    std::move(helper.err_mesg), static_cast<exception_type>(helper.except_type));
+
+                return pack;
+            }
+        }
+
+        // Borrowed from Bitsery library for compatibility
+        static unsigned extract_length(const bit_buffer& bytes, size_t& index) noexcept
+        {
+            RPC_HPP_PRECONDITION(index < bytes.size());
+
+            const uint8_t hb = bytes[index++];
+
+            if (hb < 0x80U)
+            {
+                return hb;
             }
 
-#if !defined(RPC_HPP_BITSERY_EXACT_SZ)
-#    if defined(_MSC_VER)
-#        pragma warning(pop)
-#    elif defined(__GNUC__)
-#        pragma GCC diagnostic pop
-#    elif defined(__clang__)
-#        pragma clang diagnostic pop
-#    endif
-#endif
+            assert(index < bytes.size());
+            const uint8_t lb = bytes[index++];
 
-            // Borrowed from Bitsery library for compatibility
-            inline unsigned extract_length(const bit_buffer& bytes, size_t& index)
+            if ((hb & 0x40U) != 0U)
             {
                 assert(index < bytes.size());
-                const uint8_t hb = bytes[index++];
-
-                if (hb < 0x80U)
-                {
-                    return hb;
-                }
-
-                assert(index < bytes.size());
-                const uint8_t lb = bytes[index++];
-
-                if ((hb & 0x40U) != 0U)
-                {
-                    assert(index < bytes.size());
-                    const uint16_t lw = *reinterpret_cast<const uint16_t*>(&bytes[index++]);
-
-                    return ((((hb & 0x3FU) << 8) | lb) << 16) | lw;
-                }
-
-                return ((hb & 0x7FU) << 8) | lb;
+                const uint16_t lw = *reinterpret_cast<const uint16_t*>(&bytes[index++]);
+                return ((((hb & 0x3FU) << 8) | lb) << 16) | lw;
             }
 
-            // Borrowed from Bitsery library for compatibility
-            inline void write_length(bit_buffer& bytes, size_t size, size_t& index)
+            return ((hb & 0x7FU) << 8) | lb;
+        }
+
+        // Borrowed from Bitsery library for compatibility
+        static void write_length(bit_buffer& bytes, size_t size, size_t& index)
+        {
+            RPC_HPP_PRECONDITION(size < 0x40000000U);
+
+            if (size < 0x80U)
             {
-                if (size < 0x80U)
-                {
-                    assert(index < size);
-                    assert(index <= std::numeric_limits<ptrdiff_t>::max());
+                assert(index < size);
+                assert(index <= std::numeric_limits<ptrdiff_t>::max());
 
-                    bytes.insert(bytes.begin() + static_cast<ptrdiff_t>(index++),
-                        static_cast<uint8_t>(size));
-                }
-                else
-                {
-                    if (size < 0x4000U)
-                    {
-                        bytes.insert(bytes.begin() + static_cast<ptrdiff_t>(index++),
-                            static_cast<uint8_t>((size >> 8) | 0x80U));
-
-                        bytes.insert(bytes.begin() + static_cast<ptrdiff_t>(index++),
-                            static_cast<uint8_t>(size));
-                    }
-                    else
-                    {
-                        assert(size < 0x40000000U);
-
-                        bytes.insert(bytes.begin() + static_cast<ptrdiff_t>(index++),
-                            static_cast<uint8_t>((size >> 24) | 0xC0U));
-
-                        bytes.insert(bytes.begin() + static_cast<ptrdiff_t>(index++),
-                            static_cast<uint8_t>(size >> 16));
-
-                        bytes.insert(bytes.begin() + static_cast<ptrdiff_t>(index++),
-                            *reinterpret_cast<const uint8_t*>(&size));
-
-                        bytes.insert(bytes.begin() + static_cast<ptrdiff_t>(index++),
-                            *reinterpret_cast<const uint8_t*>(&size) + 1);
-                    }
-                }
+                bytes.insert(std::next(bytes.begin(), index++), static_cast<uint8_t>(size));
+                return;
             }
-        } // namespace details
-    }     // namespace bitsery
+
+            if (size < 0x4000U)
+            {
+                bytes.insert(
+                    std::next(bytes.begin(), index++), static_cast<uint8_t>((size >> 8) | 0x80U));
+
+                bytes.insert(std::next(bytes.begin(), index++), static_cast<uint8_t>(size));
+                return;
+            }
+
+            bytes.insert(
+                std::next(bytes.begin(), index++), static_cast<uint8_t>((size >> 24) | 0xC0U));
+
+            bytes.insert(std::next(bytes.begin(), index++), static_cast<uint8_t>(size >> 16));
+
+            bytes.insert(
+                std::next(bytes.begin(), index++), *reinterpret_cast<const uint8_t*>(&size));
+
+            bytes.insert(
+                std::next(bytes.begin(), index++), *reinterpret_cast<const uint8_t*>(&size) + 1);
+        }
+    };
 } // namespace adapters
-
-template<>
-[[nodiscard]] inline adapters::bitsery::bit_buffer adapters::bitsery_adapter::to_bytes(
-    adapters::bitsery::bit_buffer&& serial_obj)
-{
-    return std::move(serial_obj);
-}
-
-template<>
-[[nodiscard]] inline adapters::bitsery::bit_buffer adapters::bitsery_adapter::from_bytes(
-    adapters::bitsery::bit_buffer&& bytes)
-{
-    return std::move(bytes);
-}
-
-template<>
-template<typename R, typename... Args>
-[[nodiscard]] adapters::bitsery::bit_buffer pack_adapter<adapters::bitsery_adapter>::serialize_pack(
-    const ::rpc::details::packed_func<R, Args...>& pack)
-{
-    using namespace adapters::bitsery;
-
-    const auto helper = adapters::bitsery::details::to_helper(pack);
-
-    bit_buffer buffer{};
-    buffer.reserve(64);
-
-    const auto bytes_written =
-        bitsery::quickSerialization<adapters::bitsery::details::output_adapter>(buffer, helper);
-
-    buffer.resize(bytes_written);
-    return buffer;
-}
-
-template<>
-template<typename R, typename... Args>
-[[nodiscard]] ::rpc::details::packed_func<R, Args...> pack_adapter<
-    adapters::bitsery_adapter>::deserialize_pack(const adapters::bitsery::bit_buffer& serial_obj)
-{
-    using namespace adapters::bitsery;
-
-    adapters::bitsery::details::pack_helper<R, Args...> helper;
-
-    const auto [error, success] = bitsery::quickDeserialization(
-        adapters::bitsery::details::input_adapter{ serial_obj.begin(), serial_obj.size() }, helper);
-
-    if (error != bitsery::ReaderError::NoError)
-    {
-        switch (error)
-        {
-            case bitsery::ReaderError::ReadingError:
-                throw rpc::exceptions::deserialization_error(
-                    "Bitsery deserialization failed due to a reading error");
-
-            case bitsery::ReaderError::DataOverflow:
-                throw rpc::exceptions::function_mismatch(
-                    "Bitsery deserialization failed due to data overflow (likely mismatched "
-                    "function signature)");
-
-            case bitsery::ReaderError::InvalidData:
-                throw rpc::exceptions::deserialization_error(
-                    "Bitsery deserialization failed due to a invalid data");
-
-            case bitsery::ReaderError::InvalidPointer:
-                throw rpc::exceptions::deserialization_error(
-                    "Bitsery deserialization failed due to an invalid pointer");
-
-            case bitsery::ReaderError::NoError:
-            default:
-                throw rpc::exceptions::deserialization_error(
-                    "Bitsery deserialization failed due to extra data on the end");
-        }
-    }
-
-    return adapters::bitsery::details::from_helper(helper);
-}
-
-template<>
-[[nodiscard]] inline std::string pack_adapter<adapters::bitsery_adapter>::get_func_name(
-    const adapters::bitsery::bit_buffer& serial_obj)
-{
-    size_t index = sizeof(int);
-    const auto len = adapters::bitsery::details::extract_length(serial_obj, index);
-
-    assert(index < serial_obj.size());
-    assert(index <= std::numeric_limits<ptrdiff_t>::max());
-    return { serial_obj.begin() + static_cast<ptrdiff_t>(index),
-        serial_obj.begin() + static_cast<ptrdiff_t>(index + len) };
-}
-
-template<>
-inline void pack_adapter<adapters::bitsery_adapter>::set_exception(
-    adapters::bitsery::bit_buffer& serial_obj, const rpc::exceptions::rpc_exception& ex)
-{
-    // copy except_type into buffer
-    const int ex_type = static_cast<int>(ex.get_type());
-    memcpy(&serial_obj[0], &ex_type, sizeof(int));
-
-    const std::string_view mesg = ex.what();
-
-    size_t index = sizeof(int);
-    const auto name_len = adapters::bitsery::details::extract_length(serial_obj, index);
-    const size_t name_sz_len = index;
-
-    index += name_len;
-    const auto err_len = adapters::bitsery::details::extract_length(serial_obj, index);
-    const auto new_err_len = static_cast<unsigned>(mesg.size());
-
-    if (new_err_len != err_len)
-    {
-        if (err_len != 0)
-        {
-            assert(index < serial_obj.size());
-            assert(index <= std::numeric_limits<ptrdiff_t>::max());
-
-            serial_obj.erase(serial_obj.begin() + static_cast<ptrdiff_t>(name_sz_len)
-                    + static_cast<ptrdiff_t>(name_len),
-                serial_obj.begin() + static_cast<ptrdiff_t>(index + err_len));
-        }
-
-        index = name_sz_len + name_len;
-        adapters::bitsery::details::write_length(serial_obj, new_err_len, index);
-    }
-
-    for (unsigned i = 0; i < new_err_len; ++i)
-    {
-        assert(index < serial_obj.size());
-        assert(index <= std::numeric_limits<ptrdiff_t>::max());
-
-        serial_obj.insert(serial_obj.begin() + static_cast<ptrdiff_t>(index++),
-            static_cast<unsigned char>(mesg[i]));
-    }
-}
-} // namespace rpc
+} // namespace rpc_hpp

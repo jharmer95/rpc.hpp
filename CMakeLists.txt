@@ -1,6 +1,6 @@
 # BSD 3-Clause License
 #
-# Copyright (c) 2020-2021, Jackson Harmer
+# Copyright (c) 2020-2022, Jackson Harmer
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -30,29 +30,70 @@
 
 cmake_minimum_required(VERSION 3.16)
 
+if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
+  set(CMAKE_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/scripts/buildsystems/vcpkg.cmake"
+      CACHE STRING "")
+endif()
+
+# ==== Build Options ====
+
+option(CODE_COVERAGE "Enable coverage reporting" OFF)
+option(GENERATE_DOXYGEN "Generate Doxygen documentation from comments" OFF)
+
+option(BUILD_ADAPTER_BITSERY "Build the adapter for Bitsery" OFF)
+if(BUILD_ADAPTER_BITSERY)
+  list(APPEND VCPKG_MANIFEST_FEATURES "bitsery")
+endif()
+
+option(BUILD_ADAPTER_BOOST_JSON "Build the adapter for Boost.JSON" OFF)
+if(BUILD_ADAPTER_BOOST_JSON)
+  list(APPEND VCPKG_MANIFEST_FEATURES "boost-json")
+endif()
+
+option(BUILD_ADAPTER_NJSON "Build the adapter for nlohmann/json" ON)
+if(BUILD_ADAPTER_NJSON)
+  list(APPEND VCPKG_MANIFEST_FEATURES "nlohmann-json")
+endif()
+
+option(BUILD_ADAPTER_RAPIDJSON "Build the adapter for rapidjson" OFF)
+if(BUILD_ADAPTER_RAPIDJSON)
+  list(APPEND VCPKG_MANIFEST_FEATURES "rapidjson")
+endif()
+
+option(BUILD_BENCHMARK "Build the benchmarking suite" OFF)
+if(BUILD_BENCHMARK)
+  list(APPEND VCPKG_MANIFEST_FEATURES "benchmarks")
+endif()
+
+option(BENCH_GRPC "Include gRPC in the benchmark comparison" OFF)
+if(BENCH_GRPC AND BUILD_BENCHMARK)
+  list(APPEND VCPKG_MANIFEST_FEATURES "benchmarks-grpc")
+endif()
+
+option(BENCH_RPCLIB "Include rpclib in the benchmark comparison" OFF)
+if(BENCH_RPCLIB AND BUILD_BENCHMARK)
+  list(APPEND VCPKG_MANIFEST_FEATURES "benchmarks-rpclib")
+endif()
+
+option(BUILD_EXAMPLES "Build the examples" OFF)
+if(BUILD_EXAMPLES)
+  list(APPEND VCPKG_MANIFEST_FEATURES "examples")
+endif()
+
+option(BUILD_TESTING "Build the testing tree" ON)
+if(BUILD_TESTING)
+  list(APPEND VCPKG_MANIFEST_FEATURES "tests")
+endif()
+
 project(
   "rpc.hpp"
-  VERSION 0.7.1
+  VERSION 0.8.1
   DESCRIPTION "Simple RPC Header-Only Library"
   LANGUAGES CXX
 )
 
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
-# ==== Build Options ====
-
-option(BUILD_ADAPTER_BITSERY "Build the adapter for Bitsery" OFF)
-option(BUILD_ADAPTER_BOOST_JSON "Build the adapter for Boost.JSON" OFF)
-option(BUILD_ADAPTER_NJSON "Build the adapter for nlohmann/json" OFF)
-option(BUILD_ADAPTER_RAPIDJSON "Build the adapter for rapidjson" OFF)
-option(BUILD_BENCHMARK "Build the benchmarking suite" OFF)
-option(BUILD_EXAMPLES "Build the examples" OFF)
-option(BUILD_TESTING "Build the testing tree" OFF)
-option(CODE_COVERAGE "Enable coverage reporting" OFF)
-option(DEPENDS_CONAN "Use Conan to manage C/C++ dependencies" OFF)
-option(DEPENDS_VCPKG "Use vcpkg to manage C/C++ dependencies" OFF)
-option(GENERATE_DOXYGEN "Generate Doxygen documentation from comments" OFF)
 
 # ==== Machine/Compiler Configs ====
 
@@ -162,7 +203,6 @@ elseif(CXX_CLANG)
       -Wno-documentation
       -Wno-documentation-unknown-command
       -Wno-weak-vtables
-      -Wno-reserved-identifier
       -Wno-reserved-id-macro
       -Wno-missing-braces
       -Wno-covered-switch-default)
@@ -179,7 +219,7 @@ if(${GENERATE_DOXYGEN})
     set(DOXYGEN_GENERATE_HTML YES)
     set(DOXYGEN_GENERATE_LATEX NO)
     set(DOXYGEN_HTML_OUTPUT "docs")
-    set(DOXYGEN_EXCLUDE_PATTERNS */tests/* */examples/* */benchmarks/* *.py)
+    set(DOXYGEN_EXCLUDE_PATTERNS */tests/* */examples/* */benchmarks/* */vcpkg/* */build/* *.py)
     set(DOXYGEN_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}")
     set(DOXYGEN_USE_MDFILE_AS_MAINPAGE "README.md")
     doxygen_add_docs(docs ${PROJECT_SOURCE_DIR}
@@ -196,18 +236,6 @@ if(CODE_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
   else()
     target_link_libraries(coverage_config INTERFACE --coverage)
   endif()
-endif()
-
-# ==== Dependency Management ====
-
-if(${DEPENDS_CONAN})
-  if(${DEPENDS_VCPKG})
-    message(FATAL_ERROR "Using both vcpkg and Conan is not supported!")
-  endif()
-
-  set(CONAN_EXTRA_REQUIRES "")
-  set(CONAN_EXTRA_OPTIONS "")
-  include(cmake/Conan.cmake)
 endif()
 
 # ==== Target(s) ====

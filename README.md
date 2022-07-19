@@ -13,12 +13,18 @@ features.
 
 - Cross-platform.
   - Supports every major compiler/operating system.
-- Modern.
-  - Utilizes features like C++17's [`constexpr if`](https://en.cppreference.com/w/cpp/language/if).
-- Type-safe support for various types.
-  - Supports most built-in/STL types out of the box.
-  - Users can create serialization methods for their own custom types.
 - Easy to use.
+  - Only requires a few lines of code to provide the implementation of your client or server.
+- Modern.
+  - Takes advantage of a lot of compile-time and generic programming features such as C++17's
+    `constexpr if`.
+- Fast.
+  - See [COMPARISON](COMPARISON.md) to see how this library compares to the likes of
+    `librpc` and `gRPC`.
+- Support for various types.
+  - `std::string` / `std::vector` supported out of the box (more STL containers to come).
+  - Users can create serialization member functions for their own custom types.
+    - Users can also provide `template` methods for serializing types outside of their control
 - Extensible support via "adapters".
   - Currently supported:
     - [nlohmann-json](https://github.com/nlohmann/json)
@@ -28,14 +34,20 @@ features.
 
 ## Known Limitations
 
-- Functions with default arguments _**should not**_ be used with remote procedure calls as the default argument(s) must be provided each time anyway
-- Function overloads _**will not**_ work across an RPC boundary as the server will have an ambiguous call
-  - This includes non-explicit template functions (see [examples](examples) for the syntax for calling template functions remotely)
-- Not (statically) type-safe across the RPC boundary
-  - This is the nature of a dynamic system like remote procedure calls
-  - Return type and explicit parameters must be specified at callsite
-  - Exceptions will be able to catch function signature mismatches
-  - Function signatures can be provided via a shared header to allow for compile-time type-checking
+- Pointers and arrays (other than `const char*` / `const char[]` for strings) _**cannot**_ be
+    passed across an RPC boundary.
+- Functions with default arguments _**should not**_ be used with remote procedure calls as the
+    default argument(s) must be provided each time anyway.
+- Function overloads _**will not work**_ across an RPC boundary as the server will have an
+    ambiguous call.
+  - This includes non-explicit template functions
+      (see [examples](examples) for the syntax for calling template functions remotely).
+- Not (statically) type-safe across the RPC boundary.
+  - This is the nature of a dynamic system like remote procedure calls.
+  - Return type and explicit parameters must be specified at call site.
+  - Exceptions will be able to catch function signature mismatches.
+  - Function signatures _can_ be provided via a shared header to allow for strict compile-time
+      type-checking (by using `call_header_func()`).
 
 ## Documentation
 
@@ -51,12 +63,11 @@ server.cpp
 #define RPC_HPP_SERVER_IMPL
 
 #include <rpc_adapters/rpc_njson.hpp>
-#include <rpc_dispatch_helper.hpp>
 
 #include <string>
 
-using rpc::adapters::njson;
-using rpc::adapters::njson_adapter;
+using rpc_hpp::adapters::njson;
+using rpc_hpp::adapters::njson_adapter;
 
 int Add(int n1, int n2)
 {
@@ -68,7 +79,7 @@ void AppendStr(std::string& str, const char* append)
     str.append(append);
 }
 
-class RpcServer : public rpc::server_interface<njson_adapter>
+class RpcServer : public rpc_hpp::server_interface<njson_adapter>
 {
 public:
     RpcServer(const char* address)
@@ -84,21 +95,22 @@ public:
 
         // Get data from client...
 
-        dispatch(data);
+        // Sink data into the dispatch function to get result data
+		auto result_data = dispatch(std::move(data));
 
-        // Send data back to client...
-    }
-
-private:
-    void dispatch_impl(njson& serial_obj) override
-    {
-       RPC_DEFAULT_DISPATCH(Add, AppendStr)
+        // Send result data back to client...
     }
 };
 
 int main()
 {
     RpcServer my_server{"address"};
+    my_server.bind("Add", &Add);
+    my_server.bind("AppendStr",
+        [](std::string& str, const std::string& append) {
+            AppendStr(str, append.c_str());
+        }
+    );
 
     while (true)
     {
@@ -117,9 +129,9 @@ client.cpp
 #include <cassert>
 #include <string>
 
-using rpc::adapters::njson_adapter;
+using rpc_hpp::adapters::njson_adapter;
 
-class RpcClient : public rpc::client_interface<njson_adapter>
+class RpcClient : public rpc_hpp::client_interface<njson_adapter>
 {
 public:
     RpcClient(const char* address)
