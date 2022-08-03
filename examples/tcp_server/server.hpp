@@ -3,6 +3,7 @@
 #include <asio.hpp>
 
 #include <rpc_adapters/rpc_njson.hpp>
+#include <rpc_server.hpp>
 
 #include <atomic>
 #include <cstdint>

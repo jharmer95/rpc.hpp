@@ -2,13 +2,14 @@
 
 #include <asio.hpp>
 #include <rpc_adapters/rpc_njson.hpp>
+#include <rpc_client.hpp>
 
 #include <string>
 
 using asio::ip::tcp;
 using rpc_hpp::adapters::njson_adapter;
 
-class RpcClient : public rpc_hpp::client::client_interface<njson_adapter>
+class RpcClient : public rpc_hpp::client_interface<njson_adapter>
 {
 public:
     static constexpr auto BUF_SZ = 256;

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <rpc_server.hpp>
 #include <rpc_adapters/rpc_njson.hpp>
 
 using rpc_hpp::adapters::njson_adapter;

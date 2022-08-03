@@ -38,6 +38,8 @@
 
 #include <asio.hpp>
 
+#include <rpc_client.hpp>
+
 #if defined(RPC_HPP_ENABLE_BITSERY)
 #    include <rpc_adapters/rpc_bitsery.hpp>
 

@@ -39,7 +39,7 @@
 #include "../test_structs.hpp"
 
 #include <asio.hpp>
-#include <rpc.hpp>
+#include <rpc_server.hpp>
 
 #include <array>
 #include <atomic>

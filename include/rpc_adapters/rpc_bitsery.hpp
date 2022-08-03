@@ -36,7 +36,7 @@
 
 #pragma once
 
-#include "../rpc.hpp"
+#include "../rpc_common.hpp"
 
 #include <bitsery/bitsery.h>
 #include <bitsery/adapter/buffer.h>

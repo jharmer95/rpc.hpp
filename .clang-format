@@ -41,7 +41,7 @@ IncludeBlocks: Regroup # 7
 IndentCaseLabels: true
 IndentGotoLabels: false # 10
 IndentPPDirectives: AfterHash
-IndentRequires: true # 14
+#IndentRequires: true # 14
 IndentWidth: 4
 IndentWrappedFunctionNames: false
 #InsertBraces: true # 15
@@ -49,15 +49,15 @@ KeepEmptyLinesAtTheStartOfBlocks: false
 Language: Cpp
 MaxEmptyLinesToKeep: 1
 NamespaceIndentation: Inner
-PackConstructorInitializers: NextLine # 14
+#PackConstructorInitializers: NextLine # 14
 PointerAlignment: Left
 PPIndentWidth: 2 # 13
-QualifierAlignment: Custom # 14
-QualifierOrder: ["inline", "static", "constexpr", "const", "volatile", "type"] # 14
+#QualifierAlignment: Custom # 14
+#QualifierOrder: ["inline", "static", "constexpr", "const", "volatile", "type"] # 14
 ReflowComments: false
-RemoveBracesLLVM: false # 14
+#RemoveBracesLLVM: false # 14
 #RequiresClausePosition # 15
-SeparateDefinitionBlocks: Leave # 14
+#SeparateDefinitionBlocks: Leave # 14
 SortIncludes: Never
 SortUsingDeclarations: true
 SpaceAfterCStyleCast: false

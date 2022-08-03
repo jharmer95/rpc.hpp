@@ -1,8 +1,4 @@
-#define RPC_HPP_CLIENT_IMPL
-
 #include "client.hpp"
-
-#include <rpc_adapters/rpc_njson.hpp>
 
 #include <iostream>
 #include <stdexcept>

@@ -36,7 +36,7 @@
 
 #pragma once
 
-#include "../rpc.hpp"
+#include "../rpc_common.hpp"
 
 #include <rapidjson/document.h>
 #include <rapidjson/stringbuffer.h>

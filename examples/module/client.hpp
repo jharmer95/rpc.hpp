@@ -17,13 +17,14 @@ using module_t = HMODULE;
 using module_t = void*;
 #endif
 
+#include <rpc_client.hpp>
 #include <rpc_adapters/rpc_njson.hpp>
 
 #include <string>
 
 using rpc_hpp::adapters::njson_adapter;
 
-class RpcClient : public rpc_hpp::client::client_interface<njson_adapter>
+class RpcClient : public rpc_hpp::client_interface<njson_adapter>
 {
 public:
     using remote_func_type = int (*)(char*, size_t);

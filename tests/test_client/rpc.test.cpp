@@ -34,8 +34,6 @@
 ///OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ///
 
-#define RPC_HPP_CLIENT_IMPL
-
 #include "rpc.client.hpp"
 #include "../test_structs.hpp"
 #include "../static_funcs.hpp"

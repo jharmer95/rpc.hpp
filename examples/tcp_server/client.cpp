@@ -1,5 +1,3 @@
-#define RPC_HPP_CLIENT_IMPL
-
 #include "client.hpp"
 
 #include <exception>

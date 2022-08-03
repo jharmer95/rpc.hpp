@@ -18,7 +18,6 @@ static rpc::client& GetRpclibClient()
 }
 #endif
 
-#define RPC_HPP_CLIENT_IMPL
 #include "test_client/rpc.client.hpp"
 #include "test_structs.hpp"
 

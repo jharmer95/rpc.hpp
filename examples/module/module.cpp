@@ -1,5 +1,3 @@
-#define RPC_HPP_MODULE_IMPL
-
 #include "module.hpp"
 
 #include <cstring>
