@@ -7,6 +7,14 @@
 #include <tuple>
 #include <utility>
 
+namespace rpc_hpp
+{
+namespace adapters
+{
+    template<typename T>
+    struct serial_traits;
+}
+
 template<typename... Args>
 class func_request
 {
@@ -30,8 +38,8 @@ template<typename R>
 class func_result
 {
 public:
-    func_result(std::string func_name, R&& result)
-        : m_func_name(std::move(func_name)), m_result(std::forward<R>(result))
+    func_result(std::string func_name, R result)
+        : m_func_name(std::move(func_name)), m_result(std::move(result))
     {
     }
 
@@ -41,6 +49,35 @@ public:
 private:
     std::string m_func_name;
     R m_result;
+};
+
+template<>
+class func_result<void>
+{
+public:
+    func_result(std::string func_name) : m_func_name(std::move(func_name)) {}
+
+    const std::string& get_func_name() const { return m_func_name; }
+
+private:
+    std::string m_func_name;
+};
+
+template<typename R, typename... Args>
+class func_result_w_bind
+{
+public:
+    func_result_w_bind(std::string func_name, R result, Args&&... args)
+        : m_result(std::move(result)),
+          m_func_name(std::move(func_name)),
+          m_args(std::forward_as_tuple<Args>(args)...)
+    {
+    }
+
+private:
+    R m_result;
+    std::string m_func_name;
+    std::tuple<Args...> m_args;
 };
 
 enum class exception_type
@@ -55,15 +92,16 @@ enum class exception_type
 class func_error
 {
 public:
-    func_error(std::string func_name, excep ex_type, std::string err_mesg)
+    func_error(std::string func_name, exception_type ex_type, std::string err_mesg)
         : m_except_type(ex_type), m_func_name(std::move(func_name)), m_err_mesg(std::move(err_mesg))
     {
     }
 
     const std::string& get_func_name() const { return m_func_name; }
     const std::string& get_err_mesg() const { return m_err_mesg; }
+    exception_type get_except_type() const { return m_except_type; }
 
-    [[noreturn]] void rethrow()
+    [[noreturn]] void rethrow() const
     {
         //switch (m_except_type)
         //{
@@ -93,10 +131,13 @@ private:
 
 enum class response_type
 {
+    callback_error,
+    callback_install,
+    callback_request,
+    callback_result,
+    func_error,
     func_request,
     func_result,
-    func_error,
-    callback_install,
 };
 
 template<typename Serial>
@@ -105,7 +146,7 @@ class rpc_response
 public:
     rpc_response(typename Serial::serial_t&& serial) : m_obj(std::move(serial)) {}
 
-    std::string get_func_name() const { return Serial::func_name(m_obj); }
+    std::string get_func_name() const { return Serial::get_func_name(m_obj); }
 
     template<typename R>
     R get_result() const
@@ -113,26 +154,28 @@ public:
         switch (Serial::get_type(m_obj))
         {
             case response_type::func_result:
+            {
                 func_result<R> res = Serial::template get_result<R>(m_obj);
                 return res.get_result();
+            }
 
             case response_type::func_error:
+            {
                 func_error err = Serial::get_error(m_obj);
                 err.rethrow();
                 break;
+            }
 
-            case response_type::func_request:
-            case response_type::callback_install:
             default:
                 throw std::runtime_error("Invalid rpc_response detected");
-                break;
         }
     }
 
     template<typename... Args>
     std::tuple<Args...> get_request() const
     {
-        if (Serial::get_type(m_obj) != response_type::func_request)
+        if (Serial::get_type(m_obj) != response_type::func_request
+            && Serial::get_type(m_obj) != response_type::callback_request)
         {
             throw std::runtime_error("Invalid rpc_response detected");
         }
@@ -143,7 +186,8 @@ public:
 
     std::optional<func_error> get_error() const
     {
-        if (Serial::get_type(m_obj) != response_type::func_error)
+        if (Serial::get_type(m_obj) != response_type::func_error
+            && Serial::get_type(m_obj) != response_type::callback_error)
         {
             return std::nullopt;
         }
@@ -157,45 +201,31 @@ private:
     typename Serial::serial_t m_obj;
 };
 
-// client
-template<typename Serial>
-void send(typename Serial::bytes_t&& bytes)
+template<typename Adapter>
+class serial_adapter_base
 {
-}
+public:
+    using serial_t = typename adapters::serial_traits<Adapter>::serial_t;
+    using bytes_t = typename adapters::serial_traits<Adapter>::bytes_t;
 
-template<typename Serial>
-typename Serial::bytes_t receive()
-{
-    return {};
-}
+    template<typename R>
+    static func_result<R> get_result(const serial_t& serial_obj) = delete;
 
-template<typename Serial, typename... Args>
-rpc_response<Serial> call_func(std::string func_name, Args&&... args)
-{
-    func_request<Args...> req{ std::move(func_name), std::forward<Args...>(args) };
-    send<Serial>(Serial::to_bytes(Serial::serialize(req)));
+    template<typename R>
+    static rpc_response<Adapter> serialize_result(const func_result<R>& result) = delete;
 
-    while (true)
-    {
-        rpc_response<Serial> resp = Serial::from_bytes(receive<Serial>());
+    template<typename... Args>
+    static func_request<Args...> get_request(const serial_t& serial_obj) = delete;
 
-        switch (resp.type())
-        {
-            case response_type::func_result:
-            case response_type::func_error:
-                return resp;
+    template<typename... Args>
+    static rpc_response<Adapter> serialize_request(const func_request<Args...>& request) = delete;
 
-            case response_type::func_request:
-                rpc_response<Serial> resp2 = dispatch_callback<Serial>(resp);
-                assert(resp2.type() == response_type::func_result);
-                send<Serial>(Serial::to_bytes(Serial::serialize(resp2)));
-                break;
-
-            case response_type::callback_install:
-            default:
-                throw std::runtime_error("Invalid rpc_response detected");
-        }
-    }
-}
-
-// server
+    static response_type get_type(const serial_t& serial_obj) = delete;
+    static func_error get_error(const serial_t& serial_obj) = delete;
+    static rpc_response<Adapter> serialize_error(const func_error& error) = delete;
+    static std::optional<serial_t> from_bytes(bytes_t&& bytes) = delete;
+    static bytes_t to_bytes(serial_t&& serial_obj) = delete;
+    static serial_t empty_object() = delete;
+    static std::string get_func_name(const serial_t& serial_obj) = delete;
+};
+} //namespace rpc_hpp
