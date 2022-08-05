@@ -1,87 +1,88 @@
 {
-    "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg/master/scripts/vcpkg.schema.json",
-    "name": "rpc-hpp",
-    "description": [
-        "Simple RPC Header-Only Library"
-    ],
-    "version": "0.8.1",
-    "default-features": [
-        "nlohmann-json"
-    ],
-    "features": {
-        "bitsery": {
-            "description": "Adapter for bitsery serialization",
-            "dependencies": [
-                {
-                    "name": "bitsery",
-                    "version>=": "5.2.0"
-                }
-            ]
-        },
-        "boost-json": {
-            "description": "Adapter for JSON serialization using Boost",
-            "dependencies": [
-                {
-                    "name": "boost-json",
-                    "version>=": "1.75.0"
-                }
-            ]
-        },
-        "nlohmann-json": {
-            "description": "Adapter for JSON serialization using nlohmann/json",
-            "dependencies": [
-                {
-                    "name": "nlohmann-json",
-                    "version>=": "3.9.0"
-                }
-            ]
-        },
-        "rapidjson": {
-            "description": "Adapter for JSON serialization using rapidjson",
-            "dependencies": [
-                "rapidjson"
-            ]
-        },
-        "benchmarks": {
-            "description": "Benchmarking performance tests",
-            "dependencies": [
-                "asio",
-                "doctest",
-                "nanobench"
-            ]
-        },
-        "benchmarks-grpc": {
-            "description": "Benchmarking against gRPC",
-            "dependencies": [
-                "grpc"
-            ]
-        },
-        "benchmarks-rpclib": {
-            "description": "Benchmarking against rpclib",
-            "dependencies": [
-                "rpclib"
-            ]
-        },
-        "examples": {
-            "description": "Build examples",
-            "dependencies": [
-                "asio",
-                {
-                    "name": "nlohmann-json",
-                    "version>=": "3.9.0"
-                }
-            ]
-        },
-        "tests": {
-            "description": "Unit tests for rpc.hpp",
-            "dependencies": [
-                "asio",
-                "doctest",
-                {
-                    "name": "nlohmann-json",
-                    "version>=": "3.9.0"
-                }
-            ]
+  "name": "rpc-hpp",
+  "description": "Simple RPC Header-Only Library",
+  "version": "0.8.1",
+  "license": "BSD-3-Clause",
+  "maintainers": [
+    "Jackson Harmer"
+  ],
+  "default-features": [
+    "nlohmann-json"
+  ],
+  "features": {
+    "bitsery": {
+      "description": "Adapter for bitsery serialization",
+      "dependencies": [
+        {
+          "name": "bitsery",
+          "version>=": "5.2.0"
         }
+      ]
+    },
+    "boost-json": {
+      "description": "Adapter for JSON serialization using Boost",
+      "dependencies": [
+        {
+          "name": "boost-json",
+          "version>=": "1.75.0"
+        }
+      ]
+    },
+    "nlohmann-json": {
+      "description": "Adapter for JSON serialization using nlohmann/json",
+      "dependencies": [
+        {
+          "name": "nlohmann-json",
+          "version>=": "3.9.0"
+        }
+      ]
+    },
+    "rapidjson": {
+      "description": "Adapter for JSON serialization using rapidjson",
+      "dependencies": [
+        "rapidjson"
+      ]
+    },
+    "benchmarks": {
+      "description": "Benchmarking performance tests",
+      "dependencies": [
+        "asio",
+        "doctest",
+        "nanobench"
+      ]
+    },
+    "benchmarks-grpc": {
+      "description": "Benchmarking against gRPC",
+      "dependencies": [
+        "grpc"
+      ]
+    },
+    "benchmarks-rpclib": {
+      "description": "Benchmarking against rpclib",
+      "dependencies": [
+        "rpclib"
+      ]
+    },
+    "examples": {
+      "description": "Build examples",
+      "dependencies": [
+        "asio",
+        {
+          "name": "nlohmann-json",
+          "version>=": "3.9.0"
+        }
+      ]
+    },
+    "tests": {
+      "description": "Unit tests for rpc.hpp",
+      "dependencies": [
+        "asio",
+        "doctest",
+        {
+          "name": "nlohmann-json",
+          "version>=": "3.9.0"
+        }
+      ]
     }
+  }
 }

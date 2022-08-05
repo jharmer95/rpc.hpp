@@ -79,7 +79,7 @@ void AppendStr(std::string& str, const char* append)
     str.append(append);
 }
 
-class RpcServer : public rpc_hpp::server_interface<njson_adapter>
+class RpcServer : public rpc_hpp::server_base<njson_adapter>
 {
 public:
     RpcServer(const char* address)

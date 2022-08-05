@@ -196,7 +196,7 @@ few exceptions:
     - Macros
     - Global variables
     - `static constexpr` variables
-  - `CamelCase`
+  - `CamelCase`:
     - `template` parameters
 - `private`/`protected` non-static member variables should have a `m_` prefix
 - `private`/`protected` static member variables should have a `s_` prefix
@@ -332,3 +332,28 @@ provided.
   automatically.
   - Once these new changes are received, the review process will start over.
 - :x: The merge will be rejected with a detailed reason as to why.
+
+## Versioning
+
+This project's versioning tries to follow [Semantic Versioning (v2.0)](https://semver.org).
+In short:
+
+- A typical version string looks like `MAJOR.MINOR.PATCH`
+  - The major version is incremented the library fundamentally changes and is not backwards-compatible
+  - The minor version is incremented when new features or public functions are added
+    but the library remains backwards-compatible
+  - The patch version is incremented when bugfixes or patches are applied that do not add new features
+- Pre-release versions follow a slightly altered structure: `MAJOR.MINOR-STAGE.ITER`
+  - Major and minor version represent the upcoming release version this represents
+    - Example, `1.1-beta.1` might follow version `1.0.4` and is testing for the release of `1.1.0`
+  - Stages are as follows:
+    - Alpha (version string: `alpha`): Indicates an early build not intended for public testing.
+      Features and interfaces are not considered final or stable at this stage and may change between alpha iterations.
+    - Beta (version string: `beta`): Indicates a more developed build that more dedicated and active members of the
+      community can test and provide feedback on.
+      Beta releases _should_ have their features and interfaces frozen (unless it would break or cause security issues)
+      but does not provide any guarantees and **should not** be used in production.
+    - Release candidates (version string: `rc`): Indicates a build that is ready for production.
+      It is intended to be a final stage of testing to catch any final bugs or regressions.
+  - Iterations are always incremented until the software moves to the next stage or is released to production
+- Pre-1.0 versioning follows a slightly different scheme but shouldn't be of concern for long

@@ -13,11 +13,13 @@ examples are not designed for production use.
 
 ## Supported Versions
 
-| Version    | Supported          |
-| ---------- | ------------------ |
-| 1.0.x      | :white_check_mark: |
-| < 1.0      | :x:                |
-| X.X-beta.X | :x:                |
+| Version     | Supported          |
+|-------------| ------------------ |
+| 1.0.x       | :white_check_mark: |
+| 1.1-rc.X    | :white_check_mark: |
+| < 1.0       | :x:                |
+| X.X-alpha.X | :x:                |
+| X.X-beta.X  | :x:                |
 
 ## Reporting a Vulnerability
 

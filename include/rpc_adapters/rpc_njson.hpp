@@ -59,50 +59,33 @@ public:
         return std::move(serial_obj).dump();
     }
 
-    [[nodiscard]] static std::optional<nlohmann::json> from_bytes(std::string&& bytes)
+    [[nodiscard]] static nlohmann::json from_bytes(std::string&& bytes)
     {
-        nlohmann::json obj;
-
-        try
-        {
-            obj = nlohmann::json::parse(std::move(bytes));
-        }
-        catch (const nlohmann::json::parse_error&)
-        {
-            return std::nullopt;
-        }
+        nlohmann::json obj = nlohmann::json::parse(std::move(bytes));
 
         if (!obj.is_object())
         {
-            return std::nullopt;
-        }
-
-        if (obj.contains("except_type"))
-        {
-            if (obj["except_type"] != 0 && !obj.contains("err_mesg"))
-            {
-                return std::nullopt;
-            }
-
-            // Objects with exceptions can be otherwise empty
-            return std::make_optional(std::move(obj));
+            throw deserialization_error("NJSON: not an object");
         }
 
         if (const auto fname_it = obj.find("func_name");
             fname_it == obj.end() || !fname_it->is_string() || fname_it->empty())
         {
-            return std::nullopt;
+            throw deserialization_error("NJSON: field \"func_name\" not found");
         }
 
-        if (const auto args_it = obj.find("args"); args_it == obj.end() || !args_it->is_array())
-        {
-            return std::nullopt;
-        }
-
-        return std::make_optional(std::move(obj));
+        return obj;
     }
 
-    static nlohmann::json empty_object() { return nlohmann::json::object(); }
+    [[nodiscard]] static std::string get_func_name(const nlohmann::json& serial_obj)
+    {
+        return serial_obj["func_name"];
+    }
+
+    [[nodiscard]] static rpc_object_type get_type(const nlohmann::json& serial_obj)
+    {
+        return static_cast<rpc_object_type>(serial_obj["type"].get<int>());
+    }
 
     template<typename R>
     [[nodiscard]] static func_result<R> get_result(const nlohmann::json& serial_obj)
@@ -118,7 +101,7 @@ public:
     }
 
     template<typename R>
-    [[nodiscard]] static rpc_response<njson_adapter> serialize_result(const func_result<R>& result)
+    [[nodiscard]] static nlohmann::json serialize_result(const func_result<R>& result)
     {
         nlohmann::json obj{};
         obj["func_name"] = result.get_func_name();
@@ -129,7 +112,47 @@ public:
             push_arg(result.get_result(), obj["result"]);
         }
 
-        return { std::move(obj) };
+        return obj;
+    }
+
+    template<typename R, typename... Args>
+    [[nodiscard]] static func_result_w_bind<R, Args...> get_result_w_bind(
+        const nlohmann::json& serial_obj)
+    {
+        const auto& args_val = serial_obj["args"];
+        [[maybe_unused]] unsigned arg_counter = 0;
+
+        if constexpr (std::is_void_v<R>)
+        {
+            return { serial_obj["func_name"], parse_args<Args>(args_val, arg_counter)... };
+        }
+        else
+        {
+            return { serial_obj["func_name"],
+                parse_arg<R>(serial_obj["result"], parse_args<Args>(args_val, arg_counter)...) };
+        }
+    }
+
+    template<typename R, typename... Args>
+    [[nodiscard]] static nlohmann::json serialize_result_w_bind(
+        const func_result_w_bind<R, Args...>& result)
+    {
+        nlohmann::json obj{};
+        obj["func_name"] = result.get_func_name();
+        obj["args"] = nlohmann::json::array();
+        auto& arg_arr = obj["args"];
+        arg_arr.get_ref<nlohmann::json::array_t&>().reserve(sizeof...(Args));
+
+        detail::for_each_tuple(result.get_args(),
+            [&arg_arr](auto&& elem) { push_args(std::forward<decltype(elem)>(elem), arg_arr); });
+
+        if constexpr (!std::is_void_v<R>)
+        {
+            obj["result"] = {};
+            push_arg(result.get_result(), obj["result"]);
+        }
+
+        return obj;
     }
 
     template<typename... Args>
@@ -141,8 +164,7 @@ public:
     }
 
     template<typename... Args>
-    [[nodiscard]] static rpc_response<njson_adapter> serialize_request(
-        const func_request<Args...>& request)
+    [[nodiscard]] static nlohmann::json serialize_request(const func_request<Args...>& request)
     {
         nlohmann::json obj{};
         obj["func_name"] = request.get_func_name();
@@ -153,12 +175,7 @@ public:
         detail::for_each_tuple(request.get_args(),
             [&arg_arr](auto&& elem) { push_args(std::forward<decltype(elem)>(elem), arg_arr); });
 
-        return { std::move(obj) };
-    }
-
-    [[nodiscard]] static response_type get_type(const nlohmann::json& serial_obj)
-    {
-        return static_cast<response_type>(serial_obj["type"].get<int>());
+        return obj;
     }
 
     [[nodiscard]] static func_error get_error(const nlohmann::json& serial_obj)
@@ -167,19 +184,33 @@ public:
             serial_obj["error_mesg"] };
     }
 
-    [[nodiscard]] static rpc_response<njson_adapter> serialize_error(const func_error& error)
+    [[nodiscard]] static nlohmann::json serialize_error(const func_error& error)
     {
         nlohmann::json obj{};
         obj["func_name"] = error.get_func_name();
         obj["err_mesg"] = error.get_err_mesg();
         obj["except_type"] = static_cast<int>(error.get_except_type());
 
-        return { std::move(obj) };
+        return obj;
     }
 
-    [[nodiscard]] static std::string get_func_name(const nlohmann::json& serial_obj)
+    [[nodiscard]] static callback_install_request get_callback_install(
+        const nlohmann::json& serial_obj)
     {
-        return serial_obj["func_name"];
+        callback_install_request callback_req{ serial_obj["func_name"], serial_obj["id"] };
+        callback_req.set_uninstall(serial_obj["is_uninstall"]);
+        return callback_req;
+    }
+
+    [[nodiscard]] static nlohmann::json serialize_callback_install(
+        const callback_install_request& callback_req)
+    {
+        nlohmann::json obj{};
+        obj["func_name"] = callback_req.get_func_name();
+        obj["is_uninstall"] = callback_req.is_uninstall();
+        obj["id"] = callback_req.get_id();
+
+        return obj;
     }
 
     template<typename T>
