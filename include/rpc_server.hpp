@@ -6,6 +6,8 @@
 #include <string>
 #include <unordered_map>
 
+#define RPC_HEADER_FUNC(RETURN, FUNCNAME, ...) extern RETURN FUNCNAME(__VA_ARGS__)
+
 namespace rpc_hpp
 {
 template<typename Serial>
@@ -35,7 +37,7 @@ public:
                 }
                 catch (const rpc_exception& ex)
                 {
-                    response = func_error{ response.get_func_name(), ex };
+                    response = response_t{ func_error{ response.get_func_name(), ex } };
                 }
             });
     }
@@ -55,7 +57,7 @@ public:
             auto& request = o_request.value();
             const auto func_name = request.get_func_name();
 
-            switch (request.get_type())
+            switch (request.type())
             {
                 case rpc_object_type::func_request:
                     dispatch(request);
@@ -76,19 +78,19 @@ public:
 #ifdef RPC_HPP_ENABLE_CALLBACKS
                     [[fallthrough]];
 #else
-                    return func_error{ "",
+                    return response_t{ func_error{ "",
                         rpc_object_type_mismatch(
                             "Invalid rpc_object type detected (NOTE: callbacks are not "
-                            "enabled on this server)") };
+                            "enabled on this server)") } };
 #endif
 
                 default:
-                    return func_error{ func_name,
-                        rpc_object_type_mismatch("Invalid rpc_object type detected") };
+                    return response_t{ func_error{
+                        func_name, rpc_object_type_mismatch("Invalid rpc_object type detected") } };
             }
         }
 
-        return func_error{ "", server_receive_error("Invalid RPC object received") };
+        return response_t{ func_error{ "", server_receive_error("Invalid RPC object received") } };
     }
 
     void dispatch(response_t& rpc_obj) const
@@ -98,10 +100,11 @@ public:
         if (const auto it = m_dispatch_table.find(func_name); it != m_dispatch_table.cend())
         {
             it->second(rpc_obj);
+            return;
         }
 
-        rpc_obj = func_error{ func_name,
-            function_not_found("RPC error: Called function: \"" + func_name + "\" not found") };
+        rpc_obj = response_t{ func_error{ func_name,
+            function_not_found("RPC error: Called function: \"" + func_name + "\" not found") } };
     }
 
 protected:
@@ -110,15 +113,25 @@ protected:
     template<typename R, typename... Args>
     static void exec_func(R (*func)(Args...), response_t& response)
     {
-        auto args = response.template get_request<Args...>();
+        auto args = response.template get_args<Args...>();
         auto func_name = response.get_func_name();
+        const auto has_bound_args = response.has_bound_args();
 
         if constexpr (std::is_void_v<R>)
         {
             try
             {
-                std::apply(func, std::move(args));
-                response = func_result<void>{ std::move(func_name) };
+                std::apply(func, args);
+
+                if (has_bound_args)
+                {
+                    response = response_t{ func_result_w_bind<void, Args...>{
+                        std::move(func_name), std::move(args) } };
+                }
+                else
+                {
+                    response = response_t{ func_result<void>{ std::move(func_name) } };
+                }
             }
             catch (const std::exception& ex)
             {
@@ -129,8 +142,18 @@ protected:
         {
             try
             {
-                auto ret_val = std::apply(func, std::move(args));
-                response = func_result<R>{ std::move(func_name), std::move(ret_val) };
+                auto ret_val = std::apply(func, args);
+
+                if (has_bound_args)
+                {
+                    response = response_t{ func_result_w_bind<R, Args...>{
+                        std::move(func_name), std::move(ret_val), std::move(args) } };
+                }
+                else
+                {
+                    response =
+                        response_t{ func_result<R>{ std::move(func_name), std::move(ret_val) } };
+                }
             }
             catch (const std::exception& ex)
             {

@@ -41,25 +41,25 @@
 #include "../static_funcs.hpp"
 
 #if defined(RPC_HPP_ENABLE_NJSON)
-#    include <rpc_adapters/rpc_njson.hpp>
+#  include <rpc_adapters/rpc_njson.hpp>
 
 using rpc_hpp::adapters::njson_adapter;
 #endif
 
 #if defined(RPC_HPP_ENABLE_RAPIDJSON)
-#    include <rpc_adapters/rpc_rapidjson.hpp>
+#  include <rpc_adapters/rpc_rapidjson.hpp>
 
 using rpc_hpp::adapters::rapidjson_adapter;
 #endif
 
 #if defined(RPC_HPP_ENABLE_BOOST_JSON)
-#    include <rpc_adapters/rpc_boost_json.hpp>
+#  include <rpc_adapters/rpc_boost_json.hpp>
 
 using rpc_hpp::adapters::boost_json_adapter;
 #endif
 
 #if defined(RPC_HPP_ENABLE_BITSERY)
-#    include <rpc_adapters/rpc_bitsery.hpp>
+#  include <rpc_adapters/rpc_bitsery.hpp>
 
 using rpc_hpp::adapters::bitsery_adapter;
 
@@ -74,9 +74,9 @@ constexpr uint64_t bitsery_adapter::config::max_container_size = 1'000;
 #include <thread>
 
 #if defined(RPC_HPP_ENABLE_SERVER_CACHE)
-#    include <filesystem>
-#    include <fstream>
-#    include <utility>
+#  include <filesystem>
+#  include <fstream>
+#  include <utility>
 #endif
 
 std::atomic_bool RUNNING{ false };
@@ -233,16 +233,17 @@ void BindFuncs(TestServer<Serial>& server)
     server.bind("HashComplexRef", &HashComplexRef);
     server.template bind<void, size_t&>("AddOne", [](size_t& n) { AddOne(n); });
 
-    server.bind_cached("SimpleSum", &SimpleSum);
-    server.bind_cached("StrLen", &StrLen);
-    server.bind_cached("AddOneToEach", &AddOneToEach);
-    server.bind_cached("Fibonacci", &Fibonacci);
-    server.bind_cached("Average", &Average);
-    server.bind_cached("StdDev", &StdDev);
-    server.bind_cached("AverageContainer<uint64_t>", &AverageContainer<uint64_t>);
-    server.bind_cached("AverageContainer<double>", &AverageContainer<double>);
-    server.bind_cached("HashComplex", &HashComplex);
-    server.bind_cached("CountChars", &CountChars);
+    // Cached
+    server.bind("SimpleSum", &SimpleSum);
+    server.bind("StrLen", &StrLen);
+    server.bind("AddOneToEach", &AddOneToEach);
+    server.bind("Fibonacci", &Fibonacci);
+    server.bind("Average", &Average);
+    server.bind("StdDev", &StdDev);
+    server.bind("AverageContainer<uint64_t>", &AverageContainer<uint64_t>);
+    server.bind("AverageContainer<double>", &AverageContainer<double>);
+    server.bind("HashComplex", &HashComplex);
+    server.bind("CountChars", &CountChars);
 }
 
 #if defined(RPC_HPP_ENABLE_SERVER_CACHE)
@@ -356,8 +357,8 @@ void load_cache(TestServer<Serial>& server, [[maybe_unused]] R (*func)(Args...),
     }
 }
 
-#    define DUMP_CACHE(SERVER, FUNCNAME, DIR) dump_cache(SERVER, FUNCNAME, #    FUNCNAME, DIR)
-#    define LOAD_CACHE(SERVER, FUNCNAME, DIR) load_cache(SERVER, FUNCNAME, #    FUNCNAME, DIR)
+#  define DUMP_CACHE(SERVER, FUNCNAME, DIR) dump_cache(SERVER, FUNCNAME, #  FUNCNAME, DIR)
+#  define LOAD_CACHE(SERVER, FUNCNAME, DIR) load_cache(SERVER, FUNCNAME, #  FUNCNAME, DIR)
 #endif
 
 int main(const int argc, char* argv[])
@@ -378,7 +379,7 @@ int main(const int argc, char* argv[])
         TestServer<njson_adapter> njson_server{ io_context, 5000U };
         BindFuncs(njson_server);
 
-#    if defined(RPC_HPP_ENABLE_SERVER_CACHE)
+#  if defined(RPC_HPP_ENABLE_SERVER_CACHE)
         const std::string njson_dump_path("dump_cache");
 
         if (std::filesystem::exists(njson_dump_path)
@@ -395,7 +396,7 @@ int main(const int argc, char* argv[])
             LOAD_CACHE(njson_server, HashComplex, njson_dump_path);
             LOAD_CACHE(njson_server, CountChars, njson_dump_path);
         }
-#    endif
+#  endif
 
         threads.emplace_back(&TestServer<njson_adapter>::Run, &njson_server);
         puts("Running njson server on port 5000...");

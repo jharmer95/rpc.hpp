@@ -54,9 +54,9 @@ struct serial_traits<njson_adapter>
 class njson_adapter : public serial_adapter_base<njson_adapter>
 {
 public:
-    [[nodiscard]] static std::string to_bytes(nlohmann::json&& serial_obj)
+    [[nodiscard]] static std::string to_bytes(const nlohmann::json& serial_obj)
     {
-        return std::move(serial_obj).dump();
+        return serial_obj.dump();
     }
 
     [[nodiscard]] static nlohmann::json from_bytes(std::string&& bytes)
@@ -112,6 +112,7 @@ public:
             push_arg(result.get_result(), obj["result"]);
         }
 
+        obj["type"] = static_cast<int>(rpc_object_type::func_result);
         return obj;
     }
 
@@ -141,6 +142,7 @@ public:
         obj["func_name"] = result.get_func_name();
         obj["args"] = nlohmann::json::array();
         auto& arg_arr = obj["args"];
+        obj["bind_args"] = true;
         arg_arr.get_ref<nlohmann::json::array_t&>().reserve(sizeof...(Args));
 
         detail::for_each_tuple(result.get_args(),
@@ -152,6 +154,7 @@ public:
             push_arg(result.get_result(), obj["result"]);
         }
 
+        obj["type"] = static_cast<int>(rpc_object_type::func_result_w_bind);
         return obj;
     }
 
@@ -159,8 +162,22 @@ public:
     [[nodiscard]] static func_request<Args...> get_request(const nlohmann::json& serial_obj)
     {
         const auto& args_val = serial_obj["args"];
+        const bool is_bound_args = serial_obj["bind_args"];
+
+        if (args_val.size() != sizeof...(Args))
+        {
+            throw function_mismatch("Argument count mismatch");
+        }
+
         [[maybe_unused]] unsigned arg_counter = 0;
-        return { serial_obj["func_name"], parse_args<Args>(args_val, arg_counter)... };
+        typename func_request<Args...>::args_t args = { parse_args<Args>(
+            args_val, arg_counter)... };
+
+        std::string func_name = serial_obj["func_name"];
+
+        return is_bound_args
+            ? func_request<Args...>{ bind_args_tag{}, std::move(func_name), std::move(args) }
+            : func_request<Args...>{ std::move(func_name), std::move(args) };
     }
 
     template<typename... Args>
@@ -170,18 +187,20 @@ public:
         obj["func_name"] = request.get_func_name();
         obj["args"] = nlohmann::json::array();
         auto& arg_arr = obj["args"];
+        obj["bind_args"] = request.has_bound_args();
         arg_arr.get_ref<nlohmann::json::array_t&>().reserve(sizeof...(Args));
 
         detail::for_each_tuple(request.get_args(),
             [&arg_arr](auto&& elem) { push_args(std::forward<decltype(elem)>(elem), arg_arr); });
 
+        obj["type"] = static_cast<int>(rpc_object_type::func_request);
         return obj;
     }
 
     [[nodiscard]] static func_error get_error(const nlohmann::json& serial_obj)
     {
-        return { serial_obj["func_name"], static_cast<exception_type>(serial_obj["exception"]),
-            serial_obj["error_mesg"] };
+        return { serial_obj["func_name"], static_cast<exception_type>(serial_obj["except_type"]),
+            serial_obj["err_mesg"] };
     }
 
     [[nodiscard]] static nlohmann::json serialize_error(const func_error& error)
@@ -190,7 +209,7 @@ public:
         obj["func_name"] = error.get_func_name();
         obj["err_mesg"] = error.get_err_mesg();
         obj["except_type"] = static_cast<int>(error.get_except_type());
-
+        obj["type"] = static_cast<int>(rpc_object_type::func_error);
         return obj;
     }
 
@@ -209,8 +228,13 @@ public:
         obj["func_name"] = callback_req.get_func_name();
         obj["is_uninstall"] = callback_req.is_uninstall();
         obj["id"] = callback_req.get_id();
-
+        obj["type"] = static_cast<int>(rpc_object_type::callback_install_request);
         return obj;
+    }
+
+    [[nodiscard]] static bool has_bound_args(const nlohmann::json& serial_obj)
+    {
+        return serial_obj["bind_args"];
     }
 
     template<typename T>

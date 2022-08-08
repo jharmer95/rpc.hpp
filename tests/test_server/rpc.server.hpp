@@ -39,7 +39,7 @@
 #include "../test_structs.hpp"
 
 #include <asio.hpp>
-#include <rpc.hpp>
+#include <rpc_server.hpp>
 
 #include <array>
 #include <atomic>
@@ -104,7 +104,7 @@ std::string HashComplex(const ComplexObject& cx);
 void HashComplexRef(ComplexObject& cx, std::string& hashStr);
 
 template<typename Serial>
-class TestServer final : public rpc_hpp::server_interface<Serial>
+class TestServer final : public rpc_hpp::server_base<Serial>
 {
 public:
     TestServer(asio::io_context& io, const uint16_t port)
@@ -139,8 +139,11 @@ public:
                         throw asio::system_error(error);
                     }
 
-                    const auto bytes = this->dispatch({ std::begin(data), std::begin(data) + len });
-                    write(sock, asio::buffer(bytes, bytes.size()));
+                    auto response =
+                        this->handle_bytes({ std::begin(data), std::begin(data) + len });
+
+                    auto bytes = response.to_bytes();
+                    write(sock, asio::buffer(std::move(bytes), bytes.size()));
                 }
             }
             catch (const std::exception& ex)

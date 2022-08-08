@@ -53,9 +53,10 @@ template<typename Serial>
 void TestType()
 {
     auto& client = GetClient<Serial>();
-    const auto result = client.template call_func<int>("SimpleSum", 1, 2);
+    const auto response = client.call_func("SimpleSum", 1, 2);
 
-    REQUIRE(result == 3);
+    REQUIRE(response.type() == rpc_hpp::rpc_object_type::func_result);
+    REQUIRE(response.template get_result<int>() == 3);
 }
 
 #if defined(RPC_HPP_ENABLE_NJSON)
@@ -88,47 +89,47 @@ TEST_CASE("BITSERY")
 
 // TODO: Clean this up somehow
 #if defined(RPC_HPP_ENABLE_BITSERY)
-#    if defined(TEST_USE_COMMA)
-#        define TEST_BITSERY_T , bitsery_adapter
-#    else
-#        define TEST_BITSERY_T bitsery_adapter
-#        define TEST_USE_COMMA
-#    endif
+#  if defined(TEST_USE_COMMA)
+#    define TEST_BITSERY_T , bitsery_adapter
+#  else
+#    define TEST_BITSERY_T bitsery_adapter
+#    define TEST_USE_COMMA
+#  endif
 #else
-#    define TEST_BITSERY_T
+#  define TEST_BITSERY_T
 #endif
 
 #if defined(RPC_HPP_ENABLE_BOOST_JSON)
-#    if defined(TEST_USE_COMMA)
-#        define TEST_BOOST_JSON_T , boost_json_adapter
-#    else
-#        define TEST_BOOST_JSON_T boost_json_adapter
-#        define TEST_USE_COMMA
-#    endif
+#  if defined(TEST_USE_COMMA)
+#    define TEST_BOOST_JSON_T , boost_json_adapter
+#  else
+#    define TEST_BOOST_JSON_T boost_json_adapter
+#    define TEST_USE_COMMA
+#  endif
 #else
-#    define TEST_BOOST_JSON_T
+#  define TEST_BOOST_JSON_T
 #endif
 
 #if defined(RPC_HPP_ENABLE_NJSON)
-#    if defined(TEST_USE_COMMA)
-#        define TEST_NJSON_T , njson_adapter
-#    else
-#        define TEST_NJSON_T njson_adapter
-#        define TEST_USE_COMMA
-#    endif
+#  if defined(TEST_USE_COMMA)
+#    define TEST_NJSON_T , njson_adapter
+#  else
+#    define TEST_NJSON_T njson_adapter
+#    define TEST_USE_COMMA
+#  endif
 #else
-#    define TEST_NJSON_T
+#  define TEST_NJSON_T
 #endif
 
 #if defined(RPC_HPP_ENABLE_RAPIDJSON)
-#    if defined(TEST_USE_COMMA)
-#        define TEST_RAPIDJSON_T , rapidjson_adapter
-#    else
-#        define TEST_RAPIDJSON_T rapidjson_adapter
-#        define TEST_USE_COMMA
-#    endif
+#  if defined(TEST_USE_COMMA)
+#    define TEST_RAPIDJSON_T , rapidjson_adapter
+#  else
+#    define TEST_RAPIDJSON_T rapidjson_adapter
+#    define TEST_USE_COMMA
+#  endif
 #else
-#    define TEST_RAPIDJSON_T
+#  define TEST_RAPIDJSON_T
 #endif
 
 #define RPC_TEST_TYPES TEST_BITSERY_T TEST_BOOST_JSON_T TEST_NJSON_T TEST_RAPIDJSON_T
@@ -137,9 +138,10 @@ TEST_CASE_TEMPLATE("CountChars (static)", TestType, RPC_TEST_TYPES)
 {
     auto& client = GetClient<TestType>();
     const std::string s = "peter piper picked a pack of pickled peppers";
-    const int result = client.call_header_func(CountChars, s, 'p');
+    const auto response = client.call_header_func(CountChars, s, 'p');
 
-    REQUIRE(result == 9);
+    REQUIRE(!response.is_error());
+    REQUIRE(response.template get_result<int>() == 9);
 }
 
 TEST_CASE_TEMPLATE("AddOne (static)", TestType, RPC_TEST_TYPES)
@@ -147,9 +149,13 @@ TEST_CASE_TEMPLATE("AddOne (static)", TestType, RPC_TEST_TYPES)
     auto& client = GetClient<TestType>();
 
     size_t n = 2;
-    client.call_header_func(AddOne, n);
-    client.call_header_func(AddOne, n);
+    auto response = client.call_header_func(AddOne, n);
 
+    REQUIRE(!response.is_error());
+
+    response = client.call_header_func(AddOne, n);
+
+    REQUIRE(!response.is_error());
     REQUIRE(n == 4);
 }
 
@@ -159,20 +165,27 @@ TEST_CASE_TEMPLATE("StrLen", TestType, RPC_TEST_TYPES)
 
     static constexpr auto test_str_len = 2048U;
     const std::string test_str(test_str_len, 'f');
-    const auto result = client.template call_func<size_t>("StrLen", test_str);
+    const auto response = client.call_func("StrLen", test_str);
 
-    const auto cstr = "12345";
-    const auto result2 = client.template call_func<size_t>("StrLen", cstr);
+    static constexpr char cstr[] = "12345";
+    const auto response2 = client.call_func("StrLen", cstr);
 
-    REQUIRE(result == test_str_len);
-    REQUIRE(result2 == 5);
+    REQUIRE(response.type() == rpc_hpp::rpc_object_type::func_result);
+    REQUIRE(response.template get_result<size_t>() == test_str_len);
+
+    REQUIRE(response2.type() == rpc_hpp::rpc_object_type::func_result);
+    REQUIRE(response2.template get_result<size_t>() == 5);
 }
 
 TEST_CASE_TEMPLATE("AddOneToEach", TestType, RPC_TEST_TYPES)
 {
     auto& client = GetClient<TestType>();
     const std::vector<int> vec{ 2, 4, 6, 8 };
-    const auto result = client.template call_func<std::vector<int>>("AddOneToEach", vec);
+    const auto response = client.call_func("AddOneToEach", vec);
+
+    REQUIRE(response.type() == rpc_hpp::rpc_object_type::func_result);
+
+    const auto result = response.template get_result<std::vector<int>>();
 
     REQUIRE(result.size() == vec.size());
 
@@ -187,8 +200,9 @@ TEST_CASE_TEMPLATE("AddOneToEachRef", TestType, RPC_TEST_TYPES)
     auto& client = GetClient<TestType>();
     const std::vector<int> vec{ 2, 4, 6, 8 };
     std::vector<int> vec2{ 1, 3, 5, 7 };
-    client.call_func("AddOneToEachRef", vec2);
+    const auto response = client.call_func_w_bind("AddOneToEachRef", vec2);
 
+    REQUIRE(response.type() == rpc_hpp::rpc_object_type::func_result_w_bind);
     REQUIRE(vec2.size() == vec.size());
 
     for (size_t i = 0; i < vec2.size(); ++i)
@@ -203,9 +217,10 @@ TEST_CASE_TEMPLATE("Fibonacci", TestType, RPC_TEST_TYPES)
     static constexpr uint64_t input = 20;
     auto& client = GetClient<TestType>();
 
-    const auto test = client.template call_func<uint64_t>("Fibonacci", input);
+    const auto response = client.call_func("Fibonacci", input);
 
-    REQUIRE(expected == test);
+    REQUIRE(response.type() == rpc_hpp::rpc_object_type::func_result);
+    REQUIRE(response.template get_result<uint64_t>() == expected);
 }
 
 TEST_CASE_TEMPLATE("FibonacciRef", TestType, RPC_TEST_TYPES)
@@ -214,8 +229,9 @@ TEST_CASE_TEMPLATE("FibonacciRef", TestType, RPC_TEST_TYPES)
     auto& client = GetClient<TestType>();
 
     uint64_t test = 20;
-    client.call_func("FibonacciRef", test);
+    const auto response = client.call_func_w_bind("FibonacciRef", test);
 
+    REQUIRE(response.type() == rpc_hpp::rpc_object_type::func_result_w_bind);
     REQUIRE(expected == test);
 }
 
@@ -224,10 +240,11 @@ TEST_CASE_TEMPLATE("StdDev", TestType, RPC_TEST_TYPES)
     static constexpr double expected = 3313.695594785;
     auto& client = GetClient<TestType>();
 
-    const auto test = client.template call_func<double>("StdDev", 55.65, 125.325, 552.125, 12.767,
-        2599.6, 1245.125663, 9783.49, 125.12, 553.3333333333, 2266.1);
+    const auto response = client.call_func("StdDev", 55.65, 125.325, 552.125, 12.767, 2599.6,
+        1245.125663, 9783.49, 125.12, 553.3333333333, 2266.1);
 
-    REQUIRE(test == doctest::Approx(expected));
+    REQUIRE(response.type() == rpc_hpp::rpc_object_type::func_result);
+    REQUIRE(response.template get_result<double>() == doctest::Approx(expected));
 }
 
 TEST_CASE_TEMPLATE("SquareRootRef", TestType, RPC_TEST_TYPES)
@@ -246,10 +263,12 @@ TEST_CASE_TEMPLATE("SquareRootRef", TestType, RPC_TEST_TYPES)
     double n9 = 553.3333333333;
     double n10 = 2266.1;
 
-    client.call_func("SquareRootRef", n1, n2, n3, n4, n5, n6, n7, n8, n9, n10);
+    const auto response =
+        client.call_func_w_bind("SquareRootRef", n1, n2, n3, n4, n5, n6, n7, n8, n9, n10);
+
+    REQUIRE(response.type() == rpc_hpp::rpc_object_type::func_result_w_bind);
 
     const auto test = n1 + n2 + n3 + n4 + n5 + n6 + n7 + n8 + n9 + n10;
-
     REQUIRE(test == doctest::Approx(expected).epsilon(0.001));
 }
 
@@ -261,9 +280,10 @@ TEST_CASE_TEMPLATE("AverageContainer<double>", TestType, RPC_TEST_TYPES)
     const std::vector<double> vec{ 55.65, 125.325, 552.125, 12.767, 2599.6, 1245.125663, 9783.49,
         125.12, 553.3333333333, 2266.1 };
 
-    const auto test = client.template call_func<double>("AverageContainer<double>", vec);
+    const auto response = client.call_func("AverageContainer<double>", vec);
 
-    REQUIRE(test == doctest::Approx(expected).epsilon(0.001));
+    REQUIRE(response.type() == rpc_hpp::rpc_object_type::func_result);
+    REQUIRE(response.template get_result<double>() == doctest::Approx(expected).epsilon(0.001));
 }
 
 TEST_CASE_TEMPLATE("HashComplex", TestType, RPC_TEST_TYPES)
@@ -274,9 +294,10 @@ TEST_CASE_TEMPLATE("HashComplex", TestType, RPC_TEST_TYPES)
     const ComplexObject cx{ 24, "Franklin D. Roosevelt", false, true,
         { 0, 1, 4, 6, 7, 8, 11, 15, 17, 22, 25, 26 } };
 
-    const auto test = client.template call_func<std::string>("HashComplex", cx);
+    const auto response = client.call_func("HashComplex", cx);
 
-    REQUIRE(expected == test);
+    REQUIRE(response.type() == rpc_hpp::rpc_object_type::func_result);
+    REQUIRE(response.template get_result<std::string>() == expected);
 }
 
 TEST_CASE_TEMPLATE("HashComplexRef", TestType, RPC_TEST_TYPES)
@@ -291,8 +312,9 @@ TEST_CASE_TEMPLATE("HashComplexRef", TestType, RPC_TEST_TYPES)
     std::string test{};
 
     // re-assign string to arg<1>
-    client.call_func("HashComplexRef", cx, test);
+    const auto response = client.call_func_w_bind("HashComplexRef", cx, test);
 
+    REQUIRE(response.type() == rpc_hpp::rpc_object_type::func_result_w_bind);
     REQUIRE(expected == test);
 }
 
@@ -300,56 +322,44 @@ TEST_CASE_TEMPLATE("Function not found", TestType, RPC_TEST_TYPES)
 {
     auto& client = GetClient<TestType>();
 
-    const auto exp = [&client]
-    {
-        client.template call_func<void>("FUNC_WHICH_DOES_NOT_EXIST");
-    };
+    const auto response = client.call_func("FUNC_WHICH_DOES_NOT_EXIST");
 
-    REQUIRE_THROWS_AS(exp(), rpc_hpp::function_not_found);
+    REQUIRE(response.is_error());
+    REQUIRE(response.get_error_type() == rpc_hpp::exception_type::func_not_found);
 }
 
 TEST_CASE_TEMPLATE("FunctionMismatch", TestType, RPC_TEST_TYPES)
 {
     auto& client = GetClient<TestType>();
 
-    const auto wrong_param = [&client]
-    {
-        std::ignore = client.template call_func<int>("SimpleSum", 2, std::string{ "Hello, world" });
-    };
+    rpc_hpp::rpc_object<TestType> obj =
+        client.call_func("SimpleSum", 2, std::string{ "Hello, world" });
 
-    const auto wrong_return = [&client]
-    {
-        std::ignore = client.template call_func<std::string>("SimpleSum", 1, 2);
-    };
+    REQUIRE(obj.is_error());
+    REQUIRE(obj.get_error_type() == rpc_hpp::exception_type::signature_mismatch);
 
-    const auto float_to_int = [&client]
-    {
-        std::ignore = client.template call_func<int>("SimpleSum", 2.4, 1.2);
-    };
+    obj = client.call_func("SimpleSum", 1, 2);
+    REQUIRE(obj.type() == rpc_hpp::rpc_object_type::func_result);
+    REQUIRE_THROWS_AS(
+        (std::ignore = obj.template get_result<std::string>()), rpc_hpp::function_mismatch);
 
-    const auto int_to_float = [&client]
-    {
-        std::ignore = client.template call_func<double>("StdDev", -4, 125.325, 552.125, 55, 2599.6,
-            1245.125663, 9783.49, 125.12, 553.3333333333, 2266.1);
-    };
+    obj = client.call_func("SimpleSum", 2.4, 1.2);
+    REQUIRE(obj.is_error());
+    REQUIRE(obj.get_error_type() == rpc_hpp::exception_type::signature_mismatch);
 
-    const auto less_params = [&client]
-    {
-        std::ignore = client.template call_func<double>("StdDev", -4.2, 125.325);
-    };
+    obj = client.call_func("StdDev", -4, 125.325, 552.125, 55, 2599.6, 1245.125663, 9783.49, 125.12,
+        553.3333333333, 2266.1);
+    REQUIRE(obj.is_error());
+    REQUIRE(obj.get_error_type() == rpc_hpp::exception_type::signature_mismatch);
 
-    const auto more_params = [&client]
-    {
-        std::ignore = client.template call_func<double>("StdDev", -4.2, 125.325, 552.125, 55.123,
-            2599.6, 1245.125663, 9783.49, 125.12, 553.3333333333, 2266.1, 111.222, 1234.56789);
-    };
+    obj = client.call_func("StdDev", -4.2, 125.325);
+    REQUIRE(obj.is_error());
+    REQUIRE(obj.get_error_type() == rpc_hpp::exception_type::signature_mismatch);
 
-    REQUIRE_THROWS_AS(wrong_param(), rpc_hpp::function_mismatch);
-    REQUIRE_THROWS_AS(wrong_return(), rpc_hpp::function_mismatch);
-    REQUIRE_THROWS_AS(float_to_int(), rpc_hpp::function_mismatch);
-    REQUIRE_THROWS_AS(int_to_float(), rpc_hpp::function_mismatch);
-    REQUIRE_THROWS_AS(less_params(), rpc_hpp::function_mismatch);
-    REQUIRE_THROWS_AS(more_params(), rpc_hpp::function_mismatch);
+    obj = client.call_func("StdDev", -4.2, 125.325, 552.125, 55.123, 2599.6, 1245.125663, 9783.49,
+        125.12, 553.3333333333, 2266.1, 111.222, 1234.56789);
+    REQUIRE(obj.is_error());
+    REQUIRE(obj.get_error_type() == rpc_hpp::exception_type::signature_mismatch);
 }
 
 TEST_CASE_TEMPLATE("ThrowError", TestType, RPC_TEST_TYPES)
@@ -358,7 +368,7 @@ TEST_CASE_TEMPLATE("ThrowError", TestType, RPC_TEST_TYPES)
 
     const auto exp = [&client]
     {
-        client.call_func("ThrowError");
+        client.call_func("ThrowError").template get_result<void>();
     };
 
     REQUIRE_THROWS_AS(exp(), rpc_hpp::remote_exec_error);
@@ -382,11 +392,14 @@ TEST_CASE_TEMPLATE("InvalidObject", TestType, RPC_TEST_TYPES)
     auto& client = GetClient<TestType>();
     client.send(std::move(bytes));
     bytes = client.receive();
-    auto serial_obj = TestType::from_bytes(std::move(bytes));
+    auto rpc_obj = rpc_hpp::rpc_object<TestType>::parse_bytes(std::move(bytes));
 
-    REQUIRE(serial_obj.has_value());
-    REQUIRE(TestType::extract_exception(serial_obj.value()).get_type()
-        == rpc_hpp::exception_type::server_receive);
+    REQUIRE(rpc_obj.has_value());
+
+    const auto& response = rpc_obj.value();
+
+    REQUIRE(response.is_error());
+    REQUIRE(response.get_error_type() == rpc_hpp::exception_type::server_receive);
 }
 
 TEST_CASE("KillServer")
@@ -395,12 +408,12 @@ TEST_CASE("KillServer")
 
     const auto exp = [&client]
     {
-        std::ignore = client.template call_func<int>("SimpleSum", 1, 2);
+        std::ignore = client.call_func("SimpleSum", 1, 2);
     };
 
     try
     {
-        client.call_func("KillServer");
+        std::ignore = client.call_func("KillServer");
     }
     catch (...)
     {
