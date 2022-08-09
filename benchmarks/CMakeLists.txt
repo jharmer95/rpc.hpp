@@ -94,7 +94,10 @@ add_executable(rpc_benchmark benchmark.cpp)
 target_compile_options(rpc_benchmark PRIVATE ${FULL_WARNING})
 target_include_directories(rpc_benchmark PRIVATE ../tests)
 target_link_libraries(rpc_benchmark PRIVATE rpc_hpp asio_lib doctest_lib nanobench_lib)
-target_precompile_headers(rpc_benchmark PRIVATE pch.hpp)
+
+if(${USE_PCH})
+  target_precompile_headers(rpc_benchmark PRIVATE pch.hpp)
+endif()
 
 if(${BENCH_GRPC})
   target_link_libraries(rpc_benchmark PRIVATE grpc_client_obj grpc_lib)

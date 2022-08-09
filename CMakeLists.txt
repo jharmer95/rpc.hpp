@@ -28,7 +28,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.12)
 
 if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
   set(CMAKE_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/scripts/buildsystems/vcpkg.cmake"
@@ -36,6 +36,12 @@ if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
 endif()
 
 # ==== Build Options ====
+
+option(USE_PCH "Utilize precompiled headers" ON)
+if(${CMAKE_VERSION} VERSION_LESS "3.16.0") 
+  message("Please consider to switch to CMake 3.16 to take advantage of Precompiled Headers")
+  set(USE_PCH OFF)
+endif()
 
 option(WERROR "Treat all warnings as errors" ON)
 option(CODE_COVERAGE "Enable coverage reporting" OFF)

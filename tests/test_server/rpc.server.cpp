@@ -74,7 +74,16 @@ constexpr uint64_t bitsery_adapter::config::max_container_size = 1'000;
 #include <thread>
 
 #if defined(RPC_HPP_ENABLE_SERVER_CACHE)
-#  include <filesystem>
+#  if defined(__cpp_lib_filesystem)
+#    include <filesystem>
+
+namespace filesystem = std::filesystem;
+#  else
+#    include <experimental/filesystem>
+
+namespace filesystem = std::experimental::filesystem;
+#  endif
+
 #  include <fstream>
 #  include <utility>
 #endif
@@ -248,7 +257,7 @@ void BindFuncs(TestServer<Serial>& server)
 
 #if defined(RPC_HPP_ENABLE_SERVER_CACHE)
 template<typename Serial, typename R, typename... Args>
-void dump_cache(TestServer<Serial>& server, [[maybe_unused]] R (*func)(Args...),
+void dump_cache(TestServer<Serial>& server, RPC_HPP_UNUSED R (*func)(Args...),
     const std::string& func_name, const std::string& dump_dir)
 {
     auto& cache = server.template get_func_cache<R>(func_name);
@@ -292,7 +301,7 @@ void dump_cache(TestServer<Serial>& server, [[maybe_unused]] R (*func)(Args...),
 }
 
 template<typename Serial, typename R, typename... Args>
-void load_cache(TestServer<Serial>& server, [[maybe_unused]] R (*func)(Args...),
+void load_cache(TestServer<Serial>& server, RPC_HPP_UNUSED R (*func)(Args...),
     const std::string& func_name, const std::string& dump_dir)
 {
     auto& cache = server.template get_func_cache<R>(func_name);
@@ -382,8 +391,7 @@ int main(const int argc, char* argv[])
 #  if defined(RPC_HPP_ENABLE_SERVER_CACHE)
         const std::string njson_dump_path("dump_cache");
 
-        if (std::filesystem::exists(njson_dump_path)
-            && std::filesystem::is_directory(njson_dump_path))
+        if (filesystem::exists(njson_dump_path) && filesystem::is_directory(njson_dump_path))
         {
             LOAD_CACHE(njson_server, SimpleSum, njson_dump_path);
             LOAD_CACHE(njson_server, StrLen, njson_dump_path);

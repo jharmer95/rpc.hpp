@@ -34,7 +34,7 @@ need to make sure that you can build the project and its test suite.
 
 While `rpc.hpp` is a header-only library, the project relies on using a buildsystem to
 perform certain tasks.
-It is therefore required that CMake (version 3.16 or newer) is installed on your machine and
+It is therefore required that CMake (version 3.12 or newer) is installed on your machine and
 available on your `$PATH` to build the project.
 
 Additionally, `rpc.hpp` requires at least one C++ compiler that fully supports C++17 or newer:
@@ -59,49 +59,63 @@ system (replace `gcc` w/ `clang` if desired):
 **Arch / Manjaro**
 
 ```shell
-$ sudo pacman -S gcc cmake ninja
+$ sudo pacman -S cmake curl gcc git ninja tar unzip zip
 ```
 
-**CentOS 7 / RHEL 7**
+**Alma/CentOS/RHEL/Rocky 8+ / Fedora 33+**
+
+<br>
+
+> **NOTE:** For the RHEL-like distros (i.e. not Fedora), you will need to enable the PowerTools repo to install ninja
+> 
+> ```shell
+> $ sudo dnf install dnf-plugins-core
+> 
+> $ sudo dnf config-manager --set-enabled powertools
+> ```
+
+<br>
 
 ```shell
-$ sudo dnf install devtoolset-10-gcc cmake ninja-build
-```
-
-**CentOS 8+ / Fedora 33+ / RHEL 8+**
-
-```shell
-$ sudo dnf install gcc cmake ninja-build
+$ sudo dnf install cmake curl gcc gcc-c++ git ninja-build tar unzip zip
 ```
 
 **Debian 10+ / PopOS/Ubuntu 18.04+**
 
 ```shell
-$ sudo apt install gcc cmake ninja-build
+$ sudo apt install cmake curl gcc g++ git ninja-build tar unzip zip
 ```
 
 **FreeBSD 12+**
 
+> **NOTE:** FreeBSD includes clang by default and gcc is not recommended for that platform
+
 ```shell
-# pkg install cmake ninja
+# pkg install cmake curl git ninja pkgconf unzip zip
+```
+
+**macOS 10.15+**
+
+```shell
+% brew install cmake git ninja
 ```
 
 **OpenSUSE / SLES**
 
 ```shell
-$ sudo zypper install gcc cmake ninja
+$ sudo zypper install cmake curl gcc git ninja tar unzip zip
 ```
 
 **Windows - Chocolatey**
 
 ```powershell
-> choco install cmake ninja
+> choco install cmake git ninja
 ```
 
 **Windows - Scoop**
 
 ```powershell
-> scoop install cmake ninja
+> scoop install cmake git ninja
 ```
 
 #### Library Dependencies
@@ -194,22 +208,23 @@ $ cmake --build build
 | `BUILD_TESTING` | Build the testing tree (`ON` by default) |
 | `CODE_COVERAGE` | Enable coverage reporting |
 | `GENERATE_DOXYGEN` | Generate Doxygen documentation from comments |
+| `WERROR` | Treat all warnings as errors (`ON` by default) |
 
-NOTE:
-
-- `BUILD_BENCHMARK` requires `BUILD_TESTING`
-- `BENCH_GRPC` and `BENCH_RPCLIB` require `BUILD_BENCHMARK`
-- `GENERATE_DOXYGEN` and `CODE_COVERAGE` should only be defined when doing a documentation or
-coverage build, respectively
+> **NOTE:**
+> 
+> - `BUILD_BENCHMARK` requires `BUILD_TESTING`
+> - `BENCH_GRPC` and `BENCH_RPCLIB` require `BUILD_BENCHMARK`
+> - `GENERATE_DOXYGEN` and `CODE_COVERAGE` should only be defined when doing a documentation or
+> coverage build, respectively
 
 ### Running Tests
 
 To build the tests, make sure your build environment is set up. Also make sure that the
 `BUILD_TESTING` option is set in your `CMakeCache.txt`.
 
-**NOTE:** The test server will have to be running for the tests to succeed. You could run it in a
-separate terminal session, or add `tests/test_server & ` at the beginning of the `ctest` command
-below. The tests will successfully kill the server on completion.
+> **NOTE:** The test server will have to be running for the tests to succeed. You could run it in a
+> separate terminal session, or add `tests/test_server & ` at the beginning of the `ctest` command
+> below. The tests will successfully kill the server on completion.
 
 From the project _build_ directory run:
 

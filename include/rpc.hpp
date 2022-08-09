@@ -11,6 +11,13 @@
 #define RPC_HPP_POSTCONDITION(EXPR) assert(EXPR)
 #define RPC_HPP_PRECONDITION(EXPR) assert(EXPR)
 
+#if __GNUC__ < 9 || (__GNUC__ == 9 && __GNUC_MINOR__ < 3)
+// Workaround for bug in GCC
+#  define RPC_HPP_UNUSED __attribute__((unused))
+#else
+#  define RPC_HPP_UNUSED [[maybe_unused]]
+#endif
+
 namespace rpc_hpp
 {
 namespace adapters
@@ -21,7 +28,7 @@ namespace adapters
 
 namespace detail
 {
-#ifdef __cpp_lib_remove_cvref
+#if defined(__cpp_lib_remove_cvref)
     using std::remove_cvref;
     using std::remove_cvref_t;
 #else
@@ -159,7 +166,7 @@ namespace detail
 
     template<typename F, typename... Ts, size_t... Is>
     constexpr void for_each_tuple(const std::tuple<Ts...>& tuple, const F& func,
-        [[maybe_unused]] std::index_sequence<Is...> iseq)
+        RPC_HPP_UNUSED std::index_sequence<Is...> iseq)
     {
         using expander = int[];
         std::ignore = expander{ 0, ((void)func(std::get<Is>(tuple)), 0)... };
@@ -192,14 +199,15 @@ public:
     {
     }
 
-    func_request([[maybe_unused]] bind_args_tag tag, std::string func_name,
+    func_request(RPC_HPP_UNUSED bind_args_tag tag, std::string func_name,
         detail::remove_cvref_t<Args>&&... args)
-        : m_bind_args(true), m_func_name(std::move(func_name)),
+        : m_bind_args(true),
+          m_func_name(std::move(func_name)),
           m_args(std::forward_as_tuple(args...))
     {
     }
 
-    func_request([[maybe_unused]] bind_args_tag tag, std::string func_name, args_t args)
+    func_request(RPC_HPP_UNUSED bind_args_tag tag, std::string func_name, args_t args)
         : m_bind_args(true), m_func_name(std::move(func_name)), m_args(std::move(args))
     {
     }
@@ -255,7 +263,8 @@ public:
     }
 
     func_result_w_bind(std::string func_name, R result, detail::remove_cvref_t<Args>&&... args)
-        : m_result(std::move(result)), m_func_name(std::move(func_name)),
+        : m_result(std::move(result)),
+          m_func_name(std::move(func_name)),
           m_args(std::forward_as_tuple<Args>(args)...)
     {
     }
@@ -472,7 +481,8 @@ class func_error
 {
 public:
     func_error(std::string func_name, const rpc_exception& except)
-        : m_except_type(except.get_type()), m_func_name(std::move(func_name)),
+        : m_except_type(except.get_type()),
+          m_func_name(std::move(func_name)),
           m_err_mesg(except.what())
     {
     }

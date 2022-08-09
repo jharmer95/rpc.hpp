@@ -53,7 +53,10 @@ endif()
 
 add_executable(rpc_test "test_client/rpc.test.cpp")
 target_link_libraries(rpc_test PRIVATE rpc_hpp doctest_lib asio_lib)
-target_precompile_headers(rpc_test PRIVATE "test_client/pch.hpp")
+
+if(${USE_PCH})
+  target_precompile_headers(rpc_test PRIVATE "test_client/pch.hpp")
+endif()
 
 if(${BUILD_ADAPTER_BITSERY})
   target_link_libraries(rpc_test PRIVATE bitsery_adapter)
@@ -83,7 +86,10 @@ find_package(Threads REQUIRED)
 
 add_executable(test_server "test_server/rpc.server.cpp")
 target_link_libraries(test_server PRIVATE rpc_hpp asio_lib Threads::Threads)
-target_precompile_headers(test_server PRIVATE "test_server/pch.hpp")
+
+if(${USE_PCH})
+  target_precompile_headers(test_server PRIVATE "test_server/pch.hpp")
+endif()
 
 if(${BUILD_ADAPTER_BITSERY})
   target_link_libraries(test_server PRIVATE bitsery_adapter)

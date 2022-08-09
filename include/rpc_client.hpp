@@ -131,7 +131,7 @@ public:
     // nodiscard because the rpc_object should be checked for its type
     template<typename R, typename... Args>
     [[nodiscard]] rpc_object<Serial> call_header_func_impl(
-        [[maybe_unused]] R (*func)(Args...), std::string func_name, Args&&... args)
+        RPC_HPP_UNUSED R (*func)(Args...), std::string func_name, Args&&... args)
     {
         return call_func_w_bind<Args...>(std::move(func_name), std::forward<Args>(args)...);
     }
@@ -161,7 +161,7 @@ public:
         send(request.to_bytes());
     }
 
-#ifdef RPC_HPP_ENABLE_CALLBACKS
+#if defined(RPC_HPP_ENABLE_CALLBACKS)
     template<typename... Args>
     rpc_object<Serial> call_func_w_bind(std::string func_name, Args&&... args)
     {
@@ -210,7 +210,7 @@ private:
                     return response;
 
                 case rpc_object_type::callback_request:
-#ifdef RPC_HPP_ENABLE_CALLBACKS
+#if defined(RPC_HPP_ENABLE_CALLBACKS)
                 {
                     rpc_object<Serial> resp2 = dispatch_callback(resp);
 

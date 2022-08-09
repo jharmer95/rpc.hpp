@@ -64,7 +64,7 @@ public:
                     return request;
 
                 case rpc_object_type::callback_install_request:
-#ifdef RPC_HPP_ENABLE_CALLBACKS
+#if defined(RPC_HPP_ENABLE_CALLBACKS)
                     request.is_callback_uninstall() ? uninstall_callback(request)
                                                     : install_callback(request);
                     return request;
@@ -75,7 +75,7 @@ public:
                 case rpc_object_type::callback_result:
                 case rpc_object_type::callback_result_w_bind:
                 case rpc_object_type::callback_error:
-#ifdef RPC_HPP_ENABLE_CALLBACKS
+#if defined(RPC_HPP_ENABLE_CALLBACKS)
                     [[fallthrough]];
 #else
                     return response_t{ func_error{ "",
@@ -163,7 +163,7 @@ protected:
     }
 
 private:
-#ifdef RPC_HPP_ENABLE_CALLBACKS
+#if defined(RPC_HPP_ENABLE_CALLBACKS)
     void install_callback(response_t& rpc_obj)
     {
         auto func_name = rpc_obj.get_func_name();
@@ -186,7 +186,7 @@ private:
 #endif
 
     std::unordered_map<std::string, std::function<void(response_t&)>> m_dispatch_table{};
-#ifdef RPC_HPP_ENABLE_CALLBACKS
+#if defined(RPC_HPP_ENABLE_CALLBACKS)
     std::unordered_map<std::string, uint64_t> m_installed_callbacks;
 #endif
 };
