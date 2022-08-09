@@ -37,6 +37,7 @@ endif()
 
 # ==== Build Options ====
 
+option(WERROR "Treat all warnings as errors" ON)
 option(CODE_COVERAGE "Enable coverage reporting" OFF)
 option(GENERATE_DOXYGEN "Generate Doxygen documentation from comments" OFF)
 
@@ -161,6 +162,10 @@ if(CXX_MSVC)
       /Zc:__cplusplus
       /bigobj
       -D_WIN32_WINNT=0x0A00)
+  if(WERROR)
+    list(APPEND FULL_WARNING /WX)
+    list(APPEND MIN_WARNING /WX)
+  endif()
 elseif(CXX_GCC OR CXX_MINGW)
   set(FULL_WARNING
       -Wall
@@ -184,10 +189,15 @@ elseif(CXX_GCC OR CXX_MINGW)
       -Wduplicated-cond
       -Wmisleading-indentation
       -Wmissing-field-initializers)
+
   set(MIN_WARNING -Wall)
   if(CXX_MINGW)
     list(APPEND FULL_WARNING -Wa,-mbig-obj)
     list(APPEND MIN_WARNING -Wa,-mbig-obj)
+  endif()
+  if(WERROR)
+    list(APPEND FULL_WARNING -Werror)
+    list(APPEND MIN_WARNING -Werror)
   endif()
 elseif(CXX_CLANG)
   set(FULL_WARNING
@@ -207,6 +217,10 @@ elseif(CXX_CLANG)
       -Wno-missing-braces
       -Wno-covered-switch-default)
   set(MIN_WARNING -Wall)
+  if(WERROR)
+    list(APPEND FULL_WARNING -Werror)
+    list(APPEND MIN_WARNING -Werror)
+  endif()
 endif()
 
 # ==== Documentation Generation ====
