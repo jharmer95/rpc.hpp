@@ -54,16 +54,16 @@ public:
 
     object_t handle_bytes(bytes_t&& bytes) const
     {
-        if (auto o_request = object_t::parse_bytes(std::move(bytes)); o_request.has_value())
+        if (auto rpc_opt = object_t::parse_bytes(std::move(bytes)); rpc_opt.has_value())
         {
-            auto& request = o_request.value();
-            const auto func_name = request.get_func_name();
+            auto& rpc_obj = rpc_opt.value();
+            const auto func_name = rpc_obj.get_func_name();
 
-            switch (request.type())
+            switch (rpc_obj.type())
             {
                 case rpc_type::func_request:
-                    dispatch(request);
-                    return request;
+                    dispatch(rpc_obj);
+                    return rpc_obj;
 
                 case rpc_type::callback_install_request:
 #if defined(RPC_HPP_ENABLE_CALLBACKS)

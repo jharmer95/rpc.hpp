@@ -438,350 +438,305 @@ namespace detail
     };
 
     template<typename... Args>
-    class func_request
+    struct func_request
     {
-    public:
         using args_t = std::tuple<remove_cvref_t<Args>...>;
 
-        func_request(std::string func_name, remove_cvref_t<Args>&&... args)
-            : m_func_name(std::move(func_name)), m_args(std::forward_as_tuple(args...))
+        func_request() = default;
+
+        func_request(std::string t_func_name, remove_cvref_t<Args>&&... t_args)
+            : func_name(std::move(t_func_name)), args(std::forward_as_tuple(t_args...))
         {
         }
 
-        func_request(std::string func_name, args_t args)
-            : m_func_name(std::move(func_name)), m_args(std::move(args))
+        func_request(std::string t_func_name, args_t t_args)
+            : func_name(std::move(t_func_name)), args(std::move(t_args))
         {
         }
 
         func_request(
-            RPC_HPP_UNUSED bind_args_tag tag, std::string func_name, remove_cvref_t<Args>&&... args)
-            : m_bind_args(true),
-              m_func_name(std::move(func_name)),
-              m_args(std::forward_as_tuple(args...))
+            RPC_HPP_UNUSED bind_args_tag tag, std::string t_func_name, remove_cvref_t<Args>&&... t_args)
+            : bind_args(true), func_name(std::move(t_func_name)), args(std::forward_as_tuple(t_args...))
         {
         }
 
-        func_request(RPC_HPP_UNUSED bind_args_tag tag, std::string func_name, args_t args)
-            : m_bind_args(true), m_func_name(std::move(func_name)), m_args(std::move(args))
+        func_request(RPC_HPP_UNUSED bind_args_tag tag, std::string t_func_name, args_t t_args)
+            : bind_args(true), func_name(std::move(t_func_name)), args(std::move(t_args))
         {
         }
 
-        bool has_bound_args() const { return m_bind_args; }
-        const std::string& get_func_name() const { return m_func_name; }
-        const args_t& get_args() const { return m_args; }
-
-    private:
-        bool m_bind_args{ false };
-        std::string m_func_name;
-        args_t m_args;
+        bool bind_args{ false };
+        std::string func_name{};
+        args_t args{};
     };
 
     template<typename... Args>
-    class callback_request : public func_request<Args...>
+    struct callback_request : func_request<Args...>
     {
-    public:
         using args_t = typename func_request<Args...>::args_t;
+
+        callback_request() = default;
 
         callback_request(std::string func_name, uint64_t id, remove_cvref_t<Args>&&... args)
             : func_request<Args...>(std::move(func_name), std::forward_as_tuple(args...)),
-              m_callback_id(id)
+              callback_id(id)
         {
         }
 
         callback_request(std::string func_name, uint64_t id, args_t args)
-            : func_request<Args...>(std::move(func_name), std::move(args)), m_callback_id(id)
+            : func_request<Args...>(std::move(func_name), std::move(args)), callback_id(id)
         {
         }
 
         callback_request(
             bind_args_tag tag, std::string func_name, uint64_t id, remove_cvref_t<Args>&&... args)
             : func_request<Args...>(tag, std::move(func_name), std::forward_as_tuple(args...)),
-              m_callback_id(id)
+              callback_id(id)
         {
         }
 
         callback_request(bind_args_tag tag, std::string func_name, uint64_t id, args_t args)
-            : func_request<Args...>(tag, std::move(func_name), std::move(args...)),
-              m_callback_id(id)
+            : func_request<Args...>(tag, std::move(func_name), std::move(args)), callback_id(id)
         {
         }
 
-        uint64_t get_id() const { return m_callback_id; }
-
-    private:
-        uint64_t m_callback_id;
+        uint64_t callback_id{};
     };
 
     template<typename R>
-    class func_result
+    struct func_result
     {
-    public:
-        func_result(std::string func_name, R result)
-            : m_func_name(std::move(func_name)), m_result(std::move(result))
+        func_result() = default;
+
+        func_result(std::string t_func_name, R t_result)
+            : func_name(std::move(t_func_name)), result(std::move(t_result))
         {
         }
 
-        const std::string& get_func_name() const { return m_func_name; }
-        const R& get_result() const { return m_result; }
-
-    private:
-        std::string m_func_name;
-        R m_result;
+        std::string func_name{};
+        R result{};
     };
 
     template<>
-    class func_result<void>
+    struct func_result<void>
     {
-    public:
-        func_result(std::string func_name) : m_func_name(std::move(func_name)) {}
+        func_result() = default;
+        func_result(std::string t_func_name) : func_name(std::move(t_func_name)) {}
 
-        const std::string& get_func_name() const { return m_func_name; }
-
-    private:
-        std::string m_func_name;
+        std::string func_name{};
     };
 
     template<typename R>
-    class callback_result : public func_result<R>
+    struct callback_result : func_result<R>
     {
-    public:
-        callback_result(std::string func_name, uint64_t id, R result)
-            : func_result<R>(std::move(func_name), std::move(result)), m_callback_id(id)
+        callback_result() = default;
+
+        callback_result(std::string t_func_name, uint64_t id, R result)
+            : func_result<R>(std::move(t_func_name), std::move(result)), callback_id(id)
         {
         }
 
-        uint64_t get_id() const { return m_callback_id; }
-
-    private:
-        uint64_t m_callback_id;
+        uint64_t callback_id{};
     };
 
     template<>
-    class callback_result<void> : public func_result<void>
+    struct callback_result<void> : func_result<void>
     {
-    public:
-        callback_result(std::string func_name, uint64_t id)
-            : func_result<void>(std::move(func_name)), m_callback_id(id)
+        callback_result() = default;
+
+        callback_result(std::string t_func_name, uint64_t id)
+            : func_result<void>(std::move(t_func_name)), callback_id(id)
         {
         }
 
-        uint64_t get_id() const { return m_callback_id; }
-
-    private:
-        uint64_t m_callback_id;
+        uint64_t callback_id{};
     };
 
     template<typename R, typename... Args>
-    class func_result_w_bind
+    struct func_result_w_bind
     {
-    public:
         using args_t = std::tuple<remove_cvref_t<Args>...>;
 
-        func_result_w_bind(std::string func_name, R result, remove_cvref_t<Args>&&... args)
-            : m_result(std::move(result)),
-              m_func_name(std::move(func_name)),
-              m_args(std::forward_as_tuple<Args>(args)...)
+        func_result_w_bind() = default;
+
+        func_result_w_bind(std::string t_func_name, R t_result, remove_cvref_t<Args>&&... t_args)
+            : result(std::move(t_result)),
+              func_name(std::move(t_func_name)),
+              args(std::forward_as_tuple<Args>(t_args)...)
         {
         }
 
-        func_result_w_bind(std::string func_name, R result, args_t args)
-            : m_result(std::move(result)),
-              m_func_name(std::move(func_name)),
-              m_args(std::move(args))
+        func_result_w_bind(std::string t_func_name, R t_result, args_t t_args)
+            : result(std::move(t_result)), func_name(std::move(t_func_name)), args(std::move(t_args))
         {
         }
 
-        const std::string& get_func_name() const { return m_func_name; }
-        const R& get_result() const { return m_result; }
-        const args_t& get_args() const { return m_args; }
-
-    private:
-        R m_result;
-        std::string m_func_name;
-        args_t m_args;
+        std::string func_name{};
+        R result{};
+        args_t args{};
     };
 
     template<typename... Args>
-    class func_result_w_bind<void, Args...>
+    struct func_result_w_bind<void, Args...>
     {
-    public:
         using args_t = std::tuple<remove_cvref_t<Args>...>;
 
-        func_result_w_bind(std::string func_name, remove_cvref_t<Args>&&... args)
-            : m_func_name(std::move(func_name)), m_args(std::forward_as_tuple<Args>(args)...)
+        func_result_w_bind() = default;
+
+        func_result_w_bind(std::string t_func_name, remove_cvref_t<Args>&&... t_args)
+            : func_name(std::move(t_func_name)), args(std::forward_as_tuple<Args>(t_args)...)
         {
         }
 
-        func_result_w_bind(std::string func_name, args_t args)
-            : m_func_name(std::move(func_name)), m_args(std::move(args))
+        func_result_w_bind(std::string t_func_name, args_t t_args)
+            : func_name(std::move(t_func_name)), args(std::move(t_args))
         {
         }
 
-        const std::string& get_func_name() const { return m_func_name; }
-        const args_t& get_args() const { return m_args; }
-
-    private:
-        std::string m_func_name;
-        args_t m_args;
+        std::string func_name{};
+        args_t args{};
     };
 
     template<typename R, typename... Args>
-    class callback_result_w_bind : public func_result_w_bind<R, Args...>
+    struct callback_result_w_bind : func_result_w_bind<R, Args...>
     {
-    public:
         using args_t = typename func_result_w_bind<R, Args...>::args_t;
 
+        callback_result_w_bind() = default;
+
         callback_result_w_bind(
-            std::string func_name, uint64_t id, R result, remove_cvref_t<Args>&&... args)
+            std::string t_func_name, uint64_t id, R t_result, remove_cvref_t<Args>&&... t_args)
             : func_result_w_bind<R, Args...>(
-                std::move(func_name), std::move(result), std::forward_as_tuple(args...)),
-              m_callback_id(id)
+                std::move(t_func_name), std::move(t_result), std::forward_as_tuple(t_args...)),
+              callback_id(id)
         {
         }
 
-        callback_result_w_bind(std::string func_name, uint64_t id, R result, args_t args)
+        callback_result_w_bind(std::string t_func_name, uint64_t id, R t_result, args_t t_args)
             : func_result_w_bind<R, Args...>(
-                std::move(func_name), std::move(result), std::move(args)),
-              m_callback_id(id)
+                std::move(t_func_name), std::move(t_result), std::move(t_args)),
+              callback_id(id)
         {
         }
 
-        uint64_t get_id() const { return m_callback_id; }
-
-    private:
-        uint64_t m_callback_id;
+        uint64_t callback_id{};
     };
 
     template<typename... Args>
-    class callback_result_w_bind<void, Args...> : public func_result_w_bind<void, Args...>
+    struct callback_result_w_bind<void, Args...> : func_result_w_bind<void, Args...>
     {
-    public:
         using args_t = typename func_result_w_bind<void, Args...>::args_t;
 
-        callback_result_w_bind(std::string func_name, uint64_t id, remove_cvref_t<Args>&&... args)
+        callback_result_w_bind() = default;
+
+        callback_result_w_bind(std::string t_func_name, uint64_t id, remove_cvref_t<Args>&&... t_args)
             : func_result_w_bind<void, Args...>(
-                std::move(func_name), std::forward_as_tuple(args...)),
-              m_callback_id(id)
+                std::move(t_func_name), std::forward_as_tuple(t_args...)),
+              callback_id(id)
         {
         }
 
-        callback_result_w_bind(std::string func_name, uint64_t id, args_t args)
-            : func_result_w_bind<void, Args...>(std::move(func_name), std::move(args)),
-              m_callback_id(id)
+        callback_result_w_bind(std::string t_func_name, uint64_t id, args_t t_args)
+            : func_result_w_bind<void, Args...>(std::move(t_func_name), std::move(t_args)),
+              callback_id(id)
         {
         }
 
-        uint64_t get_id() const { return m_callback_id; }
-
-    private:
-        uint64_t m_callback_id;
+        uint64_t callback_id{};
     };
 
-    class func_error
+    struct func_error
     {
-    public:
-        func_error(std::string func_name, const rpc_exception& except)
-            : m_except_type(except.get_type()),
-              m_func_name(std::move(func_name)),
-              m_err_mesg(except.what())
+        func_error() = default;
+
+        func_error(std::string t_func_name, const rpc_exception& except)
+            : except_type(except.get_type()),
+              func_name(std::move(t_func_name)),
+              err_mesg(except.what())
         {
         }
 
-        func_error(std::string func_name, exception_type ex_type, std::string err_mesg)
-            : m_except_type(ex_type),
-              m_func_name(std::move(func_name)),
-              m_err_mesg(std::move(err_mesg))
+        func_error(std::string t_func_name, exception_type t_ex_type, std::string t_err_mesg)
+            : except_type(t_ex_type), func_name(std::move(t_func_name)), err_mesg(std::move(t_err_mesg))
         {
         }
-
-        const std::string& get_func_name() const { return m_func_name; }
-        const std::string& get_err_mesg() const { return m_err_mesg; }
-        exception_type get_except_type() const { return m_except_type; }
 
         [[noreturn]] void rethrow() const
         {
-            switch (m_except_type)
+            switch (except_type)
             {
                 case exception_type::func_not_found:
-                    throw function_not_found(m_err_mesg);
+                    throw function_not_found(err_mesg);
 
                 case exception_type::remote_exec:
-                    throw remote_exec_error(m_err_mesg);
+                    throw remote_exec_error(err_mesg);
 
                 case exception_type::serialization:
-                    throw serialization_error(m_err_mesg);
+                    throw serialization_error(err_mesg);
 
                 case exception_type::deserialization:
-                    throw deserialization_error(m_err_mesg);
+                    throw deserialization_error(err_mesg);
 
                 case exception_type::signature_mismatch:
-                    throw function_mismatch(m_err_mesg);
+                    throw function_mismatch(err_mesg);
 
                 case exception_type::client_send:
-                    throw client_send_error(m_err_mesg);
+                    throw client_send_error(err_mesg);
 
                 case exception_type::client_receive:
-                    throw client_receive_error(m_err_mesg);
+                    throw client_receive_error(err_mesg);
 
                 case exception_type::server_send:
-                    throw server_send_error(m_err_mesg);
+                    throw server_send_error(err_mesg);
 
                 case exception_type::server_receive:
-                    throw server_receive_error(m_err_mesg);
+                    throw server_receive_error(err_mesg);
 
                 case exception_type::rpc_object_mismatch:
-                    throw rpc_object_mismatch(m_err_mesg);
+                    throw rpc_object_mismatch(err_mesg);
 
                 case exception_type::none:
                 default:
-                    throw rpc_exception(m_err_mesg, exception_type::none);
+                    throw rpc_exception(err_mesg, exception_type::none);
             }
         }
 
-    private:
-        exception_type m_except_type;
-        std::string m_func_name;
-        std::string m_err_mesg;
+        exception_type except_type{ exception_type::none };
+        std::string func_name{};
+        std::string err_mesg{};
     };
 
-    class callback_error : public func_error
+    struct callback_error : func_error
     {
-    public:
-        callback_error(std::string func_name, uint64_t id, const rpc_exception& except)
-            : func_error(std::move(func_name), except), m_callback_id(id)
+        callback_error() = default;
+
+        callback_error(std::string t_func_name, uint64_t id, const rpc_exception& except)
+            : func_error(std::move(t_func_name), except), callback_id(id)
         {
         }
 
         callback_error(
-            std::string func_name, uint64_t id, exception_type ex_type, std::string err_mesg)
-            : func_error(std::move(func_name), ex_type, std::move(err_mesg)), m_callback_id(id)
+            std::string t_func_name, uint64_t id, exception_type t_ex_type, std::string t_err_mesg)
+            : func_error(std::move(t_func_name), t_ex_type, std::move(t_err_mesg)), callback_id(id)
         {
         }
 
-        uint64_t get_id() const { return m_callback_id; }
-
-    private:
-        uint64_t m_callback_id;
+        uint64_t callback_id{};
     };
 } //namespace detail
 
-class callback_install_request
+struct callback_install_request
 {
-public:
-    callback_install_request(std::string func_name, uint64_t id)
-        : m_id(id), m_func_name(std::move(func_name))
+    callback_install_request() = default;
+
+    callback_install_request(std::string t_func_name, uint64_t id)
+        : callback_id(id), func_name(std::move(t_func_name))
     {
     }
 
-    bool is_uninstall() const { return m_uninstall; }
-    void set_uninstall(bool uninstall) { m_uninstall = uninstall; }
-    uint64_t get_id() const { return m_id; }
-    const std::string& get_func_name() const { return m_func_name; }
-
-private:
-    bool m_uninstall{ false };
-    uint64_t m_id;
-    std::string m_func_name;
+    bool is_uninstall{ false };
+    uint64_t callback_id{};
+    std::string func_name{};
 };
 
 enum class rpc_type
@@ -856,7 +811,7 @@ public:
                 }
                 else
                 {
-                    return Serial::template get_result<R>(m_obj).get_result();
+                    return Serial::template get_result<R>(m_obj).result;
                 }
 
             case rpc_type::func_error:
@@ -880,7 +835,7 @@ public:
             case rpc_type::func_result_w_bind:
             case rpc_type::callback_request:
             case rpc_type::callback_result_w_bind:
-                return Serial::template get_request<Args...>(m_obj).get_args();
+                return Serial::template get_request<Args...>(m_obj).args;
 
             case rpc_type::callback_error:
             case rpc_type::callback_install_request:
@@ -899,7 +854,7 @@ public:
             return false;
         }
 
-        return Serial::get_callback(m_obj).is_uninstall();
+        return Serial::get_callback(m_obj).is_uninstall;
     }
 
     uint64_t get_callback_id() const
@@ -909,7 +864,7 @@ public:
             throw rpc_object_mismatch("Invalid rpc_object type detected");
         }
 
-        return Serial::get_callback(m_obj).get_id();
+        return Serial::get_callback(m_obj).callback_id;
     }
 
     exception_type get_error_type() const
@@ -919,7 +874,7 @@ public:
             throw rpc_object_mismatch("Invalid rpc_object type detected");
         }
 
-        return Serial::get_error(m_obj).get_except_type();
+        return Serial::get_error(m_obj).except_type;
     }
 
     std::string get_error_mesg() const
@@ -929,7 +884,7 @@ public:
             throw rpc_object_mismatch("Invalid rpc_object type detected");
         }
 
-        return Serial::get_error(m_obj).get_error_mesg();
+        return Serial::get_error(m_obj).error_mesg;
     }
 
     bool has_bound_args() const

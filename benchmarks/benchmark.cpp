@@ -105,7 +105,7 @@ void bench_rpc(
         {
             nanobench::doNotOptimizeAway(
                 test_val = GetClient<bitsery_adapter>()
-                               .call_func<T>(func_name, std::forward<Args>(args)...)
+                               .call_func(func_name, std::forward<Args>(args)...)
                                .template get_result<T>());
         });
 
