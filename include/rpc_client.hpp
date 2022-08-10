@@ -7,77 +7,12 @@
 
 namespace rpc_hpp
 {
-namespace detail
-{
-    template<typename T>
-    struct decay_str
-    {
-        static_assert(!std::is_pointer_v<remove_cvref_t<T>>, "Pointer parameters are not allowed");
-
-        static_assert(
-            !std::is_array_v<remove_cvref_t<T>>, "C-style array parameters are not allowed");
-
-        using type = T;
-    };
-
-    template<>
-    struct decay_str<const char*>
-    {
-        using type = const std::string&;
-    };
-
-    template<>
-    struct decay_str<const char*&>
-    {
-        using type = const std::string&;
-    };
-
-    template<>
-    struct decay_str<const char* const&>
-    {
-        using type = const std::string&;
-    };
-
-    template<size_t N>
-    struct decay_str<const char (&)[N]>
-    {
-        using type = const std::string&;
-    };
-
-    template<typename T>
-    using decay_str_t = typename decay_str<T>::type;
-
-    template<typename... Args, size_t... Is>
-    constexpr void tuple_bind(const std::tuple<remove_cvref_t<decay_str_t<Args>>...>& src,
-        std::index_sequence<Is...>, Args&&... dest)
-    {
-        using expander = int[];
-        std::ignore = expander{ 0,
-            (
-                (void)[](auto&& x, auto&& y) {
-                    if constexpr (
-                        std::is_reference_v<
-                            decltype(x)> && !std::is_const_v<std::remove_reference_t<decltype(x)>> && !std::is_pointer_v<std::remove_reference_t<decltype(x)>>)
-                    {
-                        x = std::forward<decltype(y)>(y);
-                    }
-                }(dest, std::get<Is>(src)),
-                0)... };
-    }
-
-    template<typename... Args>
-    constexpr void tuple_bind(
-        const std::tuple<remove_cvref_t<decay_str_t<Args>>...>& src, Args&&... dest)
-    {
-        tuple_bind(src, std::make_index_sequence<sizeof...(Args)>(), std::forward<Args>(dest)...);
-    }
-} //namespace detail
-
 template<typename Serial>
 class client_interface
 {
 public:
     using bytes_t = typename Serial::bytes_t;
+    using object_t = rpc_object<Serial>;
 
     virtual ~client_interface() noexcept = default;
     client_interface() = default;
@@ -87,9 +22,9 @@ public:
 
     // nodiscard because the rpc_object should be checked for its type
     template<typename... Args>
-    [[nodiscard]] rpc_object<Serial> call_func(std::string func_name, Args&&... args)
+    [[nodiscard]] object_t call_func(std::string func_name, Args&&... args)
     {
-        auto response = rpc_object<Serial>{ func_request<detail::decay_str_t<Args>...>{
+        auto response = object_t{ detail::func_request<detail::decay_str_t<Args>...>{
             std::move(func_name), std::forward_as_tuple(args...) } };
 
         try
@@ -107,10 +42,10 @@ public:
 
     // nodiscard because the rpc_object should be checked for its type
     template<typename... Args>
-    [[nodiscard]] rpc_object<Serial> call_func_w_bind(std::string func_name, Args&&... args)
+    [[nodiscard]] object_t call_func_w_bind(std::string func_name, Args&&... args)
     {
-        auto response = rpc_object<Serial>{ func_request<detail::decay_str_t<Args>...>{
-            bind_args_tag{}, std::move(func_name), std::forward_as_tuple(args...) } };
+        auto response = object_t{ detail::func_request<detail::decay_str_t<Args>...>{
+            detail::bind_args_tag{}, std::move(func_name), std::forward_as_tuple(args...) } };
 
         try
         {
@@ -130,17 +65,18 @@ public:
 
     // nodiscard because the rpc_object should be checked for its type
     template<typename R, typename... Args>
-    [[nodiscard]] rpc_object<Serial> call_header_func_impl(
+    [[nodiscard]] object_t call_header_func_impl(
         RPC_HPP_UNUSED R (*func)(Args...), std::string func_name, Args&&... args)
     {
         return call_func_w_bind<Args...>(std::move(func_name), std::forward<Args>(args)...);
     }
 
+#if defined(RPC_HPP_ENABLE_CALLBACKS)
     template<typename R, typename... Args>
     callback_install_request install_callback(std::string func_name, R (*func)(Args...))
     {
         callback_install_request cb{ std::move(func_name), reinterpret_cast<size_t>(func) };
-        rpc_object<Serial> request{ cb };
+        object_t request{ cb };
 
         try
         {
@@ -157,23 +93,8 @@ public:
     void uninstall_callback(callback_install_request&& callback)
     {
         callback.set_uninstall(true);
-        rpc_object<Serial> request{ std::move(callback) };
+        object_t request{ std::move(callback) };
         send(request.to_bytes());
-    }
-
-#if defined(RPC_HPP_ENABLE_CALLBACKS)
-    template<typename... Args>
-    rpc_object<Serial> call_func_w_bind(std::string func_name, Args&&... args)
-    {
-        func_request<Args...> req{ bind_args_tag{}, std::move(func_name),
-            std::forward<Args>(args)... };
-
-        send(Serial::to_bytes(Serial::serialize(req)));
-
-        auto response = recv_loop();
-        assert(response.type() == rpc_object_type::func_result_w_bind);
-        tuple_bind(response.template get_request<Args...>(), std::forward<Args>(args)...);
-        return response;
     }
 #endif
 
@@ -184,7 +105,12 @@ protected:
     virtual bytes_t receive() = 0;
 
 private:
-    rpc_object<Serial> recv_loop()
+    void dispatch_callback(object_t& rpc_obj)
+    {
+        // TODO: Implement this
+    }
+
+    object_t recv_loop()
     {
         bytes_t bytes;
 
@@ -197,26 +123,23 @@ private:
             throw client_receive_error(ex.what());
         }
 
-        if (auto o_response = rpc_object<Serial>::parse_bytes(std::move(bytes));
-            o_response.has_value())
+        if (auto o_response = object_t::parse_bytes(std::move(bytes)); o_response.has_value())
         {
-            auto& response = o_response.value();
-
-            switch (response.type())
+            switch (auto& response = o_response.value(); response.type())
             {
-                case rpc_object_type::func_result:
-                case rpc_object_type::func_result_w_bind:
-                case rpc_object_type::func_error:
+                case rpc_type::func_result:
+                case rpc_type::func_result_w_bind:
+                case rpc_type::func_error:
                     return response;
 
-                case rpc_object_type::callback_request:
+                case rpc_type::callback_request:
 #if defined(RPC_HPP_ENABLE_CALLBACKS)
                 {
-                    rpc_object<Serial> resp2 = dispatch_callback(resp);
+                    dispatch_callback(response);
 
                     try
                     {
-                        send(resp2.to_bytes());
+                        send(response.to_bytes());
                     }
                     catch (const std::exception& ex)
                     {
@@ -229,8 +152,13 @@ private:
                     [[fallthrough]];
 #endif
 
+                case rpc_type::callback_error:
+                case rpc_type::callback_install_request:
+                case rpc_type::callback_result:
+                case rpc_type::callback_result_w_bind:
+                case rpc_type::func_request:
                 default:
-                    throw rpc_object_type_mismatch("Invalid rpc_object type detected");
+                    throw rpc_object_mismatch("Invalid rpc_object type detected");
             }
         }
 

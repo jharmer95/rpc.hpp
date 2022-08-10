@@ -1,5 +1,5 @@
 #if defined(RPC_HPP_BENCH_GRPC)
-#    include "grpc/client.hpp"
+#  include "grpc/client.hpp"
 
 static gRPC_Client& GetGrpcClient()
 {
@@ -9,7 +9,7 @@ static gRPC_Client& GetGrpcClient()
 #endif
 
 #if defined(RPC_HPP_BENCH_RPCLIB)
-#    include <rpc/client.h>
+#  include <rpc/client.h>
 
 static rpc::client& GetRpclibClient()
 {
@@ -18,7 +18,6 @@ static rpc::client& GetRpclibClient()
 }
 #endif
 
-#define RPC_HPP_CLIENT_IMPL
 #include "test_client/rpc.client.hpp"
 #include "test_structs.hpp"
 
@@ -46,8 +45,9 @@ void bench_rpc(
         [&]
         {
             nanobench::doNotOptimizeAway(
-                test_val = GetClient<njson_adapter>().template call_func<T>(
-                    func_name, std::forward<Args>(args)...));
+                test_val = GetClient<njson_adapter>()
+                               .call_func(func_name, std::forward<Args>(args)...)
+                               .template get_result<T>());
         });
 
     if constexpr (std::is_floating_point_v<T>)
@@ -64,8 +64,9 @@ void bench_rpc(
         [&]
         {
             nanobench::doNotOptimizeAway(
-                test_val = GetClient<rapidjson_adapter>().template call_func<T>(
-                    func_name, std::forward<Args>(args)...));
+                test_val = GetClient<rapidjson_adapter>()
+                               .call_func(func_name, std::forward<Args>(args)...)
+                               .template get_result<T>());
         });
 
     if constexpr (std::is_floating_point_v<T>)
@@ -83,8 +84,9 @@ void bench_rpc(
         [&]
         {
             nanobench::doNotOptimizeAway(
-                test_val = GetClient<boost_json_adapter>().template call_func<T>(
-                    func_name, std::forward<Args>(args)...));
+                test_val = GetClient<boost_json_adapter>()
+                               .call_func(func_name, std::forward<Args>(args)...)
+                               .template get_result<T>());
         });
 
     if constexpr (std::is_floating_point_v<T>)
@@ -102,8 +104,9 @@ void bench_rpc(
         [&]
         {
             nanobench::doNotOptimizeAway(
-                test_val = GetClient<bitsery_adapter>().template call_func<T>(
-                    func_name, std::forward<Args>(args)...));
+                test_val = GetClient<bitsery_adapter>()
+                               .call_func<T>(func_name, std::forward<Args>(args)...)
+                               .template get_result<T>());
         });
 
     if constexpr (std::is_floating_point_v<T>)
@@ -233,32 +236,40 @@ TEST_CASE("Sequential")
     b.run("rpc.hpp (asio::tcp, njson)",
         [&]
         {
-            auto vec = GetClient<njson_adapter>().template call_func<std::vector<uint64_t>>(
-                "GenRandInts", min_num, max_num, num_rands);
+            auto vec = GetClient<njson_adapter>()
+                           .call_func("GenRandInts", min_num, max_num, num_rands)
+                           .template get_result<std::vector<uint64_t>>();
 
             for (auto& val : vec)
             {
-                val = GetClient<njson_adapter>().template call_func<uint64_t>("Fibonacci", val);
+                val = GetClient<njson_adapter>()
+                          .call_func("Fibonacci", val)
+                          .template get_result<uint64_t>();
             }
 
-            nanobench::doNotOptimizeAway(GetClient<njson_adapter>().template call_func<double>(
-                "AverageContainer<uint64_t>", vec));
+            nanobench::doNotOptimizeAway(GetClient<njson_adapter>()
+                                             .call_func("AverageContainer<uint64_t>", vec)
+                                             .template get_result<double>());
         });
 
 #if defined(RPC_HPP_ENABLE_RAPIDJSON)
     b.run("rpc.hpp (asio::tcp, rapidjson)",
         [&]
         {
-            auto vec = GetClient<rapidjson_adapter>().template call_func<std::vector<uint64_t>>(
-                "GenRandInts", min_num, max_num, num_rands);
+            auto vec = GetClient<rapidjson_adapter>()
+                           .call_func("GenRandInts", min_num, max_num, num_rands)
+                           .template get_result<std::vector<uint64_t>>();
 
             for (auto& val : vec)
             {
-                val = GetClient<rapidjson_adapter>().template call_func<uint64_t>("Fibonacci", val);
+                val = GetClient<rapidjson_adapter>()
+                          .call_func("Fibonacci", val)
+                          .template get_result<uint64_t>();
             }
 
-            nanobench::doNotOptimizeAway(GetClient<rapidjson_adapter>().template call_func<double>(
-                "AverageContainer<uint64_t>", vec));
+            nanobench::doNotOptimizeAway(GetClient<rapidjson_adapter>()
+                                             .call_func("AverageContainer<uint64_t>", vec)
+                                             .template get_result<double>());
         });
 #endif
 
@@ -271,12 +282,14 @@ TEST_CASE("Sequential")
 
             for (auto& val : vec)
             {
-                val =
-                    GetClient<boost_json_adapter>().template call_func<uint64_t>("Fibonacci", val);
+                val = GetClient<boost_json_adapter>()
+                          .call_func("Fibonacci", val)
+                          .template get_result<uint64_t>();
             }
 
-            nanobench::doNotOptimizeAway(GetClient<boost_json_adapter>().template call_func<double>(
-                "AverageContainer<uint64_t>", vec));
+            nanobench::doNotOptimizeAway(GetClient<boost_json_adapter>()
+                                             .call_func("AverageContainer<uint64_t>", vec)
+                                             .template get_result<double>());
         });
 #endif
 
@@ -284,16 +297,20 @@ TEST_CASE("Sequential")
     b.run("rpc.hpp (asio::tcp, bitsery)",
         [&]
         {
-            auto vec = GetClient<bitsery_adapter>().template call_func<std::vector<uint64_t>>(
-                "GenRandInts", min_num, max_num, num_rands);
+            auto vec = GetClient<bitsery_adapter>()
+                           .call_func("GenRandInts", min_num, max_num, num_rands)
+                           .template get_result<std::vector<uint64_t>>();
 
             for (auto& val : vec)
             {
-                val = GetClient<bitsery_adapter>().template call_func<uint64_t>("Fibonacci", val);
+                val = GetClient<bitsery_adapter>()
+                          .call_func("Fibonacci", val)
+                          .template get_result<uint64_t>();
             }
 
-            nanobench::doNotOptimizeAway(GetClient<bitsery_adapter>().template call_func<double>(
-                "AverageContainer<uint64_t>", vec));
+            nanobench::doNotOptimizeAway(GetClient<bitsery_adapter>()
+                                             .call_func("AverageContainer<uint64_t>", vec)
+                                             .template get_result<double>());
         });
 #endif
 
@@ -359,7 +376,7 @@ TEST_CASE("KillServer")
 
     try
     {
-        client.call_func("KillServer");
+        std::ignore = client.call_func("KillServer");
     }
     catch (...)
     {

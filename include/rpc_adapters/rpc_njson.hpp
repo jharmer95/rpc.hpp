@@ -82,13 +82,13 @@ public:
         return serial_obj["func_name"];
     }
 
-    [[nodiscard]] static rpc_object_type get_type(const nlohmann::json& serial_obj)
+    [[nodiscard]] static rpc_type get_type(const nlohmann::json& serial_obj)
     {
-        return static_cast<rpc_object_type>(serial_obj["type"].get<int>());
+        return static_cast<rpc_type>(serial_obj["type"].get<int>());
     }
 
     template<typename R>
-    [[nodiscard]] static func_result<R> get_result(const nlohmann::json& serial_obj)
+    [[nodiscard]] static detail::func_result<R> get_result(const nlohmann::json& serial_obj)
     {
         if constexpr (std::is_void_v<R>)
         {
@@ -101,7 +101,7 @@ public:
     }
 
     template<typename R>
-    [[nodiscard]] static nlohmann::json serialize_result(const func_result<R>& result)
+    [[nodiscard]] static nlohmann::json serialize_result(const detail::func_result<R>& result)
     {
         nlohmann::json obj{};
         obj["func_name"] = result.get_func_name();
@@ -112,12 +112,12 @@ public:
             push_arg(result.get_result(), obj["result"]);
         }
 
-        obj["type"] = static_cast<int>(rpc_object_type::func_result);
+        obj["type"] = static_cast<int>(rpc_type::func_result);
         return obj;
     }
 
     template<typename R, typename... Args>
-    [[nodiscard]] static func_result_w_bind<R, Args...> get_result_w_bind(
+    [[nodiscard]] static detail::func_result_w_bind<R, Args...> get_result_w_bind(
         const nlohmann::json& serial_obj)
     {
         const auto& args_val = serial_obj["args"];
@@ -136,7 +136,7 @@ public:
 
     template<typename R, typename... Args>
     [[nodiscard]] static nlohmann::json serialize_result_w_bind(
-        const func_result_w_bind<R, Args...>& result)
+        const detail::func_result_w_bind<R, Args...>& result)
     {
         nlohmann::json obj{};
         obj["func_name"] = result.get_func_name();
@@ -154,12 +154,12 @@ public:
             push_arg(result.get_result(), obj["result"]);
         }
 
-        obj["type"] = static_cast<int>(rpc_object_type::func_result_w_bind);
+        obj["type"] = static_cast<int>(rpc_type::func_result_w_bind);
         return obj;
     }
 
     template<typename... Args>
-    [[nodiscard]] static func_request<Args...> get_request(const nlohmann::json& serial_obj)
+    [[nodiscard]] static detail::func_request<Args...> get_request(const nlohmann::json& serial_obj)
     {
         const auto& args_val = serial_obj["args"];
         const bool is_bound_args = serial_obj["bind_args"];
@@ -170,18 +170,20 @@ public:
         }
 
         [[maybe_unused]] unsigned arg_counter = 0;
-        typename func_request<Args...>::args_t args = { parse_args<Args>(
+        typename detail::func_request<Args...>::args_t args = { parse_args<Args>(
             args_val, arg_counter)... };
 
         std::string func_name = serial_obj["func_name"];
 
         return is_bound_args
-            ? func_request<Args...>{ bind_args_tag{}, std::move(func_name), std::move(args) }
-            : func_request<Args...>{ std::move(func_name), std::move(args) };
+            ? detail::func_request<Args...>{ detail::bind_args_tag{}, std::move(func_name),
+                  std::move(args) }
+            : detail::func_request<Args...>{ std::move(func_name), std::move(args) };
     }
 
     template<typename... Args>
-    [[nodiscard]] static nlohmann::json serialize_request(const func_request<Args...>& request)
+    [[nodiscard]] static nlohmann::json serialize_request(
+        const detail::func_request<Args...>& request)
     {
         nlohmann::json obj{};
         obj["func_name"] = request.get_func_name();
@@ -193,23 +195,23 @@ public:
         detail::for_each_tuple(request.get_args(),
             [&arg_arr](auto&& elem) { push_args(std::forward<decltype(elem)>(elem), arg_arr); });
 
-        obj["type"] = static_cast<int>(rpc_object_type::func_request);
+        obj["type"] = static_cast<int>(rpc_type::func_request);
         return obj;
     }
 
-    [[nodiscard]] static func_error get_error(const nlohmann::json& serial_obj)
+    [[nodiscard]] static detail::func_error get_error(const nlohmann::json& serial_obj)
     {
         return { serial_obj["func_name"], static_cast<exception_type>(serial_obj["except_type"]),
             serial_obj["err_mesg"] };
     }
 
-    [[nodiscard]] static nlohmann::json serialize_error(const func_error& error)
+    [[nodiscard]] static nlohmann::json serialize_error(const detail::func_error& error)
     {
         nlohmann::json obj{};
         obj["func_name"] = error.get_func_name();
         obj["err_mesg"] = error.get_err_mesg();
         obj["except_type"] = static_cast<int>(error.get_except_type());
-        obj["type"] = static_cast<int>(rpc_object_type::func_error);
+        obj["type"] = static_cast<int>(rpc_type::func_error);
         return obj;
     }
 
@@ -228,7 +230,7 @@ public:
         obj["func_name"] = callback_req.get_func_name();
         obj["is_uninstall"] = callback_req.is_uninstall();
         obj["id"] = callback_req.get_id();
-        obj["type"] = static_cast<int>(rpc_object_type::callback_install_request);
+        obj["type"] = static_cast<int>(rpc_type::callback_install_request);
         return obj;
     }
 

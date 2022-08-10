@@ -34,7 +34,7 @@
 ///OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ///
 
-#define RPC_HPP_CLIENT_IMPL
+//#define RPC_HPP_ENABLE_CALLBACKS
 
 #include "rpc.client.hpp"
 #include "../test_structs.hpp"
@@ -45,8 +45,8 @@
 
 #if defined(RPC_HPP_ENABLE_BITSERY)
 constexpr uint64_t bitsery_adapter::config::max_func_name_size = 30;
-constexpr uint64_t bitsery_adapter::config::max_string_size = 2048;
-constexpr uint64_t bitsery_adapter::config::max_container_size = 100;
+constexpr uint64_t bitsery_adapter::config::max_string_size = 2'048;
+constexpr uint64_t bitsery_adapter::config::max_container_size = 1'000;
 #endif
 
 template<typename Serial>
@@ -55,7 +55,7 @@ void TestType()
     auto& client = GetClient<Serial>();
     const auto response = client.call_func("SimpleSum", 1, 2);
 
-    REQUIRE(response.type() == rpc_hpp::rpc_object_type::func_result);
+    REQUIRE(response.type() == rpc_hpp::rpc_type::func_result);
     REQUIRE(response.template get_result<int>() == 3);
 }
 
@@ -170,10 +170,10 @@ TEST_CASE_TEMPLATE("StrLen", TestType, RPC_TEST_TYPES)
     static constexpr char cstr[] = "12345";
     const auto response2 = client.call_func("StrLen", cstr);
 
-    REQUIRE(response.type() == rpc_hpp::rpc_object_type::func_result);
+    REQUIRE(response.type() == rpc_hpp::rpc_type::func_result);
     REQUIRE(response.template get_result<size_t>() == test_str_len);
 
-    REQUIRE(response2.type() == rpc_hpp::rpc_object_type::func_result);
+    REQUIRE(response2.type() == rpc_hpp::rpc_type::func_result);
     REQUIRE(response2.template get_result<size_t>() == 5);
 }
 
@@ -183,7 +183,7 @@ TEST_CASE_TEMPLATE("AddOneToEach", TestType, RPC_TEST_TYPES)
     const std::vector<int> vec{ 2, 4, 6, 8 };
     const auto response = client.call_func("AddOneToEach", vec);
 
-    REQUIRE(response.type() == rpc_hpp::rpc_object_type::func_result);
+    REQUIRE(response.type() == rpc_hpp::rpc_type::func_result);
 
     const auto result = response.template get_result<std::vector<int>>();
 
@@ -202,7 +202,7 @@ TEST_CASE_TEMPLATE("AddOneToEachRef", TestType, RPC_TEST_TYPES)
     std::vector<int> vec2{ 1, 3, 5, 7 };
     const auto response = client.call_func_w_bind("AddOneToEachRef", vec2);
 
-    REQUIRE(response.type() == rpc_hpp::rpc_object_type::func_result_w_bind);
+    REQUIRE(response.type() == rpc_hpp::rpc_type::func_result_w_bind);
     REQUIRE(vec2.size() == vec.size());
 
     for (size_t i = 0; i < vec2.size(); ++i)
@@ -219,7 +219,7 @@ TEST_CASE_TEMPLATE("Fibonacci", TestType, RPC_TEST_TYPES)
 
     const auto response = client.call_func("Fibonacci", input);
 
-    REQUIRE(response.type() == rpc_hpp::rpc_object_type::func_result);
+    REQUIRE(response.type() == rpc_hpp::rpc_type::func_result);
     REQUIRE(response.template get_result<uint64_t>() == expected);
 }
 
@@ -231,7 +231,7 @@ TEST_CASE_TEMPLATE("FibonacciRef", TestType, RPC_TEST_TYPES)
     uint64_t test = 20;
     const auto response = client.call_func_w_bind("FibonacciRef", test);
 
-    REQUIRE(response.type() == rpc_hpp::rpc_object_type::func_result_w_bind);
+    REQUIRE(response.type() == rpc_hpp::rpc_type::func_result_w_bind);
     REQUIRE(expected == test);
 }
 
@@ -243,7 +243,7 @@ TEST_CASE_TEMPLATE("StdDev", TestType, RPC_TEST_TYPES)
     const auto response = client.call_func("StdDev", 55.65, 125.325, 552.125, 12.767, 2599.6,
         1245.125663, 9783.49, 125.12, 553.3333333333, 2266.1);
 
-    REQUIRE(response.type() == rpc_hpp::rpc_object_type::func_result);
+    REQUIRE(response.type() == rpc_hpp::rpc_type::func_result);
     REQUIRE(response.template get_result<double>() == doctest::Approx(expected));
 }
 
@@ -266,7 +266,7 @@ TEST_CASE_TEMPLATE("SquareRootRef", TestType, RPC_TEST_TYPES)
     const auto response =
         client.call_func_w_bind("SquareRootRef", n1, n2, n3, n4, n5, n6, n7, n8, n9, n10);
 
-    REQUIRE(response.type() == rpc_hpp::rpc_object_type::func_result_w_bind);
+    REQUIRE(response.type() == rpc_hpp::rpc_type::func_result_w_bind);
 
     const auto test = n1 + n2 + n3 + n4 + n5 + n6 + n7 + n8 + n9 + n10;
     REQUIRE(test == doctest::Approx(expected).epsilon(0.001));
@@ -282,7 +282,7 @@ TEST_CASE_TEMPLATE("AverageContainer<double>", TestType, RPC_TEST_TYPES)
 
     const auto response = client.call_func("AverageContainer<double>", vec);
 
-    REQUIRE(response.type() == rpc_hpp::rpc_object_type::func_result);
+    REQUIRE(response.type() == rpc_hpp::rpc_type::func_result);
     REQUIRE(response.template get_result<double>() == doctest::Approx(expected).epsilon(0.001));
 }
 
@@ -296,7 +296,7 @@ TEST_CASE_TEMPLATE("HashComplex", TestType, RPC_TEST_TYPES)
 
     const auto response = client.call_func("HashComplex", cx);
 
-    REQUIRE(response.type() == rpc_hpp::rpc_object_type::func_result);
+    REQUIRE(response.type() == rpc_hpp::rpc_type::func_result);
     REQUIRE(response.template get_result<std::string>() == expected);
 }
 
@@ -314,7 +314,7 @@ TEST_CASE_TEMPLATE("HashComplexRef", TestType, RPC_TEST_TYPES)
     // re-assign string to arg<1>
     const auto response = client.call_func_w_bind("HashComplexRef", cx, test);
 
-    REQUIRE(response.type() == rpc_hpp::rpc_object_type::func_result_w_bind);
+    REQUIRE(response.type() == rpc_hpp::rpc_type::func_result_w_bind);
     REQUIRE(expected == test);
 }
 
@@ -339,7 +339,7 @@ TEST_CASE_TEMPLATE("FunctionMismatch", TestType, RPC_TEST_TYPES)
     REQUIRE(obj.get_error_type() == rpc_hpp::exception_type::signature_mismatch);
 
     obj = client.call_func("SimpleSum", 1, 2);
-    REQUIRE(obj.type() == rpc_hpp::rpc_object_type::func_result);
+    REQUIRE(obj.type() == rpc_hpp::rpc_type::func_result);
     REQUIRE_THROWS_AS(
         (std::ignore = obj.template get_result<std::string>()), rpc_hpp::function_mismatch);
 
@@ -358,6 +358,7 @@ TEST_CASE_TEMPLATE("FunctionMismatch", TestType, RPC_TEST_TYPES)
 
     obj = client.call_func("StdDev", -4.2, 125.325, 552.125, 55.123, 2599.6, 1245.125663, 9783.49,
         125.12, 553.3333333333, 2266.1, 111.222, 1234.56789);
+
     REQUIRE(obj.is_error());
     REQUIRE(obj.get_error_type() == rpc_hpp::exception_type::signature_mismatch);
 }
@@ -379,6 +380,7 @@ TEST_CASE_TEMPLATE("InvalidObject", TestType, RPC_TEST_TYPES)
 #if defined(RPC_HPP_ENABLE_BITSERY)
     if (std::is_same_v<TestType, bitsery_adapter>)
     {
+        // Ignoring bitsery
         // TODO: Verify bitsery data somehow
         return;
     }
@@ -387,7 +389,7 @@ TEST_CASE_TEMPLATE("InvalidObject", TestType, RPC_TEST_TYPES)
     typename TestType::bytes_t bytes{};
     bytes.resize(8);
 
-    std::iota(bytes.begin(), bytes.end(), 0);
+    std::iota(bytes.begin(), bytes.end(), typename TestType::bytes_t::value_type{});
 
     auto& client = GetClient<TestType>();
     client.send(std::move(bytes));

@@ -11,7 +11,7 @@
 #define RPC_HPP_POSTCONDITION(EXPR) assert(EXPR)
 #define RPC_HPP_PRECONDITION(EXPR) assert(EXPR)
 
-#if __GNUC__ < 9 || (__GNUC__ == 9 && __GNUC_MINOR__ < 3)
+#if defined(__GNUC__) && (__GNUC__ < 9 || (__GNUC__ == 9 && __GNUC_MINOR__ < 3))
 // Workaround for bug in GCC
 #  define RPC_HPP_UNUSED __attribute__((unused))
 #else
@@ -20,289 +20,6 @@
 
 namespace rpc_hpp
 {
-namespace adapters
-{
-    template<typename T>
-    struct serial_traits;
-}
-
-namespace detail
-{
-#if defined(__cpp_lib_remove_cvref)
-    using std::remove_cvref;
-    using std::remove_cvref_t;
-#else
-    // backport for C++20's remove_cvref
-    template<typename T>
-    struct remove_cvref
-    {
-        using type = std::remove_cv_t<std::remove_reference_t<T>>;
-    };
-
-    template<typename T>
-    using remove_cvref_t = typename remove_cvref<T>::type;
-#endif
-
-    template<typename, typename T>
-    struct is_serializable_base
-    {
-        static_assert(std::integral_constant<T, false>::value,
-            "Second template parameter needs to be of function type");
-    };
-
-    template<typename C, typename R, typename... Args>
-    struct is_serializable_base<C, R(Args...)>
-    {
-    private:
-        template<typename T>
-        static constexpr auto check(T*) noexcept ->
-            typename std::is_same<decltype(std::declval<T>().serialize(std::declval<Args>()...)),
-                R>::type;
-
-        template<typename>
-        static constexpr std::false_type check(...) noexcept;
-
-        using type = decltype(check<C>(nullptr));
-
-    public:
-        static constexpr bool value = type::value;
-    };
-
-    template<typename, typename T>
-    struct is_deserializable_base
-    {
-        static_assert(std::integral_constant<T, false>::value,
-            "Second template parameter needs to be of function type");
-    };
-
-    template<typename C, typename R, typename... Args>
-    struct is_deserializable_base<C, R(Args...)>
-    {
-    private:
-        template<typename T>
-        static constexpr auto check(T*) noexcept ->
-            typename std::is_same<decltype(std::declval<T>().deserialize(std::declval<Args>()...)),
-                R>::type;
-
-        template<typename>
-        static constexpr std::false_type check(...) noexcept;
-
-        using type = decltype(check<C>(nullptr));
-
-    public:
-        static constexpr bool value = type::value;
-    };
-
-    template<typename Serial, typename Value>
-    struct is_serializable :
-        std::integral_constant<bool,
-            is_serializable_base<Value, typename Serial::serial_t(const Value&)>::value
-                && is_deserializable_base<Value, Value(const typename Serial::serial_t&)>::value>
-    {
-    };
-
-    template<typename Serial, typename Value>
-    inline constexpr bool is_serializable_v = is_serializable<Serial, Value>::value;
-
-    template<typename C>
-    struct has_begin
-    {
-    private:
-        template<typename T>
-        static constexpr auto check(T*) noexcept ->
-            typename std::is_same<decltype(std::declval<T>().begin()), typename T::iterator>::type;
-
-        template<typename>
-        static constexpr std::false_type check(...) noexcept;
-
-        using type = decltype(check<C>(nullptr));
-
-    public:
-        static constexpr bool value = type::value;
-    };
-
-    template<typename C>
-    struct has_end
-    {
-    private:
-        template<typename T>
-        static constexpr auto check(T*) noexcept ->
-            typename std::is_same<decltype(std::declval<T>().end()), typename T::iterator>::type;
-
-        template<typename>
-        static constexpr std::false_type check(...) noexcept;
-
-        using type = decltype(check<C>(nullptr));
-
-    public:
-        static constexpr bool value = type::value;
-    };
-
-    template<typename C>
-    struct has_size
-    {
-    private:
-        template<typename T>
-        static constexpr auto check(T*) noexcept ->
-            typename std::is_same<decltype(std::declval<T>().size()), size_t>::type;
-
-        template<typename>
-        static constexpr std::false_type check(...) noexcept;
-
-        using type = decltype(check<C>(nullptr));
-
-    public:
-        static constexpr bool value = type::value;
-    };
-
-    template<typename C>
-    struct is_container :
-        std::integral_constant<bool, has_size<C>::value && has_begin<C>::value && has_end<C>::value>
-    {
-    };
-
-    template<typename C>
-    inline constexpr bool is_container_v = is_container<C>::value;
-
-    template<typename F, typename... Ts, size_t... Is>
-    constexpr void for_each_tuple(const std::tuple<Ts...>& tuple, const F& func,
-        RPC_HPP_UNUSED std::index_sequence<Is...> iseq)
-    {
-        using expander = int[];
-        std::ignore = expander{ 0, ((void)func(std::get<Is>(tuple)), 0)... };
-    }
-
-    template<typename F, typename... Ts>
-    constexpr void for_each_tuple(const std::tuple<Ts...>& tuple, const F& func)
-    {
-        for_each_tuple(tuple, func, std::make_index_sequence<sizeof...(Ts)>());
-    }
-} //namespace detail
-
-struct bind_args_tag
-{
-};
-
-template<typename... Args>
-class func_request
-{
-public:
-    using args_t = std::tuple<detail::remove_cvref_t<Args>...>;
-
-    func_request(std::string func_name, args_t args)
-        : m_func_name(std::move(func_name)), m_args(std::move(args))
-    {
-    }
-
-    func_request(std::string func_name, detail::remove_cvref_t<Args>&&... args)
-        : m_func_name(std::move(func_name)), m_args(std::forward_as_tuple(args...))
-    {
-    }
-
-    func_request(RPC_HPP_UNUSED bind_args_tag tag, std::string func_name,
-        detail::remove_cvref_t<Args>&&... args)
-        : m_bind_args(true),
-          m_func_name(std::move(func_name)),
-          m_args(std::forward_as_tuple(args...))
-    {
-    }
-
-    func_request(RPC_HPP_UNUSED bind_args_tag tag, std::string func_name, args_t args)
-        : m_bind_args(true), m_func_name(std::move(func_name)), m_args(std::move(args))
-    {
-    }
-
-    bool has_bound_args() const { return m_bind_args; }
-    const std::string& get_func_name() const { return m_func_name; }
-    const args_t& get_args() const { return m_args; }
-
-private:
-    bool m_bind_args{ false };
-    std::string m_func_name;
-    args_t m_args;
-};
-
-template<typename R>
-class func_result
-{
-public:
-    func_result(std::string func_name, R result)
-        : m_func_name(std::move(func_name)), m_result(std::move(result))
-    {
-    }
-
-    const std::string& get_func_name() const { return m_func_name; }
-    const R& get_result() const { return m_result; }
-
-private:
-    std::string m_func_name;
-    R m_result;
-};
-
-template<>
-class func_result<void>
-{
-public:
-    func_result(std::string func_name) : m_func_name(std::move(func_name)) {}
-
-    const std::string& get_func_name() const { return m_func_name; }
-
-private:
-    std::string m_func_name;
-};
-
-template<typename R, typename... Args>
-class func_result_w_bind
-{
-public:
-    using args_t = std::tuple<detail::remove_cvref_t<Args>...>;
-
-    func_result_w_bind(std::string func_name, R result, args_t args)
-        : m_result(std::move(result)), m_func_name(std::move(func_name)), m_args(std::move(args))
-    {
-    }
-
-    func_result_w_bind(std::string func_name, R result, detail::remove_cvref_t<Args>&&... args)
-        : m_result(std::move(result)),
-          m_func_name(std::move(func_name)),
-          m_args(std::forward_as_tuple<Args>(args)...)
-    {
-    }
-
-    const std::string& get_func_name() const { return m_func_name; }
-    const R& get_result() const { return m_result; }
-    const args_t& get_args() const { return m_args; }
-
-private:
-    R m_result;
-    std::string m_func_name;
-    args_t m_args;
-};
-
-template<typename... Args>
-class func_result_w_bind<void, Args...>
-{
-public:
-    using args_t = std::tuple<detail::remove_cvref_t<Args>...>;
-
-    func_result_w_bind(std::string func_name, args_t args)
-        : m_func_name(std::move(func_name)), m_args(std::move(args))
-    {
-    }
-
-    func_result_w_bind(std::string func_name, detail::remove_cvref_t<Args>&&... args)
-        : m_func_name(std::move(func_name)), m_args(std::forward_as_tuple<Args>(args)...)
-    {
-    }
-
-    const std::string& get_func_name() const { return m_func_name; }
-    const args_t& get_args() const { return m_args; }
-
-private:
-    std::string m_func_name;
-    args_t m_args;
-};
-
 enum class exception_type
 {
     none,
@@ -316,6 +33,8 @@ enum class exception_type
     server_send,
     server_receive,
     rpc_object_mismatch,
+    callback_install,
+    callback_missing,
 };
 
 class rpc_exception : public std::runtime_error
@@ -463,84 +182,588 @@ public:
     }
 };
 
-class rpc_object_type_mismatch : public rpc_exception
+class rpc_object_mismatch : public rpc_exception
 {
 public:
-    explicit rpc_object_type_mismatch(const std::string& mesg) noexcept
+    explicit rpc_object_mismatch(const std::string& mesg) noexcept
         : rpc_exception(mesg, exception_type::rpc_object_mismatch)
     {
     }
 
-    explicit rpc_object_type_mismatch(const char* mesg) noexcept
+    explicit rpc_object_mismatch(const char* mesg) noexcept
         : rpc_exception(mesg, exception_type::rpc_object_mismatch)
     {
     }
 };
 
-class func_error
+class callback_install_error : public rpc_exception
+{
+    explicit callback_install_error(const std::string& mesg) noexcept
+        : rpc_exception(mesg, exception_type::callback_install)
+    {
+    }
+
+    explicit callback_install_error(const char* mesg) noexcept
+        : rpc_exception(mesg, exception_type::callback_install)
+    {
+    }
+};
+
+class callback_missing : public rpc_exception
 {
 public:
-    func_error(std::string func_name, const rpc_exception& except)
-        : m_except_type(except.get_type()),
-          m_func_name(std::move(func_name)),
-          m_err_mesg(except.what())
+    explicit callback_missing(const std::string& mesg) noexcept
+        : rpc_exception(mesg, exception_type::callback_missing)
     {
     }
 
-    func_error(std::string func_name, exception_type ex_type, std::string err_mesg)
-        : m_except_type(ex_type), m_func_name(std::move(func_name)), m_err_mesg(std::move(err_mesg))
+    explicit callback_missing(const char* mesg) noexcept
+        : rpc_exception(mesg, exception_type::callback_missing)
     {
     }
+};
 
-    const std::string& get_func_name() const { return m_func_name; }
-    const std::string& get_err_mesg() const { return m_err_mesg; }
-    exception_type get_except_type() const { return m_except_type; }
-
-    [[noreturn]] void rethrow() const
+namespace detail
+{
+    // backport for C++20's remove_cvref
+    template<typename T>
+    struct remove_cvref
     {
-        switch (m_except_type)
+        using type = std::remove_cv_t<std::remove_reference_t<T>>;
+    };
+
+    template<typename T>
+    using remove_cvref_t = typename remove_cvref<T>::type;
+
+    template<typename, typename T>
+    struct is_serializable_base
+    {
+        static_assert(std::integral_constant<T, false>::value,
+            "Second template parameter needs to be of function type");
+    };
+
+    template<typename C, typename R, typename... Args>
+    struct is_serializable_base<C, R(Args...)>
+    {
+    private:
+        template<typename T>
+        static constexpr auto check(T*) noexcept ->
+            typename std::is_same<decltype(std::declval<T>().serialize(std::declval<Args>()...)),
+                R>::type;
+
+        template<typename>
+        static constexpr std::false_type check(...) noexcept;
+
+        using type = decltype(check<C>(nullptr));
+
+    public:
+        static constexpr bool value = type::value;
+    };
+
+    template<typename, typename T>
+    struct is_deserializable_base
+    {
+        static_assert(std::integral_constant<T, false>::value,
+            "Second template parameter needs to be of function type");
+    };
+
+    template<typename C, typename R, typename... Args>
+    struct is_deserializable_base<C, R(Args...)>
+    {
+    private:
+        template<typename T>
+        static constexpr auto check(T*) noexcept ->
+            typename std::is_same<decltype(std::declval<T>().deserialize(std::declval<Args>()...)),
+                R>::type;
+
+        template<typename>
+        static constexpr std::false_type check(...) noexcept;
+
+        using type = decltype(check<C>(nullptr));
+
+    public:
+        static constexpr bool value = type::value;
+    };
+
+    template<typename Serial, typename Value>
+    struct is_serializable :
+        std::integral_constant<bool,
+            is_serializable_base<Value, typename Serial::serial_t(const Value&)>::value
+                && is_deserializable_base<Value, Value(const typename Serial::serial_t&)>::value>
+    {
+    };
+
+    template<typename Serial, typename Value>
+    inline constexpr bool is_serializable_v = is_serializable<Serial, Value>::value;
+
+    template<typename C>
+    struct has_begin
+    {
+    private:
+        template<typename T>
+        static constexpr auto check(T*) noexcept ->
+            typename std::is_same<decltype(std::declval<T>().begin()), typename T::iterator>::type;
+
+        template<typename>
+        static constexpr std::false_type check(...) noexcept;
+
+        using type = decltype(check<C>(nullptr));
+
+    public:
+        static constexpr bool value = type::value;
+    };
+
+    template<typename C>
+    struct has_end
+    {
+    private:
+        template<typename T>
+        static constexpr auto check(T*) noexcept ->
+            typename std::is_same<decltype(std::declval<T>().end()), typename T::iterator>::type;
+
+        template<typename>
+        static constexpr std::false_type check(...) noexcept;
+
+        using type = decltype(check<C>(nullptr));
+
+    public:
+        static constexpr bool value = type::value;
+    };
+
+    template<typename C>
+    struct has_size
+    {
+    private:
+        template<typename T>
+        static constexpr auto check(T*) noexcept ->
+            typename std::is_same<decltype(std::declval<T>().size()), size_t>::type;
+
+        template<typename>
+        static constexpr std::false_type check(...) noexcept;
+
+        using type = decltype(check<C>(nullptr));
+
+    public:
+        static constexpr bool value = type::value;
+    };
+
+    template<typename C>
+    struct is_container :
+        std::integral_constant<bool, has_size<C>::value && has_begin<C>::value && has_end<C>::value>
+    {
+    };
+
+    template<typename C>
+    inline constexpr bool is_container_v = is_container<C>::value;
+
+    template<typename F, typename... Ts, size_t... Is>
+    constexpr void for_each_tuple(const std::tuple<Ts...>& tuple, const F& func,
+        RPC_HPP_UNUSED std::index_sequence<Is...> iseq)
+    {
+        using expander = int[];
+        std::ignore = expander{ 0, ((void)func(std::get<Is>(tuple)), 0)... };
+    }
+
+    template<typename F, typename... Ts>
+    constexpr void for_each_tuple(const std::tuple<Ts...>& tuple, const F& func)
+    {
+        for_each_tuple(tuple, func, std::make_index_sequence<sizeof...(Ts)>());
+    }
+
+    template<typename T>
+    struct decay_str
+    {
+        static_assert(!std::is_pointer_v<remove_cvref_t<T>>, "Pointer parameters are not allowed");
+
+        static_assert(
+            !std::is_array_v<remove_cvref_t<T>>, "C-style array parameters are not allowed");
+
+        using type = T;
+    };
+
+    template<>
+    struct decay_str<const char*>
+    {
+        using type = const std::string&;
+    };
+
+    template<>
+    struct decay_str<const char*&>
+    {
+        using type = const std::string&;
+    };
+
+    template<>
+    struct decay_str<const char* const&>
+    {
+        using type = const std::string&;
+    };
+
+    template<size_t N>
+    struct decay_str<const char (&)[N]>
+    {
+        using type = const std::string&;
+    };
+
+    template<typename T>
+    using decay_str_t = typename decay_str<T>::type;
+
+    template<typename... Args, size_t... Is>
+    constexpr void tuple_bind(const std::tuple<remove_cvref_t<decay_str_t<Args>>...>& src,
+        RPC_HPP_UNUSED std::index_sequence<Is...> iseq, Args&&... dest)
+    {
+        using expander = int[];
+        std::ignore = expander{ 0,
+            (
+                (void)[](auto&& x, auto&& y) {
+                    if constexpr (
+                        std::is_reference_v<
+                            decltype(x)> && !std::is_const_v<std::remove_reference_t<decltype(x)>> && !std::is_pointer_v<std::remove_reference_t<decltype(x)>>)
+                    {
+                        x = std::forward<decltype(y)>(y);
+                    }
+                }(dest, std::get<Is>(src)),
+                0)... };
+    }
+
+    template<typename... Args>
+    constexpr void tuple_bind(
+        const std::tuple<remove_cvref_t<decay_str_t<Args>>...>& src, Args&&... dest)
+    {
+        tuple_bind(src, std::make_index_sequence<sizeof...(Args)>(), std::forward<Args>(dest)...);
+    }
+
+    struct bind_args_tag
+    {
+    };
+
+    template<typename... Args>
+    class func_request
+    {
+    public:
+        using args_t = std::tuple<remove_cvref_t<Args>...>;
+
+        func_request(std::string func_name, remove_cvref_t<Args>&&... args)
+            : m_func_name(std::move(func_name)), m_args(std::forward_as_tuple(args...))
         {
-            case exception_type::func_not_found:
-                throw function_not_found(m_err_mesg);
-
-            case exception_type::remote_exec:
-                throw remote_exec_error(m_err_mesg);
-
-            case exception_type::serialization:
-                throw serialization_error(m_err_mesg);
-
-            case exception_type::deserialization:
-                throw deserialization_error(m_err_mesg);
-
-            case exception_type::signature_mismatch:
-                throw function_mismatch(m_err_mesg);
-
-            case exception_type::client_send:
-                throw client_send_error(m_err_mesg);
-
-            case exception_type::client_receive:
-                throw client_receive_error(m_err_mesg);
-
-            case exception_type::server_send:
-                throw server_send_error(m_err_mesg);
-
-            case exception_type::server_receive:
-                throw server_receive_error(m_err_mesg);
-
-            case exception_type::rpc_object_mismatch:
-                throw rpc_object_type_mismatch(m_err_mesg);
-
-            case exception_type::none:
-            default:
-                throw rpc_exception(m_err_mesg, exception_type::none);
         }
-    }
 
-private:
-    exception_type m_except_type;
-    std::string m_func_name;
-    std::string m_err_mesg;
-};
+        func_request(std::string func_name, args_t args)
+            : m_func_name(std::move(func_name)), m_args(std::move(args))
+        {
+        }
+
+        func_request(
+            RPC_HPP_UNUSED bind_args_tag tag, std::string func_name, remove_cvref_t<Args>&&... args)
+            : m_bind_args(true),
+              m_func_name(std::move(func_name)),
+              m_args(std::forward_as_tuple(args...))
+        {
+        }
+
+        func_request(RPC_HPP_UNUSED bind_args_tag tag, std::string func_name, args_t args)
+            : m_bind_args(true), m_func_name(std::move(func_name)), m_args(std::move(args))
+        {
+        }
+
+        bool has_bound_args() const { return m_bind_args; }
+        const std::string& get_func_name() const { return m_func_name; }
+        const args_t& get_args() const { return m_args; }
+
+    private:
+        bool m_bind_args{ false };
+        std::string m_func_name;
+        args_t m_args;
+    };
+
+    template<typename... Args>
+    class callback_request : public func_request<Args...>
+    {
+    public:
+        using args_t = typename func_request<Args...>::args_t;
+
+        callback_request(std::string func_name, uint64_t id, remove_cvref_t<Args>&&... args)
+            : func_request<Args...>(std::move(func_name), std::forward_as_tuple(args...)),
+              m_callback_id(id)
+        {
+        }
+
+        callback_request(std::string func_name, uint64_t id, args_t args)
+            : func_request<Args...>(std::move(func_name), std::move(args)), m_callback_id(id)
+        {
+        }
+
+        callback_request(
+            bind_args_tag tag, std::string func_name, uint64_t id, remove_cvref_t<Args>&&... args)
+            : func_request<Args...>(tag, std::move(func_name), std::forward_as_tuple(args...)),
+              m_callback_id(id)
+        {
+        }
+
+        callback_request(bind_args_tag tag, std::string func_name, uint64_t id, args_t args)
+            : func_request<Args...>(tag, std::move(func_name), std::move(args...)),
+              m_callback_id(id)
+        {
+        }
+
+        uint64_t get_id() const { return m_callback_id; }
+
+    private:
+        uint64_t m_callback_id;
+    };
+
+    template<typename R>
+    class func_result
+    {
+    public:
+        func_result(std::string func_name, R result)
+            : m_func_name(std::move(func_name)), m_result(std::move(result))
+        {
+        }
+
+        const std::string& get_func_name() const { return m_func_name; }
+        const R& get_result() const { return m_result; }
+
+    private:
+        std::string m_func_name;
+        R m_result;
+    };
+
+    template<>
+    class func_result<void>
+    {
+    public:
+        func_result(std::string func_name) : m_func_name(std::move(func_name)) {}
+
+        const std::string& get_func_name() const { return m_func_name; }
+
+    private:
+        std::string m_func_name;
+    };
+
+    template<typename R>
+    class callback_result : public func_result<R>
+    {
+    public:
+        callback_result(std::string func_name, uint64_t id, R result)
+            : func_result<R>(std::move(func_name), std::move(result)), m_callback_id(id)
+        {
+        }
+
+        uint64_t get_id() const { return m_callback_id; }
+
+    private:
+        uint64_t m_callback_id;
+    };
+
+    template<>
+    class callback_result<void> : public func_result<void>
+    {
+    public:
+        callback_result(std::string func_name, uint64_t id)
+            : func_result<void>(std::move(func_name)), m_callback_id(id)
+        {
+        }
+
+        uint64_t get_id() const { return m_callback_id; }
+
+    private:
+        uint64_t m_callback_id;
+    };
+
+    template<typename R, typename... Args>
+    class func_result_w_bind
+    {
+    public:
+        using args_t = std::tuple<remove_cvref_t<Args>...>;
+
+        func_result_w_bind(std::string func_name, R result, remove_cvref_t<Args>&&... args)
+            : m_result(std::move(result)),
+              m_func_name(std::move(func_name)),
+              m_args(std::forward_as_tuple<Args>(args)...)
+        {
+        }
+
+        func_result_w_bind(std::string func_name, R result, args_t args)
+            : m_result(std::move(result)),
+              m_func_name(std::move(func_name)),
+              m_args(std::move(args))
+        {
+        }
+
+        const std::string& get_func_name() const { return m_func_name; }
+        const R& get_result() const { return m_result; }
+        const args_t& get_args() const { return m_args; }
+
+    private:
+        R m_result;
+        std::string m_func_name;
+        args_t m_args;
+    };
+
+    template<typename... Args>
+    class func_result_w_bind<void, Args...>
+    {
+    public:
+        using args_t = std::tuple<remove_cvref_t<Args>...>;
+
+        func_result_w_bind(std::string func_name, remove_cvref_t<Args>&&... args)
+            : m_func_name(std::move(func_name)), m_args(std::forward_as_tuple<Args>(args)...)
+        {
+        }
+
+        func_result_w_bind(std::string func_name, args_t args)
+            : m_func_name(std::move(func_name)), m_args(std::move(args))
+        {
+        }
+
+        const std::string& get_func_name() const { return m_func_name; }
+        const args_t& get_args() const { return m_args; }
+
+    private:
+        std::string m_func_name;
+        args_t m_args;
+    };
+
+    template<typename R, typename... Args>
+    class callback_result_w_bind : public func_result_w_bind<R, Args...>
+    {
+    public:
+        using args_t = typename func_result_w_bind<R, Args...>::args_t;
+
+        callback_result_w_bind(
+            std::string func_name, uint64_t id, R result, remove_cvref_t<Args>&&... args)
+            : func_result_w_bind<R, Args...>(
+                std::move(func_name), std::move(result), std::forward_as_tuple(args...)),
+              m_callback_id(id)
+        {
+        }
+
+        callback_result_w_bind(std::string func_name, uint64_t id, R result, args_t args)
+            : func_result_w_bind<R, Args...>(
+                std::move(func_name), std::move(result), std::move(args)),
+              m_callback_id(id)
+        {
+        }
+
+        uint64_t get_id() const { return m_callback_id; }
+
+    private:
+        uint64_t m_callback_id;
+    };
+
+    template<typename... Args>
+    class callback_result_w_bind<void, Args...> : public func_result_w_bind<void, Args...>
+    {
+    public:
+        using args_t = typename func_result_w_bind<void, Args...>::args_t;
+
+        callback_result_w_bind(std::string func_name, uint64_t id, remove_cvref_t<Args>&&... args)
+            : func_result_w_bind<void, Args...>(
+                std::move(func_name), std::forward_as_tuple(args...)),
+              m_callback_id(id)
+        {
+        }
+
+        callback_result_w_bind(std::string func_name, uint64_t id, args_t args)
+            : func_result_w_bind<void, Args...>(std::move(func_name), std::move(args)),
+              m_callback_id(id)
+        {
+        }
+
+        uint64_t get_id() const { return m_callback_id; }
+
+    private:
+        uint64_t m_callback_id;
+    };
+
+    class func_error
+    {
+    public:
+        func_error(std::string func_name, const rpc_exception& except)
+            : m_except_type(except.get_type()),
+              m_func_name(std::move(func_name)),
+              m_err_mesg(except.what())
+        {
+        }
+
+        func_error(std::string func_name, exception_type ex_type, std::string err_mesg)
+            : m_except_type(ex_type),
+              m_func_name(std::move(func_name)),
+              m_err_mesg(std::move(err_mesg))
+        {
+        }
+
+        const std::string& get_func_name() const { return m_func_name; }
+        const std::string& get_err_mesg() const { return m_err_mesg; }
+        exception_type get_except_type() const { return m_except_type; }
+
+        [[noreturn]] void rethrow() const
+        {
+            switch (m_except_type)
+            {
+                case exception_type::func_not_found:
+                    throw function_not_found(m_err_mesg);
+
+                case exception_type::remote_exec:
+                    throw remote_exec_error(m_err_mesg);
+
+                case exception_type::serialization:
+                    throw serialization_error(m_err_mesg);
+
+                case exception_type::deserialization:
+                    throw deserialization_error(m_err_mesg);
+
+                case exception_type::signature_mismatch:
+                    throw function_mismatch(m_err_mesg);
+
+                case exception_type::client_send:
+                    throw client_send_error(m_err_mesg);
+
+                case exception_type::client_receive:
+                    throw client_receive_error(m_err_mesg);
+
+                case exception_type::server_send:
+                    throw server_send_error(m_err_mesg);
+
+                case exception_type::server_receive:
+                    throw server_receive_error(m_err_mesg);
+
+                case exception_type::rpc_object_mismatch:
+                    throw rpc_object_mismatch(m_err_mesg);
+
+                case exception_type::none:
+                default:
+                    throw rpc_exception(m_err_mesg, exception_type::none);
+            }
+        }
+
+    private:
+        exception_type m_except_type;
+        std::string m_func_name;
+        std::string m_err_mesg;
+    };
+
+    class callback_error : public func_error
+    {
+    public:
+        callback_error(std::string func_name, uint64_t id, const rpc_exception& except)
+            : func_error(std::move(func_name), except), m_callback_id(id)
+        {
+        }
+
+        callback_error(
+            std::string func_name, uint64_t id, exception_type ex_type, std::string err_mesg)
+            : func_error(std::move(func_name), ex_type, std::move(err_mesg)), m_callback_id(id)
+        {
+        }
+
+        uint64_t get_id() const { return m_callback_id; }
+
+    private:
+        uint64_t m_callback_id;
+    };
+} //namespace detail
 
 class callback_install_request
 {
@@ -561,7 +784,7 @@ private:
     std::string m_func_name;
 };
 
-enum class rpc_object_type
+enum class rpc_type
 {
     callback_error,
     callback_install_request,
@@ -594,21 +817,23 @@ public:
     }
 
     template<typename R>
-    explicit rpc_object(func_result<R> result)
+    explicit rpc_object(detail::func_result<R> result)
         : m_obj(Serial::template serialize_result<R>(std::move(result)))
     {
     }
 
     template<typename... Args>
-    explicit rpc_object(func_request<Args...> request)
+    explicit rpc_object(detail::func_request<Args...> request)
         : m_obj(Serial::template serialize_request<Args...>(std::move(request)))
     {
     }
 
-    explicit rpc_object(func_error error) : m_obj(Serial::serialize_error(std::move(error))) {}
+    explicit rpc_object(detail::func_error error) : m_obj(Serial::serialize_error(std::move(error)))
+    {
+    }
 
     template<typename R, typename... Args>
-    explicit rpc_object(func_result_w_bind<R, Args...> result)
+    explicit rpc_object(detail::func_result_w_bind<R, Args...> result)
         : m_obj(Serial::template serialize_result_w_bind<R, Args...>(std::move(result)))
     {
     }
@@ -621,10 +846,10 @@ public:
     {
         switch (type())
         {
-            case rpc_object_type::func_result:
-            case rpc_object_type::func_result_w_bind:
-            case rpc_object_type::callback_result:
-            case rpc_object_type::callback_result_w_bind:
+            case rpc_type::func_result:
+            case rpc_type::func_result_w_bind:
+            case rpc_type::callback_result:
+            case rpc_type::callback_result_w_bind:
                 if constexpr (std::is_void_v<R>)
                 {
                     return;
@@ -634,34 +859,42 @@ public:
                     return Serial::template get_result<R>(m_obj).get_result();
                 }
 
-            case rpc_object_type::func_error:
-            case rpc_object_type::callback_error:
+            case rpc_type::func_error:
+            case rpc_type::callback_error:
                 Serial::get_error(m_obj).rethrow();
 
+            case rpc_type::callback_install_request:
+            case rpc_type::callback_request:
+            case rpc_type::func_request:
             default:
-                throw rpc_object_type_mismatch("Invalid rpc_object type detected");
+                throw rpc_object_mismatch("Invalid rpc_object type detected");
         }
     }
 
     template<typename... Args>
-    typename func_request<Args...>::args_t get_args() const
+    typename detail::func_request<Args...>::args_t get_args() const
     {
         switch (type())
         {
-            case rpc_object_type::func_request:
-            case rpc_object_type::func_result_w_bind:
-            case rpc_object_type::callback_request:
-            case rpc_object_type::callback_result_w_bind:
+            case rpc_type::func_request:
+            case rpc_type::func_result_w_bind:
+            case rpc_type::callback_request:
+            case rpc_type::callback_result_w_bind:
                 return Serial::template get_request<Args...>(m_obj).get_args();
 
+            case rpc_type::callback_error:
+            case rpc_type::callback_install_request:
+            case rpc_type::callback_result:
+            case rpc_type::func_error:
+            case rpc_type::func_result:
             default:
-                throw rpc_object_type_mismatch("Invalid rpc_object type detected");
+                throw rpc_object_mismatch("Invalid rpc_object type detected");
         }
     }
 
     bool is_callback_uninstall() const
     {
-        if (type() != rpc_object_type::callback_install_request)
+        if (type() != rpc_type::callback_install_request)
         {
             return false;
         }
@@ -671,9 +904,9 @@ public:
 
     uint64_t get_callback_id() const
     {
-        if (type() != rpc_object_type::callback_install_request)
+        if (type() != rpc_type::callback_install_request)
         {
-            throw rpc_object_type_mismatch("Invalid rpc_object type detected");
+            throw rpc_object_mismatch("Invalid rpc_object type detected");
         }
 
         return Serial::get_callback(m_obj).get_id();
@@ -683,7 +916,7 @@ public:
     {
         if (!is_error())
         {
-            throw rpc_object_type_mismatch("Invalid rpc_object type detected");
+            throw rpc_object_mismatch("Invalid rpc_object type detected");
         }
 
         return Serial::get_error(m_obj).get_except_type();
@@ -693,7 +926,7 @@ public:
     {
         if (!is_error())
         {
-            throw rpc_object_type_mismatch("Invalid rpc_object type detected");
+            throw rpc_object_mismatch("Invalid rpc_object type detected");
         }
 
         return Serial::get_error(m_obj).get_error_mesg();
@@ -703,26 +936,31 @@ public:
     {
         switch (type())
         {
-            case rpc_object_type::func_request:
-            case rpc_object_type::callback_request:
+            case rpc_type::func_request:
+            case rpc_type::callback_request:
                 return Serial::has_bound_args(m_obj);
 
-            case rpc_object_type::func_result_w_bind:
-            case rpc_object_type::callback_result_w_bind:
+            case rpc_type::func_result_w_bind:
+            case rpc_type::callback_result_w_bind:
                 return true;
 
+            case rpc_type::callback_error:
+            case rpc_type::callback_install_request:
+            case rpc_type::callback_result:
+            case rpc_type::func_error:
+            case rpc_type::func_result:
             default:
-                throw rpc_object_type_mismatch("Invalid rpc_object type detected");
+                throw rpc_object_mismatch("Invalid rpc_object type detected");
         }
     }
 
     bool is_error() const
     {
         const auto rtype = type();
-        return rtype == rpc_object_type::func_error || rtype == rpc_object_type::callback_error;
+        return rtype == rpc_type::func_error || rtype == rpc_type::callback_error;
     }
 
-    rpc_object_type type() const { return Serial::get_type(m_obj); }
+    rpc_type type() const { return Serial::get_type(m_obj); }
 
 private:
     rpc_object(const serial_t& serial) : m_obj(serial) {}
@@ -731,40 +969,47 @@ private:
     serial_t m_obj;
 };
 
-template<typename Adapter>
-class serial_adapter_base
+namespace adapters
 {
-public:
-    using serial_t = typename adapters::serial_traits<Adapter>::serial_t;
-    using bytes_t = typename adapters::serial_traits<Adapter>::bytes_t;
+    template<typename T>
+    struct serial_traits;
 
-    static serial_t from_bytes(bytes_t&& bytes) = delete;
-    static bytes_t to_bytes(const serial_t& serial_obj) = delete;
+    template<typename Adapter>
+    class serial_adapter_base
+    {
+    public:
+        using serial_t = typename adapters::serial_traits<Adapter>::serial_t;
+        using bytes_t = typename adapters::serial_traits<Adapter>::bytes_t;
 
-    static std::string get_func_name(const serial_t& serial_obj) = delete;
-    static rpc_object_type get_type(const serial_t& serial_obj) = delete;
+        static serial_t from_bytes(bytes_t&& bytes) = delete;
+        static bytes_t to_bytes(const serial_t& serial_obj) = delete;
+        static std::string get_func_name(const serial_t& serial_obj) = delete;
+        static rpc_type get_type(const serial_t& serial_obj) = delete;
 
-    template<typename R>
-    static func_result<R> get_result(const serial_t& serial_obj) = delete;
+        template<typename R>
+        static detail::func_result<R> get_result(const serial_t& serial_obj) = delete;
 
-    template<typename R>
-    static serial_t serialize_result(const func_result<R>& result) = delete;
+        template<typename R>
+        static serial_t serialize_result(const detail::func_result<R>& result) = delete;
 
-    template<typename R, typename... Args>
-    static serial_t serialize_result_w_bind(const func_result_w_bind<R, Args...>& result) = delete;
+        template<typename R, typename... Args>
+        static serial_t serialize_result_w_bind(
+            const detail::func_result_w_bind<R, Args...>& result) = delete;
 
-    template<typename... Args>
-    static func_request<Args...> get_request(const serial_t& serial_obj) = delete;
+        template<typename... Args>
+        static detail::func_request<Args...> get_request(const serial_t& serial_obj) = delete;
 
-    template<typename... Args>
-    static serial_t serialize_request(const func_request<Args...>& request) = delete;
+        template<typename... Args>
+        static serial_t serialize_request(const detail::func_request<Args...>& request) = delete;
 
-    static func_error get_error(const serial_t& serial_obj) = delete;
-    static serial_t serialize_error(const func_error& error) = delete;
-    static callback_install_request get_callback_install(const serial_t& serial_obj) = delete;
-    static serial_t serialize_callback_install(
-        const callback_install_request& callback_req) = delete;
+        static detail::func_error get_error(const serial_t& serial_obj) = delete;
+        static serial_t serialize_error(const detail::func_error& error) = delete;
+        static callback_install_request get_callback_install(const serial_t& serial_obj) = delete;
 
-    static bool has_bound_args(const serial_t& serial_obj) = delete;
-};
+        static serial_t serialize_callback_install(
+            const callback_install_request& callback_req) = delete;
+
+        static bool has_bound_args(const serial_t& serial_obj) = delete;
+    };
+} //namespace adapters
 } //namespace rpc_hpp

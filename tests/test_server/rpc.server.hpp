@@ -104,12 +104,26 @@ std::string HashComplex(const ComplexObject& cx);
 void HashComplexRef(ComplexObject& cx, std::string& hashStr);
 
 template<typename Serial>
-class TestServer final : public rpc_hpp::server_base<Serial>
+class TestServer final : public rpc_hpp::server_interface<Serial>
 {
 public:
+    using bytes_t = typename rpc_hpp::server_interface<Serial>::bytes_t;
+    
     TestServer(asio::io_context& io, const uint16_t port)
         : m_accept(io, tcp::endpoint(tcp::v4(), port))
     {
+    }
+
+    bytes_t receive() override
+    {
+        // TODO: Open a socket on the callback port and read_some
+        return {};
+    }
+
+    void send(bytes_t&& bytes) override
+    {
+        // TODO: Open a socket on the callback port and write
+        (void)std::move(bytes);
     }
 
     void Run()

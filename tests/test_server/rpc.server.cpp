@@ -34,8 +34,8 @@
 ///OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ///
 
-#define RPC_HPP_SERVER_IMPL
 //#define RPC_HPP_ENABLE_SERVER_CACHE
+//#define RPC_HPP_ENABLE_CALLBACKS
 
 #include "rpc.server.hpp"
 #include "../static_funcs.hpp"
@@ -64,7 +64,7 @@ using rpc_hpp::adapters::boost_json_adapter;
 using rpc_hpp::adapters::bitsery_adapter;
 
 constexpr uint64_t bitsery_adapter::config::max_func_name_size = 30;
-constexpr uint64_t bitsery_adapter::config::max_string_size = 2048;
+constexpr uint64_t bitsery_adapter::config::max_string_size = 2'048;
 constexpr uint64_t bitsery_adapter::config::max_container_size = 1'000;
 #endif
 
