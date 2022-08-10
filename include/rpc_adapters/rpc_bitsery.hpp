@@ -119,7 +119,7 @@ namespace adapters
 
         static rpc_type get_type(const std::vector<uint8_t>& serial_obj)
         {
-            RPC_HPP_PRECONDITION(serial_obj.size() > 4);
+            RPC_HPP_PRECONDITION(serial_obj.size() > sizeof(int));
 
             // First 4 bytes represent the type
             int n_type;
@@ -159,6 +159,7 @@ namespace adapters
         [[nodiscard]] static detail::func_request<Args...> get_request(
             const std::vector<uint8_t>& serial_obj)
         {
+            // BUG: Calling this function with a func_result_w_bind deserializes incorrectly!
             return deserialize_rpc_object<detail::func_request<Args...>>(serial_obj);
         }
 
@@ -293,41 +294,6 @@ namespace adapters
             }
 
             return ((hb & 0x7FU) << 8) | lb;
-        }
-
-        // Borrowed from Bitsery library for compatibility
-        static void write_length(bit_buffer& bytes, size_t size, size_t& index)
-        {
-            RPC_HPP_PRECONDITION(size < 0x40000000U);
-
-            if (size < 0x80U)
-            {
-                assert(index < size);
-                assert(index <= std::numeric_limits<ptrdiff_t>::max());
-
-                bytes.insert(std::next(bytes.begin(), index++), static_cast<uint8_t>(size));
-                return;
-            }
-
-            if (size < 0x4000U)
-            {
-                bytes.insert(
-                    std::next(bytes.begin(), index++), static_cast<uint8_t>((size >> 8) | 0x80U));
-
-                bytes.insert(std::next(bytes.begin(), index++), static_cast<uint8_t>(size));
-                return;
-            }
-
-            bytes.insert(
-                std::next(bytes.begin(), index++), static_cast<uint8_t>((size >> 24) | 0xC0U));
-
-            bytes.insert(std::next(bytes.begin(), index++), static_cast<uint8_t>(size >> 16));
-
-            bytes.insert(
-                std::next(bytes.begin(), index++), *reinterpret_cast<const uint8_t*>(&size));
-
-            bytes.insert(
-                std::next(bytes.begin(), index++), *reinterpret_cast<const uint8_t*>(&size) + 1);
         }
     };
 } // namespace adapters
