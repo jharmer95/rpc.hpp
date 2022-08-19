@@ -32,6 +32,8 @@ if(NOT TARGET RpcHpp::rpc_hpp)
   message(FATAL_ERROR "RpcHpp::rpc_hpp alias not set. Please generate CMake from the root directory")
 endif()
 
+set_property(GLOBAL PROPERTY CTEST_TARGETS_ADDED 1)
+
 include(CTest)
 include(doctest)
 enable_testing()

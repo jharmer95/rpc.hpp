@@ -18,6 +18,12 @@
 #  define RPC_HPP_UNUSED [[maybe_unused]]
 #endif
 
+#if __has_cpp_attribute(nodiscard) >= 201907L
+#  define RPC_HPP_NODISCARD(REASON) [[nodiscard(REASON)]]
+#else
+#  define RPC_HPP_NODISCARD(REASON) [[nodiscard]]
+#endif
+
 namespace rpc_hpp
 {
 enum class exception_type
@@ -198,6 +204,7 @@ public:
 
 class callback_install_error : public rpc_exception
 {
+public:
     explicit callback_install_error(const std::string& mesg) noexcept
         : rpc_exception(mesg, exception_type::callback_install)
     {
@@ -444,21 +451,23 @@ namespace detail
 
         func_request() = default;
 
-        func_request(std::string t_func_name, remove_cvref_t<Args>&&... t_args)
-            : func_name(std::move(t_func_name)), args(std::forward_as_tuple(t_args...))
-        {
-        }
+        //func_request(std::string t_func_name, remove_cvref_t<Args>&&... t_args)
+        //    : func_name(std::move(t_func_name)), args(std::forward_as_tuple(t_args...))
+        //{
+        //}
 
         func_request(std::string t_func_name, args_t t_args)
             : func_name(std::move(t_func_name)), args(std::move(t_args))
         {
         }
 
-        func_request(
-            RPC_HPP_UNUSED bind_args_tag tag, std::string t_func_name, remove_cvref_t<Args>&&... t_args)
-            : bind_args(true), func_name(std::move(t_func_name)), args(std::forward_as_tuple(t_args...))
-        {
-        }
+        //func_request(RPC_HPP_UNUSED bind_args_tag tag, std::string t_func_name,
+        //    remove_cvref_t<Args>&&... t_args)
+        //    : bind_args(true),
+        //      func_name(std::move(t_func_name)),
+        //      args(std::forward_as_tuple(t_args...))
+        //{
+        //}
 
         func_request(RPC_HPP_UNUSED bind_args_tag tag, std::string t_func_name, args_t t_args)
             : bind_args(true), func_name(std::move(t_func_name)), args(std::move(t_args))
@@ -477,26 +486,26 @@ namespace detail
 
         callback_request() = default;
 
-        callback_request(std::string func_name, uint64_t id, remove_cvref_t<Args>&&... args)
-            : func_request<Args...>(std::move(func_name), std::forward_as_tuple(args...)),
-              callback_id(id)
+        //callback_request(std::string func_name, uint64_t id, remove_cvref_t<Args>&&... args)
+        //    : func_request<Args...>(std::move(func_name), std::forward_as_tuple(args...)),
+        //      callback_id(id)
+        //{
+        //}
+
+        callback_request(std::string t_func_name, uint64_t id, args_t t_args)
+            : func_request<Args...>(std::move(t_func_name), std::move(t_args)), callback_id(id)
         {
         }
 
-        callback_request(std::string func_name, uint64_t id, args_t args)
-            : func_request<Args...>(std::move(func_name), std::move(args)), callback_id(id)
-        {
-        }
+        //callback_request(
+        //    bind_args_tag tag, std::string func_name, uint64_t id, remove_cvref_t<Args>&&... args)
+        //    : func_request<Args...>(tag, std::move(func_name), std::forward_as_tuple(args...)),
+        //      callback_id(id)
+        //{
+        //}
 
-        callback_request(
-            bind_args_tag tag, std::string func_name, uint64_t id, remove_cvref_t<Args>&&... args)
-            : func_request<Args...>(tag, std::move(func_name), std::forward_as_tuple(args...)),
-              callback_id(id)
-        {
-        }
-
-        callback_request(bind_args_tag tag, std::string func_name, uint64_t id, args_t args)
-            : func_request<Args...>(tag, std::move(func_name), std::move(args)), callback_id(id)
+        callback_request(bind_args_tag tag, std::string t_func_name, uint64_t id, args_t t_args)
+            : func_request<Args...>(tag, std::move(t_func_name), std::move(t_args)), callback_id(id)
         {
         }
 
@@ -506,51 +515,35 @@ namespace detail
     template<typename R>
     struct func_result
     {
-        func_result() = default;
-
-        func_result(std::string t_func_name, R t_result)
-            : func_name(std::move(t_func_name)), result(std::move(t_result))
-        {
-        }
-
-        std::string func_name{};
-        R result{};
+        std::string func_name;
+        R result;
     };
 
     template<>
     struct func_result<void>
     {
-        func_result() = default;
-        func_result(std::string t_func_name) : func_name(std::move(t_func_name)) {}
-
-        std::string func_name{};
+        std::string func_name;
     };
+
+    static_assert(std::is_aggregate_v<func_result<int>>, "func_result must be an aggregate type");
+    static_assert(std::is_aggregate_v<func_result<void>>, "func_result must be an aggregate type");
 
     template<typename R>
     struct callback_result : func_result<R>
     {
-        callback_result() = default;
-
-        callback_result(std::string t_func_name, uint64_t id, R result)
-            : func_result<R>(std::move(t_func_name), std::move(result)), callback_id(id)
-        {
-        }
-
-        uint64_t callback_id{};
+        uint64_t callback_id;
     };
 
     template<>
     struct callback_result<void> : func_result<void>
     {
-        callback_result() = default;
-
-        callback_result(std::string t_func_name, uint64_t id)
-            : func_result<void>(std::move(t_func_name)), callback_id(id)
-        {
-        }
-
-        uint64_t callback_id{};
+        uint64_t callback_id;
     };
+
+    static_assert(
+        std::is_aggregate_v<callback_result<int>>, "callback_result must be an aggregate type");
+    static_assert(
+        std::is_aggregate_v<callback_result<void>>, "callback_result must be an aggregate type");
 
     template<typename R, typename... Args>
     struct func_result_w_bind
@@ -559,15 +552,17 @@ namespace detail
 
         func_result_w_bind() = default;
 
-        func_result_w_bind(std::string t_func_name, R t_result, remove_cvref_t<Args>&&... t_args)
-            : result(std::move(t_result)),
-              func_name(std::move(t_func_name)),
-              args(std::forward_as_tuple<Args>(t_args)...)
-        {
-        }
+        //func_result_w_bind(std::string t_func_name, R t_result, remove_cvref_t<Args>&&... t_args)
+        //    : result(std::move(t_result)),
+        //      func_name(std::move(t_func_name)),
+        //      args(std::forward_as_tuple<Args>(t_args)...)
+        //{
+        //}
 
         func_result_w_bind(std::string t_func_name, R t_result, args_t t_args)
-            : result(std::move(t_result)), func_name(std::move(t_func_name)), args(std::move(t_args))
+            : func_name(std::move(t_func_name)),
+              result(std::move(t_result)),
+              args(std::move(t_args))
         {
         }
 
@@ -583,10 +578,10 @@ namespace detail
 
         func_result_w_bind() = default;
 
-        func_result_w_bind(std::string t_func_name, remove_cvref_t<Args>&&... t_args)
-            : func_name(std::move(t_func_name)), args(std::forward_as_tuple<Args>(t_args)...)
-        {
-        }
+        //func_result_w_bind(std::string t_func_name, remove_cvref_t<Args>&&... t_args)
+        //    : func_name(std::move(t_func_name)), args(std::forward_as_tuple<Args>(t_args)...)
+        //{
+        //}
 
         func_result_w_bind(std::string t_func_name, args_t t_args)
             : func_name(std::move(t_func_name)), args(std::move(t_args))
@@ -604,13 +599,13 @@ namespace detail
 
         callback_result_w_bind() = default;
 
-        callback_result_w_bind(
-            std::string t_func_name, uint64_t id, R t_result, remove_cvref_t<Args>&&... t_args)
-            : func_result_w_bind<R, Args...>(
-                std::move(t_func_name), std::move(t_result), std::forward_as_tuple(t_args...)),
-              callback_id(id)
-        {
-        }
+        //callback_result_w_bind(
+        //    std::string t_func_name, uint64_t id, R t_result, remove_cvref_t<Args>&&... t_args)
+        //    : func_result_w_bind<R, Args...>(
+        //        std::move(t_func_name), std::move(t_result), std::forward_as_tuple(t_args...)),
+        //      callback_id(id)
+        //{
+        //}
 
         callback_result_w_bind(std::string t_func_name, uint64_t id, R t_result, args_t t_args)
             : func_result_w_bind<R, Args...>(
@@ -629,12 +624,13 @@ namespace detail
 
         callback_result_w_bind() = default;
 
-        callback_result_w_bind(std::string t_func_name, uint64_t id, remove_cvref_t<Args>&&... t_args)
-            : func_result_w_bind<void, Args...>(
-                std::move(t_func_name), std::forward_as_tuple(t_args...)),
-              callback_id(id)
-        {
-        }
+        //callback_result_w_bind(
+        //    std::string t_func_name, uint64_t id, remove_cvref_t<Args>&&... t_args)
+        //    : func_result_w_bind<void, Args...>(
+        //        std::move(t_func_name), std::forward_as_tuple(t_args...)),
+        //      callback_id(id)
+        //{
+        //}
 
         callback_result_w_bind(std::string t_func_name, uint64_t id, args_t t_args)
             : func_result_w_bind<void, Args...>(std::move(t_func_name), std::move(t_args)),
@@ -657,7 +653,9 @@ namespace detail
         }
 
         func_error(std::string t_func_name, exception_type t_ex_type, std::string t_err_mesg)
-            : except_type(t_ex_type), func_name(std::move(t_func_name)), err_mesg(std::move(t_err_mesg))
+            : except_type(t_ex_type),
+              func_name(std::move(t_func_name)),
+              err_mesg(std::move(t_err_mesg))
         {
         }
 
@@ -759,6 +757,7 @@ public:
     using serial_t = typename Serial::serial_t;
     using bytes_t = typename Serial::bytes_t;
 
+    RPC_HPP_NODISCARD("parsing consumes the original input")
     static std::optional<rpc_object> parse_bytes(bytes_t&& bytes)
     {
         try
@@ -793,10 +792,26 @@ public:
     {
     }
 
-    bytes_t to_bytes() const { return Serial::to_bytes(m_obj); }
+    explicit rpc_object(callback_install_request callback_req)
+        : m_obj(Serial::serialize_callback_install(std::move(callback_req)))
+    {
+    }
+
+    RPC_HPP_NODISCARD("converting to bytes may be expensive") bytes_t to_bytes() const&
+    {
+        return Serial::to_bytes(m_obj);
+    }
+
+    RPC_HPP_NODISCARD("converting to bytes consumes object") bytes_t to_bytes() &&
+    {
+        return Serial::to_bytes(std::move(m_obj));
+    }
+
+    RPC_HPP_NODISCARD("extracting data from serial object may be expensive")
     std::string get_func_name() const { return Serial::get_func_name(m_obj); }
 
     template<typename R>
+    RPC_HPP_NODISCARD("extracting data from serial object may be expensive")
     R get_result() const
     {
         switch (type())
@@ -827,6 +842,7 @@ public:
     }
 
     template<typename... Args>
+    RPC_HPP_NODISCARD("extracting data from serial object may be expensive")
     typename detail::func_request<Args...>::args_t get_args() const
     {
         switch (type())
@@ -847,6 +863,7 @@ public:
         }
     }
 
+    RPC_HPP_NODISCARD("extracting data from serial object may be expensive")
     bool is_callback_uninstall() const
     {
         if (type() != rpc_type::callback_install_request)
@@ -854,9 +871,10 @@ public:
             return false;
         }
 
-        return Serial::get_callback(m_obj).is_uninstall;
+        return Serial::get_callback_install(m_obj).is_uninstall;
     }
 
+    RPC_HPP_NODISCARD("extracting data from serial object may be expensive")
     uint64_t get_callback_id() const
     {
         if (type() != rpc_type::callback_install_request)
@@ -864,9 +882,10 @@ public:
             throw rpc_object_mismatch("Invalid rpc_object type detected");
         }
 
-        return Serial::get_callback(m_obj).callback_id;
+        return Serial::get_callback_install(m_obj).callback_id;
     }
 
+    RPC_HPP_NODISCARD("extracting data from serial object may be expensive")
     exception_type get_error_type() const
     {
         if (!is_error())
@@ -877,6 +896,7 @@ public:
         return Serial::get_error(m_obj).except_type;
     }
 
+    RPC_HPP_NODISCARD("extracting data from serial object may be expensive")
     std::string get_error_mesg() const
     {
         if (!is_error())
@@ -887,6 +907,7 @@ public:
         return Serial::get_error(m_obj).error_mesg;
     }
 
+    RPC_HPP_NODISCARD("extracting data from serial object may be expensive")
     bool has_bound_args() const
     {
         switch (type())
@@ -909,17 +930,20 @@ public:
         }
     }
 
-    bool is_error() const
+    RPC_HPP_NODISCARD("extracting data from serial object may be expensive") bool is_error() const
     {
         const auto rtype = type();
         return rtype == rpc_type::func_error || rtype == rpc_type::callback_error;
     }
 
-    rpc_type type() const { return Serial::get_type(m_obj); }
+    RPC_HPP_NODISCARD("extracting data from serial object may be expensive") rpc_type type() const
+    {
+        return Serial::get_type(m_obj);
+    }
 
 private:
-    rpc_object(const serial_t& serial) : m_obj(serial) {}
-    rpc_object(serial_t&& serial) : m_obj(std::move(serial)) {}
+    explicit rpc_object(const serial_t& serial) : m_obj(serial) {}
+    explicit rpc_object(serial_t&& serial) : m_obj(std::move(serial)) {}
 
     serial_t m_obj;
 };
@@ -933,11 +957,12 @@ namespace adapters
     class serial_adapter_base
     {
     public:
-        using serial_t = typename adapters::serial_traits<Adapter>::serial_t;
-        using bytes_t = typename adapters::serial_traits<Adapter>::bytes_t;
+        using serial_t = typename serial_traits<Adapter>::serial_t;
+        using bytes_t = typename serial_traits<Adapter>::bytes_t;
 
         static serial_t from_bytes(bytes_t&& bytes) = delete;
         static bytes_t to_bytes(const serial_t& serial_obj) = delete;
+        static bytes_t to_bytes(serial_t&& serial_obj) = delete;
         static std::string get_func_name(const serial_t& serial_obj) = delete;
         static rpc_type get_type(const serial_t& serial_obj) = delete;
 
@@ -967,4 +992,113 @@ namespace adapters
         static bool has_bound_args(const serial_t& serial_obj) = delete;
     };
 } //namespace adapters
+
+namespace detail
+{
+    template<typename Serial, typename R, typename... Args>
+    static void exec_func(R (*func)(Args...), rpc_object<Serial>& rpc_obj)
+    {
+        auto args = rpc_obj.template get_args<Args...>();
+        auto func_name = rpc_obj.get_func_name();
+        const auto has_bound_args = rpc_obj.has_bound_args();
+
+        if constexpr (std::is_void_v<R>)
+        {
+            try
+            {
+                std::apply(func, args);
+
+                if (has_bound_args)
+                {
+                    rpc_obj = rpc_object<Serial>{ detail::func_result_w_bind<void, Args...>{
+                        std::move(func_name), std::move(args) } };
+                }
+                else
+                {
+                    rpc_obj =
+                        rpc_object<Serial>{ detail::func_result<void>{ std::move(func_name) } };
+                }
+            }
+            catch (const std::exception& ex)
+            {
+                throw remote_exec_error(ex.what());
+            }
+        }
+        else
+        {
+            try
+            {
+                auto ret_val = std::apply(func, args);
+
+                if (has_bound_args)
+                {
+                    rpc_obj = rpc_object<Serial>{ detail::func_result_w_bind<R, Args...>{
+                        std::move(func_name), std::move(ret_val), std::move(args) } };
+                }
+                else
+                {
+                    rpc_obj = rpc_object<Serial>{ detail::func_result<R>{
+                        std::move(func_name), std::move(ret_val) } };
+                }
+            }
+            catch (const std::exception& ex)
+            {
+                throw remote_exec_error(ex.what());
+            }
+        }
+    }
+
+    template<typename Serial, typename R, typename... Args>
+    static void exec_func(const std::function<R(Args...)>& func, rpc_object<Serial>& rpc_obj)
+    {
+        auto args = rpc_obj.template get_args<Args...>();
+        auto func_name = rpc_obj.get_func_name();
+        const auto has_bound_args = rpc_obj.has_bound_args();
+
+        if constexpr (std::is_void_v<R>)
+        {
+            try
+            {
+                std::apply(func, args);
+
+                if (has_bound_args)
+                {
+                    rpc_obj = rpc_object<Serial>{ detail::func_result_w_bind<void, Args...>{
+                        std::move(func_name), std::move(args) } };
+                }
+                else
+                {
+                    rpc_obj =
+                        rpc_object<Serial>{ detail::func_result<void>{ std::move(func_name) } };
+                }
+            }
+            catch (const std::exception& ex)
+            {
+                throw remote_exec_error(ex.what());
+            }
+        }
+        else
+        {
+            try
+            {
+                auto ret_val = std::apply(func, args);
+
+                if (has_bound_args)
+                {
+                    rpc_obj = rpc_object<Serial>{ detail::func_result_w_bind<R, Args...>{
+                        std::move(func_name), std::move(ret_val), std::move(args) } };
+                }
+                else
+                {
+                    rpc_obj = rpc_object<Serial>{ detail::func_result<R>{
+                        std::move(func_name), std::move(ret_val) } };
+                }
+            }
+            catch (const std::exception& ex)
+            {
+                throw remote_exec_error(ex.what());
+            }
+        }
+    }
+} //namespace detail
 } //namespace rpc_hpp

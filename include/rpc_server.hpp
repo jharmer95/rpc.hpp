@@ -28,14 +28,31 @@ public:
     virtual bytes_t receive() = 0;
 
     template<typename R, typename... Args>
-    void bind(std::string func_name, R (*func_ptr)(Args...))
+    void bind(const std::string& func_name, R (*func_ptr)(Args...))
     {
-        m_dispatch_table.emplace(std::move(func_name),
+        m_dispatch_table.try_emplace(func_name,
             [func_ptr](object_t& rpc_obj)
             {
                 try
                 {
-                    exec_func(func_ptr, rpc_obj);
+                    detail::exec_func<Serial>(func_ptr, rpc_obj);
+                }
+                catch (const rpc_exception& ex)
+                {
+                    rpc_obj = object_t{ detail::func_error{ rpc_obj.get_func_name(), ex } };
+                }
+            });
+    }
+
+    template<typename R, typename... Args>
+    void bind(std::string&& func_name, R (*func_ptr)(Args...))
+    {
+        m_dispatch_table.try_emplace(std::move(func_name),
+            [func_ptr](object_t& rpc_obj)
+            {
+                try
+                {
+                    detail::exec_func<Serial>(func_ptr, rpc_obj);
                 }
                 catch (const rpc_exception& ex)
                 {
@@ -45,14 +62,57 @@ public:
     }
 
     template<typename R, typename... Args, typename F>
-    void bind(std::string func_name, F&& func)
+    void bind(const std::string& func_name, F&& func)
+    {
+        using fptr_t = R (*)(Args...);
+
+        bind(func_name, fptr_t{ std::forward<F>(func) });
+    }
+
+    template<typename R, typename... Args, typename F>
+    void bind(std::string&& func_name, F&& func)
     {
         using fptr_t = R (*)(Args...);
 
         bind(std::move(func_name), fptr_t{ std::forward<F>(func) });
     }
 
-    object_t handle_bytes(bytes_t&& bytes) const
+    template<typename R, typename... Args>
+    void bind_std_func(const std::string& func_name, const std::function<R(Args...)>& func)
+    {
+        m_dispatch_table.try_emplace(func_name,
+            [&func](object_t& rpc_obj)
+            {
+                try
+                {
+                    detail::exec_func<Serial>(func, rpc_obj);
+                }
+                catch (const rpc_exception& ex)
+                {
+                    rpc_obj = object_t{ detail::func_error{ rpc_obj.get_func_name(), ex } };
+                }
+            });
+    }
+
+    template<typename R, typename... Args>
+    void bind_std_func(std::string&& func_name, const std::function<R(Args...)>& func)
+    {
+        m_dispatch_table.try_emplace(std::move(func_name),
+            [&func](object_t& rpc_obj)
+            {
+                try
+                {
+                    detail::exec_func<Serial>(func, rpc_obj);
+                }
+                catch (const rpc_exception& ex)
+                {
+                    rpc_obj = object_t{ detail::func_error{ rpc_obj.get_func_name(), ex } };
+                }
+            });
+    }
+
+    RPC_HPP_NODISCARD("the bytes are consumed by this function")
+    object_t handle_bytes(bytes_t&& bytes)
     {
         if (auto rpc_opt = object_t::parse_bytes(std::move(bytes)); rpc_opt.has_value())
         {
@@ -67,10 +127,11 @@ public:
 
                 case rpc_type::callback_install_request:
 #if defined(RPC_HPP_ENABLE_CALLBACKS)
-                    request.is_callback_uninstall() ? uninstall_callback(request)
-                                                    : install_callback(request);
+                    rpc_obj.is_callback_uninstall() ? uninstall_callback(rpc_obj)
+                                                    : install_callback(rpc_obj);
 
-                    return request;
+                    return rpc_obj;
+
 #else
                     [[fallthrough]];
 #endif
@@ -118,61 +179,9 @@ public:
 protected:
     server_interface(server_interface&&) noexcept = default;
 
-    template<typename R, typename... Args>
-    static void exec_func(R (*func)(Args...), object_t& rpc_obj)
-    {
-        auto args = rpc_obj.template get_args<Args...>();
-        auto func_name = rpc_obj.get_func_name();
-        const auto has_bound_args = rpc_obj.has_bound_args();
-
-        if constexpr (std::is_void_v<R>)
-        {
-            try
-            {
-                std::apply(func, args);
-
-                if (has_bound_args)
-                {
-                    rpc_obj = object_t{ detail::func_result_w_bind<void, Args...>{
-                        std::move(func_name), std::move(args) } };
-                }
-                else
-                {
-                    rpc_obj = object_t{ detail::func_result<void>{ std::move(func_name) } };
-                }
-            }
-            catch (const std::exception& ex)
-            {
-                throw remote_exec_error(ex.what());
-            }
-        }
-        else
-        {
-            try
-            {
-                auto ret_val = std::apply(func, args);
-
-                if (has_bound_args)
-                {
-                    rpc_obj = object_t{ detail::func_result_w_bind<R, Args...>{
-                        std::move(func_name), std::move(ret_val), std::move(args) } };
-                }
-                else
-                {
-                    rpc_obj = object_t{ detail::func_result<R>{
-                        std::move(func_name), std::move(ret_val) } };
-                }
-            }
-            catch (const std::exception& ex)
-            {
-                throw remote_exec_error(ex.what());
-            }
-        }
-    }
-
 #if defined(RPC_HPP_ENABLE_CALLBACKS)
     template<typename R, typename... Args>
-    R call_callback(const std::string& func_name, Args&&... args)
+    [[nodiscard]] R call_callback(const std::string& func_name, Args&&... args)
     {
         if (const auto it = m_installed_callbacks.find(func_name);
             it != m_installed_callbacks.cend())
@@ -197,7 +206,7 @@ protected:
     }
 
     template<typename R, typename... Args>
-    R call_callback_w_bind(const std::string& func_name, Args&&... args)
+    [[nodiscard]] R call_callback_w_bind(const std::string& func_name, Args&&... args)
     {
         if (const auto it = m_installed_callbacks.find(func_name);
             it != m_installed_callbacks.cend())
@@ -227,40 +236,43 @@ protected:
 
 private:
 #if defined(RPC_HPP_ENABLE_CALLBACKS)
-    object_t recv_impl()
+    [[nodiscard]] object_t recv_impl()
     {
-        bytes_t bytes;
-
-        try
+        bytes_t bytes = [this]
         {
-            bytes = receive();
-        }
-        catch (const std::exception& ex)
-        {
-            throw server_receive_error(ex.what());
-        }
-
-        if (auto o_response = object_t::parse_bytes(std::move(bytes)); o_response.has_value())
-        {
-            switch (auto& response = o_response.value(); response.type())
+            try
             {
-                case rpc_type::callback_result:
-                case rpc_type::callback_result_w_bind:
-                case rpc_type::callback_error:
-                    return response;
-
-                case rpc_type::callback_install_request:
-                case rpc_type::callback_request:
-                case rpc_type::func_error:
-                case rpc_type::func_request:
-                case rpc_type::func_result:
-                case rpc_type::func_result_w_bind:
-                default:
-                    throw rpc_object_mismatch("Invalid rpc_object type detected");
+                return receive();
             }
+            catch (const std::exception& ex)
+            {
+                throw server_receive_error(ex.what());
+            }
+        }();
+
+        auto o_response = object_t::parse_bytes(std::move(bytes));
+
+        if (!o_response.has_value())
+        {
+            throw server_receive_error("Invalid RPC object received");
         }
 
-        throw server_receive_error("Invalid RPC object received");
+        switch (auto& response = o_response.value(); response.type())
+        {
+            case rpc_type::callback_result:
+            case rpc_type::callback_result_w_bind:
+            case rpc_type::callback_error:
+                return response;
+
+            case rpc_type::callback_install_request:
+            case rpc_type::callback_request:
+            case rpc_type::func_error:
+            case rpc_type::func_request:
+            case rpc_type::func_result:
+            case rpc_type::func_result_w_bind:
+            default:
+                throw rpc_object_mismatch("Invalid rpc_object type detected");
+        }
     }
 
     void install_callback(object_t& rpc_obj)
@@ -278,7 +290,7 @@ private:
         }
     }
 
-    void uninstall_callback(object_t& rpc_obj)
+    void uninstall_callback(const object_t& rpc_obj)
     {
         m_installed_callbacks.erase(rpc_obj.get_func_name());
     }

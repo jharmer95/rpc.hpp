@@ -35,7 +35,7 @@
 ///
 
 //#define RPC_HPP_ENABLE_SERVER_CACHE
-//#define RPC_HPP_ENABLE_CALLBACKS
+#define RPC_HPP_ENABLE_CALLBACKS
 
 #include "rpc.server.hpp"
 #include "../static_funcs.hpp"
@@ -233,6 +233,15 @@ void HashComplexRef(ComplexObject& cx, std::string& hashStr)
 template<typename Serial>
 void BindFuncs(TestServer<Serial>& server)
 {
+#if defined(RPC_HPP_ENABLE_CALLBACKS)
+    static std::function<std::string()> get_connection_info = [&server]
+    {
+        return server.GetConnectionInfo();
+    };
+
+    server.template bind_std_func<std::string>("GetConnectionInfo", get_connection_info);
+#endif
+
     server.bind("KillServer", &KillServer);
     server.bind("ThrowError", &ThrowError);
     server.bind("AddOneToEachRef", &AddOneToEachRef);

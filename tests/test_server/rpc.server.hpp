@@ -108,7 +108,7 @@ class TestServer final : public rpc_hpp::server_interface<Serial>
 {
 public:
     using bytes_t = typename rpc_hpp::server_interface<Serial>::bytes_t;
-    
+
     TestServer(asio::io_context& io, const uint16_t port)
         : m_accept(io, tcp::endpoint(tcp::v4(), port))
     {
@@ -116,57 +116,77 @@ public:
 
     bytes_t receive() override
     {
-        // TODO: Open a socket on the callback port and read_some
-        return {};
+        RPC_HPP_PRECONDITION(m_socket.has_value());
+
+        static constexpr unsigned BUFFER_SZ = 64 * 1024;
+        static std::array<uint8_t, BUFFER_SZ> data{};
+
+        asio::error_code error;
+        const size_t len = m_socket.value().read_some(asio::buffer(data.data(), BUFFER_SZ), error);
+
+        if (error == asio::error::eof)
+        {
+            return {};
+        }
+
+        // other error
+        if (error)
+        {
+            throw asio::system_error(error);
+        }
+
+        return { data.data(), data.data() + len };
     }
 
     void send(bytes_t&& bytes) override
     {
-        // TODO: Open a socket on the callback port and write
-        (void)std::move(bytes);
+        RPC_HPP_PRECONDITION(m_socket.has_value());
+        write(m_socket.value(), asio::buffer(std::move(bytes), bytes.size()));
     }
+
+#if defined(RPC_HPP_ENABLE_CALLBACKS)
+    std::string GetConnectionInfo()
+    {
+        std::stringstream ss;
+
+        ss << "Server name: MyServer\n";
+        ss << "Client name: " << this->template call_callback<std::string>("GetClientName") << '\n';
+
+        return ss.str();
+    }
+#endif
 
     void Run()
     {
-        static constexpr auto BUFFER_SZ = 64U * 1024UL;
-        std::array<uint8_t, BUFFER_SZ> data{};
-
         while (RUNNING)
         {
-            tcp::socket sock = m_accept.accept();
+            m_socket = m_accept.accept();
 
             try
             {
                 while (RUNNING)
                 {
-                    asio::error_code error;
-                    const size_t len = sock.read_some(asio::buffer(data.data(), BUFFER_SZ), error);
+                    auto bytes = receive();
 
-                    if (error == asio::error::eof)
+                    if (std::size(bytes) == 0)
                     {
                         break;
                     }
 
-                    // other error
-                    if (error)
-                    {
-                        throw asio::system_error(error);
-                    }
-
-                    auto response =
-                        this->handle_bytes({ std::begin(data), std::begin(data) + len });
-
-                    auto bytes = response.to_bytes();
-                    write(sock, asio::buffer(std::move(bytes), bytes.size()));
+                    auto response = this->handle_bytes(std::move(bytes));
+                    send(response.to_bytes());
                 }
             }
             catch (const std::exception& ex)
             {
                 fprintf(stderr, "Exception in thread: %s\n", ex.what());
             }
+
+            m_socket.reset();
         }
     }
 
 private:
     tcp::acceptor m_accept;
+    std::optional<tcp::socket> m_socket{};
 };

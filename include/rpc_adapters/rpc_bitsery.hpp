@@ -93,6 +93,12 @@ namespace adapters
             static const uint64_t max_container_size;
         };
 
+        [[nodiscard]] static std::vector<uint8_t> from_bytes(const std::vector<uint8_t>& bytes)
+        {
+            // TODO: Verify bitsery data somehow
+            return bytes;
+        }
+
         [[nodiscard]] static std::vector<uint8_t> from_bytes(std::vector<uint8_t>&& bytes)
         {
             // TODO: Verify bitsery data somehow
@@ -159,15 +165,60 @@ namespace adapters
         [[nodiscard]] static detail::func_request<Args...> get_request(
             const std::vector<uint8_t>& serial_obj)
         {
-            // BUG: Calling this function with a func_result_w_bind deserializes incorrectly!
+            if (const auto type = get_type(serial_obj);
+                type == rpc_type::callback_result_w_bind || type == rpc_type::func_result_w_bind)
+            {
+                // First 4 bytes represent the type
+                size_t index = 4;
+
+                // Get length of func_name
+                const auto fname_len = extract_length(serial_obj, index);
+
+                assert(index < serial_obj.size());
+                assert(index <= std::numeric_limits<ptrdiff_t>::max());
+
+                index += fname_len;
+                const auto pre_sz_index = index;
+
+                const uint64_t r_sz =
+                    *reinterpret_cast<const uint64_t*>(serial_obj.data() + pre_sz_index);
+
+                if (r_sz == static_cast<uint64_t>(-1))
+                {
+                    index += 8;
+                    const auto r_len = extract_length(serial_obj, index);
+
+                    assert(index < serial_obj.size());
+                    assert(index <= std::numeric_limits<ptrdiff_t>::max());
+                    index += r_len;
+                }
+                else
+                {
+                    index += 8 + r_sz;
+                }
+
+                std::vector<uint8_t> copy_obj;
+                copy_obj.reserve(serial_obj.size() - 7 - r_sz);
+
+                std::copy_n(serial_obj.begin(), pre_sz_index, std::back_inserter(copy_obj));
+
+                // bind_args = true
+                copy_obj.push_back(1);
+
+                std::copy(std::next(serial_obj.begin(), index), serial_obj.end(),
+                    std::back_inserter(copy_obj));
+
+                return deserialize_rpc_object<detail::func_request<Args...>>(copy_obj);
+            }
+
             return deserialize_rpc_object<detail::func_request<Args...>>(serial_obj);
         }
 
         template<typename... Args>
         [[nodiscard]] static std::vector<uint8_t> serialize_request(
-            const detail::func_request<Args...>& result)
+            const detail::func_request<Args...>& request)
         {
-            return serialize_rpc_object<detail::func_request<Args...>>(result);
+            return serialize_rpc_object<detail::func_request<Args...>>(request);
         }
 
         [[nodiscard]] static detail::func_error get_error(const std::vector<uint8_t>& serial_obj)
@@ -175,9 +226,9 @@ namespace adapters
             return deserialize_rpc_object<detail::func_error>(serial_obj);
         }
 
-        [[nodiscard]] static std::vector<uint8_t> serialize_error(const detail::func_error& result)
+        [[nodiscard]] static std::vector<uint8_t> serialize_error(const detail::func_error& error)
         {
-            return serialize_rpc_object<detail::func_error>(result);
+            return serialize_rpc_object<detail::func_error>(error);
         }
 
         [[nodiscard]] static callback_install_request get_callback_install(
@@ -187,9 +238,9 @@ namespace adapters
         }
 
         [[nodiscard]] static std::vector<uint8_t> serialize_callback_install(
-            const callback_install_request& result)
+            const callback_install_request& callback_req)
         {
-            return serialize_rpc_object<callback_install_request>(result);
+            return serialize_rpc_object<callback_install_request>(callback_req);
         }
 
         [[nodiscard]] static bool has_bound_args(const std::vector<uint8_t>& serial_obj)
@@ -385,7 +436,7 @@ namespace detail
 
         s.value4b(type);
         s.text1b(o.func_name, config::max_func_name_size);
-        s.value4b(o.bind_args);
+        s.value1b(o.bind_args);
 
         s.ext(o.args,
             ::bitsery::ext::StdTuple{ [](S& s2, std::string& str)
@@ -437,6 +488,30 @@ namespace detail
         s.value4b(type);
         s.text1b(o.func_name, config::max_func_name_size);
 
+        uint64_t r_sz = [&o]
+        {
+            if constexpr (std::is_void_v<R>)
+            {
+                return 0;
+            }
+            else if constexpr (std::is_arithmetic_v<R>)
+            {
+                return sizeof(R);
+            }
+            else if constexpr (rpc_hpp::detail::is_container_v<R>)
+            {
+                return static_cast<uint64_t>(-1);
+            }
+            else
+            {
+                std::vector<uint8_t> buf{};
+                return bitsery::quickSerialization<
+                    bitsery::OutputBufferAdapter<std::vector<uint8_t>>>(buf, o.result);
+            }
+        }();
+
+        s.value8b(r_sz);
+
         if constexpr (std::is_arithmetic_v<R>)
         {
             s.template value<sizeof(R)>(o.result);
@@ -468,6 +543,30 @@ namespace detail
 
         s.value4b(type);
         s.text1b(o.func_name, config::max_func_name_size);
+
+        uint64_t r_sz = [&o]
+        {
+            if constexpr (std::is_void_v<R>)
+            {
+                return 0;
+            }
+            else if constexpr (std::is_arithmetic_v<R>)
+            {
+                return sizeof(R);
+            }
+            else if constexpr (rpc_hpp::detail::is_container_v<R>)
+            {
+                return static_cast<uint64_t>(-1);
+            }
+            else
+            {
+                std::vector<uint8_t> buf{};
+                return bitsery::quickSerialization<
+                    bitsery::OutputBufferAdapter<std::vector<uint8_t>>>(buf, o.result);
+            }
+        }();
+
+        s.value8b(r_sz);
 
         if constexpr (std::is_arithmetic_v<R>)
         {
@@ -502,6 +601,30 @@ namespace detail
 
         s.value4b(type);
         s.text1b(o.func_name, config::max_func_name_size);
+
+        uint64_t r_sz = [&o]
+        {
+            if constexpr (std::is_void_v<R>)
+            {
+                return 0;
+            }
+            else if constexpr (std::is_arithmetic_v<R>)
+            {
+                return sizeof(R);
+            }
+            else if constexpr (rpc_hpp::detail::is_container_v<R>)
+            {
+                return static_cast<uint64_t>(-1);
+            }
+            else
+            {
+                std::vector<uint8_t> buf{};
+                return bitsery::quickSerialization<
+                    bitsery::OutputBufferAdapter<std::vector<uint8_t>>>(buf, o.result);
+            }
+        }();
+
+        s.value8b(r_sz);
 
         if constexpr (std::is_arithmetic_v<R>)
         {
@@ -571,6 +694,30 @@ namespace detail
 
         s.value4b(type);
         s.text1b(o.func_name, config::max_func_name_size);
+
+        uint64_t r_sz = [&o]
+        {
+            if constexpr (std::is_void_v<R>)
+            {
+                return 0;
+            }
+            else if constexpr (std::is_arithmetic_v<R>)
+            {
+                return sizeof(R);
+            }
+            else if constexpr (rpc_hpp::detail::is_container_v<R>)
+            {
+                return static_cast<uint64_t>(-1);
+            }
+            else
+            {
+                std::vector<uint8_t> buf{};
+                return bitsery::quickSerialization<
+                    bitsery::OutputBufferAdapter<std::vector<uint8_t>>>(buf, o.result);
+            }
+        }();
+
+        s.value8b(r_sz);
 
         if constexpr (std::is_arithmetic_v<R>)
         {

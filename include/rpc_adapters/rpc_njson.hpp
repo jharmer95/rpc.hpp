@@ -59,6 +59,24 @@ public:
         return serial_obj.dump();
     }
 
+    [[nodiscard]] static nlohmann::json from_bytes(const std::string& bytes)
+    {
+        nlohmann::json obj = nlohmann::json::parse(bytes);
+
+        if (!obj.is_object())
+        {
+            throw deserialization_error("NJSON: not an object");
+        }
+
+        if (const auto fname_it = obj.find("func_name");
+            fname_it == obj.end() || !fname_it->is_string() || fname_it->empty())
+        {
+            throw deserialization_error("NJSON: field \"func_name\" not found");
+        }
+
+        return obj;
+    }
+
     [[nodiscard]] static nlohmann::json from_bytes(std::string&& bytes)
     {
         nlohmann::json obj = nlohmann::json::parse(std::move(bytes));
@@ -139,20 +157,22 @@ public:
         const detail::func_result_w_bind<R, Args...>& result)
     {
         nlohmann::json obj{};
+
         obj["func_name"] = result.func_name;
         obj["args"] = nlohmann::json::array();
-        auto& arg_arr = obj["args"];
-        obj["bind_args"] = true;
-        arg_arr.get_ref<nlohmann::json::array_t&>().reserve(sizeof...(Args));
-
-        detail::for_each_tuple(result.args,
-            [&arg_arr](auto&& elem) { push_args(std::forward<decltype(elem)>(elem), arg_arr); });
 
         if constexpr (!std::is_void_v<R>)
         {
             obj["result"] = {};
             push_arg(result.result, obj["result"]);
         }
+
+        auto& arg_arr = obj["args"];
+        obj["bind_args"] = true;
+        arg_arr.get_ref<nlohmann::json::array_t&>().reserve(sizeof...(Args));
+
+        detail::for_each_tuple(result.args,
+            [&arg_arr](auto&& elem) { push_args(std::forward<decltype(elem)>(elem), arg_arr); });
 
         obj["type"] = static_cast<int>(rpc_type::func_result_w_bind);
         return obj;
@@ -246,9 +266,9 @@ public:
     static T deserialize(const nlohmann::json& serial_obj) = delete;
 
 private:
-    // nodiscard because this function is pointless without checking the bool
     template<typename T>
-    [[nodiscard]] static constexpr bool validate_arg(const nlohmann::json& arg) noexcept
+    RPC_HPP_NODISCARD("function is pointless without checking the bool")
+    static constexpr bool validate_arg(const nlohmann::json& arg) noexcept
     {
         if constexpr (std::is_same_v<T, bool>)
         {
@@ -276,9 +296,8 @@ private:
         }
     }
 
-    // nodiscard because expect_type is consumed by the function
-    [[nodiscard]] static std::string mismatch_string(
-        std::string&& expect_type, const nlohmann::json& arg)
+    RPC_HPP_NODISCARD("expect_type is consumed by the function")
+    static std::string mismatch_string(std::string&& expect_type, const nlohmann::json& arg)
     {
         return { "njson expected type: " + std::move(expect_type)
             + ", got type: " + arg.type_name() };
@@ -321,10 +340,9 @@ private:
         obj_arr.push_back(std::move(tmp));
     }
 
-    // nodiscard because parsing can be expensive, and it makes no sense to not use the parsed result
     template<typename T>
-    [[nodiscard]] static std::remove_cv_t<std::remove_reference_t<T>> parse_arg(
-        const nlohmann::json& arg)
+    RPC_HPP_NODISCARD("parsing can be expensive and it makes no sense to not use the parsed result")
+    static std::remove_cv_t<std::remove_reference_t<T>> parse_arg(const nlohmann::json& arg)
     {
         using no_ref_t = std::remove_cv_t<std::remove_reference_t<T>>;
 
@@ -362,9 +380,9 @@ private:
         }
     }
 
-    // nodiscard because parsing can be expensive, and it makes no sense to not use the parsed result
     template<typename T>
-    [[nodiscard]] static std::remove_cv_t<std::remove_reference_t<T>> parse_args(
+    RPC_HPP_NODISCARD("parsing can be expensive and it makes no sense to not use the parsed result")
+    static std::remove_cv_t<std::remove_reference_t<T>> parse_args(
         const nlohmann::json& arg_arr, unsigned& index)
     {
         if (index >= arg_arr.size())
