@@ -119,8 +119,9 @@ namespace adapters
             assert(index < serial_obj.size());
             assert(index <= std::numeric_limits<ptrdiff_t>::max());
 
-            return { std::next(serial_obj.begin(), index),
-                std::next(serial_obj.begin(), index + len) };
+            return { std::next(serial_obj.begin(), static_cast<ptrdiff_t>(index)),
+                std::next(serial_obj.begin(),
+                    static_cast<ptrdiff_t>(index) + static_cast<ptrdiff_t>(len)) };
         }
 
         static rpc_type get_type(const std::vector<uint8_t>& serial_obj)
@@ -205,8 +206,8 @@ namespace adapters
                 // bind_args = true
                 copy_obj.push_back(1);
 
-                std::copy(std::next(serial_obj.begin(), index), serial_obj.end(),
-                    std::back_inserter(copy_obj));
+                std::copy(std::next(serial_obj.begin(), static_cast<ptrdiff_t>(index)),
+                    serial_obj.end(), std::back_inserter(copy_obj));
 
                 return deserialize_rpc_object<detail::func_request<Args...>>(copy_obj);
             }
@@ -488,11 +489,11 @@ namespace detail
         s.value4b(type);
         s.text1b(o.func_name, config::max_func_name_size);
 
-        uint64_t r_sz = [&o]
+        uint64_t r_sz = [](RPC_HPP_UNUSED func_result<R>& obj)
         {
             if constexpr (std::is_void_v<R>)
             {
-                return 0;
+                return 0ULL;
             }
             else if constexpr (std::is_arithmetic_v<R>)
             {
@@ -506,9 +507,9 @@ namespace detail
             {
                 std::vector<uint8_t> buf{};
                 return bitsery::quickSerialization<
-                    bitsery::OutputBufferAdapter<std::vector<uint8_t>>>(buf, o.result);
+                    bitsery::OutputBufferAdapter<std::vector<uint8_t>>>(buf, obj.result);
             }
-        }();
+        }(o);
 
         s.value8b(r_sz);
 
@@ -544,11 +545,11 @@ namespace detail
         s.value4b(type);
         s.text1b(o.func_name, config::max_func_name_size);
 
-        uint64_t r_sz = [&o]
+        uint64_t r_sz = [](RPC_HPP_UNUSED callback_result<R>& obj)
         {
             if constexpr (std::is_void_v<R>)
             {
-                return 0;
+                return 0ULL;
             }
             else if constexpr (std::is_arithmetic_v<R>)
             {
@@ -562,9 +563,9 @@ namespace detail
             {
                 std::vector<uint8_t> buf{};
                 return bitsery::quickSerialization<
-                    bitsery::OutputBufferAdapter<std::vector<uint8_t>>>(buf, o.result);
+                    bitsery::OutputBufferAdapter<std::vector<uint8_t>>>(buf, obj.result);
             }
-        }();
+        }(o);
 
         s.value8b(r_sz);
 
@@ -602,11 +603,11 @@ namespace detail
         s.value4b(type);
         s.text1b(o.func_name, config::max_func_name_size);
 
-        uint64_t r_sz = [&o]
+        uint64_t r_sz = [](RPC_HPP_UNUSED func_result_w_bind<R, Args...>& obj)
         {
             if constexpr (std::is_void_v<R>)
             {
-                return 0;
+                return 0ULL;
             }
             else if constexpr (std::is_arithmetic_v<R>)
             {
@@ -620,9 +621,9 @@ namespace detail
             {
                 std::vector<uint8_t> buf{};
                 return bitsery::quickSerialization<
-                    bitsery::OutputBufferAdapter<std::vector<uint8_t>>>(buf, o.result);
+                    bitsery::OutputBufferAdapter<std::vector<uint8_t>>>(buf, obj.result);
             }
-        }();
+        }(o);
 
         s.value8b(r_sz);
 
@@ -695,11 +696,11 @@ namespace detail
         s.value4b(type);
         s.text1b(o.func_name, config::max_func_name_size);
 
-        uint64_t r_sz = [&o]
+        uint64_t r_sz = [](callback_result_w_bind<R, Args...>& obj)
         {
             if constexpr (std::is_void_v<R>)
             {
-                return 0;
+                return 0ULL;
             }
             else if constexpr (std::is_arithmetic_v<R>)
             {
@@ -713,9 +714,9 @@ namespace detail
             {
                 std::vector<uint8_t> buf{};
                 return bitsery::quickSerialization<
-                    bitsery::OutputBufferAdapter<std::vector<uint8_t>>>(buf, o.result);
+                    bitsery::OutputBufferAdapter<std::vector<uint8_t>>>(buf, obj.result);
             }
-        }();
+        }(o);
 
         s.value8b(r_sz);
 

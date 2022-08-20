@@ -221,7 +221,8 @@ elseif(CXX_CLANG)
       -Wno-weak-vtables
       -Wno-reserved-id-macro
       -Wno-missing-braces
-      -Wno-covered-switch-default)
+      -Wno-covered-switch-default
+      -Wno-unused-template)
   set(MIN_WARNING -Wall)
   if(WERROR)
     list(APPEND FULL_WARNING -Werror)

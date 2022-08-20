@@ -28,14 +28,14 @@ public:
     virtual bytes_t receive() = 0;
 
     template<typename R, typename... Args>
-    void bind(const std::string& func_name, R (*func_ptr)(Args...))
+    void bind(std::string func_name, std::function<R(Args...)> func)
     {
-        m_dispatch_table.try_emplace(func_name,
-            [func_ptr](object_t& rpc_obj)
+        m_dispatch_table.try_emplace(std::move(func_name),
+            [func = std::move(func)](object_t& rpc_obj)
             {
                 try
                 {
-                    detail::exec_func<Serial>(func_ptr, rpc_obj);
+                    detail::exec_func<Serial, R, Args...>(std::move(func), rpc_obj);
                 }
                 catch (const rpc_exception& ex)
                 {
@@ -45,70 +45,15 @@ public:
     }
 
     template<typename R, typename... Args>
-    void bind(std::string&& func_name, R (*func_ptr)(Args...))
+    void bind(std::string func_name, R (*func_ptr)(Args...))
     {
-        m_dispatch_table.try_emplace(std::move(func_name),
-            [func_ptr](object_t& rpc_obj)
-            {
-                try
-                {
-                    detail::exec_func<Serial>(func_ptr, rpc_obj);
-                }
-                catch (const rpc_exception& ex)
-                {
-                    rpc_obj = object_t{ detail::func_error{ rpc_obj.get_func_name(), ex } };
-                }
-            });
+        bind(std::move(func_name), std::function<R(Args...)>{ func_ptr });
     }
 
     template<typename R, typename... Args, typename F>
-    void bind(const std::string& func_name, F&& func)
+    void bind(std::string func_name, F&& func)
     {
-        using fptr_t = R (*)(Args...);
-
-        bind(func_name, fptr_t{ std::forward<F>(func) });
-    }
-
-    template<typename R, typename... Args, typename F>
-    void bind(std::string&& func_name, F&& func)
-    {
-        using fptr_t = R (*)(Args...);
-
-        bind(std::move(func_name), fptr_t{ std::forward<F>(func) });
-    }
-
-    template<typename R, typename... Args>
-    void bind_std_func(const std::string& func_name, const std::function<R(Args...)>& func)
-    {
-        m_dispatch_table.try_emplace(func_name,
-            [&func](object_t& rpc_obj)
-            {
-                try
-                {
-                    detail::exec_func<Serial>(func, rpc_obj);
-                }
-                catch (const rpc_exception& ex)
-                {
-                    rpc_obj = object_t{ detail::func_error{ rpc_obj.get_func_name(), ex } };
-                }
-            });
-    }
-
-    template<typename R, typename... Args>
-    void bind_std_func(std::string&& func_name, const std::function<R(Args...)>& func)
-    {
-        m_dispatch_table.try_emplace(std::move(func_name),
-            [&func](object_t& rpc_obj)
-            {
-                try
-                {
-                    detail::exec_func<Serial>(func, rpc_obj);
-                }
-                catch (const rpc_exception& ex)
-                {
-                    rpc_obj = object_t{ detail::func_error{ rpc_obj.get_func_name(), ex } };
-                }
-            });
+        bind(std::move(func_name), std::function<R(Args...)>{ std::forward<F>(func) });
     }
 
     RPC_HPP_NODISCARD("the bytes are consumed by this function")
@@ -202,7 +147,7 @@ protected:
             return response.template get_result<R>();
         }
 
-        throw callback_missing("Callback" + func_name + "was called but not installed");
+        throw callback_missing_error("Callback" + func_name + "was called but not installed");
     }
 
     template<typename R, typename... Args>
@@ -230,7 +175,7 @@ protected:
             return response.template get_result<R>();
         }
 
-        throw callback_missing("Callback" + func_name + "was called but not installed");
+        throw callback_missing_error("Callback" + func_name + "was called but not installed");
     }
 #endif
 

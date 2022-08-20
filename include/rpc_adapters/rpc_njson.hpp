@@ -248,7 +248,6 @@ public:
     {
         nlohmann::json obj{};
         obj["func_name"] = callback_req.func_name;
-        obj["is_uninstall"] = callback_req.is_uninstall;
         obj["callback_id"] = callback_req.callback_id;
         obj["type"] = static_cast<int>(rpc_type::callback_install_request);
         return obj;

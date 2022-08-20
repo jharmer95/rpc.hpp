@@ -125,83 +125,7 @@ public:
 #if defined(RPC_HPP_ENABLE_CALLBACKS)
     template<typename R, typename... Args>
     RPC_HPP_NODISCARD("the returned callback_install_request is an input to uninstall_callback")
-    callback_install_request
-        install_callback(const std::string& func_name, const R (*func)(Args...))
-    {
-        callback_install_request cb{ func_name, reinterpret_cast<size_t>(func) };
-        object_t request{ cb };
-
-        try
-        {
-            send(request.to_bytes());
-        }
-        catch (const std::exception& ex)
-        {
-            throw client_send_error(ex.what());
-        }
-
-        return cb;
-    }
-
-    template<typename R, typename... Args>
-    RPC_HPP_NODISCARD("the returned callback_install_request is an input to uninstall_callback")
-    callback_install_request install_callback(std::string&& func_name, const R (*func)(Args...))
-    {
-        callback_install_request cb{ std::move(func_name), reinterpret_cast<size_t>(func) };
-        object_t request{ cb };
-
-        try
-        {
-            send(request.to_bytes());
-        }
-        catch (const std::exception& ex)
-        {
-            throw client_send_error(ex.what());
-        }
-
-        return cb;
-    }
-
-    template<typename R, typename... Args>
-    RPC_HPP_NODISCARD("the returned callback_install_request is an input to uninstall_callback")
-    callback_install_request
-        install_callback(const std::string& func_name, const std::function<R(Args...)>& func)
-    {
-        callback_install_request cb{ func_name,
-            reinterpret_cast<size_t>(func.template target<R (*)(Args...)>()) };
-
-        m_callback_map.try_emplace(cb.func_name,
-            [&func, &cb](object_t& rpc_obj)
-            {
-                try
-                {
-                    detail::exec_func<Serial>(func, rpc_obj);
-                }
-                catch (const rpc_exception& ex)
-                {
-                    rpc_obj = object_t{ detail::callback_error{
-                        rpc_obj.get_func_name(), cb.callback_id, ex } };
-                }
-            });
-
-        object_t request{ cb };
-
-        try
-        {
-            send(request.to_bytes());
-        }
-        catch (const std::exception& ex)
-        {
-            throw client_send_error(ex.what());
-        }
-
-        return cb;
-    }
-
-    template<typename R, typename... Args>
-    RPC_HPP_NODISCARD("the returned callback_install_request is an input to uninstall_callback")
-    callback_install_request
-        install_callback(std::string&& func_name, const std::function<R(Args...)>& func)
+    callback_install_request install_callback(std::string func_name, std::function<R(Args...)> func)
     {
         callback_install_request cb{ std::move(func_name),
             reinterpret_cast<size_t>(func.template target<R (*)(Args...)>()) };
@@ -211,7 +135,7 @@ public:
             {
                 try
                 {
-                    detail::exec_func<Serial>(func, rpc_obj);
+                    detail::exec_func<Serial>(std::move(func), rpc_obj);
                 }
                 catch (const rpc_exception& ex)
                 {
@@ -231,7 +155,29 @@ public:
             throw client_send_error(ex.what());
         }
 
+        auto response = object_t::parse_bytes(receive());
+
+        if (!response.has_value() || response.value().type() != rpc_type::callback_install_request)
+        {
+            throw callback_install_error("server did not respond to callback_install_request");
+        }
+
         return cb;
+    }
+
+    template<typename R, typename... Args>
+    RPC_HPP_NODISCARD("the returned callback_install_request is an input to uninstall_callback")
+    callback_install_request install_callback(std::string func_name, R (*func_ptr)(Args...))
+    {
+        return install_callback(std::move(func_name), std::function<R(Args...)>{ func_ptr });
+    }
+
+    template<typename R, typename... Args, typename F>
+    RPC_HPP_NODISCARD("the returned callback_install_request is an input to uninstall_callback")
+    callback_install_request install_callback(std::string func_name, F&& func)
+    {
+        return install_callback(
+            std::move(func_name), std::function<R(Args...)>{ std::forward<F>(func) });
     }
 
     void uninstall_callback(callback_install_request&& callback)
@@ -288,6 +234,7 @@ private:
                     return response;
 
                 case rpc_type::callback_request:
+                case rpc_type::func_request:
 #if defined(RPC_HPP_ENABLE_CALLBACKS)
                 {
                     dispatch_callback(response);
@@ -307,11 +254,10 @@ private:
                     [[fallthrough]];
 #endif
 
-                case rpc_type::callback_error:
                 case rpc_type::callback_install_request:
+                case rpc_type::callback_error:
                 case rpc_type::callback_result:
                 case rpc_type::callback_result_w_bind:
-                case rpc_type::func_request:
                 default:
                     throw rpc_object_mismatch("Invalid rpc_object type detected");
             }

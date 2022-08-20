@@ -239,7 +239,7 @@ void BindFuncs(TestServer<Serial>& server)
         return server.GetConnectionInfo();
     };
 
-    server.template bind_std_func<std::string>("GetConnectionInfo", get_connection_info);
+    server.bind("GetConnectionInfo", get_connection_info);
 #endif
 
     server.bind("KillServer", &KillServer);
