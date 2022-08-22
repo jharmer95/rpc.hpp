@@ -54,13 +54,12 @@ struct std::hash<std::vector<uint8_t>>
 {
     [[nodiscard]] size_t operator()(const std::vector<uint8_t>& vec) const noexcept
     {
-        static constexpr auto seed_hash = [](size_t seed, size_t val) noexcept
-        {
-            static constexpr size_t magic_hash_val = 0x9E3779B9UL;
-            return seed ^ (val + magic_hash_val + (seed << 6) + (seed >> 2));
-        };
-
-        return std::accumulate(vec.begin(), vec.end(), vec.size(), seed_hash);
+        return std::accumulate(vec.begin(), vec.end(), vec.size(),
+            [](size_t seed, size_t val) noexcept
+            {
+                static constexpr size_t magic_hash_val = 0x9E3779B9UL;
+                return seed ^ (val + magic_hash_val + (seed << 6) + (seed >> 2));
+            });
     }
 };
 
@@ -95,13 +94,31 @@ namespace adapters
 
         [[nodiscard]] static std::vector<uint8_t> from_bytes(const std::vector<uint8_t>& bytes)
         {
-            // TODO: Verify bitsery data somehow
+            RPC_HPP_PRECONDITION(bytes.size() >= sizeof(int));
+
+            // Check that getting the type does not throw
+            RPC_HPP_UNUSED auto type = get_type(bytes);
+
+            if (get_func_name(bytes).empty())
+            {
+                throw deserialization_error("Bitsery: func_name could not be extracted from bytes");
+            }
+
             return bytes;
         }
 
         [[nodiscard]] static std::vector<uint8_t> from_bytes(std::vector<uint8_t>&& bytes)
         {
-            // TODO: Verify bitsery data somehow
+            RPC_HPP_PRECONDITION(bytes.size() >= sizeof(int));
+
+            // Check that getting the type does not throw
+            RPC_HPP_UNUSED auto type = get_type(bytes);
+
+            if (get_func_name(bytes).empty())
+            {
+                throw deserialization_error("Bitsery: func_name could not be extracted from bytes");
+            }
+
             return std::move(bytes);
         }
 
@@ -112,12 +129,14 @@ namespace adapters
 
         [[nodiscard]] static std::string get_func_name(const std::vector<uint8_t>& serial_obj)
         {
+            RPC_HPP_PRECONDITION(serial_obj.size() > sizeof(int));
+
             // First 4 bytes represent the type
             size_t index = 4;
             const auto len = extract_length(serial_obj, index);
 
-            assert(index < serial_obj.size());
-            assert(index <= std::numeric_limits<ptrdiff_t>::max());
+            assert(index + len <= std::numeric_limits<ptrdiff_t>::max());
+            assert(index + len < serial_obj.size());
 
             return { std::next(serial_obj.begin(), static_cast<ptrdiff_t>(index)),
                 std::next(serial_obj.begin(),
@@ -131,6 +150,13 @@ namespace adapters
             // First 4 bytes represent the type
             int n_type;
             std::memcpy(&n_type, serial_obj.data(), sizeof(n_type));
+
+            if (n_type < static_cast<int>(rpc_type::callback_install_request)
+                || n_type > static_cast<int>(rpc_type::func_result_w_bind))
+            {
+                throw deserialization_error("Bitsery: invalid type field detected");
+            }
+
             return static_cast<rpc_type>(n_type);
         }
 
@@ -373,7 +399,8 @@ namespace adapters
         static bool verify_type(const bit_buffer& bytes, rpc_type type)
         {
             RPC_HPP_PRECONDITION(bytes.size() >= sizeof(int));
-            return static_cast<int>(type) == *reinterpret_cast<const int*>(bytes.data());
+
+            return std::memcmp(&type, bytes.data(), sizeof(int)) == 0;
         }
     };
 } // namespace adapters

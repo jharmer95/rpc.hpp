@@ -54,29 +54,6 @@ struct serial_traits<njson_adapter>
 class njson_adapter : public serial_adapter_base<njson_adapter>
 {
 public:
-    [[nodiscard]] static std::string to_bytes(const nlohmann::json& serial_obj)
-    {
-        return serial_obj.dump();
-    }
-
-    [[nodiscard]] static nlohmann::json from_bytes(const std::string& bytes)
-    {
-        nlohmann::json obj = nlohmann::json::parse(bytes);
-
-        if (!obj.is_object())
-        {
-            throw deserialization_error("NJSON: not an object");
-        }
-
-        if (const auto fname_it = obj.find("func_name");
-            fname_it == obj.end() || !fname_it->is_string() || fname_it->empty())
-        {
-            throw deserialization_error("NJSON: field \"func_name\" not found");
-        }
-
-        return obj;
-    }
-
     [[nodiscard]] static nlohmann::json from_bytes(std::string&& bytes)
     {
         nlohmann::json obj = nlohmann::json::parse(std::move(bytes));
@@ -93,6 +70,16 @@ public:
         }
 
         return obj;
+    }
+
+    [[nodiscard]] static std::string to_bytes(const nlohmann::json& serial_obj)
+    {
+        return serial_obj.dump();
+    }
+
+    [[nodiscard]] static std::string to_bytes(nlohmann::json&& serial_obj)
+    {
+        return std::move(serial_obj).dump();
     }
 
     [[nodiscard]] static std::string get_func_name(const nlohmann::json& serial_obj)
@@ -114,11 +101,12 @@ public:
 
         if constexpr (std::is_void_v<R>)
         {
-            return { serial_obj["func_name"] };
+            return { serial_obj["func_name"].get<std::string>() };
         }
         else
         {
-            return { serial_obj["func_name"], parse_arg<R>(serial_obj["result"]) };
+            return { serial_obj["func_name"].get<std::string>(),
+                parse_arg<R>(serial_obj["result"]) };
         }
     }
 
@@ -159,11 +147,12 @@ public:
 
         if constexpr (std::is_void_v<R>)
         {
-            return { serial_obj["func_name"], parse_args<Args>(args_val, arg_counter)... };
+            return { serial_obj["func_name"].get<std::string>(),
+                parse_args<Args>(args_val, arg_counter)... };
         }
         else
         {
-            return { serial_obj["func_name"],
+            return { serial_obj["func_name"].get<std::string>(),
                 parse_arg<R>(serial_obj["result"], parse_args<Args>(args_val, arg_counter)...) };
         }
     }
@@ -225,12 +214,11 @@ public:
         typename detail::func_request<IsCallback, Args...>::args_t args = { parse_args<Args>(
             args_val, arg_counter)... };
 
-        std::string func_name = serial_obj["func_name"];
-
         return is_bound_args
             ? detail::func_request<IsCallback, Args...>{ detail::bind_args_tag{},
-                  std::move(func_name), std::move(args) }
-            : detail::func_request<IsCallback, Args...>{ std::move(func_name), std::move(args) };
+                  serial_obj["func_name"].get<std::string>(), std::move(args) }
+            : detail::func_request<IsCallback, Args...>{ serial_obj["func_name"].get<std::string>(),
+                  std::move(args) };
     }
 
     template<bool IsCallback = false, typename... Args>
@@ -265,8 +253,9 @@ public:
         RPC_HPP_PRECONDITION((IsCallback && serial_obj["type"] == rpc_type::callback_error)
             || (!IsCallback && serial_obj["type"] == rpc_type::func_error));
 
-        return { serial_obj["func_name"], static_cast<exception_type>(serial_obj["except_type"]),
-            serial_obj["err_mesg"] };
+        return { serial_obj["func_name"].get<std::string>(),
+            static_cast<exception_type>(serial_obj["except_type"]),
+            serial_obj["err_mesg"].get<std::string>() };
     }
 
     template<bool IsCallback = false>
