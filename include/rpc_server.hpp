@@ -5,6 +5,7 @@
 #include <functional>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 
 #define RPC_HEADER_FUNC(RETURN, FUNCNAME, ...) extern RETURN FUNCNAME(__VA_ARGS__)
 
@@ -35,7 +36,7 @@ public:
             {
                 try
                 {
-                    detail::exec_func<Serial, R, Args...>(std::move(func), rpc_obj);
+                    detail::exec_func<false, Serial, R, Args...>(func, rpc_obj);
                 }
                 catch (const rpc_exception& ex)
                 {
@@ -48,12 +49,6 @@ public:
     void bind(std::string func_name, R (*func_ptr)(Args...))
     {
         bind(std::move(func_name), std::function<R(Args...)>{ func_ptr });
-    }
-
-    template<typename R, typename... Args, typename F>
-    void bind(std::string func_name, F&& func)
-    {
-        bind(std::move(func_name), std::function<R(Args...)>{ std::forward<F>(func) });
     }
 
     RPC_HPP_NODISCARD("the bytes are consumed by this function")
@@ -132,7 +127,7 @@ protected:
             it != m_installed_callbacks.cend())
         {
             object_t response = object_t{ detail::callback_request<detail::decay_str_t<Args>...>{
-                func_name, it->second, std::forward_as_tuple(args...) } };
+                func_name, std::forward_as_tuple(args...) } };
 
             try
             {
@@ -144,7 +139,7 @@ protected:
             }
 
             response = recv_impl();
-            return response.template get_result<R>();
+            return response.template get_result<R, true>();
         }
 
         throw callback_missing_error("Callback" + func_name + "was called but not installed");
@@ -157,7 +152,7 @@ protected:
             it != m_installed_callbacks.cend())
         {
             object_t response = object_t{ detail::callback_request<detail::decay_str_t<Args>...>{
-                detail::bind_args_tag{}, func_name, it->second, std::forward_as_tuple(args...) } };
+                detail::bind_args_tag{}, func_name, std::forward_as_tuple(args...) } };
 
             try
             {
@@ -169,10 +164,10 @@ protected:
             }
 
             response = recv_impl();
-            detail::tuple_bind(response.template get_args<detail::decay_str_t<Args>...>(),
+            detail::tuple_bind(response.template get_args<true, detail::decay_str_t<Args>...>(),
                 std::forward<Args>(args)...);
 
-            return response.template get_result<R>();
+            return response.template get_result<R, true>();
         }
 
         throw callback_missing_error("Callback" + func_name + "was called but not installed");
@@ -224,14 +219,21 @@ private:
     {
         auto func_name = rpc_obj.get_func_name();
 
-        auto [_, inserted] =
-            m_installed_callbacks.try_emplace(std::move(func_name), rpc_obj.get_callback_id());
+        std::cout << "Installing function: " << func_name << "...";
+
+        auto [_, inserted] = m_installed_callbacks.insert(std::move(func_name));
 
         if (!inserted)
         {
+            std::cout << " FAILURE\n";
+
             // NOTE: since insertion did not occur, func_name was not moved so it is safe to use here
-            rpc_obj = object_t{ detail::func_error{ func_name,
+            rpc_obj = object_t{ detail::callback_error{ func_name,
                 callback_install_error("Callback: \"" + func_name + "\" is already installed") } };
+        }
+        else
+        {
+            std::cout << " SUCCESS\n";
         }
     }
 
@@ -244,7 +246,7 @@ private:
     std::unordered_map<std::string, std::function<void(object_t&)>> m_dispatch_table{};
 
 #if defined(RPC_HPP_ENABLE_CALLBACKS)
-    std::unordered_map<std::string, uint64_t> m_installed_callbacks;
+    std::unordered_set<std::string> m_installed_callbacks;
 #endif
 };
 } //namespace rpc_hpp

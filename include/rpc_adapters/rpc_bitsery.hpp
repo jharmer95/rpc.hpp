@@ -126,7 +126,7 @@ namespace adapters
 
         static rpc_type get_type(const std::vector<uint8_t>& serial_obj)
         {
-            RPC_HPP_PRECONDITION(serial_obj.size() > sizeof(int));
+            RPC_HPP_PRECONDITION(serial_obj.size() >= sizeof(int));
 
             // First 4 bytes represent the type
             int n_type;
@@ -134,38 +134,51 @@ namespace adapters
             return static_cast<rpc_type>(n_type);
         }
 
-        template<typename R>
-        [[nodiscard]] static detail::func_result<R> get_result(
+        template<typename R, bool IsCallback = false>
+        [[nodiscard]] static detail::func_result<R, IsCallback> get_result(
             const std::vector<uint8_t>& serial_obj)
         {
-            return deserialize_rpc_object<detail::func_result<R>>(serial_obj);
+            RPC_HPP_PRECONDITION(verify_type(
+                serial_obj, IsCallback ? rpc_type::callback_result : rpc_type::func_result));
+
+            return deserialize_rpc_object<detail::func_result<R, IsCallback>>(serial_obj);
         }
 
-        template<typename R>
+        template<typename R, bool IsCallback = false>
         [[nodiscard]] static std::vector<uint8_t> serialize_result(
-            const detail::func_result<R>& result)
+            const detail::func_result<R, IsCallback>& result)
         {
-            return serialize_rpc_object<detail::func_result<R>>(result);
+            return serialize_rpc_object<detail::func_result<R, IsCallback>>(result);
         }
 
-        template<typename R, typename... Args>
-        [[nodiscard]] static detail::func_result_w_bind<R, Args...> get_result_w_bind(
+        template<typename R, bool IsCallback = false, typename... Args>
+        [[nodiscard]] static detail::func_result_w_bind<R, IsCallback, Args...> get_result_w_bind(
             const std::vector<uint8_t>& serial_obj)
         {
-            return deserialize_rpc_object<detail::func_result_w_bind<R, Args...>>(serial_obj);
+            RPC_HPP_PRECONDITION(verify_type(serial_obj,
+                IsCallback ? rpc_type::callback_result_w_bind : rpc_type::func_result_w_bind));
+
+            return deserialize_rpc_object<detail::func_result_w_bind<R, IsCallback, Args...>>(
+                serial_obj);
         }
 
-        template<typename R, typename... Args>
+        template<typename R, bool IsCallback = false, typename... Args>
         [[nodiscard]] static std::vector<uint8_t> serialize_result_w_bind(
-            const detail::func_result_w_bind<R, Args...>& result)
+            const detail::func_result_w_bind<R, IsCallback, Args...>& result)
         {
-            return serialize_rpc_object<detail::func_result_w_bind<R, Args...>>(result);
+            return serialize_rpc_object<detail::func_result_w_bind<R, IsCallback, Args...>>(result);
         }
 
-        template<typename... Args>
-        [[nodiscard]] static detail::func_request<Args...> get_request(
+        template<bool IsCallback = false, typename... Args>
+        [[nodiscard]] static detail::func_request<IsCallback, Args...> get_request(
             const std::vector<uint8_t>& serial_obj)
         {
+            RPC_HPP_PRECONDITION(
+                verify_type(
+                    serial_obj, IsCallback ? rpc_type::callback_request : rpc_type::func_request)
+                || verify_type(serial_obj,
+                    IsCallback ? rpc_type::callback_result_w_bind : rpc_type::func_result_w_bind));
+
             if (const auto type = get_type(serial_obj);
                 type == rpc_type::callback_result_w_bind || type == rpc_type::func_result_w_bind)
             {
@@ -209,32 +222,41 @@ namespace adapters
                 std::copy(std::next(serial_obj.begin(), static_cast<ptrdiff_t>(index)),
                     serial_obj.end(), std::back_inserter(copy_obj));
 
-                return deserialize_rpc_object<detail::func_request<Args...>>(copy_obj);
+                return deserialize_rpc_object<detail::func_request<IsCallback, Args...>>(copy_obj);
             }
 
-            return deserialize_rpc_object<detail::func_request<Args...>>(serial_obj);
+            return deserialize_rpc_object<detail::func_request<IsCallback, Args...>>(serial_obj);
         }
 
-        template<typename... Args>
+        template<bool IsCallback = false, typename... Args>
         [[nodiscard]] static std::vector<uint8_t> serialize_request(
-            const detail::func_request<Args...>& request)
+            const detail::func_request<IsCallback, Args...>& request)
         {
-            return serialize_rpc_object<detail::func_request<Args...>>(request);
+            return serialize_rpc_object<detail::func_request<IsCallback, Args...>>(request);
         }
 
-        [[nodiscard]] static detail::func_error get_error(const std::vector<uint8_t>& serial_obj)
+        template<bool IsCallback = false>
+        [[nodiscard]] static detail::func_error<IsCallback> get_error(
+            const std::vector<uint8_t>& serial_obj)
         {
-            return deserialize_rpc_object<detail::func_error>(serial_obj);
+            RPC_HPP_PRECONDITION(verify_type(
+                serial_obj, IsCallback ? rpc_type::callback_error : rpc_type::func_error));
+
+            return deserialize_rpc_object<detail::func_error<IsCallback>>(serial_obj);
         }
 
-        [[nodiscard]] static std::vector<uint8_t> serialize_error(const detail::func_error& error)
+        template<bool IsCallback = false>
+        [[nodiscard]] static std::vector<uint8_t> serialize_error(
+            const detail::func_error<IsCallback>& error)
         {
-            return serialize_rpc_object<detail::func_error>(error);
+            return serialize_rpc_object<detail::func_error<IsCallback>>(error);
         }
 
         [[nodiscard]] static callback_install_request get_callback_install(
             const std::vector<uint8_t>& serial_obj)
         {
+            RPC_HPP_PRECONDITION(verify_type(serial_obj, rpc_type::callback_install_request));
+
             return deserialize_rpc_object<callback_install_request>(serial_obj);
         }
 
@@ -347,17 +369,33 @@ namespace adapters
 
             return ((hb & 0x7FU) << 8) | lb;
         }
+
+        static bool verify_type(const bit_buffer& bytes, rpc_type type)
+        {
+            RPC_HPP_PRECONDITION(bytes.size() >= sizeof(int));
+            return static_cast<int>(type) == *reinterpret_cast<const int*>(bytes.data());
+        }
     };
 } // namespace adapters
 
 namespace detail
 {
-    template<typename S>
-    void serialize(S& s, func_error& o)
+    template<bool IsCallback, typename S>
+    void serialize(S& s, func_error<IsCallback>& o)
     {
         using config = adapters::bitsery_adapter::config;
 
-        auto type = rpc_type::func_error;
+        auto type = []
+        {
+            if constexpr (IsCallback)
+            {
+                return rpc_type::callback_error;
+            }
+            else
+            {
+                return rpc_type::func_error;
+            }
+        }();
 
         s.value4b(type);
         s.text1b(o.func_name, config::max_func_name_size);
@@ -365,26 +403,22 @@ namespace detail
         s.text1b(o.err_mesg, config::max_string_size);
     }
 
-    template<typename S>
-    void serialize(S& s, callback_error& o)
+    template<bool IsCallback, typename S, typename... Args>
+    void serialize(S& s, func_request<IsCallback, Args...>& o)
     {
         using config = adapters::bitsery_adapter::config;
 
-        auto type = rpc_type::callback_error;
-
-        s.value4b(type);
-        s.text1b(o.func_name, config::max_func_name_size);
-        s.value4b(o.except_type);
-        s.text1b(o.err_mesg, config::max_string_size);
-        s.value8b(o.callback_id);
-    }
-
-    template<typename S, typename... Args>
-    void serialize(S& s, func_request<Args...>& o)
-    {
-        using config = adapters::bitsery_adapter::config;
-
-        auto type = rpc_type::func_request;
+        auto type = []
+        {
+            if constexpr (IsCallback)
+            {
+                return rpc_type::callback_request;
+            }
+            else
+            {
+                return rpc_type::func_request;
+            }
+        }();
 
         s.value4b(type);
         s.text1b(o.func_name, config::max_func_name_size);
@@ -428,68 +462,27 @@ namespace detail
                 } });
     }
 
-    template<typename S, typename... Args>
-    void serialize(S& s, callback_request<Args...>& o)
+    template<bool IsCallback, typename S, typename R>
+    void serialize(S& s, func_result<R, IsCallback>& o)
     {
         using config = adapters::bitsery_adapter::config;
 
-        auto type = rpc_type::callback_result;
-
-        s.value4b(type);
-        s.text1b(o.func_name, config::max_func_name_size);
-        s.value1b(o.bind_args);
-
-        s.ext(o.args,
-            ::bitsery::ext::StdTuple{ [](S& s2, std::string& str)
-                { s2.text1b(str, config::max_string_size); },
-                // Fallback serializer for integers, floats, and enums
-                [](auto& s2, auto& val)
-                {
-                    using T = std::remove_cv_t<std::remove_reference_t<decltype(val)>>;
-
-                    if constexpr (std::is_arithmetic_v<T>)
-                    {
-                        if constexpr (config::use_exact_size)
-                        {
-                            s2.template value<sizeof(val)>(val);
-                        }
-                        else
-                        {
-                            s2.value8b(val);
-                        }
-                    }
-                    else if constexpr (detail::is_container_v<T>)
-                    {
-                        if constexpr (std::is_arithmetic_v<typename T::value_type>)
-                        {
-                            s2.template container<sizeof(typename T::value_type)>(
-                                val, config::max_container_size);
-                        }
-                        else
-                        {
-                            s2.container(val, config::max_container_size);
-                        }
-                    }
-                    else
-                    {
-                        s2.object(val);
-                    }
-                } });
-
-        s.value8b(o.callback_id);
-    }
-
-    template<typename S, typename R>
-    void serialize(S& s, func_result<R>& o)
-    {
-        using config = adapters::bitsery_adapter::config;
-
-        auto type = rpc_type::func_result;
+        auto type = []
+        {
+            if constexpr (IsCallback)
+            {
+                return rpc_type::callback_result;
+            }
+            else
+            {
+                return rpc_type::func_result;
+            }
+        }();
 
         s.value4b(type);
         s.text1b(o.func_name, config::max_func_name_size);
 
-        uint64_t r_sz = [](RPC_HPP_UNUSED func_result<R>& obj)
+        uint64_t r_sz = [](RPC_HPP_UNUSED func_result<R, IsCallback>& obj)
         {
             if constexpr (std::is_void_v<R>)
             {
@@ -535,75 +528,27 @@ namespace detail
         }
     }
 
-    template<typename S, typename R>
-    void serialize(S& s, callback_result<R>& o)
+    template<bool IsCallback, typename S, typename R, typename... Args>
+    void serialize(S& s, func_result_w_bind<R, IsCallback, Args...>& o)
     {
         using config = adapters::bitsery_adapter::config;
 
-        auto type = rpc_type::callback_result;
+        auto type = []
+        {
+            if constexpr (IsCallback)
+            {
+                return rpc_type::callback_result_w_bind;
+            }
+            else
+            {
+                return rpc_type::func_result_w_bind;
+            }
+        }();
 
         s.value4b(type);
         s.text1b(o.func_name, config::max_func_name_size);
 
-        uint64_t r_sz = [](RPC_HPP_UNUSED callback_result<R>& obj)
-        {
-            if constexpr (std::is_void_v<R>)
-            {
-                return 0ULL;
-            }
-            else if constexpr (std::is_arithmetic_v<R>)
-            {
-                return sizeof(R);
-            }
-            else if constexpr (rpc_hpp::detail::is_container_v<R>)
-            {
-                return static_cast<uint64_t>(-1);
-            }
-            else
-            {
-                std::vector<uint8_t> buf{};
-                return bitsery::quickSerialization<
-                    bitsery::OutputBufferAdapter<std::vector<uint8_t>>>(buf, obj.result);
-            }
-        }(o);
-
-        s.value8b(r_sz);
-
-        if constexpr (std::is_arithmetic_v<R>)
-        {
-            s.template value<sizeof(R)>(o.result);
-        }
-        else if constexpr (rpc_hpp::detail::is_container_v<R>)
-        {
-            if constexpr (std::is_arithmetic_v<typename R::value_type>)
-            {
-                s.template container<sizeof(typename R::value_type)>(
-                    o.result, config::max_container_size);
-            }
-            else
-            {
-                s.container(o.result, config::max_container_size);
-            }
-        }
-        else if constexpr (!std::is_void_v<R>)
-        {
-            s.object(o.result);
-        }
-
-        s.value8b(o.callback_id);
-    }
-
-    template<typename S, typename R, typename... Args>
-    void serialize(S& s, func_result_w_bind<R, Args...>& o)
-    {
-        using config = adapters::bitsery_adapter::config;
-
-        auto type = rpc_type::func_result_w_bind;
-
-        s.value4b(type);
-        s.text1b(o.func_name, config::max_func_name_size);
-
-        uint64_t r_sz = [](RPC_HPP_UNUSED func_result_w_bind<R, Args...>& obj)
+        uint64_t r_sz = [](RPC_HPP_UNUSED func_result_w_bind<R, IsCallback, Args...>& obj)
         {
             if constexpr (std::is_void_v<R>)
             {
@@ -684,101 +629,6 @@ namespace detail
                         s2.object(val);
                     }
                 } });
-    }
-
-    template<typename S, typename R, typename... Args>
-    void serialize(S& s, callback_result_w_bind<R, Args...>& o)
-    {
-        using config = adapters::bitsery_adapter::config;
-
-        auto type = rpc_type::callback_result_w_bind;
-
-        s.value4b(type);
-        s.text1b(o.func_name, config::max_func_name_size);
-
-        uint64_t r_sz = [](callback_result_w_bind<R, Args...>& obj)
-        {
-            if constexpr (std::is_void_v<R>)
-            {
-                return 0ULL;
-            }
-            else if constexpr (std::is_arithmetic_v<R>)
-            {
-                return sizeof(R);
-            }
-            else if constexpr (rpc_hpp::detail::is_container_v<R>)
-            {
-                return static_cast<uint64_t>(-1);
-            }
-            else
-            {
-                std::vector<uint8_t> buf{};
-                return bitsery::quickSerialization<
-                    bitsery::OutputBufferAdapter<std::vector<uint8_t>>>(buf, obj.result);
-            }
-        }(o);
-
-        s.value8b(r_sz);
-
-        if constexpr (std::is_arithmetic_v<R>)
-        {
-            s.template value<sizeof(R)>(o.result);
-        }
-        else if constexpr (rpc_hpp::detail::is_container_v<R>)
-        {
-            if constexpr (std::is_arithmetic_v<typename R::value_type>)
-            {
-                s.template container<sizeof(typename R::value_type)>(
-                    o.result, config::max_container_size);
-            }
-            else
-            {
-                s.container(o.result, config::max_container_size);
-            }
-        }
-        else if constexpr (!std::is_void_v<R>)
-        {
-            s.object(o.result);
-        }
-
-        s.ext(o.args,
-            ::bitsery::ext::StdTuple{ [](S& s2, std::string& str)
-                { s2.text1b(str, config::max_string_size); },
-                // Fallback serializer for integers, floats, and enums
-                [](auto& s2, auto& val)
-                {
-                    using T = std::remove_cv_t<std::remove_reference_t<decltype(val)>>;
-
-                    if constexpr (std::is_arithmetic_v<T>)
-                    {
-                        if constexpr (config::use_exact_size)
-                        {
-                            s2.template value<sizeof(val)>(val);
-                        }
-                        else
-                        {
-                            s2.value8b(val);
-                        }
-                    }
-                    else if constexpr (detail::is_container_v<T>)
-                    {
-                        if constexpr (std::is_arithmetic_v<typename T::value_type>)
-                        {
-                            s2.template container<sizeof(typename T::value_type)>(
-                                val, config::max_container_size);
-                        }
-                        else
-                        {
-                            s2.container(val, config::max_container_size);
-                        }
-                    }
-                    else
-                    {
-                        s2.object(val);
-                    }
-                } });
-
-        s.value8b(o.callback_id);
     }
 } //namespace detail
 
@@ -792,6 +642,5 @@ void serialize(S& s, callback_install_request& o)
     s.value4b(type);
     s.text1b(o.func_name, config::max_func_name_size);
     s.value1b(o.is_uninstall);
-    s.value8b(o.callback_id);
 }
 } // namespace rpc_hpp

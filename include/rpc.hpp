@@ -416,6 +416,19 @@ namespace detail
     template<typename T>
     using decay_str_t = typename decay_str<T>::type;
 
+    template<typename T>
+    constexpr bool is_ref_arg()
+    {
+        return std::is_reference_v<
+                   T> && !std::is_const_v<std::remove_reference_t<T>> && !std::is_pointer_v<std::remove_reference_t<T>>;
+    }
+
+    template<typename... Args>
+    constexpr bool has_ref_args()
+    {
+        return (... || is_ref_arg<Args>());
+    }
+
     template<typename... Args, size_t... Is>
     constexpr void tuple_bind(const std::tuple<remove_cvref_t<decay_str_t<Args>>...>& src,
         RPC_HPP_UNUSED std::index_sequence<Is...> iseq, Args&&... dest)
@@ -424,9 +437,7 @@ namespace detail
         std::ignore = expander{ 0,
             (
                 (void)[](auto&& x, auto&& y) {
-                    if constexpr (
-                        std::is_reference_v<
-                            decltype(x)> && !std::is_const_v<std::remove_reference_t<decltype(x)>> && !std::is_pointer_v<std::remove_reference_t<decltype(x)>>)
+                    if constexpr (is_ref_arg<decltype(x)>())
                     {
                         x = std::forward<decltype(y)>(y);
                     }
@@ -445,154 +456,100 @@ namespace detail
     {
     };
 
-    template<typename... Args>
-    struct func_request
+    template<bool IsCallback>
+    struct rpc_base
+    {
+        static constexpr bool is_callback = IsCallback;
+        std::string func_name{};
+    };
+
+    template<bool IsCallback = false, typename... Args>
+    struct func_request : rpc_base<IsCallback>
     {
         using args_t = std::tuple<remove_cvref_t<Args>...>;
 
         func_request() = default;
-
         func_request(std::string t_func_name, args_t t_args)
-            : func_name(std::move(t_func_name)), args(std::move(t_args))
+            : rpc_base<IsCallback>{ std::move(t_func_name) }, args(std::move(t_args))
         {
         }
 
         func_request(RPC_HPP_UNUSED bind_args_tag tag, std::string t_func_name, args_t t_args)
-            : bind_args(true), func_name(std::move(t_func_name)), args(std::move(t_args))
+            : rpc_base<IsCallback>{ std::move(t_func_name) },
+              bind_args(true),
+              args(std::move(t_args))
         {
         }
 
         bool bind_args{ false };
-        std::string func_name{};
         args_t args{};
     };
 
     template<typename... Args>
-    struct callback_request : func_request<Args...>
+    using callback_request = func_request<true, Args...>;
+
+    template<typename R, bool IsCallback = false>
+    struct func_result : rpc_base<IsCallback>
     {
-        using args_t = typename func_request<Args...>::args_t;
-
-        callback_request() = default;
-        callback_request(std::string t_func_name, uint64_t id, args_t t_args)
-            : func_request<Args...>(std::move(t_func_name), std::move(t_args)), callback_id(id)
-        {
-        }
-
-        callback_request(bind_args_tag tag, std::string t_func_name, uint64_t id, args_t t_args)
-            : func_request<Args...>(tag, std::move(t_func_name), std::move(t_args)), callback_id(id)
-        {
-        }
-
-        uint64_t callback_id;
-    };
-
-    template<typename R>
-    struct func_result
-    {
-        std::string func_name;
         R result;
     };
 
-    template<>
-    struct func_result<void>
+    template<bool IsCallback>
+    struct func_result<void, IsCallback> : rpc_base<IsCallback>
     {
-        std::string func_name;
     };
 
     template<typename R>
-    struct callback_result : func_result<R>
-    {
-        uint64_t callback_id;
-    };
+    using callback_result = func_result<R, true>;
 
-    template<>
-    struct callback_result<void> : func_result<void>
-    {
-        uint64_t callback_id;
-    };
-
-    template<typename R, typename... Args>
-    struct func_result_w_bind
+    template<typename R, bool IsCallback = false, typename... Args>
+    struct func_result_w_bind : rpc_base<IsCallback>
     {
         using args_t = std::tuple<remove_cvref_t<Args>...>;
 
         func_result_w_bind() = default;
-
         func_result_w_bind(std::string t_func_name, R t_result, args_t t_args)
-            : func_name(std::move(t_func_name)),
+            : rpc_base<IsCallback>{ std::move(t_func_name) },
               result(std::move(t_result)),
               args(std::move(t_args))
         {
         }
 
-        std::string func_name{};
         R result{};
         args_t args{};
     };
 
-    template<typename... Args>
-    struct func_result_w_bind<void, Args...>
+    template<bool IsCallback, typename... Args>
+    struct func_result_w_bind<void, IsCallback, Args...> : rpc_base<IsCallback>
     {
         using args_t = std::tuple<remove_cvref_t<Args>...>;
 
         func_result_w_bind() = default;
-
         func_result_w_bind(std::string t_func_name, args_t t_args)
-            : func_name(std::move(t_func_name)), args(std::move(t_args))
+            : rpc_base<IsCallback>{ std::move(t_func_name) }, args(std::move(t_args))
         {
         }
 
-        std::string func_name{};
         args_t args{};
     };
 
     template<typename R, typename... Args>
-    struct callback_result_w_bind : func_result_w_bind<R, Args...>
-    {
-        using args_t = typename func_result_w_bind<R, Args...>::args_t;
+    using callback_result_w_bind = func_result_w_bind<R, true, Args...>;
 
-        callback_result_w_bind() = default;
-
-        callback_result_w_bind(std::string t_func_name, uint64_t id, R t_result, args_t t_args)
-            : func_result_w_bind<R, Args...>(
-                std::move(t_func_name), std::move(t_result), std::move(t_args)),
-              callback_id(id)
-        {
-        }
-
-        uint64_t callback_id{};
-    };
-
-    template<typename... Args>
-    struct callback_result_w_bind<void, Args...> : func_result_w_bind<void, Args...>
-    {
-        using args_t = typename func_result_w_bind<void, Args...>::args_t;
-
-        callback_result_w_bind() = default;
-
-        callback_result_w_bind(std::string t_func_name, uint64_t id, args_t t_args)
-            : func_result_w_bind<void, Args...>(std::move(t_func_name), std::move(t_args)),
-              callback_id(id)
-        {
-        }
-
-        uint64_t callback_id{};
-    };
-
-    struct func_error
+    template<bool IsCallback = false>
+    struct func_error : rpc_base<IsCallback>
     {
         func_error() = default;
-
         func_error(std::string t_func_name, const rpc_exception& except)
-            : except_type(except.get_type()),
-              func_name(std::move(t_func_name)),
+            : rpc_base<IsCallback>{ std::move(t_func_name) },
+              except_type(except.get_type()),
               err_mesg(except.what())
         {
         }
 
         func_error(std::string t_func_name, exception_type t_ex_type, std::string t_err_mesg)
-            : except_type(t_ex_type),
-              func_name(std::move(t_func_name)),
+            : rpc_base<IsCallback>{ std::move(t_func_name) },
+              except_type(t_ex_type),
               err_mesg(std::move(t_err_mesg))
         {
         }
@@ -644,47 +601,24 @@ namespace detail
         }
 
         exception_type except_type{ exception_type::none };
-        std::string func_name{};
         std::string err_mesg{};
     };
 
-    struct callback_error : func_error
-    {
-        callback_error() = default;
-
-        callback_error(std::string t_func_name, uint64_t id, const rpc_exception& except)
-            : func_error(std::move(t_func_name), except), callback_id(id)
-        {
-        }
-
-        callback_error(
-            std::string t_func_name, uint64_t id, exception_type t_ex_type, std::string t_err_mesg)
-            : func_error(std::move(t_func_name), t_ex_type, std::move(t_err_mesg)), callback_id(id)
-        {
-        }
-
-        uint64_t callback_id{};
-    };
+    using callback_error = func_error<true>;
 } //namespace detail
 
-struct callback_install_request
+struct callback_install_request : detail::rpc_base<true>
 {
     callback_install_request() = default;
-
-    callback_install_request(std::string t_func_name, uint64_t id)
-        : callback_id(id), func_name(std::move(t_func_name))
-    {
-    }
+    callback_install_request(std::string t_func_name) : rpc_base<true>{ std::move(t_func_name) } {}
 
     bool is_uninstall{ false };
-    uint64_t callback_id{};
-    std::string func_name{};
 };
 
 enum class rpc_type
 {
-    callback_error,
     callback_install_request,
+    callback_error,
     callback_request,
     callback_result,
     callback_result_w_bind,
@@ -714,25 +648,27 @@ public:
         }
     }
 
-    template<typename R>
-    explicit rpc_object(detail::func_result<R> result)
-        : m_obj(Serial::template serialize_result<R>(std::move(result)))
+    template<typename R, bool IsCallback>
+    explicit rpc_object(detail::func_result<R, IsCallback> result)
+        : m_obj(Serial::serialize_result(std::move(result)))
     {
     }
 
-    template<typename... Args>
-    explicit rpc_object(detail::func_request<Args...> request)
-        : m_obj(Serial::template serialize_request<Args...>(std::move(request)))
+    template<bool IsCallback, typename... Args>
+    explicit rpc_object(detail::func_request<IsCallback, Args...> request)
+        : m_obj(Serial::serialize_request(std::move(request)))
     {
     }
 
-    explicit rpc_object(detail::func_error error) : m_obj(Serial::serialize_error(std::move(error)))
+    template<bool IsCallback>
+    explicit rpc_object(detail::func_error<IsCallback> error)
+        : m_obj(Serial::serialize_error(std::move(error)))
     {
     }
 
-    template<typename R, typename... Args>
-    explicit rpc_object(detail::func_result_w_bind<R, Args...> result)
-        : m_obj(Serial::template serialize_result_w_bind<R, Args...>(std::move(result)))
+    template<typename R, bool IsCallback, typename... Args>
+    explicit rpc_object(detail::func_result_w_bind<R, IsCallback, Args...> result)
+        : m_obj(Serial::serialize_result_w_bind(std::move(result)))
     {
     }
 
@@ -754,7 +690,7 @@ public:
     RPC_HPP_NODISCARD("extracting data from serial object may be expensive")
     std::string get_func_name() const { return Serial::get_func_name(m_obj); }
 
-    template<typename R>
+    template<typename R, bool IsCallback = false>
     RPC_HPP_NODISCARD("extracting data from serial object may be expensive")
     R get_result() const
     {
@@ -770,12 +706,12 @@ public:
                 }
                 else
                 {
-                    return Serial::template get_result<R>(m_obj).result;
+                    return Serial::template get_result<R, IsCallback>(m_obj).result;
                 }
 
             case rpc_type::func_error:
             case rpc_type::callback_error:
-                Serial::get_error(m_obj).rethrow();
+                Serial::template get_error<IsCallback>(m_obj).rethrow();
 
             case rpc_type::callback_install_request:
             case rpc_type::callback_request:
@@ -785,9 +721,9 @@ public:
         }
     }
 
-    template<typename... Args>
+    template<bool IsCallback = false, typename... Args>
     RPC_HPP_NODISCARD("extracting data from serial object may be expensive")
-    typename detail::func_request<Args...>::args_t get_args() const
+    typename detail::func_request<IsCallback, Args...>::args_t get_args() const
     {
         switch (type())
         {
@@ -795,7 +731,7 @@ public:
             case rpc_type::func_result_w_bind:
             case rpc_type::callback_request:
             case rpc_type::callback_result_w_bind:
-                return Serial::template get_request<Args...>(m_obj).args;
+                return Serial::template get_request<IsCallback, Args...>(m_obj).args;
 
             case rpc_type::callback_error:
             case rpc_type::callback_install_request:
@@ -818,17 +754,7 @@ public:
         return Serial::get_callback_install(m_obj).is_uninstall;
     }
 
-    RPC_HPP_NODISCARD("extracting data from serial object may be expensive")
-    uint64_t get_callback_id() const
-    {
-        if (type() != rpc_type::callback_install_request)
-        {
-            throw rpc_object_mismatch("Invalid rpc_object type detected");
-        }
-
-        return Serial::get_callback_install(m_obj).callback_id;
-    }
-
+    template<bool IsCallback = false>
     RPC_HPP_NODISCARD("extracting data from serial object may be expensive")
     exception_type get_error_type() const
     {
@@ -837,9 +763,10 @@ public:
             throw rpc_object_mismatch("Invalid rpc_object type detected");
         }
 
-        return Serial::get_error(m_obj).except_type;
+        return Serial::template get_error<IsCallback>(m_obj).except_type;
     }
 
+    template<bool IsCallback = false>
     RPC_HPP_NODISCARD("extracting data from serial object may be expensive")
     std::string get_error_mesg() const
     {
@@ -848,7 +775,7 @@ public:
             throw rpc_object_mismatch("Invalid rpc_object type detected");
         }
 
-        return Serial::get_error(m_obj).error_mesg;
+        return Serial::template get_error<IsCallback>(m_obj).error_mesg;
     }
 
     RPC_HPP_NODISCARD("extracting data from serial object may be expensive")
@@ -910,26 +837,31 @@ namespace adapters
         static std::string get_func_name(const serial_t& serial_obj) = delete;
         static rpc_type get_type(const serial_t& serial_obj) = delete;
 
-        template<typename R>
-        static detail::func_result<R> get_result(const serial_t& serial_obj) = delete;
+        template<typename R, bool IsCallback = false>
+        static detail::func_result<R, IsCallback> get_result(const serial_t& serial_obj) = delete;
 
-        template<typename R>
-        static serial_t serialize_result(const detail::func_result<R>& result) = delete;
+        template<typename R, bool IsCallback = false>
+        static serial_t serialize_result(const detail::func_result<R, IsCallback>& result) = delete;
 
-        template<typename R, typename... Args>
+        template<typename R, bool IsCallback = false, typename... Args>
         static serial_t serialize_result_w_bind(
-            const detail::func_result_w_bind<R, Args...>& result) = delete;
+            const detail::func_result_w_bind<R, IsCallback, Args...>& result) = delete;
 
-        template<typename... Args>
-        static detail::func_request<Args...> get_request(const serial_t& serial_obj) = delete;
+        template<bool IsCallback = false, typename... Args>
+        static detail::func_request<IsCallback, Args...> get_request(
+            const serial_t& serial_obj) = delete;
 
-        template<typename... Args>
-        static serial_t serialize_request(const detail::func_request<Args...>& request) = delete;
+        template<bool IsCallback = false, typename... Args>
+        static serial_t serialize_request(
+            const detail::func_request<IsCallback, Args...>& request) = delete;
 
-        static detail::func_error get_error(const serial_t& serial_obj) = delete;
-        static serial_t serialize_error(const detail::func_error& error) = delete;
+        template<bool IsCallback>
+        static detail::func_error<IsCallback> get_error(const serial_t& serial_obj) = delete;
+
+        template<bool IsCallback>
+        static serial_t serialize_error(const detail::func_error<IsCallback>& error) = delete;
+
         static callback_install_request get_callback_install(const serial_t& serial_obj) = delete;
-
         static serial_t serialize_callback_install(
             const callback_install_request& callback_req) = delete;
 
@@ -939,10 +871,10 @@ namespace adapters
 
 namespace detail
 {
-    template<typename Serial, typename R, typename... Args>
+    template<bool IsCallback, typename Serial, typename R, typename... Args>
     void exec_func(std::function<R(Args...)> func, rpc_object<Serial>& rpc_obj)
     {
-        auto args = rpc_obj.template get_args<Args...>();
+        auto args = rpc_obj.template get_args<IsCallback, Args...>();
         auto func_name = rpc_obj.get_func_name();
         const auto has_bound_args = rpc_obj.has_bound_args();
 
@@ -954,13 +886,14 @@ namespace detail
 
                 if (has_bound_args)
                 {
-                    rpc_obj = rpc_object<Serial>{ detail::func_result_w_bind<void, Args...>{
-                        std::move(func_name), std::move(args) } };
+                    rpc_obj =
+                        rpc_object<Serial>{ detail::func_result_w_bind<void, IsCallback, Args...>{
+                            std::move(func_name), std::move(args) } };
                 }
                 else
                 {
-                    rpc_obj =
-                        rpc_object<Serial>{ detail::func_result<void>{ std::move(func_name) } };
+                    rpc_obj = rpc_object<Serial>{ detail::func_result<void, IsCallback>{
+                        std::move(func_name) } };
                 }
             }
             catch (const std::exception& ex)
@@ -976,12 +909,13 @@ namespace detail
 
                 if (has_bound_args)
                 {
-                    rpc_obj = rpc_object<Serial>{ detail::func_result_w_bind<R, Args...>{
-                        std::move(func_name), std::move(ret_val), std::move(args) } };
+                    rpc_obj =
+                        rpc_object<Serial>{ detail::func_result_w_bind<R, IsCallback, Args...>{
+                            std::move(func_name), std::move(ret_val), std::move(args) } };
                 }
                 else
                 {
-                    rpc_obj = rpc_object<Serial>{ detail::func_result<R>{
+                    rpc_obj = rpc_object<Serial>{ detail::func_result<R, IsCallback>{
                         std::move(func_name), std::move(ret_val) } };
                 }
             }
@@ -992,16 +926,10 @@ namespace detail
         }
     }
 
-    template<typename Serial, typename R, typename... Args>
+    template<bool IsCallback, typename Serial, typename R, typename... Args>
     void exec_func(R (*func)(Args...), rpc_object<Serial>& rpc_obj)
     {
-        exec_func(std::function<R(Args...)>{ func }, rpc_obj);
-    }
-
-    template<typename Serial, typename R, typename... Args, typename F>
-    void exec_func(F&& func, rpc_object<Serial>& rpc_obj)
-    {
-        exec_func(std::function<R(Args...)>{ std::forward<F>(func) }, rpc_obj);
+        exec_func<IsCallback, R, Args...>(std::function<R(Args...)>{ func }, rpc_obj);
     }
 } //namespace detail
 } //namespace rpc_hpp

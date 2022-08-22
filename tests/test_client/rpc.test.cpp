@@ -328,8 +328,7 @@ TEST_CASE_TEMPLATE("GetConnectionInfo", TestType, RPC_TEST_TYPES)
 {
     auto& client = GetClient<TestType>();
 
-    auto callback_request =
-        client.template install_callback("GetClientName", get_client_name);
+    auto callback_request = client.install_callback("GetClientName", get_client_name);
 
     const auto response = client.call_func("GetConnectionInfo");
 
@@ -376,21 +375,21 @@ TEST_CASE_TEMPLATE("FunctionMismatch", TestType, RPC_TEST_TYPES)
         REQUIRE(obj.is_error());
         REQUIRE(obj.get_error_type() == rpc_hpp::exception_type::signature_mismatch);
 
-        obj = client.call_func("StdDev", -4, 125.325, 552.125, 55, 2599.6, 1245.125663, 9783.49,
-            125.12, 553.3333333333, 2266.1);
-        REQUIRE(obj.is_error());
-        REQUIRE(obj.get_error_type() == rpc_hpp::exception_type::signature_mismatch);
-
-        obj = client.call_func("StdDev", -4.2, 125.325);
-        REQUIRE(obj.is_error());
-        REQUIRE(obj.get_error_type() == rpc_hpp::exception_type::signature_mismatch);
-
         obj = client.call_func("StdDev", -4.2, 125.325, 552.125, 55.123, 2599.6, 1245.125663,
             9783.49, 125.12, 553.3333333333, 2266.1, 111.222, 1234.56789);
 
         REQUIRE(obj.is_error());
         REQUIRE(obj.get_error_type() == rpc_hpp::exception_type::signature_mismatch);
     }
+
+    obj = client.call_func("StdDev", -4, 125.325, 552.125, 55, 2599.6, 1245.125663, 9783.49, 125.12,
+        553.3333333333, 2266.1);
+    REQUIRE(obj.is_error());
+    REQUIRE(obj.get_error_type() == rpc_hpp::exception_type::signature_mismatch);
+
+    obj = client.call_func("StdDev", -4.2, 125.325);
+    REQUIRE(obj.is_error());
+    REQUIRE(obj.get_error_type() == rpc_hpp::exception_type::signature_mismatch);
 }
 
 TEST_CASE_TEMPLATE("ThrowError", TestType, RPC_TEST_TYPES)

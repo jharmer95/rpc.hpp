@@ -24,7 +24,7 @@ public:
     RPC_HPP_NODISCARD("the rpc_object should be checked for its type")
     object_t call_func(const std::string& func_name, Args&&... args)
     {
-        auto response = object_t{ detail::func_request<detail::decay_str_t<Args>...>{
+        auto response = object_t{ detail::func_request<false, detail::decay_str_t<Args>...>{
             func_name, std::forward_as_tuple(args...) } };
 
         try
@@ -44,7 +44,7 @@ public:
     RPC_HPP_NODISCARD("the rpc_object should be checked for its type")
     object_t call_func(std::string&& func_name, Args&&... args)
     {
-        auto response = object_t{ detail::func_request<detail::decay_str_t<Args>...>{
+        auto response = object_t{ detail::func_request<false, detail::decay_str_t<Args>...>{
             std::move(func_name), std::forward_as_tuple(args...) } };
 
         try
@@ -64,7 +64,7 @@ public:
     RPC_HPP_NODISCARD("the rpc_object should be checked for its type")
     object_t call_func_w_bind(const std::string& func_name, Args&&... args)
     {
-        auto response = object_t{ detail::func_request<detail::decay_str_t<Args>...>{
+        auto response = object_t{ detail::func_request<false, detail::decay_str_t<Args>...>{
             detail::bind_args_tag{}, func_name, std::forward_as_tuple(args...) } };
 
         try
@@ -77,7 +77,7 @@ public:
         }
 
         response = recv_loop();
-        detail::tuple_bind(response.template get_args<detail::decay_str_t<Args>...>(),
+        detail::tuple_bind(response.template get_args<false, detail::decay_str_t<Args>...>(),
             std::forward<Args>(args)...);
 
         return response;
@@ -87,7 +87,7 @@ public:
     RPC_HPP_NODISCARD("the rpc_object should be checked for its type")
     object_t call_func_w_bind(std::string&& func_name, Args&&... args)
     {
-        auto response = object_t{ detail::func_request<detail::decay_str_t<Args>...>{
+        auto response = object_t{ detail::func_request<false, detail::decay_str_t<Args>...>{
             detail::bind_args_tag{}, std::move(func_name), std::forward_as_tuple(args...) } };
 
         try
@@ -100,7 +100,7 @@ public:
         }
 
         response = recv_loop();
-        detail::tuple_bind(response.template get_args<detail::decay_str_t<Args>...>(),
+        detail::tuple_bind(response.template get_args<false, detail::decay_str_t<Args>...>(),
             std::forward<Args>(args)...);
 
         return response;
@@ -111,7 +111,15 @@ public:
     object_t call_header_func_impl(
         RPC_HPP_UNUSED R (*func)(Args...), const std::string& func_name, Args&&... args)
     {
-        return call_func_w_bind<Args...>(func_name, std::forward<Args>(args)...);
+        // If any parameters are non-const lvalue references...
+        if constexpr (detail::has_ref_args<Args...>())
+        {
+            return call_func_w_bind<Args...>(func_name, std::forward<Args>(args)...);
+        }
+        else
+        {
+            return call_func<Args...>(func_name, std::forward<Args>(args)...);
+        }
     }
 
     template<typename R, typename... Args>
@@ -119,7 +127,15 @@ public:
     object_t call_header_func_impl(
         RPC_HPP_UNUSED R (*func)(Args...), std::string&& func_name, Args&&... args)
     {
-        return call_func_w_bind<Args...>(std::move(func_name), std::forward<Args>(args)...);
+        // If any parameters are non-const lvalue references...
+        if constexpr (detail::has_ref_args<Args...>())
+        {
+            return call_func_w_bind<Args...>(std::move(func_name), std::forward<Args>(args)...);
+        }
+        else
+        {
+            return call_func<Args...>(std::move(func_name), std::forward<Args>(args)...);
+        }
     }
 
 #if defined(RPC_HPP_ENABLE_CALLBACKS)
@@ -127,20 +143,18 @@ public:
     RPC_HPP_NODISCARD("the returned callback_install_request is an input to uninstall_callback")
     callback_install_request install_callback(std::string func_name, std::function<R(Args...)> func)
     {
-        callback_install_request cb{ std::move(func_name),
-            reinterpret_cast<size_t>(func.template target<R (*)(Args...)>()) };
+        callback_install_request cb{ std::move(func_name) };
 
         m_callback_map.try_emplace(cb.func_name,
-            [&func, &cb](object_t& rpc_obj)
+            [func = std::move(func), &cb](object_t& rpc_obj)
             {
                 try
                 {
-                    detail::exec_func<Serial>(std::move(func), rpc_obj);
+                    detail::exec_func<true, Serial, R, Args...>(func, rpc_obj);
                 }
                 catch (const rpc_exception& ex)
                 {
-                    rpc_obj = object_t{ detail::callback_error{
-                        rpc_obj.get_func_name(), cb.callback_id, ex } };
+                    rpc_obj = object_t{ detail::callback_error{ rpc_obj.get_func_name(), ex } };
                 }
             });
 
@@ -185,6 +199,14 @@ public:
         callback.is_uninstall = true;
         object_t request{ std::move(callback) };
         send(request.to_bytes());
+
+        auto response = object_t::parse_bytes(receive());
+
+        if (!response.has_value() || response.value().type() != rpc_type::callback_install_request)
+        {
+            throw callback_install_error(
+                "server did not respond to callback_install_request (uninstall)");
+        }
     }
 #endif
 
@@ -206,7 +228,7 @@ private:
             return;
         }
 
-        rpc_obj = object_t{ detail::func_error{ func_name,
+        rpc_obj = object_t{ detail::callback_error{ func_name,
             function_not_found("RPC error: Called function: \"" + func_name + "\" not found") } };
     }
 #endif
