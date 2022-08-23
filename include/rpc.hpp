@@ -872,7 +872,62 @@ namespace adapters
 namespace detail
 {
     template<bool IsCallback, typename Serial, typename R, typename... Args>
-    void exec_func(std::function<R(Args...)> func, rpc_object<Serial>& rpc_obj)
+    void exec_func(const std::function<R(Args...)>& func, rpc_object<Serial>& rpc_obj)
+    {
+        auto args = rpc_obj.template get_args<IsCallback, Args...>();
+        auto func_name = rpc_obj.get_func_name();
+        const auto has_bound_args = rpc_obj.has_bound_args();
+
+        if constexpr (std::is_void_v<R>)
+        {
+            try
+            {
+                std::apply(func, args);
+
+                if (has_bound_args)
+                {
+                    rpc_obj =
+                        rpc_object<Serial>{ detail::func_result_w_bind<void, IsCallback, Args...>{
+                            std::move(func_name), std::move(args) } };
+                }
+                else
+                {
+                    rpc_obj = rpc_object<Serial>{ detail::func_result<void, IsCallback>{
+                        std::move(func_name) } };
+                }
+            }
+            catch (const std::exception& ex)
+            {
+                throw remote_exec_error(ex.what());
+            }
+        }
+        else
+        {
+            try
+            {
+                auto ret_val = std::apply(func, args);
+
+                if (has_bound_args)
+                {
+                    rpc_obj =
+                        rpc_object<Serial>{ detail::func_result_w_bind<R, IsCallback, Args...>{
+                            std::move(func_name), std::move(ret_val), std::move(args) } };
+                }
+                else
+                {
+                    rpc_obj = rpc_object<Serial>{ detail::func_result<R, IsCallback>{
+                        std::move(func_name), std::move(ret_val) } };
+                }
+            }
+            catch (const std::exception& ex)
+            {
+                throw remote_exec_error(ex.what());
+            }
+        }
+    }
+
+    template<bool IsCallback, typename Serial, typename R, typename... Args>
+    void exec_func(std::function<R(Args...)>&& func, rpc_object<Serial>& rpc_obj)
     {
         auto args = rpc_obj.template get_args<IsCallback, Args...>();
         auto func_name = rpc_obj.get_func_name();
@@ -927,16 +982,58 @@ namespace detail
     }
 
     template<bool IsCallback, typename Serial, typename R, typename... Args>
-    void exec_func(R (*func)(Args...), rpc_object<Serial>& rpc_obj)
+    void exec_func(R (*func_ptr)(Args...), rpc_object<Serial>& rpc_obj)
     {
-        exec_func<IsCallback, Serial, R, Args...>(std::function<R(Args...)>{ func }, rpc_obj);
-    }
+        auto args = rpc_obj.template get_args<IsCallback, Args...>();
+        auto func_name = rpc_obj.get_func_name();
+        const auto has_bound_args = rpc_obj.has_bound_args();
 
-    template<bool IsCallback, typename Serial, typename R, typename... Args, typename F>
-    void exec_func(F&& func, rpc_object<Serial>& rpc_obj)
-    {
-        exec_func<IsCallback, Serial, R, Args...>(
-            std::function<R(Args...)>{ std::forward<F>(func) }, rpc_obj);
+        if constexpr (std::is_void_v<R>)
+        {
+            try
+            {
+                std::apply(func_ptr, args);
+
+                if (has_bound_args)
+                {
+                    rpc_obj =
+                        rpc_object<Serial>{ detail::func_result_w_bind<void, IsCallback, Args...>{
+                            std::move(func_name), std::move(args) } };
+                }
+                else
+                {
+                    rpc_obj = rpc_object<Serial>{ detail::func_result<void, IsCallback>{
+                        std::move(func_name) } };
+                }
+            }
+            catch (const std::exception& ex)
+            {
+                throw remote_exec_error(ex.what());
+            }
+        }
+        else
+        {
+            try
+            {
+                auto ret_val = std::apply(func_ptr, args);
+
+                if (has_bound_args)
+                {
+                    rpc_obj =
+                        rpc_object<Serial>{ detail::func_result_w_bind<R, IsCallback, Args...>{
+                            std::move(func_name), std::move(ret_val), std::move(args) } };
+                }
+                else
+                {
+                    rpc_obj = rpc_object<Serial>{ detail::func_result<R, IsCallback>{
+                        std::move(func_name), std::move(ret_val) } };
+                }
+            }
+            catch (const std::exception& ex)
+            {
+                throw remote_exec_error(ex.what());
+            }
+        }
     }
 } //namespace detail
 } //namespace rpc_hpp

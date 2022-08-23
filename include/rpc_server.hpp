@@ -29,10 +29,10 @@ public:
     virtual bytes_t receive() = 0;
 
     template<typename R, typename... Args>
-    void bind(std::string func_name, std::function<R(Args...)> func)
+    void bind(std::string func_name, const std::function<R(Args...)>& func)
     {
         m_dispatch_table.try_emplace(std::move(func_name),
-            [func = std::move(func)](object_t& rpc_obj)
+            [&func](object_t& rpc_obj)
             {
                 try
                 {
@@ -46,9 +46,37 @@ public:
     }
 
     template<typename R, typename... Args>
+    void bind(std::string func_name, std::function<R(Args...)>&& func)
+    {
+        m_dispatch_table.try_emplace(std::move(func_name),
+            [func = std::move(func)](object_t& rpc_obj)
+            {
+                try
+                {
+                    detail::exec_func<false, Serial, R, Args...>(std::move(func), rpc_obj);
+                }
+                catch (const rpc_exception& ex)
+                {
+                    rpc_obj = object_t{ detail::func_error{ rpc_obj.get_func_name(), ex } };
+                }
+            });
+    }
+
+    template<typename R, typename... Args>
     void bind(std::string func_name, R (*func_ptr)(Args...))
     {
-        bind<R, Args...>(std::move(func_name), std::function<R(Args...)>{ func_ptr });
+        m_dispatch_table.try_emplace(std::move(func_name),
+            [func_ptr](object_t& rpc_obj)
+            {
+                try
+                {
+                    detail::exec_func<false, Serial, R, Args...>(func_ptr, rpc_obj);
+                }
+                catch (const rpc_exception& ex)
+                {
+                    rpc_obj = object_t{ detail::func_error{ rpc_obj.get_func_name(), ex } };
+                }
+            });
     }
 
     template<typename R, typename... Args, typename F>
@@ -225,21 +253,13 @@ private:
     {
         auto func_name = rpc_obj.get_func_name();
 
-        std::cout << "Installing function: " << func_name << "...";
-
         auto [_, inserted] = m_installed_callbacks.insert(std::move(func_name));
 
         if (!inserted)
         {
-            std::cout << " FAILURE\n";
-
             // NOTE: since insertion did not occur, func_name was not moved so it is safe to use here
             rpc_obj = object_t{ detail::callback_error{ func_name,
                 callback_install_error("Callback: \"" + func_name + "\" is already installed") } };
-        }
-        else
-        {
-            std::cout << " SUCCESS\n";
         }
     }
 
