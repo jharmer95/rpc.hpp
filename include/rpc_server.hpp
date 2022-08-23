@@ -48,7 +48,13 @@ public:
     template<typename R, typename... Args>
     void bind(std::string func_name, R (*func_ptr)(Args...))
     {
-        bind(std::move(func_name), std::function<R(Args...)>{ func_ptr });
+        bind<R, Args...>(std::move(func_name), std::function<R(Args...)>{ func_ptr });
+    }
+
+    template<typename R, typename... Args, typename F>
+    void bind(std::string func_name, F&& func)
+    {
+        bind<R, Args...>(std::move(func_name), std::function<R(Args...)>{ std::forward<F>(func) });
     }
 
     RPC_HPP_NODISCARD("the bytes are consumed by this function")
@@ -246,7 +252,7 @@ private:
     std::unordered_map<std::string, std::function<void(object_t&)>> m_dispatch_table{};
 
 #if defined(RPC_HPP_ENABLE_CALLBACKS)
-    std::unordered_set<std::string> m_installed_callbacks;
+    std::unordered_set<std::string> m_installed_callbacks{};
 #endif
 };
 } //namespace rpc_hpp

@@ -337,8 +337,6 @@ TEST_CASE_TEMPLATE("GetConnectionInfo", TestType, RPC_TEST_TYPES)
     const auto value = response.template get_result<std::string>();
     REQUIRE(!value.empty());
 
-    printf("%s\n", value.c_str());
-
     client.uninstall_callback(std::move(callback_request));
 }
 #endif

@@ -929,7 +929,14 @@ namespace detail
     template<bool IsCallback, typename Serial, typename R, typename... Args>
     void exec_func(R (*func)(Args...), rpc_object<Serial>& rpc_obj)
     {
-        exec_func<IsCallback, R, Args...>(std::function<R(Args...)>{ func }, rpc_obj);
+        exec_func<IsCallback, Serial, R, Args...>(std::function<R(Args...)>{ func }, rpc_obj);
+    }
+
+    template<bool IsCallback, typename Serial, typename R, typename... Args, typename F>
+    void exec_func(F&& func, rpc_object<Serial>& rpc_obj)
+    {
+        exec_func<IsCallback, Serial, R, Args...>(
+            std::function<R(Args...)>{ std::forward<F>(func) }, rpc_obj);
     }
 } //namespace detail
 } //namespace rpc_hpp
