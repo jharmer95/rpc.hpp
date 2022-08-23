@@ -40,7 +40,7 @@ public:
                 }
                 catch (const rpc_exception& ex)
                 {
-                    rpc_obj = object_t{ detail::func_error{ rpc_obj.get_func_name(), ex } };
+                    rpc_obj = object_t{ detail::func_error<false>{ rpc_obj.get_func_name(), ex } };
                 }
             });
     }
@@ -57,7 +57,7 @@ public:
                 }
                 catch (const rpc_exception& ex)
                 {
-                    rpc_obj = object_t{ detail::func_error{ rpc_obj.get_func_name(), ex } };
+                    rpc_obj = object_t{ detail::func_error<false>{ rpc_obj.get_func_name(), ex } };
                 }
             });
     }
@@ -74,7 +74,7 @@ public:
                 }
                 catch (const rpc_exception& ex)
                 {
-                    rpc_obj = object_t{ detail::func_error{ rpc_obj.get_func_name(), ex } };
+                    rpc_obj = object_t{ detail::func_error<false>{ rpc_obj.get_func_name(), ex } };
                 }
             });
     }
@@ -116,7 +116,7 @@ public:
 #if defined(RPC_HPP_ENABLE_CALLBACKS)
                     [[fallthrough]];
 #else
-                    return object_t{ detail::func_error{ "",
+                    return object_t{ detail::func_error<false>{ "",
                         rpc_object_mismatch(
                             "Invalid rpc_object type detected (NOTE: callbacks are not "
                             "enabled on this server)") } };
@@ -127,12 +127,12 @@ public:
                 case rpc_type::func_result:
                 case rpc_type::func_result_w_bind:
                 default:
-                    return object_t{ detail::func_error{
+                    return object_t{ detail::func_error<false>{
                         func_name, rpc_object_mismatch("Invalid rpc_object type detected") } };
             }
         }
 
-        return object_t{ detail::func_error{
+        return object_t{ detail::func_error<false>{
             "", server_receive_error("Invalid RPC object received") } };
     }
 
@@ -146,7 +146,7 @@ public:
             return;
         }
 
-        rpc_obj = object_t{ detail::func_error{ func_name,
+        rpc_obj = object_t{ detail::func_error<false>{ func_name,
             function_not_found("RPC error: Called function: \"" + func_name + "\" not found") } };
     }
 
