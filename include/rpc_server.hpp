@@ -49,7 +49,7 @@ public:
     void bind(std::string func_name, std::function<R(Args...)>&& func)
     {
         m_dispatch_table.try_emplace(std::move(func_name),
-            [func = std::move(func)](object_t& rpc_obj)
+            [func = std::move(func)](object_t& rpc_obj) mutable
             {
                 try
                 {

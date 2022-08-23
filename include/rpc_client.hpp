@@ -188,7 +188,7 @@ public:
         callback_install_request cb{ std::move(func_name) };
 
         m_callback_map.try_emplace(cb.func_name,
-            [func = std::move(func)](object_t& rpc_obj)
+            [func = std::move(func)](object_t& rpc_obj) mutable
             {
                 try
                 {
