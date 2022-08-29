@@ -222,7 +222,8 @@ elseif(CXX_CLANG)
       -Wno-reserved-id-macro
       -Wno-missing-braces
       -Wno-covered-switch-default
-      -Wno-unused-template)
+      -Wno-unused-template
+      -Wno-c++20-attribute-extensions)
   set(MIN_WARNING -Wall)
   if(WERROR)
     list(APPEND FULL_WARNING -Werror)

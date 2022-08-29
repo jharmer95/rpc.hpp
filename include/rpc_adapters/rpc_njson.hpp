@@ -40,6 +40,10 @@
 
 #include <nlohmann/json.hpp>
 
+#ifndef RPC_HPP_NO_RTTI
+#  include <typeinfo>
+#endif
+
 namespace rpc_hpp::adapters
 {
 class njson_adapter;
@@ -392,7 +396,11 @@ private:
 
         if (!validate_arg<T>(arg))
         {
+#ifdef RPC_HPP_NO_RTTI
+            throw function_mismatch(mismatch_string("{NO-RTTI}", arg));
+#else
             throw function_mismatch(mismatch_string(typeid(T).name(), arg));
+#endif
         }
 
         if constexpr (std::is_arithmetic_v<no_ref_t> || std::is_same_v<no_ref_t, std::string>)
