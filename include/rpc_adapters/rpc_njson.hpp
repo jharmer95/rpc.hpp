@@ -143,7 +143,7 @@ public:
             || (!IsCallback && serial_obj["type"] == rpc_type::func_result_w_bind));
 
         const auto& args_val = serial_obj["args"];
-        [[maybe_unused]] unsigned arg_counter = 0;
+        RPC_HPP_UNUSED unsigned arg_counter = 0;
 
         if constexpr (std::is_void_v<R>)
         {
@@ -210,7 +210,7 @@ public:
             throw function_mismatch("Argument count mismatch");
         }
 
-        [[maybe_unused]] unsigned arg_counter = 0;
+        RPC_HPP_UNUSED unsigned arg_counter = 0;
         typename detail::func_request<IsCallback, Args...>::args_t args = { parse_args<Args>(
             args_val, arg_counter)... };
 

@@ -144,10 +144,64 @@ public:
     callback_install_request
         install_callback(std::string func_name, const std::function<R(Args...)>& func)
     {
+        return install_callback_impl<R, Args...>(std::move(func_name), func);
+    }
+
+    template<typename R, typename... Args>
+    RPC_HPP_NODISCARD("the returned callback_install_request is an input to uninstall_callback")
+    callback_install_request
+        install_callback(std::string func_name, std::function<R(Args...)>&& func)
+    {
+        return install_callback_impl<R, Args...>(std::move(func_name), std::move(func));
+    }
+
+    template<typename R, typename... Args>
+    RPC_HPP_NODISCARD("the returned callback_install_request is an input to uninstall_callback")
+    callback_install_request install_callback(std::string func_name, R (*func_ptr)(Args...))
+    {
+        return install_callback_impl<R, Args...>(std::move(func_name), func_ptr);
+    }
+
+    template<typename R, typename... Args, typename F>
+    RPC_HPP_NODISCARD("the returned callback_install_request is an input to uninstall_callback")
+    callback_install_request install_callback(std::string func_name, F&& func)
+    {
+        return install_callback_impl<R, Args...>(
+            std::move(func_name), std::function<R(Args...)>{ std::forward<F>(func) });
+    }
+
+    void uninstall_callback(callback_install_request&& callback)
+    {
+        callback.is_uninstall = true;
+        object_t request{ std::move(callback) };
+        send(request.to_bytes());
+
+        auto response = object_t::parse_bytes(receive());
+
+        if (!response.has_value() || response.value().type() != rpc_type::callback_install_request)
+        {
+            throw callback_install_error(
+                "server did not respond to callback_install_request (uninstall)");
+        }
+    }
+#endif
+
+protected:
+    client_interface(client_interface&&) noexcept = default;
+
+    virtual void send(bytes_t&& bytes) = 0;
+    virtual bytes_t receive() = 0;
+
+private:
+#if defined(RPC_HPP_ENABLE_CALLBACKS)
+    template<typename R, typename... Args, typename F>
+    RPC_HPP_NODISCARD("the returned callback_install_request is an input to uninstall_callback")
+    callback_install_request install_callback_impl(std::string func_name, F&& func)
+    {
         callback_install_request cb{ std::move(func_name) };
 
         m_callback_map.try_emplace(cb.func_name,
-            [&func](object_t& rpc_obj)
+            [func = std::forward<F>(func)](object_t& rpc_obj)
             {
                 try
                 {
@@ -180,119 +234,6 @@ public:
         return cb;
     }
 
-    template<typename R, typename... Args>
-    RPC_HPP_NODISCARD("the returned callback_install_request is an input to uninstall_callback")
-    callback_install_request
-        install_callback(std::string func_name, std::function<R(Args...)>&& func)
-    {
-        callback_install_request cb{ std::move(func_name) };
-
-        m_callback_map.try_emplace(cb.func_name,
-            [func = std::move(func)](object_t& rpc_obj) mutable
-            {
-                try
-                {
-                    detail::exec_func<true, Serial, R, Args...>(std::move(func), rpc_obj);
-                }
-                catch (const rpc_exception& ex)
-                {
-                    rpc_obj = object_t{ detail::callback_error{ rpc_obj.get_func_name(), ex } };
-                }
-            });
-
-        object_t request{ cb };
-
-        try
-        {
-            send(request.to_bytes());
-        }
-        catch (const std::exception& ex)
-        {
-            throw client_send_error(ex.what());
-        }
-
-        auto response = object_t::parse_bytes(receive());
-
-        if (!response.has_value() || response.value().type() != rpc_type::callback_install_request)
-        {
-            throw callback_install_error("server did not respond to callback_install_request");
-        }
-
-        return cb;
-    }
-
-    template<typename R, typename... Args>
-    RPC_HPP_NODISCARD("the returned callback_install_request is an input to uninstall_callback")
-    callback_install_request install_callback(std::string func_name, R (*func_ptr)(Args...))
-    {
-        callback_install_request cb{ std::move(func_name) };
-
-        m_callback_map.try_emplace(cb.func_name,
-            [func_ptr](object_t& rpc_obj)
-            {
-                try
-                {
-                    detail::exec_func<true, Serial, R, Args...>(func_ptr, rpc_obj);
-                }
-                catch (const rpc_exception& ex)
-                {
-                    rpc_obj = object_t{ detail::callback_error{ rpc_obj.get_func_name(), ex } };
-                }
-            });
-
-        object_t request{ cb };
-
-        try
-        {
-            send(request.to_bytes());
-        }
-        catch (const std::exception& ex)
-        {
-            throw client_send_error(ex.what());
-        }
-
-        auto response = object_t::parse_bytes(receive());
-
-        if (!response.has_value() || response.value().type() != rpc_type::callback_install_request)
-        {
-            throw callback_install_error("server did not respond to callback_install_request");
-        }
-
-        return cb;
-    }
-
-    template<typename R, typename... Args, typename F>
-    RPC_HPP_NODISCARD("the returned callback_install_request is an input to uninstall_callback")
-    callback_install_request install_callback(std::string func_name, F&& func)
-    {
-        return install_callback(
-            std::move(func_name), std::function<R(Args...)>{ std::forward<F>(func) });
-    }
-
-    void uninstall_callback(callback_install_request&& callback)
-    {
-        callback.is_uninstall = true;
-        object_t request{ std::move(callback) };
-        send(request.to_bytes());
-
-        auto response = object_t::parse_bytes(receive());
-
-        if (!response.has_value() || response.value().type() != rpc_type::callback_install_request)
-        {
-            throw callback_install_error(
-                "server did not respond to callback_install_request (uninstall)");
-        }
-    }
-#endif
-
-protected:
-    client_interface(client_interface&&) noexcept = default;
-
-    virtual void send(bytes_t&& bytes) = 0;
-    virtual bytes_t receive() = 0;
-
-private:
-#if defined(RPC_HPP_ENABLE_CALLBACKS)
     void dispatch_callback(object_t& rpc_obj)
     {
         const auto func_name = rpc_obj.get_func_name();

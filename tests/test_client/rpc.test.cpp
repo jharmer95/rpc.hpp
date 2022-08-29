@@ -319,16 +319,12 @@ TEST_CASE_TEMPLATE("HashComplexRef", TestType, RPC_TEST_TYPES)
 }
 
 #if defined(RPC_HPP_ENABLE_CALLBACKS)
-static std::string get_client_name()
-{
-    return "MyClient";
-}
-
 TEST_CASE_TEMPLATE("GetConnectionInfo", TestType, RPC_TEST_TYPES)
 {
     auto& client = GetClient<TestType>();
 
-    auto callback_request = client.install_callback("GetClientName", get_client_name);
+    auto callback_request = client.template install_callback<std::string>(
+        "GetClientName", [] { return std::string{ "MyClient" }; });
 
     const auto response = client.call_func("GetConnectionInfo");
 

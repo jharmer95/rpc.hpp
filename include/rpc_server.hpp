@@ -31,52 +31,19 @@ public:
     template<typename R, typename... Args>
     void bind(std::string func_name, const std::function<R(Args...)>& func)
     {
-        m_dispatch_table.try_emplace(std::move(func_name),
-            [&func](object_t& rpc_obj)
-            {
-                try
-                {
-                    detail::exec_func<false, Serial, R, Args...>(func, rpc_obj);
-                }
-                catch (const rpc_exception& ex)
-                {
-                    rpc_obj = object_t{ detail::func_error<false>{ rpc_obj.get_func_name(), ex } };
-                }
-            });
+        bind_impl<R, Args...>(std::move(func_name), func);
     }
 
     template<typename R, typename... Args>
     void bind(std::string func_name, std::function<R(Args...)>&& func)
     {
-        m_dispatch_table.try_emplace(std::move(func_name),
-            [func = std::move(func)](object_t& rpc_obj) mutable
-            {
-                try
-                {
-                    detail::exec_func<false, Serial, R, Args...>(std::move(func), rpc_obj);
-                }
-                catch (const rpc_exception& ex)
-                {
-                    rpc_obj = object_t{ detail::func_error<false>{ rpc_obj.get_func_name(), ex } };
-                }
-            });
+        bind_impl<R, Args...>(std::move(func_name), std::move(func));
     }
 
     template<typename R, typename... Args>
     void bind(std::string func_name, R (*func_ptr)(Args...))
     {
-        m_dispatch_table.try_emplace(std::move(func_name),
-            [func_ptr](object_t& rpc_obj)
-            {
-                try
-                {
-                    detail::exec_func<false, Serial, R, Args...>(func_ptr, rpc_obj);
-                }
-                catch (const rpc_exception& ex)
-                {
-                    rpc_obj = object_t{ detail::func_error<false>{ rpc_obj.get_func_name(), ex } };
-                }
-            });
+        bind_impl<R, Args...>(std::move(func_name), func_ptr);
     }
 
     template<typename R, typename... Args, typename F>
@@ -157,59 +124,64 @@ protected:
     template<typename R, typename... Args>
     [[nodiscard]] R call_callback(const std::string& func_name, Args&&... args)
     {
-        if (const auto it = m_installed_callbacks.find(func_name);
-            it != m_installed_callbacks.cend())
-        {
-            object_t response = object_t{ detail::callback_request<detail::decay_str_t<Args>...>{
-                func_name, std::forward_as_tuple(args...) } };
-
-            try
-            {
-                send(std::move(response).to_bytes());
-            }
-            catch (const std::exception& ex)
-            {
-                throw server_send_error(ex.what());
-            }
-
-            response = recv_impl();
-            return response.template get_result<R, true>();
-        }
-
-        throw callback_missing_error("Callback" + func_name + "was called but not installed");
+        auto response = call_callback_impl<R, Args...>(func_name, std::forward<Args>(args)...);
+        return response.template get_result<R, true>();
     }
 
     template<typename R, typename... Args>
     [[nodiscard]] R call_callback_w_bind(const std::string& func_name, Args&&... args)
     {
-        if (const auto it = m_installed_callbacks.find(func_name);
-            it != m_installed_callbacks.cend())
-        {
-            object_t response = object_t{ detail::callback_request<detail::decay_str_t<Args>...>{
-                detail::bind_args_tag{}, func_name, std::forward_as_tuple(args...) } };
+        auto response = call_callback_impl<R, Args...>(func_name, std::forward<Args>(args)...);
+        detail::tuple_bind(response.template get_args<true, detail::decay_str_t<Args>...>(),
+            std::forward<Args>(args)...);
 
-            try
-            {
-                send(response.to_bytes());
-            }
-            catch (const std::exception& ex)
-            {
-                throw server_send_error(ex.what());
-            }
-
-            response = recv_impl();
-            detail::tuple_bind(response.template get_args<true, detail::decay_str_t<Args>...>(),
-                std::forward<Args>(args)...);
-
-            return response.template get_result<R, true>();
-        }
-
-        throw callback_missing_error("Callback" + func_name + "was called but not installed");
+        return response.template get_result<R, true>();
     }
 #endif
 
 private:
+    template<typename R, typename... Args, typename F>
+    void bind_impl(std::string func_name, F&& func)
+    {
+        m_dispatch_table.try_emplace(std::move(func_name),
+            [func = std::forward<F>(func)](object_t& rpc_obj)
+            {
+                try
+                {
+                    detail::exec_func<false, Serial, R, Args...>(func, rpc_obj);
+                }
+                catch (const rpc_exception& ex)
+                {
+                    rpc_obj = object_t{ detail::func_error<false>{ rpc_obj.get_func_name(), ex } };
+                }
+            });
+    }
+
 #if defined(RPC_HPP_ENABLE_CALLBACKS)
+    template<typename R, typename... Args>
+    [[nodiscard]] object_t call_callback_impl(const std::string& func_name, Args&&... args)
+    {
+        if (m_installed_callbacks.find(func_name) == m_installed_callbacks.cend())
+        {
+            throw callback_missing_error(
+                "Callback \"" + func_name + "\" was called but not installed");
+        }
+
+        object_t response = object_t{ detail::callback_request<detail::decay_str_t<Args>...>{
+            func_name, std::forward_as_tuple(args...) } };
+
+        try
+        {
+            send(std::move(response).to_bytes());
+        }
+        catch (const std::exception& ex)
+        {
+            throw server_send_error(ex.what());
+        }
+
+        return recv_impl();
+    }
+
     [[nodiscard]] object_t recv_impl()
     {
         bytes_t bytes = [this]
