@@ -92,8 +92,8 @@ public:
         return static_cast<rpc_type>(serial_obj["type"].get<int>());
     }
 
-    template<typename R, bool IsCallback = false>
-    [[nodiscard]] static detail::func_result<R, IsCallback> get_result(
+    template<bool IsCallback, typename R>
+    [[nodiscard]] static detail::rpc_result<IsCallback, R> get_result(
         const nlohmann::json& serial_obj)
     {
         RPC_HPP_PRECONDITION((IsCallback && serial_obj["type"] == rpc_type::callback_result)
@@ -110,9 +110,9 @@ public:
         }
     }
 
-    template<typename R, bool IsCallback = false>
+    template<bool IsCallback, typename R>
     [[nodiscard]] static nlohmann::json serialize_result(
-        const detail::func_result<R, IsCallback>& result)
+        const detail::rpc_result<IsCallback, R>& result)
     {
         nlohmann::json obj{};
         obj["func_name"] = result.func_name;
@@ -135,8 +135,8 @@ public:
         return obj;
     }
 
-    template<typename R, bool IsCallback = false, typename... Args>
-    [[nodiscard]] static detail::func_result_w_bind<R, IsCallback, Args...> get_result_w_bind(
+    template<bool IsCallback, typename R, typename... Args>
+    [[nodiscard]] static detail::rpc_result_w_bind<IsCallback, R, Args...> get_result_w_bind(
         const nlohmann::json& serial_obj)
     {
         RPC_HPP_PRECONDITION((IsCallback && serial_obj["type"] == rpc_type::callback_result_w_bind)
@@ -157,9 +157,9 @@ public:
         }
     }
 
-    template<typename R, bool IsCallback = false, typename... Args>
+    template<bool IsCallback, typename R, typename... Args>
     [[nodiscard]] static nlohmann::json serialize_result_w_bind(
-        const detail::func_result_w_bind<R, IsCallback, Args...>& result)
+        const detail::rpc_result_w_bind<IsCallback, R, Args...>& result)
     {
         nlohmann::json obj{};
 
@@ -191,8 +191,8 @@ public:
         return obj;
     }
 
-    template<bool IsCallback = false, typename... Args>
-    [[nodiscard]] static detail::func_request<IsCallback, Args...> get_request(
+    template<bool IsCallback, typename... Args>
+    [[nodiscard]] static detail::rpc_request<IsCallback, Args...> get_request(
         const nlohmann::json& serial_obj)
     {
         RPC_HPP_PRECONDITION((IsCallback
@@ -211,19 +211,19 @@ public:
         }
 
         RPC_HPP_UNUSED unsigned arg_counter = 0;
-        typename detail::func_request<IsCallback, Args...>::args_t args = { parse_args<Args>(
+        typename detail::rpc_request<IsCallback, Args...>::args_t args = { parse_args<Args>(
             args_val, arg_counter)... };
 
         return is_bound_args
-            ? detail::func_request<IsCallback, Args...>{ detail::bind_args_tag{},
+            ? detail::rpc_request<IsCallback, Args...>{ detail::bind_args_tag{},
                   serial_obj["func_name"].get<std::string>(), std::move(args) }
-            : detail::func_request<IsCallback, Args...>{ serial_obj["func_name"].get<std::string>(),
+            : detail::rpc_request<IsCallback, Args...>{ serial_obj["func_name"].get<std::string>(),
                   std::move(args) };
     }
 
-    template<bool IsCallback = false, typename... Args>
+    template<bool IsCallback, typename... Args>
     [[nodiscard]] static nlohmann::json serialize_request(
-        const detail::func_request<IsCallback, Args...>& request)
+        const detail::rpc_request<IsCallback, Args...>& request)
     {
         nlohmann::json obj{};
         obj["func_name"] = request.func_name;
@@ -247,8 +247,8 @@ public:
         return obj;
     }
 
-    template<bool IsCallback = false>
-    [[nodiscard]] static detail::func_error<IsCallback> get_error(const nlohmann::json& serial_obj)
+    template<bool IsCallback>
+    [[nodiscard]] static detail::rpc_error<IsCallback> get_error(const nlohmann::json& serial_obj)
     {
         RPC_HPP_PRECONDITION((IsCallback && serial_obj["type"] == rpc_type::callback_error)
             || (!IsCallback && serial_obj["type"] == rpc_type::func_error));
@@ -258,8 +258,8 @@ public:
             serial_obj["err_mesg"].get<std::string>() };
     }
 
-    template<bool IsCallback = false>
-    [[nodiscard]] static nlohmann::json serialize_error(const detail::func_error<IsCallback>& error)
+    template<bool IsCallback>
+    [[nodiscard]] static nlohmann::json serialize_error(const detail::rpc_error<IsCallback>& error)
     {
         nlohmann::json obj{};
         obj["func_name"] = error.func_name;

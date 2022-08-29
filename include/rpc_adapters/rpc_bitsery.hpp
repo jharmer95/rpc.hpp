@@ -160,43 +160,43 @@ namespace adapters
             return static_cast<rpc_type>(n_type);
         }
 
-        template<typename R, bool IsCallback = false>
-        [[nodiscard]] static detail::func_result<R, IsCallback> get_result(
+        template<bool IsCallback, typename R>
+        [[nodiscard]] static detail::rpc_result<IsCallback, R> get_result(
             const std::vector<uint8_t>& serial_obj)
         {
             RPC_HPP_PRECONDITION(verify_type(
                 serial_obj, IsCallback ? rpc_type::callback_result : rpc_type::func_result));
 
-            return deserialize_rpc_object<detail::func_result<R, IsCallback>>(serial_obj);
+            return deserialize_rpc_object<detail::rpc_result<IsCallback, R>>(serial_obj);
         }
 
-        template<typename R, bool IsCallback = false>
+        template<bool IsCallback, typename R>
         [[nodiscard]] static std::vector<uint8_t> serialize_result(
-            const detail::func_result<R, IsCallback>& result)
+            const detail::rpc_result<IsCallback, R>& result)
         {
-            return serialize_rpc_object<detail::func_result<R, IsCallback>>(result);
+            return serialize_rpc_object<detail::rpc_result<IsCallback, R>>(result);
         }
 
-        template<typename R, bool IsCallback = false, typename... Args>
-        [[nodiscard]] static detail::func_result_w_bind<R, IsCallback, Args...> get_result_w_bind(
+        template<bool IsCallback, typename R, typename... Args>
+        [[nodiscard]] static detail::rpc_result_w_bind<IsCallback, R, Args...> get_result_w_bind(
             const std::vector<uint8_t>& serial_obj)
         {
             RPC_HPP_PRECONDITION(verify_type(serial_obj,
                 IsCallback ? rpc_type::callback_result_w_bind : rpc_type::func_result_w_bind));
 
-            return deserialize_rpc_object<detail::func_result_w_bind<R, IsCallback, Args...>>(
+            return deserialize_rpc_object<detail::rpc_result_w_bind<IsCallback, R, Args...>>(
                 serial_obj);
         }
 
-        template<typename R, bool IsCallback = false, typename... Args>
+        template<bool IsCallback, typename R, typename... Args>
         [[nodiscard]] static std::vector<uint8_t> serialize_result_w_bind(
-            const detail::func_result_w_bind<R, IsCallback, Args...>& result)
+            const detail::rpc_result_w_bind<IsCallback, R, Args...>& result)
         {
-            return serialize_rpc_object<detail::func_result_w_bind<R, IsCallback, Args...>>(result);
+            return serialize_rpc_object<detail::rpc_result_w_bind<IsCallback, R, Args...>>(result);
         }
 
-        template<bool IsCallback = false, typename... Args>
-        [[nodiscard]] static detail::func_request<IsCallback, Args...> get_request(
+        template<bool IsCallback, typename... Args>
+        [[nodiscard]] static detail::rpc_request<IsCallback, Args...> get_request(
             const std::vector<uint8_t>& serial_obj)
         {
             RPC_HPP_PRECONDITION(
@@ -248,34 +248,34 @@ namespace adapters
                 std::copy(std::next(serial_obj.begin(), static_cast<ptrdiff_t>(index)),
                     serial_obj.end(), std::back_inserter(copy_obj));
 
-                return deserialize_rpc_object<detail::func_request<IsCallback, Args...>>(copy_obj);
+                return deserialize_rpc_object<detail::rpc_request<IsCallback, Args...>>(copy_obj);
             }
 
-            return deserialize_rpc_object<detail::func_request<IsCallback, Args...>>(serial_obj);
+            return deserialize_rpc_object<detail::rpc_request<IsCallback, Args...>>(serial_obj);
         }
 
-        template<bool IsCallback = false, typename... Args>
+        template<bool IsCallback, typename... Args>
         [[nodiscard]] static std::vector<uint8_t> serialize_request(
-            const detail::func_request<IsCallback, Args...>& request)
+            const detail::rpc_request<IsCallback, Args...>& request)
         {
-            return serialize_rpc_object<detail::func_request<IsCallback, Args...>>(request);
+            return serialize_rpc_object<detail::rpc_request<IsCallback, Args...>>(request);
         }
 
-        template<bool IsCallback = false>
-        [[nodiscard]] static detail::func_error<IsCallback> get_error(
+        template<bool IsCallback>
+        [[nodiscard]] static detail::rpc_error<IsCallback> get_error(
             const std::vector<uint8_t>& serial_obj)
         {
             RPC_HPP_PRECONDITION(verify_type(
                 serial_obj, IsCallback ? rpc_type::callback_error : rpc_type::func_error));
 
-            return deserialize_rpc_object<detail::func_error<IsCallback>>(serial_obj);
+            return deserialize_rpc_object<detail::rpc_error<IsCallback>>(serial_obj);
         }
 
-        template<bool IsCallback = false>
+        template<bool IsCallback>
         [[nodiscard]] static std::vector<uint8_t> serialize_error(
-            const detail::func_error<IsCallback>& error)
+            const detail::rpc_error<IsCallback>& error)
         {
-            return serialize_rpc_object<detail::func_error<IsCallback>>(error);
+            return serialize_rpc_object<detail::rpc_error<IsCallback>>(error);
         }
 
         [[nodiscard]] static callback_install_request get_callback_install(
@@ -408,7 +408,7 @@ namespace adapters
 namespace detail
 {
     template<bool IsCallback, typename S>
-    void serialize(S& s, func_error<IsCallback>& o)
+    void serialize(S& s, rpc_error<IsCallback>& o)
     {
         using config = adapters::bitsery_adapter::config;
 
@@ -430,8 +430,8 @@ namespace detail
         s.text1b(o.err_mesg, config::max_string_size);
     }
 
-    template<bool IsCallback, typename S, typename... Args>
-    void serialize(S& s, func_request<IsCallback, Args...>& o)
+    template<bool IsCallback, typename... Args, typename S>
+    void serialize(S& s, rpc_request<IsCallback, Args...>& o)
     {
         using config = adapters::bitsery_adapter::config;
 
@@ -489,8 +489,8 @@ namespace detail
                 } });
     }
 
-    template<bool IsCallback, typename S, typename R>
-    void serialize(S& s, func_result<R, IsCallback>& o)
+    template<bool IsCallback, typename R, typename S>
+    void serialize(S& s, rpc_result<IsCallback, R>& o)
     {
         using config = adapters::bitsery_adapter::config;
 
@@ -509,7 +509,7 @@ namespace detail
         s.value4b(type);
         s.text1b(o.func_name, config::max_func_name_size);
 
-        uint64_t r_sz = [](RPC_HPP_UNUSED func_result<R, IsCallback>& obj)
+        uint64_t r_sz = [](RPC_HPP_UNUSED rpc_result<IsCallback, R>& obj)
         {
             if constexpr (std::is_void_v<R>)
             {
@@ -555,8 +555,8 @@ namespace detail
         }
     }
 
-    template<bool IsCallback, typename S, typename R, typename... Args>
-    void serialize(S& s, func_result_w_bind<R, IsCallback, Args...>& o)
+    template<bool IsCallback, typename R, typename... Args, typename S>
+    void serialize(S& s, rpc_result_w_bind<IsCallback, R, Args...>& o)
     {
         using config = adapters::bitsery_adapter::config;
 
@@ -575,7 +575,7 @@ namespace detail
         s.value4b(type);
         s.text1b(o.func_name, config::max_func_name_size);
 
-        uint64_t r_sz = [](RPC_HPP_UNUSED func_result_w_bind<R, IsCallback, Args...>& obj)
+        uint64_t r_sz = [](RPC_HPP_UNUSED rpc_result_w_bind<IsCallback, R, Args...>& obj)
         {
             if constexpr (std::is_void_v<R>)
             {

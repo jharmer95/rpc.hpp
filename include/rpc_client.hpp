@@ -24,7 +24,7 @@ public:
     RPC_HPP_NODISCARD("the rpc_object should be checked for its type")
     object_t call_func(const std::string& func_name, Args&&... args)
     {
-        auto response = object_t{ detail::func_request<false, detail::decay_str_t<Args>...>{
+        auto response = object_t{ detail::func_request<detail::decay_str_t<Args>...>{
             func_name, std::forward_as_tuple(args...) } };
 
         try
@@ -44,7 +44,7 @@ public:
     RPC_HPP_NODISCARD("the rpc_object should be checked for its type")
     object_t call_func(std::string&& func_name, Args&&... args)
     {
-        auto response = object_t{ detail::func_request<false, detail::decay_str_t<Args>...>{
+        auto response = object_t{ detail::func_request<detail::decay_str_t<Args>...>{
             std::move(func_name), std::forward_as_tuple(args...) } };
 
         try
@@ -64,7 +64,7 @@ public:
     RPC_HPP_NODISCARD("the rpc_object should be checked for its type")
     object_t call_func_w_bind(const std::string& func_name, Args&&... args)
     {
-        auto response = object_t{ detail::func_request<false, detail::decay_str_t<Args>...>{
+        auto response = object_t{ detail::func_request<detail::decay_str_t<Args>...>{
             detail::bind_args_tag{}, func_name, std::forward_as_tuple(args...) } };
 
         try
@@ -87,7 +87,7 @@ public:
     RPC_HPP_NODISCARD("the rpc_object should be checked for its type")
     object_t call_func_w_bind(std::string&& func_name, Args&&... args)
     {
-        auto response = object_t{ detail::func_request<false, detail::decay_str_t<Args>...>{
+        auto response = object_t{ detail::func_request<detail::decay_str_t<Args>...>{
             detail::bind_args_tag{}, std::move(func_name), std::forward_as_tuple(args...) } };
 
         try
