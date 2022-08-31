@@ -335,6 +335,21 @@ TEST_CASE_TEMPLATE("GetConnectionInfo", TestType, RPC_TEST_TYPES)
 
     client.uninstall_callback(std::move(callback_request));
 }
+
+TEST_CASE_TEMPLATE("Callback already installed", TestType, RPC_TEST_TYPES)
+{
+    auto& client = GetClient<TestType>();
+
+    auto callback_request = client.template install_callback<void>(
+        "TestCallback", [] { std::cout << "Hello, callback!\n"; });
+
+    REQUIRE(callback_request.func_name == "TestCallback");
+    REQUIRE_THROWS_AS((std::ignore = client.template install_callback<void>(
+                           "TestCallback", [] { std::cout << "Goodbye, callback!\n"; })),
+        rpc_hpp::callback_install_error);
+
+    client.uninstall_callback(std::move(callback_request));
+}
 #endif
 
 TEST_CASE_TEMPLATE("Function not found", TestType, RPC_TEST_TYPES)

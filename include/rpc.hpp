@@ -57,7 +57,7 @@ public:
     {
     }
 
-    exception_type get_type() const noexcept { return m_type; }
+    [[nodiscard]] exception_type get_type() const noexcept { return m_type; }
 
 private:
     exception_type m_type;
@@ -513,7 +513,6 @@ namespace detail
     {
         using args_t = std::tuple<remove_cvref_t<Args>...>;
 
-        rpc_result_w_bind() = default;
         rpc_result_w_bind(std::string t_func_name, R t_result, args_t t_args)
             : rpc_base<IsCallback>{ std::move(t_func_name) },
               result(std::move(t_result)),
@@ -530,7 +529,6 @@ namespace detail
     {
         using args_t = std::tuple<remove_cvref_t<Args>...>;
 
-        rpc_result_w_bind() = default;
         rpc_result_w_bind(std::string t_func_name, args_t t_args)
             : rpc_base<IsCallback>{ std::move(t_func_name) }, args(std::move(t_args))
         {
@@ -563,7 +561,7 @@ namespace detail
         {
         }
 
-        [[noreturn]] void rethrow() const
+        [[noreturn]] void rethrow() const noexcept(false)
         {
             switch (except_type)
             {

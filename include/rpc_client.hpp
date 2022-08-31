@@ -176,9 +176,8 @@ public:
         object_t request{ std::move(callback) };
         send(request.to_bytes());
 
-        auto response = object_t::parse_bytes(receive());
-
-        if (!response.has_value() || response.value().type() != rpc_type::callback_install_request)
+        if (auto response = object_t::parse_bytes(receive());
+            !response.has_value() || response.value().type() != rpc_type::callback_install_request)
         {
             throw callback_install_error(
                 "server did not respond to callback_install_request (uninstall)");
@@ -224,9 +223,8 @@ private:
             throw client_send_error(ex.what());
         }
 
-        auto response = object_t::parse_bytes(receive());
-
-        if (!response.has_value() || response.value().type() != rpc_type::callback_install_request)
+        if (auto response = object_t::parse_bytes(receive());
+            !response.has_value() || response.value().type() != rpc_type::callback_install_request)
         {
             throw callback_install_error("server did not respond to callback_install_request");
         }
