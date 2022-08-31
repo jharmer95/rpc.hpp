@@ -125,7 +125,7 @@ protected:
     [[nodiscard]] R call_callback(const std::string& func_name, Args&&... args)
     {
         auto response = call_callback_impl<R, Args...>(func_name, std::forward<Args>(args)...);
-        return response.template get_result<R, true>();
+        return response.template get_result<R>();
     }
 
     template<typename R, typename... Args>
@@ -135,7 +135,7 @@ protected:
         detail::tuple_bind(response.template get_args<true, detail::decay_str_t<Args>...>(),
             std::forward<Args>(args)...);
 
-        return response.template get_result<R, true>();
+        return response.template get_result<R>();
     }
 #endif
 

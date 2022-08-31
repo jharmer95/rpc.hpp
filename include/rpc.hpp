@@ -509,32 +509,24 @@ namespace detail
     using callback_result = rpc_result<true, R>;
 
     template<bool IsCallback, typename R, typename... Args>
-    struct rpc_result_w_bind : rpc_base<IsCallback>
+    struct rpc_result_w_bind : rpc_result<IsCallback, R>
     {
         using args_t = std::tuple<remove_cvref_t<Args>...>;
 
         rpc_result_w_bind(std::string t_func_name, R t_result, args_t t_args)
-            : rpc_base<IsCallback>{ std::move(t_func_name) },
-              result(std::move(t_result)),
+            : rpc_result<IsCallback, R>{ std::move(t_func_name), std::move(t_result) },
               args(std::move(t_args))
         {
         }
 
-        R result{};
         args_t args{};
     };
 
     template<bool IsCallback, typename... Args>
-    struct rpc_result_w_bind<IsCallback, void, Args...> : rpc_base<IsCallback>
+    struct rpc_result_w_bind<IsCallback, void, Args...> : rpc_request<IsCallback, Args...>
     {
         using args_t = std::tuple<remove_cvref_t<Args>...>;
-
-        rpc_result_w_bind(std::string t_func_name, args_t t_args)
-            : rpc_base<IsCallback>{ std::move(t_func_name) }, args(std::move(t_args))
-        {
-        }
-
-        args_t args{};
+        using rpc_request<IsCallback, Args...>::rpc_request;
     };
 
     template<typename R, typename... Args>
@@ -698,7 +690,7 @@ public:
     RPC_HPP_NODISCARD("extracting data from serial object may be expensive")
     std::string get_func_name() const { return Serial::get_func_name(m_obj); }
 
-    template<typename R, bool IsCallback = false>
+    template<typename R>
     RPC_HPP_NODISCARD("extracting data from serial object may be expensive")
     R get_result() const
     {
@@ -706,6 +698,15 @@ public:
         {
             case rpc_type::func_result:
             case rpc_type::func_result_w_bind:
+                if constexpr (std::is_void_v<R>)
+                {
+                    return;
+                }
+                else
+                {
+                    return Serial::template get_result<false, R>(m_obj).result;
+                }
+
             case rpc_type::callback_result:
             case rpc_type::callback_result_w_bind:
                 if constexpr (std::is_void_v<R>)
@@ -714,12 +715,14 @@ public:
                 }
                 else
                 {
-                    return Serial::template get_result<IsCallback, R>(m_obj).result;
+                    return Serial::template get_result<true, R>(m_obj).result;
                 }
 
             case rpc_type::func_error:
+                Serial::template get_error<false>(m_obj).rethrow();
+
             case rpc_type::callback_error:
-                Serial::template get_error<IsCallback>(m_obj).rethrow();
+                Serial::template get_error<true>(m_obj).rethrow();
 
             case rpc_type::callback_install_request:
             case rpc_type::callback_request:
@@ -729,17 +732,19 @@ public:
         }
     }
 
-    template<bool IsCallback = false, typename... Args>
+    template<typename... Args>
     RPC_HPP_NODISCARD("extracting data from serial object may be expensive")
-    typename detail::rpc_request<IsCallback, Args...>::args_t get_args() const
+    auto get_args() const
     {
         switch (type())
         {
             case rpc_type::func_request:
             case rpc_type::func_result_w_bind:
+                return Serial::template get_request<false, Args...>(m_obj).args;
+
             case rpc_type::callback_request:
             case rpc_type::callback_result_w_bind:
-                return Serial::template get_request<IsCallback, Args...>(m_obj).args;
+                return Serial::template get_request<true, Args...>(m_obj).args;
 
             case rpc_type::callback_error:
             case rpc_type::callback_install_request:
@@ -762,28 +767,51 @@ public:
         return Serial::get_callback_install(m_obj).is_uninstall;
     }
 
-    template<bool IsCallback = false>
     RPC_HPP_NODISCARD("extracting data from serial object may be expensive")
     exception_type get_error_type() const
     {
-        if (!is_error())
+        switch (type())
         {
-            throw rpc_object_mismatch("Invalid rpc_object type detected");
-        }
+            case rpc_type::callback_error:
+                return Serial::template get_error<true>(m_obj).except_type;
 
-        return Serial::template get_error<IsCallback>(m_obj).except_type;
+            case rpc_type::func_error:
+                return Serial::template get_error<false>(m_obj).except_type;
+
+            case rpc_type::callback_install_request:
+            case rpc_type::callback_request:
+            case rpc_type::callback_result:
+            case rpc_type::callback_result_w_bind:
+            case rpc_type::func_request:
+            case rpc_type::func_result:
+            case rpc_type::func_result_w_bind:
+            default:
+                throw rpc_object_mismatch("Invalid rpc_object type detected");
+        }
     }
 
     template<bool IsCallback = false>
     RPC_HPP_NODISCARD("extracting data from serial object may be expensive")
     std::string get_error_mesg() const
     {
-        if (!is_error())
+        switch (type())
         {
-            throw rpc_object_mismatch("Invalid rpc_object type detected");
-        }
+            case rpc_type::callback_error:
+                return Serial::template get_error<true>(m_obj).error_mesg;
 
-        return Serial::template get_error<IsCallback>(m_obj).error_mesg;
+            case rpc_type::func_error:
+                return Serial::template get_error<false>(m_obj).error_mesg;
+
+            case rpc_type::callback_install_request:
+            case rpc_type::callback_request:
+            case rpc_type::callback_result:
+            case rpc_type::callback_result_w_bind:
+            case rpc_type::func_request:
+            case rpc_type::func_result:
+            case rpc_type::func_result_w_bind:
+            default:
+                throw rpc_object_mismatch("Invalid rpc_object type detected");
+        }
     }
 
     RPC_HPP_NODISCARD("extracting data from serial object may be expensive")
@@ -882,7 +910,7 @@ namespace detail
     template<bool IsCallback, typename Serial, typename R, typename... Args, typename F>
     void exec_func(F&& func, rpc_object<Serial>& rpc_obj)
     {
-        auto args = rpc_obj.template get_args<IsCallback, Args...>();
+        auto args = rpc_obj.template get_args<Args...>();
         auto func_name = rpc_obj.get_func_name();
         const auto has_bound_args = rpc_obj.has_bound_args();
 

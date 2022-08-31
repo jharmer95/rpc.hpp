@@ -77,7 +77,7 @@ public:
         }
 
         response = recv_loop();
-        detail::tuple_bind(response.template get_args<false, detail::decay_str_t<Args>...>(),
+        detail::tuple_bind(response.template get_args<detail::decay_str_t<Args>...>(),
             std::forward<Args>(args)...);
 
         return response;
@@ -100,7 +100,7 @@ public:
         }
 
         response = recv_loop();
-        detail::tuple_bind(response.template get_args<false, detail::decay_str_t<Args>...>(),
+        detail::tuple_bind(response.template get_args<detail::decay_str_t<Args>...>(),
             std::forward<Args>(args)...);
 
         return response;
