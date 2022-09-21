@@ -1,4 +1,5 @@
-#pragma once
+#ifndef RPC_CLIENT_HPP
+#define RPC_CLIENT_HPP
 
 #include "rpc.hpp"
 
@@ -139,6 +140,11 @@ public:
     }
 
 #if defined(RPC_HPP_ENABLE_CALLBACKS)
+    bool has_callback(const std::string& func_name)
+    {
+        return m_callback_map.find(func_name) != m_callback_map.end();
+    }
+
     template<typename R, typename... Args>
     RPC_HPP_NODISCARD("the returned callback_install_request is an input to uninstall_callback")
     callback_install_request
@@ -307,3 +313,4 @@ private:
 #endif
 };
 } //namespace rpc_hpp
+#endif

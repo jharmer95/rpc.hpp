@@ -1,4 +1,5 @@
-#pragma once
+#ifndef RPC_HPP
+#define RPC_HPP
 
 #include <cassert>
 #include <optional>
@@ -797,10 +798,10 @@ public:
         switch (type())
         {
             case rpc_type::callback_error:
-                return Serial::template get_error<true>(m_obj).error_mesg;
+                return Serial::template get_error<true>(m_obj).err_mesg;
 
             case rpc_type::func_error:
-                return Serial::template get_error<false>(m_obj).error_mesg;
+                return Serial::template get_error<false>(m_obj).err_mesg;
 
             case rpc_type::callback_install_request:
             case rpc_type::callback_request:
@@ -837,16 +838,15 @@ public:
         }
     }
 
-    RPC_HPP_NODISCARD("extracting data from serial object may be expensive") bool is_error() const
+    RPC_HPP_NODISCARD("extracting data from serial object may be expensive")
+    bool is_error() const
     {
         const auto rtype = type();
         return rtype == rpc_type::func_error || rtype == rpc_type::callback_error;
     }
 
-    RPC_HPP_NODISCARD("extracting data from serial object may be expensive") rpc_type type() const
-    {
-        return Serial::get_type(m_obj);
-    }
+    RPC_HPP_NODISCARD("extracting data from serial object may be expensive")
+    rpc_type type() const { return Serial::get_type(m_obj); }
 
 private:
     explicit rpc_object(const serial_t& serial) : m_obj(serial) {}
@@ -955,3 +955,4 @@ namespace detail
     }
 } //namespace detail
 } //namespace rpc_hpp
+#endif

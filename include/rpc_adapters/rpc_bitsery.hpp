@@ -34,7 +34,8 @@
 ///OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ///
 
-#pragma once
+#ifndef RPC_ADAPTERS_BITSERY_HPP
+#define RPC_ADAPTERS_BITSERY_HPP
 
 #include "../rpc.hpp"
 
@@ -87,9 +88,9 @@ namespace adapters
             static constexpr bool use_exact_size = false;
 #endif
 
-            static const uint64_t max_func_name_size;
-            static const uint64_t max_string_size;
-            static const uint64_t max_container_size;
+            static const size_t max_func_name_size;
+            static const size_t max_string_size;
+            static const size_t max_container_size;
         };
 
         [[nodiscard]] static std::vector<uint8_t> from_bytes(const std::vector<uint8_t>& bytes)
@@ -474,7 +475,7 @@ namespace detail
                     {
                         if constexpr (std::is_arithmetic_v<typename T::value_type>)
                         {
-                            s2.template container<sizeof(typename T::value_type)>(
+                            s2.template container<sizeof(typename T::value_type), T>(
                                 val, config::max_container_size);
                         }
                         else
@@ -671,3 +672,4 @@ void serialize(S& s, callback_install_request& o)
     s.value1b(o.is_uninstall);
 }
 } // namespace rpc_hpp
+#endif

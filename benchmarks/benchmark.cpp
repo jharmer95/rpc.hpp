@@ -30,9 +30,9 @@ static rpc::client& GetRpclibClient()
 namespace nanobench = ankerl::nanobench;
 
 #if defined(RPC_HPP_ENABLE_BITSERY)
-constexpr uint64_t bitsery_adapter::config::max_func_name_size = 30;
-constexpr uint64_t bitsery_adapter::config::max_string_size = 2'048;
-constexpr uint64_t bitsery_adapter::config::max_container_size = 1'000;
+constexpr size_t bitsery_adapter::config::max_func_name_size = 30;
+constexpr size_t bitsery_adapter::config::max_string_size = 2'048;
+constexpr size_t bitsery_adapter::config::max_container_size = 1'000;
 #endif
 
 template<typename T, typename... Args>

@@ -34,7 +34,8 @@
 ///OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ///
 
-#pragma once
+#ifndef RPC_ADAPTERS_NJSON_HPP
+#define RPC_ADAPTERS_NJSON_HPP
 
 #include "../rpc.hpp"
 
@@ -447,3 +448,4 @@ private:
     }
 };
 } //namespace rpc_hpp::adapters
+#endif

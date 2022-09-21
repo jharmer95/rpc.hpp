@@ -1,4 +1,5 @@
-#pragma once
+#ifndef RPC_SERVER_HPP
+#define RPC_SERVER_HPP
 
 #include "rpc.hpp"
 
@@ -83,7 +84,7 @@ public:
 #if defined(RPC_HPP_ENABLE_CALLBACKS)
                     [[fallthrough]];
 #else
-                    return object_t{ detail::func_error<false>{ "",
+                    return object_t{ detail::func_error{ "",
                         rpc_object_mismatch(
                             "Invalid rpc_object type detected (NOTE: callbacks are not "
                             "enabled on this server)") } };
@@ -248,3 +249,4 @@ private:
 #endif
 };
 } //namespace rpc_hpp
+#endif
