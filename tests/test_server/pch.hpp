@@ -15,10 +15,12 @@
 #  include <experimental/filesystem>
 #endif
 
+#include <forward_list>
 #include <fstream>
 #include <functional>
 #include <iomanip>
 #include <iostream>
+#include <map>
 #include <numeric>
 #include <optional>
 #include <sstream>
@@ -28,6 +30,7 @@
 #include <tuple>
 #include <type_traits>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 

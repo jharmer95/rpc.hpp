@@ -41,30 +41,22 @@
 
 #if defined(RPC_HPP_ENABLE_BITSERY)
 #  include <rpc_adapters/rpc_bitsery.hpp>
-
-using rpc_hpp::adapters::bitsery_adapter;
 #endif
 
 #if defined(RPC_HPP_ENABLE_BOOST_JSON)
 #  include <rpc_adapters/rpc_boost_json.hpp>
-
-using rpc_hpp::adapters::boost_json_adapter;
 #endif
 
 #if defined(RPC_HPP_ENABLE_NJSON)
 #  include <rpc_adapters/rpc_njson.hpp>
-
-using rpc_hpp::adapters::njson_adapter;
 #endif
 
 #if defined(RPC_HPP_ENABLE_RAPIDJSON)
 #  include <rpc_adapters/rpc_rapidjson.hpp>
-
-using rpc_hpp::adapters::rapidjson_adapter;
 #endif
 
-using asio::ip::tcp;
-
+namespace rpc_hpp::tests
+{
 template<typename Serial>
 class TestClient final : public rpc_hpp::client_interface<Serial>
 {
@@ -95,44 +87,11 @@ public:
 
 private:
     asio::io_context m_io{};
-    tcp::socket m_socket;
-    tcp::resolver m_resolver;
+    asio::ip::tcp::socket m_socket;
+    asio::ip::tcp::resolver m_resolver;
     std::array<uint8_t, 64UL * 1024UL> m_buffer{};
 };
 
 template<typename Serial>
 TestClient<Serial>& GetClient();
-
-template<>
-[[nodiscard]] inline TestClient<njson_adapter>& GetClient()
-{
-    static TestClient<njson_adapter> client("127.0.0.1", "5000");
-    return client;
-}
-
-#if defined(RPC_HPP_ENABLE_RAPIDJSON)
-template<>
-[[nodiscard]] inline TestClient<rapidjson_adapter>& GetClient()
-{
-    static TestClient<rapidjson_adapter> client("127.0.0.1", "5001");
-    return client;
-}
-#endif
-
-#if defined(RPC_HPP_ENABLE_BOOST_JSON)
-template<>
-[[nodiscard]] inline TestClient<boost_json_adapter>& GetClient()
-{
-    static TestClient<boost_json_adapter> client("127.0.0.1", "5002");
-    return client;
-}
-#endif
-
-#if defined(RPC_HPP_ENABLE_BITSERY)
-template<>
-[[nodiscard]] inline TestClient<bitsery_adapter>& GetClient()
-{
-    static TestClient<bitsery_adapter> client("127.0.0.1", "5003");
-    return client;
-}
-#endif
+} //namespace rpc_hpp::tests

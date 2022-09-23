@@ -234,6 +234,10 @@ public:
 
 namespace detail
 {
+#if __has_cpp_attribute(__cpp_lib_remove_cvref)
+    using std::remove_cvref;
+    using std::remove_cvref_t;
+#else
     // backport for C++20's remove_cvref
     template<typename T>
     struct remove_cvref
@@ -243,141 +247,25 @@ namespace detail
 
     template<typename T>
     using remove_cvref_t = typename remove_cvref<T>::type;
+#endif
 
-    template<typename, typename T>
-    struct is_serializable_base
-    {
-        static_assert(std::integral_constant<T, false>::value,
-            "Second template parameter needs to be of function type");
-    };
-
-    template<typename C, typename R, typename... Args>
-    struct is_serializable_base<C, R(Args...)>
-    {
-    private:
-        template<typename T>
-        static constexpr auto check(T*) noexcept ->
-            typename std::is_same<decltype(std::declval<T>().serialize(std::declval<Args>()...)),
-                R>::type;
-
-        template<typename>
-        static constexpr std::false_type check(...) noexcept;
-
-        using type = decltype(check<C>(nullptr));
-
-    public:
-        static constexpr bool value = type::value;
-    };
-
-    template<typename, typename T>
-    struct is_deserializable_base
-    {
-        static_assert(std::integral_constant<T, false>::value,
-            "Second template parameter needs to be of function type");
-    };
-
-    template<typename C, typename R, typename... Args>
-    struct is_deserializable_base<C, R(Args...)>
-    {
-    private:
-        template<typename T>
-        static constexpr auto check(T*) noexcept ->
-            typename std::is_same<decltype(std::declval<T>().deserialize(std::declval<Args>()...)),
-                R>::type;
-
-        template<typename>
-        static constexpr std::false_type check(...) noexcept;
-
-        using type = decltype(check<C>(nullptr));
-
-    public:
-        static constexpr bool value = type::value;
-    };
-
-    template<typename Serial, typename Value>
-    struct is_serializable :
-        std::integral_constant<bool,
-            is_serializable_base<Value, typename Serial::serial_t(const Value&)>::value
-                && is_deserializable_base<Value, Value(const typename Serial::serial_t&)>::value>
+    template<typename T>
+    struct is_boolean_testable : std::bool_constant<std::is_convertible_v<T, bool>>
     {
     };
 
-    template<typename Serial, typename Value>
-    inline constexpr bool is_serializable_v = is_serializable<Serial, Value>::value;
+    template<typename T>
+    inline constexpr bool is_boolean_testable_v = is_boolean_testable<T>::value;
 
-    template<typename C>
-    struct has_begin
-    {
-    private:
-        template<typename T>
-        static constexpr auto check(T*) noexcept ->
-            typename std::is_same<decltype(std::declval<T>().begin()), typename T::iterator>::type;
-
-        template<typename>
-        static constexpr std::false_type check(...) noexcept;
-
-        using type = decltype(check<C>(nullptr));
-
-    public:
-        static constexpr bool value = type::value;
-    };
-
-    template<typename C>
-    struct has_end
-    {
-    private:
-        template<typename T>
-        static constexpr auto check(T*) noexcept ->
-            typename std::is_same<decltype(std::declval<T>().end()), typename T::iterator>::type;
-
-        template<typename>
-        static constexpr std::false_type check(...) noexcept;
-
-        using type = decltype(check<C>(nullptr));
-
-    public:
-        static constexpr bool value = type::value;
-    };
-
-    template<typename C>
-    struct has_size
-    {
-    private:
-        template<typename T>
-        static constexpr auto check(T*) noexcept ->
-            typename std::is_same<decltype(std::declval<T>().size()), size_t>::type;
-
-        template<typename>
-        static constexpr std::false_type check(...) noexcept;
-
-        using type = decltype(check<C>(nullptr));
-
-    public:
-        static constexpr bool value = type::value;
-    };
-
-    template<typename C>
-    struct is_container :
-        std::integral_constant<bool, has_size<C>::value && has_begin<C>::value && has_end<C>::value>
+    template<typename T>
+    struct is_stringlike :
+        std::bool_constant<(
+            std::is_convertible_v<T, std::string> || std::is_convertible_v<T, std::string_view>)>
     {
     };
 
-    template<typename C>
-    inline constexpr bool is_container_v = is_container<C>::value;
-
-    template<typename F, typename... Ts, size_t... Is>
-    constexpr void for_each_tuple(
-        const std::tuple<Ts...>& tuple, F&& func, RPC_HPP_UNUSED std::index_sequence<Is...> iseq)
-    {
-        using expander = int[];
-        std::ignore = expander{ 0, ((void)std::forward<F>(func)(std::get<Is>(tuple)), 0)... };
-    }
-
-    template<typename F, typename... Ts>
-    constexpr void for_each_tuple(const std::tuple<Ts...>& tuple, F&& func)
-    {
-        for_each_tuple(tuple, std::forward<F>(func), std::make_index_sequence<sizeof...(Ts)>());
-    }
+    template<typename T>
+    inline constexpr bool is_stringlike_v = is_stringlike<T>::value;
 
     template<typename T>
     struct decay_str
@@ -417,6 +305,131 @@ namespace detail
     template<typename T>
     using decay_str_t = typename decay_str<T>::type;
 
+    template<typename C>
+    struct has_begin
+    {
+    private:
+        template<typename T>
+        static constexpr auto check(RPC_HPP_UNUSED T* ptr) noexcept -> std::bool_constant<
+            std::is_same_v<decltype(std::declval<T>().begin()), typename T::iterator>>;
+
+        template<typename>
+        static constexpr std::false_type check(...) noexcept;
+
+        using type = decltype(check<C>(nullptr));
+
+    public:
+        static constexpr bool value = type::value;
+    };
+
+    template<typename C>
+    struct has_end
+    {
+    private:
+        template<typename T>
+        static constexpr auto check(RPC_HPP_UNUSED T* ptr) noexcept -> std::bool_constant<
+            std::is_same_v<decltype(std::declval<T>().end()), typename T::iterator>>;
+
+        template<typename>
+        static constexpr std::false_type check(...) noexcept;
+
+        using type = decltype(check<C>(nullptr));
+
+    public:
+        static constexpr bool value = type::value;
+    };
+
+    template<typename C>
+    struct has_size
+    {
+    private:
+        template<typename T>
+        static constexpr auto check(RPC_HPP_UNUSED T* ptr) noexcept
+            -> std::bool_constant<std::is_same_v<decltype(std::declval<T>().size()), size_t>>;
+
+        template<typename>
+        static constexpr std::false_type check(...) noexcept;
+
+        using type = decltype(check<C>(nullptr));
+
+    public:
+        static constexpr bool value = type::value;
+    };
+
+    template<typename C>
+    struct is_container : std::bool_constant<has_begin<C>::value && has_end<C>::value>
+    {
+    };
+
+    template<typename C>
+    inline constexpr bool is_container_v = is_container<std::remove_cv_t<C>>::value;
+
+    template<typename C>
+    struct has_map_iterator
+    {
+    private:
+        template<typename T>
+        static constexpr auto check(RPC_HPP_UNUSED T* ptr) noexcept
+            -> std::bool_constant<std::is_same_v<
+                decltype(std::declval<typename T::iterator>()->second), typename T::mapped_type>>;
+
+        template<typename>
+        static constexpr std::false_type check(...) noexcept;
+
+        using type = decltype(check<C>(nullptr));
+
+    public:
+        static constexpr bool value = type::value;
+    };
+
+    template<typename C>
+    struct has_map_at
+    {
+    private:
+        template<typename T>
+        static constexpr auto check(RPC_HPP_UNUSED T* ptr) noexcept
+            -> std::bool_constant<std::is_same_v<
+                decltype(std::declval<T>().at(typename T::key_type{})), typename T::mapped_type&>>;
+
+        template<typename>
+        static constexpr std::false_type check(...) noexcept;
+
+        using type = decltype(check<C>(nullptr));
+
+    public:
+        static constexpr bool value = type::value;
+    };
+
+    template<typename C>
+    struct is_map : std::bool_constant<is_container_v<C> && has_map_iterator<C>::value>
+    {
+    };
+
+    template<typename C>
+    inline constexpr bool is_map_v = is_map<std::remove_cv_t<C>>::value;
+
+    template<typename C>
+    struct is_multimap : std::bool_constant<is_map_v<C> && (!has_map_at<C>::value)>
+    {
+    };
+
+    template<typename C>
+    inline constexpr bool is_multimap_v = is_multimap<std::remove_cv_t<C>>::value;
+
+    template<typename F, typename... Ts, size_t... Is>
+    constexpr void for_each_tuple(
+        const std::tuple<Ts...>& tuple, F&& func, RPC_HPP_UNUSED std::index_sequence<Is...> iseq)
+    {
+        using expander = int[];
+        std::ignore = expander{ 0, ((void)std::forward<F>(func)(std::get<Is>(tuple)), 0)... };
+    }
+
+    template<typename F, typename... Ts>
+    constexpr void for_each_tuple(const std::tuple<Ts...>& tuple, F&& func)
+    {
+        for_each_tuple(tuple, std::forward<F>(func), std::make_index_sequence<sizeof...(Ts)>());
+    }
+
     template<typename T>
     constexpr bool is_ref_arg()
     {
@@ -440,7 +453,7 @@ namespace detail
                 (void)[](auto&& x, auto&& y) {
                     if constexpr (is_ref_arg<decltype(x)>())
                     {
-                        x = std::forward<decltype(y)>(y);
+                        std::forward<decltype(x)>(x) = std::forward<decltype(y)>(y);
                     }
                 }(dest, std::get<Is>(src)),
                 0)... };
@@ -452,6 +465,9 @@ namespace detail
     {
         tuple_bind(src, std::make_index_sequence<sizeof...(Args)>(), std::forward<Args>(dest)...);
     }
+
+    template<typename R, typename... Args>
+    using fptr_t = R (*)(Args...);
 
     struct bind_args_tag
     {
@@ -613,7 +629,10 @@ namespace detail
 struct callback_install_request : detail::rpc_base<true>
 {
     callback_install_request() = default;
-    callback_install_request(std::string t_func_name) : rpc_base<true>{ std::move(t_func_name) } {}
+    explicit callback_install_request(std::string t_func_name)
+        : rpc_base<true>{ std::move(t_func_name) }
+    {
+    }
 
     bool is_uninstall{ false };
 };
@@ -866,6 +885,24 @@ namespace adapters
     class serializer
     {
     public:
+        static constexpr bool is_deserializer = Deserialize;
+
+        template<typename T>
+        void serialize_object(const T& t)
+        {
+            static_assert(!is_deserializer, "Cannot call serialize_object() on a deserializer");
+
+            // Necessary for bi-directional serialization, the const qualifier in this function still provides correctness
+            serialize(*this, const_cast<T&>(t));
+        }
+
+        template<typename T>
+        void deserialize_object(T&& t)
+        {
+            static_assert(is_deserializer, "Cannot call deserialize_object() on a serializer");
+            serialize(*this, std::forward<T>(t));
+        }
+
         template<typename T>
         void as_bool(std::string_view key, T& t)
         {
@@ -893,8 +930,8 @@ namespace adapters
         template<typename T>
         void as_string(std::string_view key, T& t)
         {
-            static_assert(
-                std::is_convertible_v<T, std::string>, "T must be convertible to std::string");
+            static_assert(std::is_convertible_v<T, std::string_view>,
+                "T must be convertible to std::string_view");
 
             (static_cast<Adapter*>(this))->as_string(key, t);
         }
@@ -902,7 +939,7 @@ namespace adapters
         template<typename T>
         void as_array(std::string_view key, T& t)
         {
-            static_assert(detail::is_container_v<T>, "T must have begin(), end(), and size()");
+            static_assert(detail::is_container_v<T>, "T must have begin() and end()");
 
             (static_cast<Adapter*>(this))->as_array(key, t);
         }
@@ -910,17 +947,17 @@ namespace adapters
         template<typename T>
         void as_map(std::string_view key, T& t)
         {
-            // TODO: Have specific map checking behavior
-            static_assert(detail::is_container_v<T>, "T must have begin(), end(), and size()");
+            static_assert(detail::is_map_v<T>, "T must be a map type");
 
-            (static_cast<Adapter*>(this))->as_map(key, t);
+            if constexpr (detail::is_multimap_v<T>)
+            {
+                (static_cast<Adapter*>(this))->as_multimap(key, t);
+            }
+            else
+            {
+                (static_cast<Adapter*>(this))->as_map(key, t);
+            }
         }
-
-        // template<typename T>
-        // void as_object(std::string_view key, T& t)
-        // {
-        //     (static_cast<Adapter*>(this))->as_object(key, t);
-        // }
     };
 
     template<typename Adapter>
@@ -966,6 +1003,90 @@ namespace adapters
 
         static bool has_bound_args(const serial_t& serial_obj) = delete;
     };
+
+    // Overloads for common types
+    template<typename Adapter>
+    void serialize(serializer<Adapter, false>& s, bool b)
+    {
+        s.as_bool("", b);
+    }
+
+    template<typename Adapter>
+    void serialize(serializer<Adapter, true>& s, bool& b)
+    {
+        s.as_bool("", b);
+    }
+
+    template<typename Adapter, typename T,
+        std::enable_if_t<(std::is_integral_v<T> && (!std::is_same_v<T, bool>)), bool> = true>
+    void serialize(serializer<Adapter, false>& s, T t)
+    {
+        s.as_int("", t);
+    }
+
+    template<typename Adapter, typename T,
+        std::enable_if_t<(std::is_integral_v<T> && (!std::is_same_v<T, bool>)), bool> = true>
+    void serialize(serializer<Adapter, true>& s, T& t)
+    {
+        s.as_int("", t);
+    }
+
+    template<typename Adapter, typename T,
+        std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+    void serialize(serializer<Adapter, false>& s, T t)
+    {
+        s.as_float("", t);
+    }
+
+    template<typename Adapter, typename T,
+        std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+    void serialize(serializer<Adapter, true>& s, T& t)
+    {
+        s.as_float("", t);
+    }
+
+    template<typename Adapter>
+    void serialize(serializer<Adapter, false>& s, std::string_view t)
+    {
+        s.as_string("", t);
+    }
+
+    template<typename Adapter, typename T,
+        std::enable_if_t<detail::is_stringlike_v<T>, bool> = true>
+    void serialize(serializer<Adapter, true>& s, T& t)
+    {
+        s.as_string("", t);
+    }
+
+    template<typename Adapter, typename T,
+        std::enable_if_t<
+            (detail::is_container_v<T> && (!detail::is_stringlike_v<T>)&&(!detail::is_map_v<T>)),
+            bool> = true>
+    void serialize(serializer<Adapter, false>& s, const T& t)
+    {
+        s.as_array("", t);
+    }
+
+    template<typename Adapter, typename T,
+        std::enable_if_t<
+            (detail::is_container_v<T> && (!detail::is_stringlike_v<T>)&&(!detail::is_map_v<T>)),
+            bool> = true>
+    void serialize(serializer<Adapter, true>& s, T& t)
+    {
+        s.as_array("", t);
+    }
+
+    template<typename Adapter, typename T, std::enable_if_t<detail::is_map_v<T>, bool> = true>
+    void serialize(serializer<Adapter, false>& s, const T& t)
+    {
+        s.as_map("", t);
+    }
+
+    template<typename Adapter, typename T, std::enable_if_t<detail::is_map_v<T>, bool> = true>
+    void serialize(serializer<Adapter, true>& s, T& t)
+    {
+        s.as_map("", t);
+    }
 } //namespace adapters
 
 namespace detail
@@ -1018,37 +1139,4 @@ namespace detail
     }
 } //namespace detail
 } //namespace rpc_hpp
-
-template<typename Adapter, bool Deserialize, typename T>
-void serialize(rpc_hpp::adapters::serializer<Adapter, Deserialize>& s, T& t) = delete;
-// {
-//     s.as_object(t);
-// }
-
-template<typename Adapter, typename T>
-void deserialize(rpc_hpp::adapters::serializer<Adapter, true>& s, T& t)
-{
-    serialize<Adapter, true>(s, t);
-}
-
-// Overloads for common types
-template<typename Adapter, bool Deserialize>
-void serialize(rpc_hpp::adapters::serializer<Adapter, Deserialize>& s, bool b)
-{
-    s.as_bool("", b);
-}
-
-template<typename Adapter, bool Deserialize, typename T,
-    std::enable_if_t<(std::is_integral_v<T> && (!std::is_same_v<T, bool>)), bool> = true>
-void serialize(rpc_hpp::adapters::serializer<Adapter, Deserialize>& s, T t)
-{
-    s.as_int("", t);
-}
-
-template<typename Adapter, bool Deserialize, typename T,
-    std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
-void serialize(rpc_hpp::adapters::serializer<Adapter, Deserialize>& s, T t)
-{
-    s.as_float("", t);
-}
 #endif

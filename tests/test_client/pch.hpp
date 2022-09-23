@@ -6,11 +6,14 @@
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
+#include <forward_list>
+#include <map>
 #include <optional>
 #include <stdexcept>
 #include <string>
 #include <tuple>
 #include <type_traits>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 

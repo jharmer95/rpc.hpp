@@ -42,7 +42,7 @@ public:
     }
 
     template<typename R, typename... Args>
-    void bind(std::string func_name, R (*func_ptr)(Args...))
+    void bind(std::string func_name, detail::fptr_t<R, Args...> func_ptr)
     {
         bind_impl<R, Args...>(std::move(func_name), func_ptr);
     }

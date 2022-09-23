@@ -43,48 +43,14 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include <doctest/doctest.h>
 
+#include <forward_list>
+#include <map>
+#include <unordered_set>
+
 #if defined(RPC_HPP_ENABLE_BITSERY)
 constexpr size_t bitsery_adapter::config::max_func_name_size = 30;
 constexpr size_t bitsery_adapter::config::max_string_size = 2'048;
 constexpr size_t bitsery_adapter::config::max_container_size = 1'000;
-#endif
-
-template<typename Serial>
-void TestType()
-{
-    auto& client = GetClient<Serial>();
-    const auto response = client.call_func("SimpleSum", 1, 2);
-
-    REQUIRE(response.type() == rpc_hpp::rpc_type::func_result);
-    REQUIRE(response.template get_result<int>() == 3);
-}
-
-#if defined(RPC_HPP_ENABLE_NJSON)
-TEST_CASE("NJSON")
-{
-    TestType<njson_adapter>();
-}
-#endif
-
-#if defined(RPC_HPP_ENABLE_RAPIDJSON)
-TEST_CASE("RAPIDJSON")
-{
-    TestType<rapidjson_adapter>();
-}
-#endif
-
-#if defined(RPC_HPP_ENABLE_BOOST_JSON)
-TEST_CASE("BOOST_JSON")
-{
-    TestType<boost_json_adapter>();
-}
-#endif
-
-#if defined(RPC_HPP_ENABLE_BITSERY)
-TEST_CASE("BITSERY")
-{
-    TestType<bitsery_adapter>();
-}
 #endif
 
 // TODO: Clean this up somehow
@@ -134,6 +100,80 @@ TEST_CASE("BITSERY")
 
 #define RPC_TEST_TYPES TEST_BITSERY_T TEST_BOOST_JSON_T TEST_NJSON_T TEST_RAPIDJSON_T
 
+namespace rpc_hpp::tests
+{
+template<>
+[[nodiscard]] TestClient<njson_adapter>& GetClient()
+{
+    static TestClient<njson_adapter> njson_client{ "127.0.0.1", "5000" };
+    return njson_client;
+}
+
+#if defined(RPC_HPP_ENABLE_RAPIDJSON)
+template<>
+[[nodiscard]] inline TestClient<rapidjson_adapter>& GetClient()
+{
+    static TestClient<rapidjson_adapter> rapidjson_client{ "127.0.0.1", "5001" };
+    return rapidjson_client;
+}
+#endif
+
+#if defined(RPC_HPP_ENABLE_BOOST_JSON)
+template<>
+[[nodiscard]] inline TestClient<boost_json_adapter>& GetClient()
+{
+    static TestClient<boost_json_adapter> boost_json_client{ "127.0.0.1", "5002" };
+    return boost_json_client;
+}
+#endif
+
+#if defined(RPC_HPP_ENABLE_BITSERY)
+template<>
+[[nodiscard]] inline TestClient<bitsery_adapter>& GetClient()
+{
+    static TestClient<bitsery_adapter> bitsery_client{ "127.0.0.1", "5003" };
+    return bitsery_client;
+}
+#endif
+
+template<typename Serial>
+static void TestType()
+{
+    auto& client = GetClient<Serial>();
+    const auto response = client.call_func("SimpleSum", 1, 2);
+
+    REQUIRE(response.type() == rpc_hpp::rpc_type::func_result);
+    REQUIRE(response.template get_result<int>() == 3);
+}
+
+#if defined(RPC_HPP_ENABLE_NJSON)
+TEST_CASE("NJSON")
+{
+    TestType<njson_adapter>();
+}
+#endif
+
+#if defined(RPC_HPP_ENABLE_RAPIDJSON)
+TEST_CASE("RAPIDJSON")
+{
+    TestType<rapidjson_adapter>();
+}
+#endif
+
+#if defined(RPC_HPP_ENABLE_BOOST_JSON)
+TEST_CASE("BOOST_JSON")
+{
+    TestType<boost_json_adapter>();
+}
+#endif
+
+#if defined(RPC_HPP_ENABLE_BITSERY)
+TEST_CASE("BITSERY")
+{
+    TestType<bitsery_adapter>();
+}
+#endif
+
 TEST_CASE_TEMPLATE("CountChars (static)", TestType, RPC_TEST_TYPES)
 {
     auto& client = GetClient<TestType>();
@@ -163,7 +203,7 @@ TEST_CASE_TEMPLATE("StrLen", TestType, RPC_TEST_TYPES)
 {
     auto& client = GetClient<TestType>();
 
-    static constexpr auto test_str_len = 2048U;
+    static constexpr size_t test_str_len = 2048UL;
     const std::string test_str(test_str_len, 'f');
     const auto response = client.call_func("StrLen", test_str);
 
@@ -189,7 +229,9 @@ TEST_CASE_TEMPLATE("AddOneToEach", TestType, RPC_TEST_TYPES)
 
     REQUIRE(result.size() == vec.size());
 
-    for (size_t i = 0; i < result.size(); ++i)
+    const auto sz = result.size();
+
+    for (size_t i = 0; i < sz; ++i)
     {
         REQUIRE(result[i] == vec[i] + 1);
     }
@@ -205,7 +247,9 @@ TEST_CASE_TEMPLATE("AddOneToEachRef", TestType, RPC_TEST_TYPES)
     REQUIRE(response.type() == rpc_hpp::rpc_type::func_result_w_bind);
     REQUIRE(vec2.size() == vec.size());
 
-    for (size_t i = 0; i < vec2.size(); ++i)
+    const auto sz = vec2.size();
+
+    for (size_t i = 0; i < sz; ++i)
     {
         REQUIRE(vec2[i] == vec[i]);
     }
@@ -213,7 +257,7 @@ TEST_CASE_TEMPLATE("AddOneToEachRef", TestType, RPC_TEST_TYPES)
 
 TEST_CASE_TEMPLATE("Fibonacci", TestType, RPC_TEST_TYPES)
 {
-    static constexpr uint64_t expected = 10946;
+    static constexpr uint64_t expected = 10'946;
     static constexpr uint64_t input = 20;
     auto& client = GetClient<TestType>();
 
@@ -225,7 +269,7 @@ TEST_CASE_TEMPLATE("Fibonacci", TestType, RPC_TEST_TYPES)
 
 TEST_CASE_TEMPLATE("FibonacciRef", TestType, RPC_TEST_TYPES)
 {
-    static constexpr uint64_t expected = 10946;
+    static constexpr uint64_t expected = 10'946;
     auto& client = GetClient<TestType>();
 
     uint64_t test = 20;
@@ -284,6 +328,86 @@ TEST_CASE_TEMPLATE("AverageContainer<double>", TestType, RPC_TEST_TYPES)
 
     REQUIRE(response.type() == rpc_hpp::rpc_type::func_result);
     REQUIRE(response.template get_result<double>() == doctest::Approx(expected).epsilon(0.001));
+}
+
+TEST_CASE_TEMPLATE("SquareArray", TestType, RPC_TEST_TYPES)
+{
+    auto& client = GetClient<TestType>();
+
+    std::array<int, 12> arr{ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 };
+
+    const auto response = client.call_func_w_bind("SquareArray", arr);
+    REQUIRE(response.type() == rpc_hpp::rpc_type::func_result_w_bind);
+    REQUIRE(arr[0] == 1);
+    REQUIRE(arr[11] == 144);
+}
+
+TEST_CASE_TEMPLATE("RemoveFromList", TestType, RPC_TEST_TYPES)
+{
+    auto& client = GetClient<TestType>();
+
+    std::forward_list<std::string> word_list{ "Test", "word", "fox", "test", "sphere", "Word",
+        "test", "Test" };
+
+    const auto response1 = client.call_func_w_bind("RemoveFromList", word_list, "Word", false);
+    REQUIRE(response1.type() == rpc_hpp::rpc_type::func_result_w_bind);
+    REQUIRE(std::distance(word_list.begin(), word_list.end()) == 6);
+
+    const auto response2 = client.call_func_w_bind("RemoveFromList", word_list, "test", true);
+    REQUIRE(response2.type() == rpc_hpp::rpc_type::func_result_w_bind);
+    REQUIRE(std::distance(word_list.begin(), word_list.end()) == 4);
+}
+
+TEST_CASE_TEMPLATE("CharacterMap", TestType, RPC_TEST_TYPES)
+{
+    auto& client = GetClient<TestType>();
+
+    const std::string str = "The quick brown fox ran over the hill last night";
+
+    const auto response = client.call_func("CharacterMap", str);
+
+    REQUIRE(response.type() == rpc_hpp::rpc_type::func_result);
+
+    const auto char_map = response.template get_result<std::map<char, unsigned>>();
+
+    REQUIRE(!char_map.empty());
+    REQUIRE(char_map.at('e') == 3U);
+    REQUIRE(char_map.at('x') == 1U);
+}
+
+TEST_CASE_TEMPLATE("CountResidents", TestType, RPC_TEST_TYPES)
+{
+    auto& client = GetClient<TestType>();
+
+    const std::multimap<int, std::string> registry{ { 1, "Fred Jones" }, { 1, "Ron Taylor" },
+        { 1, "Janice Filber" }, { 2, "Peter Reynolds" }, { 2, "Jonathan Fields" },
+        { 3, "Dorothy Petras" } };
+
+    const auto response1 = client.call_func("CountResidents", registry, 1);
+    REQUIRE(response1.type() == rpc_hpp::rpc_type::func_result);
+    const auto result1 = response1.template get_result<size_t>();
+    REQUIRE(result1 == 3UL);
+
+    const auto response2 = client.call_func("CountResidents", registry, 4);
+    REQUIRE(response2.type() == rpc_hpp::rpc_type::func_result);
+    const auto result2 = response2.template get_result<size_t>();
+    REQUIRE(result2 == 0UL);
+}
+
+TEST_CASE_TEMPLATE("GetUniqueNames", TestType, RPC_TEST_TYPES)
+{
+    auto& client = GetClient<TestType>();
+
+    const std::vector<std::string> names{ "John", "Frank", "Susan", "John", "Darlene", "Frank",
+        "John", "Steve" };
+
+    const auto response = client.call_func("GetUniqueNames", names);
+
+    REQUIRE(response.type() == rpc_hpp::rpc_type::func_result);
+
+    const auto result = response.template get_result<std::unordered_set<std::string>>();
+    REQUIRE(!result.empty());
+    REQUIRE(result.size() == 5UL);
 }
 
 TEST_CASE_TEMPLATE("HashComplex", TestType, RPC_TEST_TYPES)
@@ -407,12 +531,12 @@ TEST_CASE_TEMPLATE("ThrowError", TestType, RPC_TEST_TYPES)
 {
     auto& client = GetClient<TestType>();
 
-    const auto exp = [&client]
+    const auto bad_call = [&client]
     {
         client.call_func("ThrowError").template get_result<void>();
     };
 
-    REQUIRE_THROWS_AS(exp(), rpc_hpp::remote_exec_error);
+    REQUIRE_THROWS_AS(bad_call(), rpc_hpp::remote_exec_error);
 }
 
 TEST_CASE_TEMPLATE("InvalidObject", TestType, RPC_TEST_TYPES)
@@ -426,8 +550,8 @@ TEST_CASE_TEMPLATE("InvalidObject", TestType, RPC_TEST_TYPES)
     }
 #endif
 
-    typename TestType::bytes_t bytes{};
-    bytes.resize(8);
+    static constexpr size_t test_sz = 8UL;
+    typename TestType::bytes_t bytes(test_sz, {});
 
     std::iota(bytes.begin(), bytes.end(), typename TestType::bytes_t::value_type{});
 
@@ -448,19 +572,17 @@ TEST_CASE("KillServer")
 {
     auto& client = GetClient<njson_adapter>();
 
-    const auto exp = [&client]
+    const auto bad_call = [&client]
     {
         std::ignore = client.call_func("SimpleSum", 1, 2);
     };
 
-    try
+    const auto kill_server = [&client]
     {
         std::ignore = client.call_func("KillServer");
-    }
-    catch (...)
-    {
-        // Exception is expected so continue
-    }
+    };
 
-    REQUIRE_THROWS_AS(exp(), rpc_hpp::client_receive_error);
+    WARN_NOTHROW(kill_server());
+    REQUIRE_THROWS_AS(bad_call(), rpc_hpp::client_receive_error);
 }
+} //namespace rpc_hpp::tests

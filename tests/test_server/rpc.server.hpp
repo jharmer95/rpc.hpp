@@ -46,9 +46,12 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
+#include <forward_list>
+#include <map>
 #include <numeric>
 #include <stdexcept>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 using asio::ip::tcp;
@@ -72,7 +75,7 @@ void AddOneToEachRef(std::vector<int>& vec);
 // cached
 constexpr uint64_t Fibonacci(const uint64_t number)
 {
-    return number < 2 ? 1 : Fibonacci(number - 1) + Fibonacci(number - 2);
+    return (number < 2) ? 1 : (::Fibonacci(number - 1) + ::Fibonacci(number - 2));
 }
 
 void FibonacciRef(uint64_t& number);
@@ -99,6 +102,12 @@ double AverageContainer(const std::vector<T>& vec)
     return sum / static_cast<double>(vec.size());
 }
 
+void SquareArray(std::array<int, 12>& arr);
+void RemoveFromList(
+    std::forward_list<std::string>& list, const std::string& str, bool case_sensitive);
+std::map<char, unsigned> CharacterMap(const std::string& str);
+size_t CountResidents(const std::multimap<int, std::string>& registry, int floor_num);
+std::unordered_set<std::string> GetUniqueNames(const std::vector<std::string>& names);
 std::vector<uint64_t> GenRandInts(uint64_t min, uint64_t max, size_t sz);
 std::string HashComplex(const ComplexObject& cx);
 void HashComplexRef(ComplexObject& cx, std::string& hashStr);
@@ -158,13 +167,13 @@ public:
 
     void Run()
     {
-        while (RUNNING)
+        while (::RUNNING)
         {
             m_socket = m_accept.accept();
 
             try
             {
-                while (RUNNING)
+                while (::RUNNING)
                 {
                     auto bytes = receive();
 
@@ -179,7 +188,7 @@ public:
             }
             catch (const std::exception& ex)
             {
-                fprintf(stderr, "Exception in thread: %s\n", ex.what());
+                std::fprintf(stderr, "Exception in thread: %s\n", ex.what());
             }
 
             m_socket.reset();

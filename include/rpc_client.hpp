@@ -109,8 +109,8 @@ public:
 
     template<typename R, typename... Args>
     RPC_HPP_NODISCARD("the rpc_object should be checked for its type")
-    object_t call_header_func_impl(
-        RPC_HPP_UNUSED R (*func)(Args...), const std::string& func_name, Args&&... args)
+    object_t call_header_func_impl(RPC_HPP_UNUSED detail::fptr_t<R, Args...> func,
+        const std::string& func_name, Args&&... args)
     {
         // If any parameters are non-const lvalue references...
         if constexpr (detail::has_ref_args<Args...>())
@@ -126,7 +126,7 @@ public:
     template<typename R, typename... Args>
     RPC_HPP_NODISCARD("the rpc_object should be checked for its type")
     object_t call_header_func_impl(
-        RPC_HPP_UNUSED R (*func)(Args...), std::string&& func_name, Args&&... args)
+        RPC_HPP_UNUSED detail::fptr_t<R, Args...> func, std::string&& func_name, Args&&... args)
     {
         // If any parameters are non-const lvalue references...
         if constexpr (detail::has_ref_args<Args...>())

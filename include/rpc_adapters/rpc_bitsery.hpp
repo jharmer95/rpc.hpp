@@ -150,7 +150,7 @@ namespace adapters
             RPC_HPP_PRECONDITION(serial_obj.size() >= sizeof(int));
 
             // First 4 bytes represent the type
-            int n_type;
+            int n_type{};
             std::memcpy(&n_type, serial_obj.data(), sizeof(n_type));
 
             if (n_type < static_cast<int>(rpc_type::callback_install_request)
@@ -459,7 +459,7 @@ namespace detail
                 // Fallback serializer for integers, floats, and enums
                 [](auto& s2, auto& val)
                 {
-                    using T = std::remove_cv_t<std::remove_reference_t<decltype(val)>>;
+                    using T = detail::remove_cvref_t<decltype(val)>;
 
                     if constexpr (std::is_arithmetic_v<T>)
                     {
@@ -628,7 +628,7 @@ namespace detail
                 // Fallback serializer for integers, floats, and enums
                 [](auto& s2, auto& val)
                 {
-                    using T = std::remove_cv_t<std::remove_reference_t<decltype(val)>>;
+                    using T = detail::remove_cvref_t<decltype(val)>;
 
                     if constexpr (std::is_arithmetic_v<T>)
                     {

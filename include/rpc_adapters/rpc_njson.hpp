@@ -65,25 +65,25 @@ public:
     template<typename T>
     void as_bool(std::string_view key, T& t)
     {
-        m_json[key] = static_cast<bool>(t);
+        subobject(key) = static_cast<bool>(t);
     }
 
     template<typename T>
     void as_float(std::string_view key, T& t)
     {
-        m_json[key] = t;
+        subobject(key) = t;
     }
 
     template<typename T>
     void as_int(std::string_view key, T& t)
     {
-        m_json[key] = t;
+        subobject(key) = t;
     }
 
     template<typename T>
     void as_string(std::string_view key, T& t)
     {
-        m_json[key] = t;
+        subobject(key) = t;
     }
 
     template<typename T>
@@ -96,23 +96,45 @@ public:
             arr.push_back(val);
         }
 
-        m_json[key] = std::move(arr);
+        subobject(key) = std::move(arr);
     }
 
-    template<typename T, size_t N>
-    void as_array(std::string_view key, std::array<T, N>& t)
+    template<typename T>
+    void as_map(std::string_view key, T& t)
     {
-        auto arr = nlohmann::json::array();
+        auto obj = nlohmann::json::object();
 
-        for (const auto& val : t)
+        for (const auto& [k, v] : t)
         {
-            arr.push_back(val);
+            obj[nlohmann::json{ k }.dump()] = v;
         }
 
-        m_json[key] = std::move(arr);
+        subobject(key) = std::move(obj);
+    }
+
+    template<typename T>
+    void as_multimap(std::string_view key, T& t)
+    {
+        auto obj = nlohmann::json::object();
+
+        for (const auto& [k, v] : t)
+        {
+            const auto key_str = nlohmann::json{ k }.dump();
+
+            if (obj.find(key_str) == end(obj))
+            {
+                obj[key_str] = nlohmann::json::array();
+            }
+
+            obj[key_str].push_back(v);
+        }
+
+        subobject(key) = std::move(obj);
     }
 
 private:
+    nlohmann::json& subobject(std::string_view key) { return key.empty() ? m_json : m_json[key]; }
+
     nlohmann::json m_json{};
 };
 
@@ -123,40 +145,40 @@ public:
     explicit njson_deserializer(nlohmann::json&& obj) : m_json(std::move(obj)) {}
 
     template<typename T>
-    void as_bool(std::string_view key, T& t)
+    void as_bool(std::string_view key, T& t) const
     {
-        t = m_json[key].get<bool>();
+        t = subobject(key).get<bool>();
     }
 
     template<typename T>
-    void as_float(std::string_view key, T& t)
+    void as_float(std::string_view key, T& t) const
     {
-        t = m_json[key].get<T>();
+        t = subobject(key).get<T>();
     }
 
     template<typename T>
-    void as_int(std::string_view key, T& t)
+    void as_int(std::string_view key, T& t) const
     {
-        t = m_json[key].get<T>();
+        t = subobject(key).get<T>();
     }
 
     template<typename T>
-    void as_string(std::string_view key, T& t)
+    void as_string(std::string_view key, T& t) const
     {
-        t = m_json[key].get<std::string>();
+        t = subobject(key).get<std::string>();
     }
 
     template<typename T>
-    void as_array(std::string_view key, T& t)
+    void as_array(std::string_view key, T& t) const
     {
-        const auto& arr = m_json[key];
+        const auto& arr = subobject(key);
         t = T{ cbegin(arr), cend(arr) };
     }
 
     template<typename T, size_t N>
-    void as_array(std::string_view key, std::array<T, N>& t)
+    void as_array(std::string_view key, std::array<T, N>& t) const
     {
-        const auto& arr = m_json[key];
+        const auto& arr = subobject(key);
 
         if (arr.size() != N)
         {
@@ -166,7 +188,38 @@ public:
         std::copy(cbegin(arr), cend(arr), begin(t));
     }
 
+    template<typename T>
+    void as_map(std::string_view key, T& t) const
+    {
+        const auto& obj = subobject(key);
+
+        for (const auto& [k, v] : obj.items())
+        {
+            t.insert({ nlohmann::json::parse(k).front().template get<typename T::key_type>(), v });
+        }
+    }
+
+    template<typename T>
+    void as_multimap(std::string_view key, T& t) const
+    {
+        const auto& obj = subobject(key);
+
+        for (const auto& [k, v] : obj.items())
+        {
+            for (const auto& subval : v)
+            {
+                t.insert({ nlohmann::json::parse(k).front().template get<typename T::key_type>(),
+                    subval });
+            }
+        }
+    }
+
 private:
+    const nlohmann::json& subobject(std::string_view key) const
+    {
+        return key.empty() ? m_json : m_json[key];
+    }
+
     nlohmann::json m_json{};
 };
 
@@ -183,7 +236,7 @@ public:
         }
 
         if (const auto fname_it = obj.find("func_name");
-            fname_it == obj.end() || !fname_it->is_string() || fname_it->empty())
+            (fname_it == obj.end()) || (!fname_it->is_string()) || (fname_it->empty()))
         {
             throw deserialization_error("NJSON: field \"func_name\" not found");
         }
@@ -433,7 +486,7 @@ private:
         }
         else if constexpr (std::is_integral_v<T>)
         {
-            return arg.is_number() && !arg.is_number_float();
+            return arg.is_number() && (!arg.is_number_float());
         }
         else if constexpr (std::is_floating_point_v<T>)
         {
@@ -442,6 +495,10 @@ private:
         else if constexpr (std::is_same_v<T, std::string>)
         {
             return arg.is_string();
+        }
+        else if constexpr (detail::is_map_v<T>)
+        {
+            return arg.is_object();
         }
         else if constexpr (detail::is_container_v<T>)
         {
@@ -463,35 +520,9 @@ private:
     template<typename T>
     static void push_arg(T&& arg, nlohmann::json& obj)
     {
-        using no_ref_t = std::remove_cv_t<std::remove_reference_t<T>>;
-
-        if constexpr (std::is_arithmetic_v<no_ref_t> || std::is_same_v<no_ref_t, std::string>)
-        {
-            obj = std::forward<T>(arg);
-        }
-        else if constexpr (detail::is_container_v<no_ref_t>)
-        {
-            obj = nlohmann::json::array();
-            obj.get_ref<nlohmann::json::array_t&>().reserve(arg.size());
-
-            for (auto&& val : arg)
-            {
-                push_args(std::forward<decltype(val)>(val), obj);
-            }
-        }
-        // TODO: Disable for now
-        // else if constexpr (detail::is_serializable_v<njson_adapter, no_ref_t>)
-        // {
-        //     obj = no_ref_t::template serialize<njson_adapter>(std::forward<T>(arg));
-        // }
-        else
-        {
-            //obj = serialize<no_ref_t>(std::forward<T>(arg));
-            njson_serializer s;
-            auto cpy = arg;
-            serialize(s, cpy);
-            obj = std::move(s).object();
-        }
+        njson_serializer s;
+        s.serialize_object(std::forward<T>(arg));
+        obj = std::move(s).object();
     }
 
     template<typename T>
@@ -504,66 +535,45 @@ private:
 
     template<typename T>
     RPC_HPP_NODISCARD("parsing can be expensive and it makes no sense to not use the parsed result")
-    static std::remove_cv_t<std::remove_reference_t<T>> parse_arg(const nlohmann::json& arg)
+    static detail::remove_cvref_t<T> parse_arg(const nlohmann::json& arg)
     {
-        using no_ref_t = std::remove_cv_t<std::remove_reference_t<T>>;
+        using no_ref_t = detail::remove_cvref_t<T>;
 
         if (!validate_arg<T>(arg))
         {
 #ifdef RPC_HPP_NO_RTTI
-            throw function_mismatch(mismatch_string("{NO-RTTI}", arg));
+            throw function_mismatch{ mismatch_string("{NO-RTTI}", arg) };
 #else
-            throw function_mismatch(mismatch_string(typeid(T).name(), arg));
+            throw function_mismatch{ mismatch_string(typeid(T).name(), arg) };
 #endif
         }
 
-        if constexpr (std::is_arithmetic_v<no_ref_t> || std::is_same_v<no_ref_t, std::string>)
-        {
-            return arg.get<no_ref_t>();
-        }
-        else if constexpr (detail::is_container_v<no_ref_t>)
-        {
-            using value_t = typename no_ref_t::value_type;
+        njson_deserializer s{ arg };
+        no_ref_t x;
+        s.deserialize_object(x);
 
-            no_ref_t container{};
-            container.reserve(arg.size());
-            unsigned arg_counter = 0;
-
-            for (const auto& val : arg)
-            {
-                container.push_back(parse_args<value_t>(val, arg_counter));
-            }
-
-            return container;
-        }
-        // TODO: Removed for now
-        // else if constexpr (detail::is_serializable_v<njson_adapter, no_ref_t>)
-        // {
-        //     return no_ref_t::template deserialize<njson_adapter>(arg);
-        // }
-        else
-        {
-            //return deserialize<no_ref_t>(arg);
-            njson_deserializer s{ arg };
-            no_ref_t x;
-
-            deserialize(s, x);
-            return x;
-        }
+        return x;
     }
 
     template<typename T>
     RPC_HPP_NODISCARD("parsing can be expensive and it makes no sense to not use the parsed result")
-    static std::remove_cv_t<std::remove_reference_t<T>> parse_args(
-        const nlohmann::json& arg_arr, unsigned& index)
+    static detail::remove_cvref_t<T> parse_args(const nlohmann::json& arg_arr, unsigned& index)
     {
         if (index >= arg_arr.size())
         {
             throw function_mismatch("Argument count mismatch");
         }
 
-        const auto& arg = arg_arr.is_array() ? arg_arr[index++] : arg_arr;
-        return parse_arg<T>(arg);
+        if (arg_arr.is_array())
+        {
+            const auto old_idx = index;
+            ++index;
+            return parse_arg<T>(arg_arr[old_idx]);
+        }
+        else
+        {
+            return parse_arg<T>(arg_arr);
+        }
     }
 };
 } //namespace rpc_hpp::adapters
