@@ -54,9 +54,9 @@
 #include <unordered_set>
 #include <vector>
 
-using asio::ip::tcp;
-
-extern std::atomic<bool> RUNNING;
+namespace test_server
+{
+inline std::atomic<bool> RUNNING{ false };
 
 // Forward declares
 [[noreturn]] void ThrowError() noexcept(false);
@@ -75,7 +75,7 @@ void AddOneToEachRef(std::vector<int>& vec);
 // cached
 constexpr uint64_t Fibonacci(const uint64_t number)
 {
-    return (number < 2) ? 1 : (::Fibonacci(number - 1) + ::Fibonacci(number - 2));
+    return (number < 2) ? 1 : (Fibonacci(number - 1) + Fibonacci(number - 2));
 }
 
 void FibonacciRef(uint64_t& number);
@@ -119,7 +119,7 @@ public:
     using bytes_t = typename rpc_hpp::server_interface<Serial>::bytes_t;
 
     TestServer(asio::io_context& io, const uint16_t port)
-        : m_accept(io, tcp::endpoint(tcp::v4(), port))
+        : m_accept(io, asio::ip::tcp::endpoint(asio::ip::tcp::v4(), port))
     {
     }
 
@@ -167,13 +167,13 @@ public:
 
     void Run()
     {
-        while (::RUNNING)
+        while (RUNNING)
         {
             m_socket = m_accept.accept();
 
             try
             {
-                while (::RUNNING)
+                while (RUNNING)
                 {
                     auto bytes = receive();
 
@@ -196,6 +196,7 @@ public:
     }
 
 private:
-    tcp::acceptor m_accept;
-    std::optional<tcp::socket> m_socket{};
+    asio::ip::tcp::acceptor m_accept;
+    std::optional<asio::ip::tcp::socket> m_socket{};
 };
+} //namespace test_server

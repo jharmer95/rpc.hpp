@@ -89,8 +89,8 @@ constexpr size_t bitsery_adapter::config::max_string_size = 2'048;
 constexpr size_t bitsery_adapter::config::max_container_size = 1'000;
 #endif
 
-std::atomic_bool RUNNING{ false };
-
+namespace test_server
+{
 [[noreturn]] void ThrowError() noexcept(false)
 {
     throw std::domain_error("THIS IS A TEST ERROR!");
@@ -100,7 +100,7 @@ std::atomic_bool RUNNING{ false };
 void KillServer() noexcept
 {
     std::puts("\nShutting down from remote KillServer call...");
-    ::RUNNING = false;
+    RUNNING = false;
 }
 
 // cached
@@ -128,13 +128,13 @@ void AddOneToEachRef(std::vector<int>& vec)
     }
 }
 
-int CountChars(const std::string& str, char c)
+static int CountChars(const std::string& str, char c)
 {
     return static_cast<int>(
         std::count_if(str.begin(), str.end(), [c](const char x) { return x == c; }));
 }
 
-void AddOne(size_t& n)
+static void AddOne(size_t& n)
 {
     n += 1;
 }
@@ -149,8 +149,8 @@ void FibonacciRef(uint64_t& number)
     {
         uint64_t n1 = number - 1;
         uint64_t n2 = number - 2;
-        ::FibonacciRef(n1);
-        ::FibonacciRef(n2);
+        FibonacciRef(n1);
+        FibonacciRef(n2);
         number = n1 + n2;
     }
 }
@@ -159,7 +159,7 @@ void FibonacciRef(uint64_t& number)
 double StdDev(const double n1, const double n2, const double n3, const double n4, const double n5,
     const double n6, const double n7, const double n8, const double n9, const double n10)
 {
-    const auto avg = ::Average(
+    const auto avg = Average(
         n1 * n1, n2 * n2, n3 * n3, n4 * n4, n5 * n5, n6 * n6, n7 * n7, n8 * n8, n9 * n9, n10 * n10);
 
     return std::sqrt(avg);
@@ -305,45 +305,39 @@ void HashComplexRef(ComplexObject& cx, std::string& hashStr)
     hashStr = hash.str();
 }
 
-namespace
-{
 template<typename Serial>
-void BindFuncs(TestServer<Serial>& server)
+static void BindFuncs(TestServer<Serial>& server)
 {
 #if defined(RPC_HPP_ENABLE_CALLBACKS)
-    static std::function<std::string()> get_connection_info = [&server]
-    {
-        return server.GetConnectionInfo();
-    };
-
-    server.bind("GetConnectionInfo", get_connection_info);
+    server.template bind<std::string>(
+        "GetConnectionInfo", std::move([&server] { return server.GetConnectionInfo(); }));
 #endif
 
-    server.bind("KillServer", &::KillServer);
-    server.bind("ThrowError", &::ThrowError);
-    server.bind("AddOneToEachRef", &::AddOneToEachRef);
-    server.bind("FibonacciRef", &::FibonacciRef);
-    server.bind("SquareRootRef", &::SquareRootRef);
-    server.bind("GenRandInts", &::GenRandInts);
-    server.bind("HashComplexRef", &::HashComplexRef);
-    server.bind("SquareArray", &::SquareArray);
-    server.bind("RemoveFromList", &::RemoveFromList);
-    server.template bind<void, size_t&>("AddOne", [](size_t& n) { ::AddOne(n); });
+    server.bind("KillServer", &KillServer);
+    server.bind("ThrowError", &ThrowError);
+    server.bind("AddOneToEachRef", &AddOneToEachRef);
+    server.bind("FibonacciRef", &FibonacciRef);
+    server.bind("SquareRootRef", &SquareRootRef);
+    server.bind("GenRandInts", &GenRandInts);
+    server.bind("HashComplexRef", &HashComplexRef);
+    server.bind("SquareArray", &SquareArray);
+    server.bind("RemoveFromList", &RemoveFromList);
+    server.template bind<void, size_t&>("AddOne", [](size_t& n) { AddOne(n); });
 
     // Cached
-    server.bind("SimpleSum", &::SimpleSum);
-    server.bind("StrLen", &::StrLen);
-    server.bind("AddOneToEach", &::AddOneToEach);
-    server.bind("Fibonacci", &::Fibonacci);
-    server.bind("Average", &::Average);
-    server.bind("StdDev", &::StdDev);
-    server.bind("AverageContainer<uint64_t>", &::AverageContainer<uint64_t>);
-    server.bind("AverageContainer<double>", &::AverageContainer<double>);
-    server.bind("HashComplex", &::HashComplex);
-    server.bind("CountChars", &::CountChars);
-    server.bind("CharacterMap", &::CharacterMap);
-    server.bind("CountResidents", &::CountResidents);
-    server.bind("GetUniqueNames", &::GetUniqueNames);
+    server.bind("SimpleSum", &SimpleSum);
+    server.bind("StrLen", &StrLen);
+    server.bind("AddOneToEach", &AddOneToEach);
+    server.bind("Fibonacci", &Fibonacci);
+    server.bind("Average", &Average);
+    server.bind("StdDev", &StdDev);
+    server.bind("AverageContainer<uint64_t>", &AverageContainer<uint64_t>);
+    server.bind("AverageContainer<double>", &AverageContainer<double>);
+    server.bind("HashComplex", &HashComplex);
+    server.bind("CountChars", &CountChars);
+    server.bind("CharacterMap", &CharacterMap);
+    server.bind("CountResidents", &CountResidents);
+    server.bind("GetUniqueNames", &GetUniqueNames);
 }
 
 #if defined(RPC_HPP_ENABLE_SERVER_CACHE)
@@ -460,7 +454,7 @@ void load_cache(TestServer<Serial>& server, RPC_HPP_UNUSED R (*func)(Args...),
 #  define DUMP_CACHE(SERVER, FUNCNAME, DIR) dump_cache(SERVER, FUNCNAME, #  FUNCNAME, DIR)
 #  define LOAD_CACHE(SERVER, FUNCNAME, DIR) load_cache(SERVER, FUNCNAME, #  FUNCNAME, DIR)
 #endif
-} //namespace
+} //namespace test_server
 
 int main(const int argc, char* argv[])
 {
@@ -472,13 +466,13 @@ int main(const int argc, char* argv[])
     try
     {
         asio::io_context io_context{};
-        ::RUNNING = true;
+        test_server::RUNNING = true;
 
         std::vector<std::thread> threads;
 
 #if defined(RPC_HPP_ENABLE_NJSON)
-        TestServer<njson_adapter> njson_server{ io_context, 5000U };
-        BindFuncs(njson_server);
+        test_server::TestServer<njson_adapter> njson_server{ io_context, 5000U };
+        test_server::BindFuncs(njson_server);
 
 #  if defined(RPC_HPP_ENABLE_SERVER_CACHE)
         const std::string njson_dump_path("dump_cache");
@@ -498,7 +492,7 @@ int main(const int argc, char* argv[])
         }
 #  endif
 
-        threads.emplace_back(&TestServer<njson_adapter>::Run, &njson_server);
+        threads.emplace_back(&test_server::TestServer<njson_adapter>::Run, &njson_server);
         std::puts("Running njson server on port 5000...");
 #endif
 

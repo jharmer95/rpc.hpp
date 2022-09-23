@@ -102,6 +102,8 @@ constexpr size_t bitsery_adapter::config::max_container_size = 1'000;
 
 namespace rpc_hpp::tests
 {
+using adapters::njson_adapter;
+
 template<>
 [[nodiscard]] TestClient<njson_adapter>& GetClient()
 {
@@ -110,6 +112,8 @@ template<>
 }
 
 #if defined(RPC_HPP_ENABLE_RAPIDJSON)
+using adapters::rapidjson_adapter;
+
 template<>
 [[nodiscard]] inline TestClient<rapidjson_adapter>& GetClient()
 {
@@ -119,6 +123,8 @@ template<>
 #endif
 
 #if defined(RPC_HPP_ENABLE_BOOST_JSON)
+using adapters::boost_json_adapter;
+
 template<>
 [[nodiscard]] inline TestClient<boost_json_adapter>& GetClient()
 {
@@ -128,6 +134,8 @@ template<>
 #endif
 
 #if defined(RPC_HPP_ENABLE_BITSERY)
+using adapters::bitsery_adapter;
+
 template<>
 [[nodiscard]] inline TestClient<bitsery_adapter>& GetClient()
 {

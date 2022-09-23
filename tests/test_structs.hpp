@@ -43,26 +43,18 @@
 
 #if defined(RPC_HPP_ENABLE_BITSERY)
 #  include <rpc_adapters/rpc_bitsery.hpp>
-
-using rpc_hpp::adapters::bitsery_adapter;
 #endif
 
 #if defined(RPC_HPP_ENABLE_BOOST_JSON)
 #  include <rpc_adapters/rpc_boost_json.hpp>
-
-using rpc_hpp::adapters::boost_json_adapter;
 #endif
 
 #if defined(RPC_HPP_ENABLE_NJSON)
 #  include <rpc_adapters/rpc_njson.hpp>
-
-using rpc_hpp::adapters::njson_adapter;
 #endif
 
 #if defined(RPC_HPP_ENABLE_RAPIDJSON)
 #  include <rpc_adapters/rpc_rapidjson.hpp>
-
-using rpc_hpp::adapters::rapidjson_adapter;
 #endif
 
 #if defined(RPC_HPP_BENCH_RPCLIB)
