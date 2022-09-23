@@ -56,6 +56,120 @@ struct serial_traits<njson_adapter>
     using bytes_t = std::string;
 };
 
+class njson_serializer : public serializer<njson_serializer, false>
+{
+public:
+    const nlohmann::json& object() const& { return m_json; }
+    nlohmann::json&& object() && { return std::move(m_json); }
+
+    template<typename T>
+    void as_bool(std::string_view key, T& t)
+    {
+        m_json[key] = static_cast<bool>(t);
+    }
+
+    template<typename T>
+    void as_float(std::string_view key, T& t)
+    {
+        m_json[key] = t;
+    }
+
+    template<typename T>
+    void as_int(std::string_view key, T& t)
+    {
+        m_json[key] = t;
+    }
+
+    template<typename T>
+    void as_string(std::string_view key, T& t)
+    {
+        m_json[key] = t;
+    }
+
+    template<typename T>
+    void as_array(std::string_view key, T& t)
+    {
+        auto arr = nlohmann::json::array();
+
+        for (const auto& val : t)
+        {
+            arr.push_back(val);
+        }
+
+        m_json[key] = std::move(arr);
+    }
+
+    template<typename T, size_t N>
+    void as_array(std::string_view key, std::array<T, N>& t)
+    {
+        auto arr = nlohmann::json::array();
+
+        for (const auto& val : t)
+        {
+            arr.push_back(val);
+        }
+
+        m_json[key] = std::move(arr);
+    }
+
+private:
+    nlohmann::json m_json{};
+};
+
+class njson_deserializer : public serializer<njson_deserializer, true>
+{
+public:
+    explicit njson_deserializer(const nlohmann::json& obj) : m_json(obj) {}
+    explicit njson_deserializer(nlohmann::json&& obj) : m_json(std::move(obj)) {}
+
+    template<typename T>
+    void as_bool(std::string_view key, T& t)
+    {
+        t = m_json[key].get<bool>();
+    }
+
+    template<typename T>
+    void as_float(std::string_view key, T& t)
+    {
+        t = m_json[key].get<T>();
+    }
+
+    template<typename T>
+    void as_int(std::string_view key, T& t)
+    {
+        t = m_json[key].get<T>();
+    }
+
+    template<typename T>
+    void as_string(std::string_view key, T& t)
+    {
+        t = m_json[key].get<std::string>();
+    }
+
+    template<typename T>
+    void as_array(std::string_view key, T& t)
+    {
+        const auto& arr = m_json[key];
+        t = T{ cbegin(arr), cend(arr) };
+    }
+
+    template<typename T, size_t N>
+    void as_array(std::string_view key, std::array<T, N>& t)
+    {
+        const auto& arr = m_json[key];
+
+        if (arr.size() != N)
+        {
+            throw std::out_of_range("JSON array out of bounds");
+        }
+
+        std::copy(cbegin(arr), cend(arr), begin(t));
+    }
+
+private:
+    nlohmann::json m_json{};
+};
+
 class njson_adapter : public serial_adapter_base<njson_adapter>
 {
 public:
@@ -308,12 +422,6 @@ public:
         return serial_obj["bind_args"];
     }
 
-    template<typename T>
-    static nlohmann::json serialize(const T& val) = delete;
-
-    template<typename T>
-    static T deserialize(const nlohmann::json& serial_obj) = delete;
-
 private:
     template<typename T>
     RPC_HPP_NODISCARD("function is pointless without checking the bool")
@@ -371,13 +479,18 @@ private:
                 push_args(std::forward<decltype(val)>(val), obj);
             }
         }
-        else if constexpr (detail::is_serializable_v<njson_adapter, no_ref_t>)
-        {
-            obj = no_ref_t::template serialize<njson_adapter>(std::forward<T>(arg));
-        }
+        // TODO: Disable for now
+        // else if constexpr (detail::is_serializable_v<njson_adapter, no_ref_t>)
+        // {
+        //     obj = no_ref_t::template serialize<njson_adapter>(std::forward<T>(arg));
+        // }
         else
         {
-            obj = serialize<no_ref_t>(std::forward<T>(arg));
+            //obj = serialize<no_ref_t>(std::forward<T>(arg));
+            njson_serializer s;
+            auto cpy = arg;
+            serialize(s, cpy);
+            obj = std::move(s).object();
         }
     }
 
@@ -423,13 +536,19 @@ private:
 
             return container;
         }
-        else if constexpr (detail::is_serializable_v<njson_adapter, no_ref_t>)
-        {
-            return no_ref_t::template deserialize<njson_adapter>(arg);
-        }
+        // TODO: Removed for now
+        // else if constexpr (detail::is_serializable_v<njson_adapter, no_ref_t>)
+        // {
+        //     return no_ref_t::template deserialize<njson_adapter>(arg);
+        // }
         else
         {
-            return deserialize<no_ref_t>(arg);
+            //return deserialize<no_ref_t>(arg);
+            njson_deserializer s{ arg };
+            no_ref_t x;
+
+            deserialize(s, x);
+            return x;
         }
     }
 

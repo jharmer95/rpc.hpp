@@ -69,6 +69,7 @@ namespace rpc_hpp
 namespace adapters
 {
     class bitsery_adapter;
+    class bitsery_adapter2;
 
     template<>
     struct serial_traits<bitsery_adapter>

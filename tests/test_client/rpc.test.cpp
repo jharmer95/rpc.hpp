@@ -369,6 +369,7 @@ TEST_CASE_TEMPLATE("FunctionMismatch", TestType, RPC_TEST_TYPES)
     rpc_hpp::rpc_object<TestType> obj =
         client.call_func("SimpleSum", 2, std::string{ "Hello, world" });
 
+#if defined(RPC_HPP_USE_BITSERY)
     // TODO: Figure out why bitsery isn't reporting errors
     if constexpr (!std::is_same_v<TestType, rpc_hpp::adapters::bitsery_adapter>)
     {
@@ -390,6 +391,7 @@ TEST_CASE_TEMPLATE("FunctionMismatch", TestType, RPC_TEST_TYPES)
         REQUIRE(obj.is_error());
         REQUIRE(obj.get_error_type() == rpc_hpp::exception_type::signature_mismatch);
     }
+#endif
 
     obj = client.call_func("StdDev", -4, 125.325, 552.125, 55, 2599.6, 1245.125663, 9783.49, 125.12,
         553.3333333333, 2266.1);

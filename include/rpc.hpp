@@ -366,17 +366,17 @@ namespace detail
     inline constexpr bool is_container_v = is_container<C>::value;
 
     template<typename F, typename... Ts, size_t... Is>
-    constexpr void for_each_tuple(const std::tuple<Ts...>& tuple, const F& func,
-        RPC_HPP_UNUSED std::index_sequence<Is...> iseq)
+    constexpr void for_each_tuple(
+        const std::tuple<Ts...>& tuple, F&& func, RPC_HPP_UNUSED std::index_sequence<Is...> iseq)
     {
         using expander = int[];
-        std::ignore = expander{ 0, ((void)func(std::get<Is>(tuple)), 0)... };
+        std::ignore = expander{ 0, ((void)std::forward<F>(func)(std::get<Is>(tuple)), 0)... };
     }
 
     template<typename F, typename... Ts>
-    constexpr void for_each_tuple(const std::tuple<Ts...>& tuple, const F& func)
+    constexpr void for_each_tuple(const std::tuple<Ts...>& tuple, F&& func)
     {
-        for_each_tuple(tuple, func, std::make_index_sequence<sizeof...(Ts)>());
+        for_each_tuple(tuple, std::forward<F>(func), std::make_index_sequence<sizeof...(Ts)>());
     }
 
     template<typename T>
@@ -421,7 +421,7 @@ namespace detail
     constexpr bool is_ref_arg()
     {
         return std::is_reference_v<
-                   T> && !std::is_const_v<std::remove_reference_t<T>> && !std::is_pointer_v<std::remove_reference_t<T>>;
+                   T> && (!std::is_const_v<std::remove_reference_t<T>>)&&(!std::is_pointer_v<std::remove_reference_t<T>>);
     }
 
     template<typename... Args>
@@ -539,6 +539,7 @@ namespace detail
     template<bool IsCallback>
     struct rpc_error : rpc_base<IsCallback>
     {
+    public:
         rpc_error() = default;
         rpc_error(std::string t_func_name, const rpc_exception& except)
             : rpc_base<IsCallback>{ std::move(t_func_name) },
@@ -554,55 +555,56 @@ namespace detail
         {
         }
 
-        [[noreturn]] void rethrow() const noexcept(false)
-        {
-            switch (except_type)
-            {
-                case exception_type::func_not_found:
-                    throw function_not_found(err_mesg);
-
-                case exception_type::remote_exec:
-                    throw remote_exec_error(err_mesg);
-
-                case exception_type::serialization:
-                    throw serialization_error(err_mesg);
-
-                case exception_type::deserialization:
-                    throw deserialization_error(err_mesg);
-
-                case exception_type::signature_mismatch:
-                    throw function_mismatch(err_mesg);
-
-                case exception_type::client_send:
-                    throw client_send_error(err_mesg);
-
-                case exception_type::client_receive:
-                    throw client_receive_error(err_mesg);
-
-                case exception_type::server_send:
-                    throw server_send_error(err_mesg);
-
-                case exception_type::server_receive:
-                    throw server_receive_error(err_mesg);
-
-                case exception_type::rpc_object_mismatch:
-                    throw rpc_object_mismatch(err_mesg);
-
-                case exception_type::callback_install:
-                    throw callback_install_error(err_mesg);
-
-                case exception_type::callback_missing:
-                    throw callback_missing_error(err_mesg);
-
-                case exception_type::none:
-                default:
-                    throw rpc_exception(err_mesg, exception_type::none);
-            }
-        }
-
         exception_type except_type{ exception_type::none };
         std::string err_mesg{};
     };
+
+    template<bool IsCallback>
+    [[noreturn]] void rpc_throw(const rpc_error<IsCallback>& err) noexcept(false)
+    {
+        switch (err.except_type)
+        {
+            case exception_type::func_not_found:
+                throw function_not_found{ err.err_mesg };
+
+            case exception_type::remote_exec:
+                throw remote_exec_error{ err.err_mesg };
+
+            case exception_type::serialization:
+                throw serialization_error{ err.err_mesg };
+
+            case exception_type::deserialization:
+                throw deserialization_error{ err.err_mesg };
+
+            case exception_type::signature_mismatch:
+                throw function_mismatch{ err.err_mesg };
+
+            case exception_type::client_send:
+                throw client_send_error{ err.err_mesg };
+
+            case exception_type::client_receive:
+                throw client_receive_error{ err.err_mesg };
+
+            case exception_type::server_send:
+                throw server_send_error{ err.err_mesg };
+
+            case exception_type::server_receive:
+                throw server_receive_error{ err.err_mesg };
+
+            case exception_type::rpc_object_mismatch:
+                throw rpc_object_mismatch{ err.err_mesg };
+
+            case exception_type::callback_install:
+                throw callback_install_error{ err.err_mesg };
+
+            case exception_type::callback_missing:
+                throw callback_missing_error{ err.err_mesg };
+
+            case exception_type::none:
+            default:
+                throw rpc_exception{ err.err_mesg, exception_type::none };
+        }
+    }
 
     using func_error = rpc_error<false>;
     using callback_error = rpc_error<true>;
@@ -720,10 +722,10 @@ public:
                 }
 
             case rpc_type::func_error:
-                Serial::template get_error<false>(m_obj).rethrow();
+                detail::rpc_throw(Serial::template get_error<false>(m_obj));
 
             case rpc_type::callback_error:
-                Serial::template get_error<true>(m_obj).rethrow();
+                detail::rpc_throw(Serial::template get_error<true>(m_obj));
 
             case rpc_type::callback_install_request:
             case rpc_type::callback_request:
@@ -842,7 +844,7 @@ public:
     bool is_error() const
     {
         const auto rtype = type();
-        return rtype == rpc_type::func_error || rtype == rpc_type::callback_error;
+        return (rtype == rpc_type::func_error) || (rtype == rpc_type::callback_error);
     }
 
     RPC_HPP_NODISCARD("extracting data from serial object may be expensive")
@@ -857,8 +859,69 @@ private:
 
 namespace adapters
 {
-    template<typename T>
+    template<typename Adapter>
     struct serial_traits;
+
+    template<typename Adapter, bool Deserialize>
+    class serializer
+    {
+    public:
+        template<typename T>
+        void as_bool(std::string_view key, T& t)
+        {
+            static_assert(std::is_convertible_v<T, bool>, "T must be convertible to bool");
+
+            (static_cast<Adapter*>(this))->as_bool(key, t);
+        }
+
+        template<typename T>
+        void as_float(std::string_view key, T& t)
+        {
+            static_assert(std::is_floating_point_v<T>, "T must be a floating-point type");
+
+            (static_cast<Adapter*>(this))->as_float(key, t);
+        }
+
+        template<typename T>
+        void as_int(std::string_view key, T& t)
+        {
+            static_assert(std::is_integral_v<T>, "T must be an integral type");
+
+            (static_cast<Adapter*>(this))->as_int(key, t);
+        }
+
+        template<typename T>
+        void as_string(std::string_view key, T& t)
+        {
+            static_assert(
+                std::is_convertible_v<T, std::string>, "T must be convertible to std::string");
+
+            (static_cast<Adapter*>(this))->as_string(key, t);
+        }
+
+        template<typename T>
+        void as_array(std::string_view key, T& t)
+        {
+            static_assert(detail::is_container_v<T>, "T must have begin(), end(), and size()");
+
+            (static_cast<Adapter*>(this))->as_array(key, t);
+        }
+
+        template<typename T>
+        void as_map(std::string_view key, T& t)
+        {
+            // TODO: Have specific map checking behavior
+            static_assert(detail::is_container_v<T>, "T must have begin(), end(), and size()");
+
+            (static_cast<Adapter*>(this))->as_map(key, t);
+        }
+
+        // template<typename T>
+        // void as_object(std::string_view key, T& t)
+        // {
+        //     (static_cast<Adapter*>(this))->as_object(key, t);
+        // }
+    };
 
     template<typename Adapter>
     class serial_adapter_base
@@ -955,4 +1018,37 @@ namespace detail
     }
 } //namespace detail
 } //namespace rpc_hpp
+
+template<typename Adapter, bool Deserialize, typename T>
+void serialize(rpc_hpp::adapters::serializer<Adapter, Deserialize>& s, T& t) = delete;
+// {
+//     s.as_object(t);
+// }
+
+template<typename Adapter, typename T>
+void deserialize(rpc_hpp::adapters::serializer<Adapter, true>& s, T& t)
+{
+    serialize<Adapter, true>(s, t);
+}
+
+// Overloads for common types
+template<typename Adapter, bool Deserialize>
+void serialize(rpc_hpp::adapters::serializer<Adapter, Deserialize>& s, bool b)
+{
+    s.as_bool("", b);
+}
+
+template<typename Adapter, bool Deserialize, typename T,
+    std::enable_if_t<(std::is_integral_v<T> && (!std::is_same_v<T, bool>)), bool> = true>
+void serialize(rpc_hpp::adapters::serializer<Adapter, Deserialize>& s, T t)
+{
+    s.as_int("", t);
+}
+
+template<typename Adapter, bool Deserialize, typename T,
+    std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+void serialize(rpc_hpp::adapters::serializer<Adapter, Deserialize>& s, T t)
+{
+    s.as_float("", t);
+}
 #endif
