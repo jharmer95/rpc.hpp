@@ -492,7 +492,7 @@ private:
         {
             return arg.is_number_float();
         }
-        else if constexpr (std::is_same_v<T, std::string>)
+        else if constexpr (detail::is_stringlike_v<T>)
         {
             return arg.is_string();
         }
@@ -535,9 +535,9 @@ private:
 
     template<typename T>
     RPC_HPP_NODISCARD("parsing can be expensive and it makes no sense to not use the parsed result")
-    static detail::remove_cvref_t<T> parse_arg(const nlohmann::json& arg)
+    static detail::remove_cvref_t<detail::decay_str_t<T>> parse_arg(const nlohmann::json& arg)
     {
-        using no_ref_t = detail::remove_cvref_t<T>;
+        using no_ref_t = detail::remove_cvref_t<detail::decay_str_t<T>>;
 
         if (!validate_arg<T>(arg))
         {
@@ -557,7 +557,7 @@ private:
 
     template<typename T>
     RPC_HPP_NODISCARD("parsing can be expensive and it makes no sense to not use the parsed result")
-    static detail::remove_cvref_t<T> parse_args(const nlohmann::json& arg_arr, unsigned& index)
+    static detail::remove_cvref_t<detail::decay_str_t<T>> parse_args(const nlohmann::json& arg_arr, unsigned& index)
     {
         if (index >= arg_arr.size())
         {

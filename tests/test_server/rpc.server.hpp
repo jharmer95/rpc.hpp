@@ -68,7 +68,7 @@ constexpr int SimpleSum(const int n1, const int n2)
     return n1 + n2;
 }
 
-size_t StrLen(const std::string& str);
+size_t StrLen(std::string_view str);
 std::vector<int> AddOneToEach(std::vector<int> vec);
 void AddOneToEachRef(std::vector<int>& vec);
 
@@ -105,7 +105,7 @@ double AverageContainer(const std::vector<T>& vec)
 void SquareArray(std::array<int, 12>& arr);
 void RemoveFromList(
     std::forward_list<std::string>& list, const std::string& str, bool case_sensitive);
-std::map<char, unsigned> CharacterMap(const std::string& str);
+std::map<char, unsigned> CharacterMap(std::string_view str);
 size_t CountResidents(const std::multimap<int, std::string>& registry, int floor_num);
 std::unordered_set<std::string> GetUniqueNames(const std::vector<std::string>& names);
 std::vector<uint64_t> GenRandInts(uint64_t min, uint64_t max, size_t sz);

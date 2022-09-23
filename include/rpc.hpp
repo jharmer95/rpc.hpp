@@ -302,6 +302,12 @@ namespace detail
         using type = const std::string&;
     };
 
+    template<>
+    struct decay_str<std::string_view>
+    {
+        using type = const std::string&;
+    };
+
     template<typename T>
     using decay_str_t = typename decay_str<T>::type;
 
@@ -483,7 +489,7 @@ namespace detail
     template<bool IsCallback, typename... Args>
     struct rpc_request : rpc_base<IsCallback>
     {
-        using args_t = std::tuple<remove_cvref_t<Args>...>;
+        using args_t = std::tuple<remove_cvref_t<decay_str_t<Args>>...>;
 
         rpc_request() = default;
         rpc_request(std::string t_func_name, args_t t_args)
@@ -528,7 +534,7 @@ namespace detail
     template<bool IsCallback, typename R, typename... Args>
     struct rpc_result_w_bind : rpc_result<IsCallback, R>
     {
-        using args_t = std::tuple<remove_cvref_t<Args>...>;
+        using args_t = std::tuple<remove_cvref_t<decay_str_t<Args>>...>;
 
         rpc_result_w_bind(std::string t_func_name, R t_result, args_t t_args)
             : rpc_result<IsCallback, R>{ std::move(t_func_name), std::move(t_result) },
@@ -542,7 +548,7 @@ namespace detail
     template<bool IsCallback, typename... Args>
     struct rpc_result_w_bind<IsCallback, void, Args...> : rpc_request<IsCallback, Args...>
     {
-        using args_t = std::tuple<remove_cvref_t<Args>...>;
+        using args_t = std::tuple<remove_cvref_t<decay_str_t<Args>>...>;
         using rpc_request<IsCallback, Args...>::rpc_request;
     };
 

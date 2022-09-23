@@ -104,7 +104,7 @@ void KillServer() noexcept
 }
 
 // cached
-size_t StrLen(const std::string& str)
+size_t StrLen(std::string_view str)
 {
     return str.size();
 }
@@ -213,7 +213,7 @@ void RemoveFromList(
         });
 }
 
-std::map<char, unsigned> CharacterMap(const std::string& str)
+std::map<char, unsigned> CharacterMap(std::string_view str)
 {
     std::map<char, unsigned> ret_map;
 
