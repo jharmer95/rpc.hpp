@@ -17,7 +17,7 @@
 #    contributors may be used to endorse or promote products derived from
 #    this software without specific prior written permission.
 #
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS AS IS
 # AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 # IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
 # DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
@@ -53,31 +53,42 @@ if(NOT TARGET asio_lib)
   target_link_libraries(asio_lib INTERFACE asio asio::asio)
 endif()
 
-add_executable(rpc_test "test_client/rpc.test.cpp")
+add_executable(rpc_test)
 target_link_libraries(rpc_test PRIVATE rpc_hpp doctest_lib asio_lib)
+target_sources(rpc_test PRIVATE
+  test_client/rpc.test.cpp
+  test_client/rpc.client.hpp
+  static_funcs.hpp
+  test_structs.hpp
+  ../include/rpc.hpp
+  ../include/rpc_client.hpp)
 
 if(${USE_PCH})
-  target_precompile_headers(rpc_test PRIVATE "test_client/pch.hpp")
+  target_precompile_headers(rpc_test PRIVATE test_client/pch.hpp)
 endif()
 
 if(${BUILD_ADAPTER_BITSERY})
   target_link_libraries(rpc_test PRIVATE bitsery_adapter)
   target_compile_definitions(rpc_test PRIVATE RPC_HPP_BITSERY_EXACT_SZ)
+  target_sources(rpc_test PRIVATE ../include/rpc_adapters/rpc_bitsery.hpp)
 endif()
 
 if(${BUILD_ADAPTER_BOOST_JSON})
   target_link_libraries(rpc_test PRIVATE boost_json_adapter)
+  target_sources(rpc_test PRIVATE ../include/rpc_adapters/rpc_boost_json.hpp)
 endif()
 
 if(${BUILD_ADAPTER_NJSON})
   target_link_libraries(rpc_test PRIVATE njson_adapter)
+  target_sources(rpc_test PRIVATE ../include/rpc_adapters/rpc_njson.hpp)
 endif()
 
 if(${BUILD_ADAPTER_RAPIDJSON})
   target_link_libraries(rpc_test PRIVATE rpdjson_adapter)
+  target_sources(rpc_test PRIVATE ../include/rpc_adapters/rpc_rapidjson.hpp)
 endif()
 
-if(CODE_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+if(CODE_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES GNU|Clang)
   target_link_libraries(rpc_test PRIVATE coverage_config)
 endif()
 
@@ -86,28 +97,39 @@ doctest_discover_tests(rpc_test ADD_LABELS 0)
 
 find_package(Threads REQUIRED)
 
-add_executable(test_server "test_server/rpc.server.cpp")
+add_executable(test_server)
 target_link_libraries(test_server PRIVATE rpc_hpp asio_lib Threads::Threads)
+target_sources(test_server PRIVATE
+  test_server/rpc.server.cpp
+  test_server/rpc.server.hpp
+  static_funcs.hpp
+  test_structs.hpp
+  ../include/rpc.hpp
+  ../include/rpc_server.hpp)
 
 if(${USE_PCH})
-  target_precompile_headers(test_server PRIVATE "test_server/pch.hpp")
+  target_precompile_headers(test_server PRIVATE test_server/pch.hpp)
 endif()
 
 if(${BUILD_ADAPTER_BITSERY})
   target_link_libraries(test_server PRIVATE bitsery_adapter)
   target_compile_definitions(test_server PRIVATE RPC_HPP_BITSERY_EXACT_SZ)
+  target_sources(test_server PRIVATE ../include/rpc_adapters/rpc_bitsery.hpp)
 endif()
 
 if(${BUILD_ADAPTER_BOOST_JSON})
   target_link_libraries(test_server PRIVATE boost_json_adapter)
+  target_sources(test_server PRIVATE ../include/rpc_adapters/rpc_boost_json.hpp)
 endif()
 
 if(${BUILD_ADAPTER_NJSON})
   target_link_libraries(test_server PRIVATE njson_adapter)
+  target_sources(test_server PRIVATE ../include/rpc_adapters/rpc_njson.hpp)
 endif()
 
 if(${BUILD_ADAPTER_RAPIDJSON})
   target_link_libraries(test_server PRIVATE rpdjson_adapter)
+  target_sources(test_server PRIVATE ../include/rpc_adapters/rpc_rapidjson.hpp)
 endif()
 
 target_compile_options(test_server PRIVATE ${FULL_WARNING})

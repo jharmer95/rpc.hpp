@@ -67,29 +67,28 @@ public:
         asio::connect(m_socket, m_resolver.resolve(host, port));
     }
 
-    // nodiscard because string is being allocated for return
-    [[nodiscard]] std::string getIP() const
-    {
-        return m_socket.remote_endpoint().address().to_string();
-    }
+    RPC_HPP_NODISCARD("string is being allocated for return")
+    std::string getIP() const { return m_socket.remote_endpoint().address().to_string(); }
 
     void send(typename Serial::bytes_t&& mesg) override
     {
         asio::write(m_socket, asio::buffer(std::move(mesg), mesg.size()));
     }
 
-    // nodiscard because data is lost after receive
-    [[nodiscard]] typename Serial::bytes_t receive() override
+    RPC_HPP_NODISCARD("data is lost after receive")
+    typename Serial::bytes_t receive() override
     {
-        const auto sz = m_socket.read_some(asio::buffer(m_buffer, m_buffer.size()));
-        return typename Serial::bytes_t{ m_buffer.begin(), m_buffer.begin() + sz };
+        const auto bytes_received = m_socket.read_some(asio::buffer(m_buffer, m_buffer.size()));
+        return typename Serial::bytes_t{ m_buffer.begin(), m_buffer.begin() + bytes_received };
     }
 
 private:
+    static constexpr size_t buffer_sz{ 64UL * 1024UL };
+
     asio::io_context m_io{};
     asio::ip::tcp::socket m_socket;
     asio::ip::tcp::resolver m_resolver;
-    std::array<uint8_t, 64UL * 1024UL> m_buffer{};
+    std::array<uint8_t, buffer_sz> m_buffer{};
 };
 
 template<typename Serial>

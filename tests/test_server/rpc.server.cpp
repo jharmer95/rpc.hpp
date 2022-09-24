@@ -112,9 +112,9 @@ size_t StrLen(std::string_view str)
 // cached
 std::vector<int> AddOneToEach(std::vector<int> vec)
 {
-    for (auto& n : vec)
+    for (auto& num : vec)
     {
-        ++n;
+        ++num;
     }
 
     return vec;
@@ -122,16 +122,16 @@ std::vector<int> AddOneToEach(std::vector<int> vec)
 
 void AddOneToEachRef(std::vector<int>& vec)
 {
-    for (auto& n : vec)
+    for (auto& num : vec)
     {
-        ++n;
+        ++num;
     }
 }
 
-static int CountChars(const std::string& str, char c)
+static int CountChars(const std::string& str, char chr)
 {
     return static_cast<int>(
-        std::count_if(str.begin(), str.end(), [c](const char x) { return x == c; }));
+        std::count_if(str.begin(), str.end(), [chr](const char tmp_c) { return tmp_c == chr; }));
 }
 
 static void AddOne(size_t& n)
@@ -147,37 +147,38 @@ void FibonacciRef(uint64_t& number)
     }
     else
     {
-        uint64_t n1 = number - 1;
-        uint64_t n2 = number - 2;
-        FibonacciRef(n1);
-        FibonacciRef(n2);
-        number = n1 + n2;
+        uint64_t num1 = number - 1;
+        uint64_t num2 = number - 2;
+        FibonacciRef(num1);
+        FibonacciRef(num2);
+        number = num1 + num2;
     }
 }
 
 // cached
-double StdDev(const double n1, const double n2, const double n3, const double n4, const double n5,
-    const double n6, const double n7, const double n8, const double n9, const double n10)
+double StdDev(const double num1, const double num2, const double num3, const double num4,
+    const double num5, const double num6, const double num7, const double num8, const double num9,
+    const double num10)
 {
-    const auto avg = Average(
-        n1 * n1, n2 * n2, n3 * n3, n4 * n4, n5 * n5, n6 * n6, n7 * n7, n8 * n8, n9 * n9, n10 * n10);
+    const auto avg = Average(num1 * num1, num2 * num2, num3 * num3, num4 * num4, num5 * num5,
+        num6 * num6, num7 * num7, num8 * num8, num9 * num9, num10 * num10);
 
     return std::sqrt(avg);
 }
 
-void SquareRootRef(double& n1, double& n2, double& n3, double& n4, double& n5, double& n6,
-    double& n7, double& n8, double& n9, double& n10)
+void SquareRootRef(double& num1, double& num2, double& num3, double& num4, double& num5,
+    double& num6, double& num7, double& num8, double& num9, double& num10)
 {
-    n1 = std::sqrt(n1);
-    n2 = std::sqrt(n2);
-    n3 = std::sqrt(n3);
-    n4 = std::sqrt(n4);
-    n5 = std::sqrt(n5);
-    n6 = std::sqrt(n6);
-    n7 = std::sqrt(n7);
-    n8 = std::sqrt(n8);
-    n9 = std::sqrt(n9);
-    n10 = std::sqrt(n10);
+    num1 = std::sqrt(num1);
+    num2 = std::sqrt(num2);
+    num3 = std::sqrt(num3);
+    num4 = std::sqrt(num4);
+    num5 = std::sqrt(num5);
+    num6 = std::sqrt(num6);
+    num7 = std::sqrt(num7);
+    num8 = std::sqrt(num8);
+    num9 = std::sqrt(num9);
+    num10 = std::sqrt(num10);
 }
 
 void SquareArray(std::array<int, 12>& arr)
@@ -198,18 +199,16 @@ void RemoveFromList(
             {
                 return val == str;
             }
-            else
+
+            const auto str_tolower = [](std::string tmp_str)
             {
-                const auto str_tolower = [](std::string s)
-                {
-                    std::transform(s.begin(), s.end(), s.begin(),
-                        [](unsigned char c) { return std::tolower(c); });
+                std::transform(tmp_str.begin(), tmp_str.end(), tmp_str.begin(),
+                    [](unsigned char tmp_char) { return std::tolower(tmp_char); });
 
-                    return s;
-                };
+                return tmp_str;
+            };
 
-                return str_tolower(val) == str_tolower(str);
-            }
+            return str_tolower(val) == str_tolower(str);
         });
 }
 
@@ -217,15 +216,15 @@ std::map<char, unsigned> CharacterMap(std::string_view str)
 {
     std::map<char, unsigned> ret_map;
 
-    for (const auto c : str)
+    for (const auto chr : str)
     {
-        if (ret_map.find(c) != ret_map.end())
+        if (ret_map.find(chr) != ret_map.end())
         {
-            ret_map[c] += 1;
+            ret_map[chr] += 1;
         }
         else
         {
-            ret_map[c] = 1;
+            ret_map[chr] = 1;
         }
     }
 
@@ -249,12 +248,12 @@ std::unordered_set<std::string> GetUniqueNames(const std::vector<std::string>& n
     return result;
 }
 
-std::vector<uint64_t> GenRandInts(const uint64_t min, const uint64_t max, const size_t sz)
+std::vector<uint64_t> GenRandInts(const uint64_t min, const uint64_t max, const size_t num_ints)
 {
     std::vector<uint64_t> vec;
-    vec.reserve(sz);
+    vec.reserve(num_ints);
 
-    for (size_t i = 0; i < sz; ++i)
+    for (size_t i = 0; i < num_ints; ++i)
     {
         vec.push_back(static_cast<uint64_t>(std::rand()) % (((max - min) + 1) + min));
     }
@@ -263,42 +262,43 @@ std::vector<uint64_t> GenRandInts(const uint64_t min, const uint64_t max, const 
 }
 
 // cached
-std::string HashComplex(const ComplexObject& cx)
+std::string HashComplex(const ComplexObject& cx_obj)
 {
     std::stringstream hash;
-    auto values = cx.vals;
+    auto values = cx_obj.vals;
 
-    if (cx.flag1)
+    if (cx_obj.flag1)
     {
         std::reverse(values.begin(), values.end());
     }
 
-    const auto sz = cx.name.size();
+    const auto name_sz = cx_obj.name.size();
 
-    for (size_t i = 0; i < sz; ++i)
+    for (size_t i = 0; i < name_sz; ++i)
     {
-        const int acc = (cx.flag2) ? (cx.name[i] + values[i % 12]) : (cx.name[i] - values[i % 12]);
+        const int acc =
+            (cx_obj.flag2) ? (cx_obj.name[i] + values[i % 12]) : (cx_obj.name[i] - values[i % 12]);
         hash << std::hex << acc;
     }
 
     return hash.str();
 }
 
-void HashComplexRef(ComplexObject& cx, std::string& hashStr)
+void HashComplexRef(ComplexObject& cx_obj, std::string& hashStr)
 {
     std::stringstream hash;
 
-    if (cx.flag1)
+    if (cx_obj.flag1)
     {
-        std::reverse(cx.vals.begin(), cx.vals.end());
+        std::reverse(cx_obj.vals.begin(), cx_obj.vals.end());
     }
 
-    const auto sz = cx.name.size();
+    const auto name_sz = cx_obj.name.size();
 
-    for (size_t i = 0; i < sz; ++i)
+    for (size_t i = 0; i < name_sz; ++i)
     {
-        const int acc =
-            (cx.flag2) ? (cx.name[i] + cx.vals[i % 12]) : (cx.name[i] - cx.vals[i % 12]);
+        const int acc = (cx_obj.flag2) ? (cx_obj.name[i] + cx_obj.vals[i % 12])
+                                       : (cx_obj.name[i] - cx_obj.vals[i % 12]);
         hash << std::hex << acc;
     }
 
@@ -465,13 +465,13 @@ int main(const int argc, char* argv[])
 
     try
     {
-        asio::io_context io_context{};
+        asio::io_context io_ctx{};
         test_server::RUNNING = true;
 
         std::vector<std::thread> threads;
 
 #if defined(RPC_HPP_ENABLE_NJSON)
-        test_server::TestServer<njson_adapter> njson_server{ io_context, 5000U };
+        test_server::TestServer<njson_adapter> njson_server{ io_ctx, 5000U };
         test_server::BindFuncs(njson_server);
 
 #  if defined(RPC_HPP_ENABLE_SERVER_CACHE)
@@ -497,29 +497,29 @@ int main(const int argc, char* argv[])
 #endif
 
 #if defined(RPC_HPP_ENABLE_RAPIDJSON)
-        TestServer<rapidjson_adapter> rapidjson_server{ io_context, 5001U };
+        TestServer<rapidjson_adapter> rapidjson_server{ io_ctx, 5001U };
         BindFuncs(rapidjson_server);
         threads.emplace_back(&TestServer<rapidjson_adapter>::Run, &rapidjson_server);
         puts("Running rapidjson server on port 5001...");
 #endif
 
 #if defined(RPC_HPP_ENABLE_BOOST_JSON)
-        TestServer<boost_json_adapter> bjson_server{ io_context, 5002U };
+        TestServer<boost_json_adapter> bjson_server{ io_ctx, 5002U };
         BindFuncs(bjson_server);
         threads.emplace_back(&TestServer<boost_json_adapter>::Run, &bjson_server);
         puts("Running Boost.JSON server on port 5002...");
 #endif
 
 #if defined(RPC_HPP_ENABLE_BITSERY)
-        TestServer<bitsery_adapter> bitsery_server{ io_context, 5003U };
+        TestServer<bitsery_adapter> bitsery_server{ io_ctx, 5003U };
         BindFuncs(bitsery_server);
         threads.emplace_back(&TestServer<bitsery_adapter>::Run, &bitsery_server);
         puts("Running Bitsery server on port 5003...");
 #endif
 
-        for (auto& th : threads)
+        for (auto& thrd : threads)
         {
-            th.join();
+            thrd.join();
         }
 
 #if defined(RPC_HPP_ENABLE_NJSON) && defined(RPC_HPP_ENABLE_SERVER_CACHE)

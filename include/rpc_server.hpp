@@ -108,9 +108,10 @@ public:
     {
         const auto func_name = rpc_obj.get_func_name();
 
-        if (const auto it = m_dispatch_table.find(func_name); it != m_dispatch_table.cend())
+        if (const auto find_it = m_dispatch_table.find(func_name);
+            find_it != m_dispatch_table.cend())
         {
-            it->second(rpc_obj);
+            find_it->second(rpc_obj);
             return;
         }
 

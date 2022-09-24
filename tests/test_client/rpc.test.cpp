@@ -185,8 +185,8 @@ TEST_CASE("BITSERY")
 TEST_CASE_TEMPLATE("CountChars (static)", TestType, RPC_TEST_TYPES)
 {
     auto& client = GetClient<TestType>();
-    const std::string s = "peter piper picked a pack of pickled peppers";
-    const auto response = client.call_header_func(CountChars, s, 'p');
+    const std::string test_str = "peter piper picked a pack of pickled peppers";
+    const auto response = client.call_header_func(CountChars, test_str, 'p');
 
     REQUIRE(!response.is_error());
     REQUIRE(response.template get_result<int>() == 9);
@@ -196,15 +196,15 @@ TEST_CASE_TEMPLATE("AddOne (static)", TestType, RPC_TEST_TYPES)
 {
     auto& client = GetClient<TestType>();
 
-    size_t n = 2;
-    auto response = client.call_header_func(AddOne, n);
+    size_t test_num = 2;
+    auto response = client.call_header_func(AddOne, test_num);
 
     REQUIRE(!response.is_error());
 
-    response = client.call_header_func(AddOne, n);
+    response = client.call_header_func(AddOne, test_num);
 
     REQUIRE(!response.is_error());
-    REQUIRE(n == 4);
+    REQUIRE(test_num == 4);
 }
 
 TEST_CASE_TEMPLATE("StrLen", TestType, RPC_TEST_TYPES)
@@ -237,9 +237,9 @@ TEST_CASE_TEMPLATE("AddOneToEach", TestType, RPC_TEST_TYPES)
 
     REQUIRE(result.size() == vec.size());
 
-    const auto sz = result.size();
+    const auto result_sz = result.size();
 
-    for (size_t i = 0; i < sz; ++i)
+    for (size_t i = 0; i < result_sz; ++i)
     {
         REQUIRE(result[i] == vec[i] + 1);
     }
@@ -255,9 +255,9 @@ TEST_CASE_TEMPLATE("AddOneToEachRef", TestType, RPC_TEST_TYPES)
     REQUIRE(response.type() == rpc_hpp::rpc_type::func_result_w_bind);
     REQUIRE(vec2.size() == vec.size());
 
-    const auto sz = vec2.size();
+    const auto vec2_sz = vec2.size();
 
-    for (size_t i = 0; i < sz; ++i)
+    for (size_t i = 0; i < vec2_sz; ++i)
     {
         REQUIRE(vec2[i] == vec[i]);
     }
@@ -277,10 +277,11 @@ TEST_CASE_TEMPLATE("Fibonacci", TestType, RPC_TEST_TYPES)
 
 TEST_CASE_TEMPLATE("FibonacciRef", TestType, RPC_TEST_TYPES)
 {
-    static constexpr uint64_t expected = 10'946;
+    static constexpr uint64_t test_val = 20ULL;
+    static constexpr uint64_t expected = 10'946ULL;
     auto& client = GetClient<TestType>();
 
-    uint64_t test = 20;
+    uint64_t test = test_val;
     const auto response = client.call_func_w_bind("FibonacciRef", test);
 
     REQUIRE(response.type() == rpc_hpp::rpc_type::func_result_w_bind);
@@ -304,23 +305,23 @@ TEST_CASE_TEMPLATE("SquareRootRef", TestType, RPC_TEST_TYPES)
     static constexpr double expected = 313.2216436152;
     auto& client = GetClient<TestType>();
 
-    double n1 = 55.65;
-    double n2 = 125.325;
-    double n3 = 552.125;
-    double n4 = 12.767;
-    double n5 = 2599.6;
-    double n6 = 1245.125663;
-    double n7 = 9783.49;
-    double n8 = 125.12;
-    double n9 = 553.3333333333;
-    double n10 = 2266.1;
+    double num1 = 55.65;
+    double num2 = 125.325;
+    double num3 = 552.125;
+    double num4 = 12.767;
+    double num5 = 2599.6;
+    double num6 = 1245.125663;
+    double num7 = 9783.49;
+    double num8 = 125.12;
+    double num9 = 553.3333333333;
+    double num10 = 2266.1;
 
-    const auto response =
-        client.call_func_w_bind("SquareRootRef", n1, n2, n3, n4, n5, n6, n7, n8, n9, n10);
+    const auto response = client.call_func_w_bind(
+        "SquareRootRef", num1, num2, num3, num4, num5, num6, num7, num8, num9, num10);
 
     REQUIRE(response.type() == rpc_hpp::rpc_type::func_result_w_bind);
 
-    const auto test = n1 + n2 + n3 + n4 + n5 + n6 + n7 + n8 + n9 + n10;
+    const auto test = num1 + num2 + num3 + num4 + num5 + num6 + num7 + num8 + num9 + num10;
     REQUIRE(test == doctest::Approx(expected).epsilon(0.001));
 }
 
@@ -423,10 +424,10 @@ TEST_CASE_TEMPLATE("HashComplex", TestType, RPC_TEST_TYPES)
     const std::string expected = "467365747274747d315a473a527073796c7e707b85";
     auto& client = GetClient<TestType>();
 
-    const ComplexObject cx{ 24, "Franklin D. Roosevelt", false, true,
+    const ComplexObject test_obj{ 24, "Franklin D. Roosevelt", false, true,
         { 0, 1, 4, 6, 7, 8, 11, 15, 17, 22, 25, 26 } };
 
-    const auto response = client.call_func("HashComplex", cx);
+    const auto response = client.call_func("HashComplex", test_obj);
 
     REQUIRE(response.type() == rpc_hpp::rpc_type::func_result);
     REQUIRE(response.template get_result<std::string>() == expected);
@@ -437,14 +438,14 @@ TEST_CASE_TEMPLATE("HashComplexRef", TestType, RPC_TEST_TYPES)
     const std::string expected = "467365747274747d315a473a527073796c7e707b85";
     auto& client = GetClient<TestType>();
 
-    ComplexObject cx{ 24, "Franklin D. Roosevelt", false, true,
+    ComplexObject test_obj{ 24, "Franklin D. Roosevelt", false, true,
         { 0, 1, 4, 6, 7, 8, 11, 15, 17, 22, 25, 26 } };
 
     // initialize empty string to pass
     std::string test{};
 
     // re-assign string to arg<1>
-    const auto response = client.call_func_w_bind("HashComplexRef", cx, test);
+    const auto response = client.call_func_w_bind("HashComplexRef", test_obj, test);
 
     REQUIRE(response.type() == rpc_hpp::rpc_type::func_result_w_bind);
     REQUIRE(expected == test);

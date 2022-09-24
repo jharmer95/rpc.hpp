@@ -63,9 +63,9 @@ inline std::atomic<bool> RUNNING{ false };
 void KillServer() noexcept;
 
 // cached
-constexpr int SimpleSum(const int n1, const int n2)
+constexpr int SimpleSum(const int num1, const int num2)
 {
-    return n1 + n2;
+    return num1 + num2;
 }
 
 size_t StrLen(std::string_view str);
@@ -81,18 +81,18 @@ constexpr uint64_t Fibonacci(const uint64_t number)
 void FibonacciRef(uint64_t& number);
 
 // cached
-constexpr double Average(const double n1, const double n2, const double n3, const double n4,
-    const double n5, const double n6, const double n7, const double n8, const double n9,
-    const double n10)
+constexpr double Average(const double num1, const double num2, const double num3, const double num4,
+    const double num5, const double num6, const double num7, const double num8, const double num9,
+    const double num10)
 {
-    return (n1 + n2 + n3 + n4 + n5 + n6 + n7 + n8 + n9 + n10) / 10.00;
+    return (num1 + num2 + num3 + num4 + num5 + num6 + num7 + num8 + num9 + num10) / 10.00;
 }
 
-double StdDev(double n1, double n2, double n3, double n4, double n5, double n6, double n7,
-    double n8, double n9, double n10);
+double StdDev(double num1, double num2, double num3, double num4, double num5, double num6,
+    double num7, double num8, double num9, double num10);
 
-void SquareRootRef(double& n1, double& n2, double& n3, double& n4, double& n5, double& n6,
-    double& n7, double& n8, double& n9, double& n10);
+void SquareRootRef(double& num1, double& num2, double& num3, double& num4, double& num5,
+    double& num6, double& num7, double& num8, double& num9, double& num10);
 
 // cached
 template<typename T>
@@ -108,9 +108,9 @@ void RemoveFromList(
 std::map<char, unsigned> CharacterMap(std::string_view str);
 size_t CountResidents(const std::multimap<int, std::string>& registry, int floor_num);
 std::unordered_set<std::string> GetUniqueNames(const std::vector<std::string>& names);
-std::vector<uint64_t> GenRandInts(uint64_t min, uint64_t max, size_t sz);
-std::string HashComplex(const ComplexObject& cx);
-void HashComplexRef(ComplexObject& cx, std::string& hashStr);
+std::vector<uint64_t> GenRandInts(uint64_t min, uint64_t max, size_t num_ints);
+std::string HashComplex(const ComplexObject& cx_obj);
+void HashComplexRef(ComplexObject& cx_obj, std::string& hashStr);
 
 template<typename Serial>
 class TestServer final : public rpc_hpp::server_interface<Serial>
@@ -118,8 +118,8 @@ class TestServer final : public rpc_hpp::server_interface<Serial>
 public:
     using bytes_t = typename rpc_hpp::server_interface<Serial>::bytes_t;
 
-    TestServer(asio::io_context& io, const uint16_t port)
-        : m_accept(io, asio::ip::tcp::endpoint(asio::ip::tcp::v4(), port))
+    TestServer(asio::io_context& io_ctx, const uint16_t port)
+        : m_accept(io_ctx, asio::ip::tcp::endpoint(asio::ip::tcp::v4(), port))
     {
     }
 

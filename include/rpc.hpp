@@ -456,10 +456,11 @@ namespace detail
         using expander = int[];
         std::ignore = expander{ 0,
             (
-                (void)[](auto&& x, auto&& y) {
-                    if constexpr (is_ref_arg<decltype(x)>())
+                (void)[](auto&& bound_arg, auto&& ref_arg) {
+                    if constexpr (is_ref_arg<decltype(bound_arg)>())
                     {
-                        std::forward<decltype(x)>(x) = std::forward<decltype(y)>(y);
+                        std::forward<decltype(bound_arg)>(bound_arg) =
+                            std::forward<decltype(ref_arg)>(ref_arg);
                     }
                 }(dest, std::get<Is>(src)),
                 0)... };
@@ -894,74 +895,74 @@ namespace adapters
         static constexpr bool is_deserializer = Deserialize;
 
         template<typename T>
-        void serialize_object(const T& t)
+        void serialize_object(const T& val)
         {
             static_assert(!is_deserializer, "Cannot call serialize_object() on a deserializer");
 
             // Necessary for bi-directional serialization, the const qualifier in this function still provides correctness
-            serialize(*this, const_cast<T&>(t));
+            serialize(*this, const_cast<T&>(val)); // NOLINT(cppcoreguidelines-pro-type-const-cast)
         }
 
         template<typename T>
-        void deserialize_object(T&& t)
+        void deserialize_object(T&& val)
         {
             static_assert(is_deserializer, "Cannot call deserialize_object() on a serializer");
-            serialize(*this, std::forward<T>(t));
+            serialize(*this, std::forward<T>(val));
         }
 
         template<typename T>
-        void as_bool(std::string_view key, T& t)
+        void as_bool(std::string_view key, T& val)
         {
             static_assert(std::is_convertible_v<T, bool>, "T must be convertible to bool");
 
-            (static_cast<Adapter*>(this))->as_bool(key, t);
+            (static_cast<Adapter*>(this))->as_bool(key, val);
         }
 
         template<typename T>
-        void as_float(std::string_view key, T& t)
+        void as_float(std::string_view key, T& val)
         {
             static_assert(std::is_floating_point_v<T>, "T must be a floating-point type");
 
-            (static_cast<Adapter*>(this))->as_float(key, t);
+            (static_cast<Adapter*>(this))->as_float(key, val);
         }
 
         template<typename T>
-        void as_int(std::string_view key, T& t)
+        void as_int(std::string_view key, T& val)
         {
             static_assert(std::is_integral_v<T>, "T must be an integral type");
 
-            (static_cast<Adapter*>(this))->as_int(key, t);
+            (static_cast<Adapter*>(this))->as_int(key, val);
         }
 
         template<typename T>
-        void as_string(std::string_view key, T& t)
+        void as_string(std::string_view key, T& val)
         {
             static_assert(std::is_convertible_v<T, std::string_view>,
                 "T must be convertible to std::string_view");
 
-            (static_cast<Adapter*>(this))->as_string(key, t);
+            (static_cast<Adapter*>(this))->as_string(key, val);
         }
 
         template<typename T>
-        void as_array(std::string_view key, T& t)
+        void as_array(std::string_view key, T& val)
         {
             static_assert(detail::is_container_v<T>, "T must have begin() and end()");
 
-            (static_cast<Adapter*>(this))->as_array(key, t);
+            (static_cast<Adapter*>(this))->as_array(key, val);
         }
 
         template<typename T>
-        void as_map(std::string_view key, T& t)
+        void as_map(std::string_view key, T& val)
         {
             static_assert(detail::is_map_v<T>, "T must be a map type");
 
             if constexpr (detail::is_multimap_v<T>)
             {
-                (static_cast<Adapter*>(this))->as_multimap(key, t);
+                (static_cast<Adapter*>(this))->as_multimap(key, val);
             }
             else
             {
-                (static_cast<Adapter*>(this))->as_map(key, t);
+                (static_cast<Adapter*>(this))->as_map(key, val);
             }
         }
     };
@@ -1012,86 +1013,86 @@ namespace adapters
 
     // Overloads for common types
     template<typename Adapter>
-    void serialize(serializer<Adapter, false>& s, bool b)
+    void serialize(serializer<Adapter, false>& ser, bool val)
     {
-        s.as_bool("", b);
+        ser.as_bool("", val);
     }
 
     template<typename Adapter>
-    void serialize(serializer<Adapter, true>& s, bool& b)
+    void serialize(serializer<Adapter, true>& ser, bool& val)
     {
-        s.as_bool("", b);
+        ser.as_bool("", val);
     }
 
     template<typename Adapter, typename T,
         std::enable_if_t<(std::is_integral_v<T> && (!std::is_same_v<T, bool>)), bool> = true>
-    void serialize(serializer<Adapter, false>& s, T t)
+    void serialize(serializer<Adapter, false>& ser, T val)
     {
-        s.as_int("", t);
+        ser.as_int("", val);
     }
 
     template<typename Adapter, typename T,
         std::enable_if_t<(std::is_integral_v<T> && (!std::is_same_v<T, bool>)), bool> = true>
-    void serialize(serializer<Adapter, true>& s, T& t)
+    void serialize(serializer<Adapter, true>& ser, T& val)
     {
-        s.as_int("", t);
+        ser.as_int("", val);
     }
 
     template<typename Adapter, typename T,
         std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
-    void serialize(serializer<Adapter, false>& s, T t)
+    void serialize(serializer<Adapter, false>& ser, T val)
     {
-        s.as_float("", t);
+        ser.as_float("", val);
     }
 
     template<typename Adapter, typename T,
         std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
-    void serialize(serializer<Adapter, true>& s, T& t)
+    void serialize(serializer<Adapter, true>& ser, T& val)
     {
-        s.as_float("", t);
+        ser.as_float("", val);
     }
 
     template<typename Adapter>
-    void serialize(serializer<Adapter, false>& s, std::string_view t)
+    void serialize(serializer<Adapter, false>& ser, std::string_view val)
     {
-        s.as_string("", t);
+        ser.as_string("", val);
     }
 
     template<typename Adapter, typename T,
         std::enable_if_t<detail::is_stringlike_v<T>, bool> = true>
-    void serialize(serializer<Adapter, true>& s, T& t)
+    void serialize(serializer<Adapter, true>& ser, T& val)
     {
-        s.as_string("", t);
+        ser.as_string("", val);
     }
 
     template<typename Adapter, typename T,
         std::enable_if_t<
             (detail::is_container_v<T> && (!detail::is_stringlike_v<T>)&&(!detail::is_map_v<T>)),
             bool> = true>
-    void serialize(serializer<Adapter, false>& s, const T& t)
+    void serialize(serializer<Adapter, false>& ser, const T& val)
     {
-        s.as_array("", t);
+        ser.as_array("", val);
     }
 
     template<typename Adapter, typename T,
         std::enable_if_t<
             (detail::is_container_v<T> && (!detail::is_stringlike_v<T>)&&(!detail::is_map_v<T>)),
             bool> = true>
-    void serialize(serializer<Adapter, true>& s, T& t)
+    void serialize(serializer<Adapter, true>& ser, T& val)
     {
-        s.as_array("", t);
+        ser.as_array("", val);
     }
 
     template<typename Adapter, typename T, std::enable_if_t<detail::is_map_v<T>, bool> = true>
-    void serialize(serializer<Adapter, false>& s, const T& t)
+    void serialize(serializer<Adapter, false>& ser, const T& val)
     {
-        s.as_map("", t);
+        ser.as_map("", val);
     }
 
     template<typename Adapter, typename T, std::enable_if_t<detail::is_map_v<T>, bool> = true>
-    void serialize(serializer<Adapter, true>& s, T& t)
+    void serialize(serializer<Adapter, true>& ser, T& val)
     {
-        s.as_map("", t);
+        ser.as_map("", val);
     }
 } //namespace adapters
 

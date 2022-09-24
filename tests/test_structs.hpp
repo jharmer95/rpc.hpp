@@ -74,12 +74,12 @@ struct ComplexObject
 #endif
 };
 
-template<typename S, bool Deserialize>
-void serialize(rpc_hpp::adapters::serializer<S, Deserialize>& s, ComplexObject& obj)
+template<typename Adapter, bool Deserialize>
+void serialize(rpc_hpp::adapters::serializer<Adapter, Deserialize>& ser, ComplexObject& cx_obj)
 {
-    s.as_int("id", obj.id);
-    s.as_string("name", obj.name);
-    s.as_bool("flag1", obj.flag1);
-    s.as_bool("flag2", obj.flag2);
-    s.as_array("val", obj.vals);
+    ser.as_int("id", cx_obj.id);
+    ser.as_string("name", cx_obj.name);
+    ser.as_bool("flag1", cx_obj.flag1);
+    ser.as_bool("flag2", cx_obj.flag2);
+    ser.as_array("val", cx_obj.vals);
 }

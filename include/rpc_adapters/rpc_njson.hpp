@@ -59,52 +59,53 @@ struct serial_traits<njson_adapter>
 class njson_serializer : public serializer<njson_serializer, false>
 {
 public:
-    const nlohmann::json& object() const& { return m_json; }
-    nlohmann::json&& object() && { return std::move(m_json); }
+    njson_serializer() = default;
+    [[nodiscard]] const nlohmann::json& object() const& { return m_json; }
+    [[nodiscard]] nlohmann::json&& object() && { return std::move(m_json); }
 
     template<typename T>
-    void as_bool(std::string_view key, T& t)
+    void as_bool(std::string_view key, T& val)
     {
-        subobject(key) = static_cast<bool>(t);
+        subobject(key) = static_cast<bool>(val);
     }
 
     template<typename T>
-    void as_float(std::string_view key, T& t)
+    void as_float(std::string_view key, T& val)
     {
-        subobject(key) = t;
+        subobject(key) = val;
     }
 
     template<typename T>
-    void as_int(std::string_view key, T& t)
+    void as_int(std::string_view key, T& val)
     {
-        subobject(key) = t;
+        subobject(key) = val;
     }
 
     template<typename T>
-    void as_string(std::string_view key, T& t)
+    void as_string(std::string_view key, T& val)
     {
-        subobject(key) = t;
+        subobject(key) = val;
     }
 
     template<typename T>
-    void as_array(std::string_view key, T& t)
+    void as_array(std::string_view key, T& val)
     {
         auto arr = nlohmann::json::array();
 
-        for (const auto& val : t)
+        for (const auto& subval : val)
         {
-            arr.push_back(val);
+            arr.push_back(subval);
         }
 
         subobject(key) = std::move(arr);
     }
 
     template<typename T>
-    void as_map(std::string_view key, T& t)
+    void as_map(std::string_view key, T& val)
     {
         auto obj = nlohmann::json::object();
 
-        for (const auto& [k, v] : t)
+        for (const auto& [k, v] : val)
         {
             obj[nlohmann::json{ k }.dump()] = v;
         }
@@ -113,11 +114,11 @@ public:
     }
 
     template<typename T>
-    void as_multimap(std::string_view key, T& t)
+    void as_multimap(std::string_view key, T& val)
     {
         auto obj = nlohmann::json::object();
 
-        for (const auto& [k, v] : t)
+        for (const auto& [k, v] : val)
         {
             const auto key_str = nlohmann::json{ k }.dump();
 
@@ -133,7 +134,10 @@ public:
     }
 
 private:
-    nlohmann::json& subobject(std::string_view key) { return key.empty() ? m_json : m_json[key]; }
+    [[nodiscard]] nlohmann::json& subobject(std::string_view key)
+    {
+        return key.empty() ? m_json : m_json[key];
+    }
 
     nlohmann::json m_json{};
 };
@@ -145,38 +149,38 @@ public:
     explicit njson_deserializer(nlohmann::json&& obj) : m_json(std::move(obj)) {}
 
     template<typename T>
-    void as_bool(std::string_view key, T& t) const
+    void as_bool(std::string_view key, T& val) const
     {
-        t = subobject(key).get<bool>();
+        val = subobject(key).get<bool>();
     }
 
     template<typename T>
-    void as_float(std::string_view key, T& t) const
+    void as_float(std::string_view key, T& val) const
     {
-        t = subobject(key).get<T>();
+        val = subobject(key).get<T>();
     }
 
     template<typename T>
-    void as_int(std::string_view key, T& t) const
+    void as_int(std::string_view key, T& val) const
     {
-        t = subobject(key).get<T>();
+        val = subobject(key).get<T>();
     }
 
     template<typename T>
-    void as_string(std::string_view key, T& t) const
+    void as_string(std::string_view key, T& val) const
     {
-        t = subobject(key).get<std::string>();
+        val = subobject(key).get<std::string>();
     }
 
     template<typename T>
-    void as_array(std::string_view key, T& t) const
+    void as_array(std::string_view key, T& val) const
     {
         const auto& arr = subobject(key);
-        t = T{ cbegin(arr), cend(arr) };
+        val = T{ cbegin(arr), cend(arr) };
     }
 
     template<typename T, size_t N>
-    void as_array(std::string_view key, std::array<T, N>& t) const
+    void as_array(std::string_view key, std::array<T, N>& val) const
     {
         const auto& arr = subobject(key);
 
@@ -185,22 +189,23 @@ public:
             throw std::out_of_range("JSON array out of bounds");
         }
 
-        std::copy(cbegin(arr), cend(arr), begin(t));
+        std::copy(cbegin(arr), cend(arr), begin(val));
     }
 
     template<typename T>
-    void as_map(std::string_view key, T& t) const
+    void as_map(std::string_view key, T& val) const
     {
         const auto& obj = subobject(key);
 
         for (const auto& [k, v] : obj.items())
         {
-            t.insert({ nlohmann::json::parse(k).front().template get<typename T::key_type>(), v });
+            val.insert(
+                { nlohmann::json::parse(k).front().template get<typename T::key_type>(), v });
         }
     }
 
     template<typename T>
-    void as_multimap(std::string_view key, T& t) const
+    void as_multimap(std::string_view key, T& val) const
     {
         const auto& obj = subobject(key);
 
@@ -208,14 +213,14 @@ public:
         {
             for (const auto& subval : v)
             {
-                t.insert({ nlohmann::json::parse(k).front().template get<typename T::key_type>(),
+                val.insert({ nlohmann::json::parse(k).front().template get<typename T::key_type>(),
                     subval });
             }
         }
     }
 
 private:
-    const nlohmann::json& subobject(std::string_view key) const
+    [[nodiscard]] const nlohmann::json& subobject(std::string_view key) const
     {
         return key.empty() ? m_json : m_json[key];
     }
@@ -548,16 +553,17 @@ private:
 #endif
         }
 
-        njson_deserializer s{ arg };
-        no_ref_t x;
-        s.deserialize_object(x);
+        njson_deserializer ser{ arg };
+        no_ref_t out_val;
+        ser.deserialize_object(out_val);
 
-        return x;
+        return out_val;
     }
 
     template<typename T>
     RPC_HPP_NODISCARD("parsing can be expensive and it makes no sense to not use the parsed result")
-    static detail::remove_cvref_t<detail::decay_str_t<T>> parse_args(const nlohmann::json& arg_arr, unsigned& index)
+    static detail::remove_cvref_t<detail::decay_str_t<T>> parse_args(
+        const nlohmann::json& arg_arr, unsigned& index)
     {
         if (index >= arg_arr.size())
         {
@@ -570,10 +576,8 @@ private:
             ++index;
             return parse_arg<T>(arg_arr[old_idx]);
         }
-        else
-        {
-            return parse_arg<T>(arg_arr);
-        }
+
+        return parse_arg<T>(arg_arr);
     }
 };
 } //namespace rpc_hpp::adapters
