@@ -35,14 +35,17 @@
 ///
 
 //#define RPC_HPP_ENABLE_SERVER_CACHE
+#include <cstdint>
 #define RPC_HPP_ENABLE_CALLBACKS
 
 #include "rpc.server.hpp"
 #include "../static_funcs.hpp"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <map>
+#include <random>
 #include <sstream>
 #include <thread>
 
@@ -141,18 +144,22 @@ static void AddOne(size_t& n)
 
 void FibonacciRef(uint64_t& number)
 {
-    if (number < 2)
+    uint64_t num1{ 0 };
+    uint64_t num2{ 1 };
+
+    if (number == 0)
     {
-        number = 1;
+        return;
     }
-    else
+
+    for (uint64_t i = 2; i <= number; ++i)
     {
-        uint64_t num1 = number - 1;
-        uint64_t num2 = number - 2;
-        FibonacciRef(num1);
-        FibonacciRef(num2);
-        number = num1 + num2;
+        const uint64_t next{ num1 + num2 };
+        num1 = num2;
+        num2 = next;
     }
+
+    number = num2;
 }
 
 // cached
@@ -248,16 +255,14 @@ std::unordered_set<std::string> GetUniqueNames(const std::vector<std::string>& n
     return result;
 }
 
-std::vector<uint64_t> GenRandInts(const uint64_t min, const uint64_t max, const size_t num_ints)
+std::vector<uint64_t> GenRandInts(const ValueRange<uint64_t> num_range, const size_t num_ints)
 {
-    std::vector<uint64_t> vec;
-    vec.reserve(num_ints);
+    static std::mt19937_64 mt_gen{ static_cast<uint_fast64_t>(
+        std::chrono::steady_clock::now().time_since_epoch().count()) };
 
-    for (size_t i = 0; i < num_ints; ++i)
-    {
-        vec.push_back(static_cast<uint64_t>(std::rand()) % (((max - min) + 1) + min));
-    }
-
+    std::uniform_int_distribution<uint64_t> distribution{ num_range.min, num_range.max };
+    std::vector<uint64_t> vec(num_ints);
+    std::generate(begin(vec), end(vec), [&distribution] { return distribution(mt_gen); });
     return vec;
 }
 
@@ -265,19 +270,20 @@ std::vector<uint64_t> GenRandInts(const uint64_t min, const uint64_t max, const 
 std::string HashComplex(const ComplexObject& cx_obj)
 {
     std::stringstream hash;
-    auto values = cx_obj.vals;
+    auto rev_vals = cx_obj.vals;
 
     if (cx_obj.flag1)
     {
-        std::reverse(values.begin(), values.end());
+        std::reverse(rev_vals.begin(), rev_vals.end());
     }
 
     const auto name_sz = cx_obj.name.size();
 
     for (size_t i = 0; i < name_sz; ++i)
     {
-        const int acc =
-            (cx_obj.flag2) ? (cx_obj.name[i] + values[i % 12]) : (cx_obj.name[i] - values[i % 12]);
+        const size_t wrap_idx = i % rev_vals.size();
+        const int acc = (cx_obj.flag2) ? (cx_obj.name[i] + rev_vals[wrap_idx])
+                                       : (cx_obj.name[i] - rev_vals[wrap_idx]);
 
         hash << std::hex << acc;
     }
@@ -298,8 +304,9 @@ void HashComplexRef(ComplexObject& cx_obj, std::string& hashStr)
 
     for (size_t i = 0; i < name_sz; ++i)
     {
-        const int acc = (cx_obj.flag2) ? (cx_obj.name[i] + cx_obj.vals[i % 12])
-                                       : (cx_obj.name[i] - cx_obj.vals[i % 12]);
+        const size_t wrap_idx = i % cx_obj.vals.size();
+        const int acc = (cx_obj.flag2) ? (cx_obj.name[i] + cx_obj.vals[wrap_idx])
+                                       : (cx_obj.name[i] - cx_obj.vals[wrap_idx]);
         hash << std::hex << acc;
     }
 
@@ -340,121 +347,6 @@ static void BindFuncs(TestServer<Serial>& server)
     server.bind("CountResidents", &CountResidents);
     server.bind("GetUniqueNames", &GetUniqueNames);
 }
-
-#if defined(RPC_HPP_ENABLE_SERVER_CACHE)
-template<typename Serial, typename R, typename... Args>
-void dump_cache(TestServer<Serial>& server, RPC_HPP_UNUSED R (*func)(Args...),
-    const std::string& func_name, const std::string& dump_dir)
-{
-    auto& cache = server.template get_func_cache<R>(func_name);
-    std::string file_name = func_name;
-
-    std::replace(file_name.begin(), file_name.end(), '<', '(');
-    std::replace(file_name.begin(), file_name.end(), '>', ')');
-
-    std::ofstream ofile(dump_dir + "/" + std::move(file_name) + ".dump");
-
-    if constexpr (std::is_arithmetic_v<R> || std::is_same_v<R, std::string>)
-    {
-        for (const auto& [key, value] : cache)
-        {
-            ofile << key << '\034' << value << '\n';
-        }
-    }
-    else if constexpr (std::is_same_v<R, std::vector<int>>)
-    {
-        std::stringstream ss;
-
-        for (const auto& [key, value] : cache)
-        {
-            if (value.empty())
-            {
-                continue;
-            }
-
-            ss << '[';
-            auto it = value.begin();
-
-            for (; it != value.end() - 1; ++it)
-            {
-                ss << *it << ',';
-            }
-
-            ss << *it << ']';
-            ofile << key << '\034' << ss.str() << '\n';
-        }
-    }
-}
-
-template<typename Serial, typename R, typename... Args>
-void load_cache(TestServer<Serial>& server, RPC_HPP_UNUSED R (*func)(Args...),
-    const std::string& func_name, const std::string& dump_dir)
-{
-    auto& cache = server.template get_func_cache<R>(func_name);
-    std::string file_name = func_name;
-
-    std::replace(file_name.begin(), file_name.end(), '<', '(');
-    std::replace(file_name.begin(), file_name.end(), '>', ')');
-
-    std::ifstream ifile(dump_dir + "/" + std::move(file_name) + ".dump");
-
-    if (!ifile.is_open())
-    {
-        printf("Could not load cache for function: %s\n", func_name.c_str());
-        return;
-    }
-
-    std::stringstream ss;
-    std::string val_str;
-
-    while (ifile.get(*ss.rdbuf(), '\034'))
-    {
-        // Toss out separator
-        std::ignore = ifile.get();
-
-        std::getline(ifile, val_str);
-
-        if constexpr (std::is_arithmetic_v<R>)
-        {
-            R value;
-            std::stringstream ss2(val_str);
-
-            ss2 >> value;
-            cache.emplace(ss.str(), value);
-        }
-        else if constexpr (std::is_same_v<R, std::string>)
-        {
-            cache.emplace(ss.str(), std::move(val_str));
-        }
-        else if constexpr (std::is_same_v<R, std::vector<int>>)
-        {
-            std::vector<int> value;
-            std::stringstream ss2(val_str);
-
-            // ignore first '['
-            ss2.ignore();
-
-            for (int i; ss2 >> i;)
-            {
-                value.push_back(i);
-
-                if (ss2.peek() == ',' || ss2.peek() == ']')
-                {
-                    ss2.ignore();
-                }
-            }
-
-            cache.emplace(ss.str(), std::move(value));
-        }
-
-        // clear stream and its buffer
-        std::stringstream{}.swap(ss);
-    }
-}
-
-#  define DUMP_CACHE(SERVER, FUNCNAME, DIR) dump_cache(SERVER, FUNCNAME, #  FUNCNAME, DIR)
-#  define LOAD_CACHE(SERVER, FUNCNAME, DIR) load_cache(SERVER, FUNCNAME, #  FUNCNAME, DIR)
-#endif
 } //namespace test_server
 
 int main(const int argc, char* argv[])
@@ -474,67 +366,35 @@ int main(const int argc, char* argv[])
 #if defined(RPC_HPP_ENABLE_NJSON)
         test_server::TestServer<njson_adapter> njson_server{ io_ctx, 5000U };
         test_server::BindFuncs(njson_server);
-
-#  if defined(RPC_HPP_ENABLE_SERVER_CACHE)
-        const std::string njson_dump_path("dump_cache");
-
-        if (filesystem::exists(njson_dump_path) && filesystem::is_directory(njson_dump_path))
-        {
-            LOAD_CACHE(njson_server, SimpleSum, njson_dump_path);
-            LOAD_CACHE(njson_server, StrLen, njson_dump_path);
-            LOAD_CACHE(njson_server, AddOneToEach, njson_dump_path);
-            LOAD_CACHE(njson_server, Fibonacci, njson_dump_path);
-            LOAD_CACHE(njson_server, Average, njson_dump_path);
-            LOAD_CACHE(njson_server, StdDev, njson_dump_path);
-            LOAD_CACHE(njson_server, AverageContainer<uint64_t>, njson_dump_path);
-            LOAD_CACHE(njson_server, AverageContainer<double>, njson_dump_path);
-            LOAD_CACHE(njson_server, HashComplex, njson_dump_path);
-            LOAD_CACHE(njson_server, CountChars, njson_dump_path);
-        }
-#  endif
-
         threads.emplace_back(&test_server::TestServer<njson_adapter>::Run, &njson_server);
         std::puts("Running njson server on port 5000...");
 #endif
 
 #if defined(RPC_HPP_ENABLE_RAPIDJSON)
-        TestServer<rapidjson_adapter> rapidjson_server{ io_ctx, 5001U };
-        BindFuncs(rapidjson_server);
-        threads.emplace_back(&TestServer<rapidjson_adapter>::Run, &rapidjson_server);
-        puts("Running rapidjson server on port 5001...");
+        test_server::TestServer<rapidjson_adapter> rapidjson_server{ io_ctx, 5001U };
+        test_server::BindFuncs(rapidjson_server);
+        threads.emplace_back(&test_server::TestServer<rapidjson_adapter>::Run, &rapidjson_server);
+        std::puts("Running rapidjson server on port 5001...");
 #endif
 
 #if defined(RPC_HPP_ENABLE_BOOST_JSON)
-        TestServer<boost_json_adapter> bjson_server{ io_ctx, 5002U };
-        BindFuncs(bjson_server);
-        threads.emplace_back(&TestServer<boost_json_adapter>::Run, &bjson_server);
-        puts("Running Boost.JSON server on port 5002...");
+        test_server::TestServer<boost_json_adapter> bjson_server{ io_ctx, 5002U };
+        test_server::BindFuncs(bjson_server);
+        threads.emplace_back(&test_server::TestServer<boost_json_adapter>::Run, &bjson_server);
+        std::puts("Running Boost.JSON server on port 5002...");
 #endif
 
 #if defined(RPC_HPP_ENABLE_BITSERY)
-        TestServer<bitsery_adapter> bitsery_server{ io_ctx, 5003U };
-        BindFuncs(bitsery_server);
-        threads.emplace_back(&TestServer<bitsery_adapter>::Run, &bitsery_server);
-        puts("Running Bitsery server on port 5003...");
+        test_server::TestServer<bitsery_adapter> bitsery_server{ io_ctx, 5003U };
+        test_server::BindFuncs(bitsery_server);
+        threads.emplace_back(&test_server::TestServer<bitsery_adapter>::Run, &bitsery_server);
+        std::puts("Running Bitsery server on port 5003...");
 #endif
 
         for (auto& thrd : threads)
         {
             thrd.join();
         }
-
-#if defined(RPC_HPP_ENABLE_NJSON) && defined(RPC_HPP_ENABLE_SERVER_CACHE)
-        DUMP_CACHE(njson_server, SimpleSum, njson_dump_path);
-        DUMP_CACHE(njson_server, StrLen, njson_dump_path);
-        DUMP_CACHE(njson_server, AddOneToEach, njson_dump_path);
-        DUMP_CACHE(njson_server, Fibonacci, njson_dump_path);
-        DUMP_CACHE(njson_server, Average, njson_dump_path);
-        DUMP_CACHE(njson_server, StdDev, njson_dump_path);
-        DUMP_CACHE(njson_server, AverageContainer<uint64_t>, njson_dump_path);
-        DUMP_CACHE(njson_server, AverageContainer<double>, njson_dump_path);
-        DUMP_CACHE(njson_server, HashComplex, njson_dump_path);
-        DUMP_CACHE(njson_server, CountChars, njson_dump_path);
-#endif
 
         std::puts("Exited normally");
         return 0;

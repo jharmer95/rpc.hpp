@@ -36,10 +36,12 @@
 
 #pragma once
 
+#include "rpc.hpp"
 #include <algorithm>
 #include <array>
 #include <cstdint>
 #include <string>
+#include <type_traits>
 
 #if defined(RPC_HPP_ENABLE_BITSERY)
 #  include <rpc_adapters/rpc_bitsery.hpp>
@@ -82,4 +84,44 @@ void serialize(rpc_hpp::adapters::serializer<Adapter, Deserialize>& ser, Complex
     ser.as_bool("flag1", cx_obj.flag1);
     ser.as_bool("flag2", cx_obj.flag2);
     ser.as_array("val", cx_obj.vals);
+}
+
+template<typename T>
+struct ValueRange
+{
+    static_assert(std::is_arithmetic_v<T>, "T must be arithmetic type");
+
+    // TODO: Allow using serialize as a member function
+    // template<typename Adapter, bool Deserialize>
+    // void serialize(rpc_hpp::adapters::serializer<Adapter, Deserialize>& ser)
+    // {
+    //     if constexpr (std::is_floating_point_v<T>)
+    //     {
+    //         ser.as_float("min", min);
+    //         ser.as_float("max", max);
+    //     }
+    //     else
+    //     {
+    //         ser.as_int("min", min);
+    //         ser.as_int("max", max);
+    //     }
+    // }
+
+    T min;
+    T max;
+};
+
+template<typename Adapter, bool Deserialize, typename T>
+void serialize(rpc_hpp::adapters::serializer<Adapter, Deserialize>& ser, ValueRange<T>& range)
+{
+    if constexpr (std::is_floating_point_v<T>)
+    {
+        ser.as_float("min", range.min);
+        ser.as_float("max", range.max);
+    }
+    else
+    {
+        ser.as_int("min", range.min);
+        ser.as_int("max", range.max);
+    }
 }

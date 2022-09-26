@@ -107,7 +107,8 @@ public:
 
         for (const auto& [k, v] : val)
         {
-            obj[nlohmann::json{ k }.dump()] = v;
+            const auto key_str = nlohmann::json{ k }.dump();
+            obj[key_str] = v;
         }
 
         subobject(key) = std::move(obj);
@@ -557,7 +558,6 @@ private:
         njson_deserializer ser{ arg };
         no_ref_t out_val;
         ser.deserialize_object(out_val);
-
         return out_val;
     }
 

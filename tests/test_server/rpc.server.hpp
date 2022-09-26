@@ -75,7 +75,22 @@ void AddOneToEachRef(std::vector<int>& vec);
 // cached
 constexpr uint64_t Fibonacci(const uint64_t number)
 {
-    return (number < 2) ? 1 : (Fibonacci(number - 1) + Fibonacci(number - 2));
+    uint64_t num1{ 0 };
+    uint64_t num2{ 1 };
+
+    if (number == 0)
+    {
+        return 0;
+    }
+
+    for (uint64_t i = 2; i <= number; ++i)
+    {
+        const uint64_t next{ num1 + num2 };
+        num1 = num2;
+        num2 = next;
+    }
+
+    return num2;
 }
 
 void FibonacciRef(uint64_t& number);
@@ -108,7 +123,7 @@ void RemoveFromList(
 std::map<char, unsigned> CharacterMap(std::string_view str);
 size_t CountResidents(const std::multimap<int, std::string>& registry, int floor_num);
 std::unordered_set<std::string> GetUniqueNames(const std::vector<std::string>& names);
-std::vector<uint64_t> GenRandInts(uint64_t min, uint64_t max, size_t num_ints);
+std::vector<uint64_t> GenRandInts(ValueRange<uint64_t> num_range, size_t num_ints);
 std::string HashComplex(const ComplexObject& cx_obj);
 void HashComplexRef(ComplexObject& cx_obj, std::string& hashStr);
 
