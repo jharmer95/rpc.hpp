@@ -1,21 +1,20 @@
 # BSD 3-Clause License
 #
-# Copyright (c) 2020-2022, Jackson Harmer
-# All rights reserved.
+# Copyright (c) 2020-2022, Jackson Harmer All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
 #
 # 1. Redistributions of source code must retain the above copyright notice, this
-#    list of conditions and the following disclaimer.
+#   list of conditions and the following disclaimer.
 #
-# 2. Redistributions in binary form must reproduce the above copyright notice,
-#    this list of conditions and the following disclaimer in the documentation
-#    and/or other materials provided with the distribution.
+# 1. Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
 #
-# 3. Neither the name of the copyright holder nor the names of its
-#    contributors may be used to endorse or promote products derived from
-#    this software without specific prior written permission.
+# 1. Neither the name of the copyright holder nor the names of its contributors
+#   may be used to endorse or promote products derived from this software
+#   without specific prior written permission.
 #
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 # AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -31,15 +30,18 @@
 cmake_minimum_required(VERSION 3.12)
 
 if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
-  set(CMAKE_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/scripts/buildsystems/vcpkg.cmake"
+  set(CMAKE_TOOLCHAIN_FILE
+      "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/scripts/buildsystems/vcpkg.cmake"
       CACHE STRING "")
 endif()
 
 # ==== Build Options ====
 
 option(USE_PCH "Utilize precompiled headers" ON)
-if(${CMAKE_VERSION} VERSION_LESS "3.16.0") 
-  message("Please consider to switch to CMake 3.16 to take advantage of Precompiled Headers")
+if(${CMAKE_VERSION} VERSION_LESS "3.16.0")
+  message(
+    "Please consider to switch to CMake 3.16 to take advantage of Precompiled Headers"
+  )
   set(USE_PCH OFF)
 endif()
 
@@ -96,11 +98,13 @@ project(
   "rpc.hpp"
   VERSION 0.8.1
   DESCRIPTION "Simple RPC Header-Only Library"
-  LANGUAGES CXX
-)
+  LANGUAGES CXX)
 
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 # ==== Machine/Compiler Configs ====
 
@@ -241,11 +245,12 @@ if(${GENERATE_DOXYGEN})
     set(DOXYGEN_GENERATE_HTML YES)
     set(DOXYGEN_GENERATE_LATEX NO)
     set(DOXYGEN_HTML_OUTPUT "docs")
-    set(DOXYGEN_EXCLUDE_PATTERNS */tests/* */examples/* */benchmarks/* */vcpkg/* */build/* *.py)
+    set(DOXYGEN_EXCLUDE_PATTERNS */tests/* */examples/* */benchmarks/*
+                                 */vcpkg/* */build/* *.py)
     set(DOXYGEN_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}")
     set(DOXYGEN_USE_MDFILE_AS_MAINPAGE "README.md")
     doxygen_add_docs(docs ${PROJECT_SOURCE_DIR}
-      COMMENT "Generate doxygen docs for rpc.hpp")
+                     COMMENT "Generate doxygen docs for rpc.hpp")
   endif()
 endif()
 
@@ -266,27 +271,29 @@ add_library(rpc_hpp INTERFACE)
 add_library(RpcHpp::rpc_hpp ALIAS rpc_hpp)
 
 include(GNUInstallDirs)
-target_include_directories(rpc_hpp
-  INTERFACE
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
-)
+target_include_directories(
+  rpc_hpp INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+                    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 target_compile_features(rpc_hpp INTERFACE cxx_std_17)
 
 # ==== Target Installation ====
 
 include(CMakePackageConfigHelpers)
 
-write_basic_package_version_file(${CMAKE_CURRENT_BINARY_DIR}/RpcHppConfigVersion.cmake
+write_basic_package_version_file(
+  ${CMAKE_CURRENT_BINARY_DIR}/RpcHppConfigVersion.cmake
   COMPATIBILITY SameMajorVersion)
 
-install(TARGETS rpc_hpp
-        EXPORT rpc_hpp-targets
-        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-install(EXPORT rpc_hpp-targets
-        FILE "RpcHppConfig.cmake"
-        NAMESPACE RpcHpp::
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/rpc_hpp)
+install(
+  TARGETS rpc_hpp
+  EXPORT rpc_hpp-targets
+  INCLUDES
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install(
+  EXPORT rpc_hpp-targets
+  FILE "RpcHppConfig.cmake"
+  NAMESPACE RpcHpp::
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/rpc_hpp)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/RpcHppConfigVersion.cmake
         DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/rpc_hpp)
 install(FILES include/rpc.hpp include/rpc_dispatch_helper.hpp
@@ -294,7 +301,10 @@ install(FILES include/rpc.hpp include/rpc_dispatch_helper.hpp
 
 # ==== Sub-Projects ====
 
-if(BUILD_ADAPTER_BITSERY OR BUILD_ADAPTER_BOOST_JSON OR BUILD_ADAPTER_NJSON OR BUILD_ADAPTER_RAPIDJSON)
+if(BUILD_ADAPTER_BITSERY
+   OR BUILD_ADAPTER_BOOST_JSON
+   OR BUILD_ADAPTER_NJSON
+   OR BUILD_ADAPTER_RAPIDJSON)
   message("Building rpc_adapters...")
   add_subdirectory(include/rpc_adapters)
 else()

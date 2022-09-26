@@ -1,21 +1,20 @@
 # BSD 3-Clause License
 #
-# Copyright (c) 2020-2022, Jackson Harmer
-# All rights reserved.
+# Copyright (c) 2020-2022, Jackson Harmer All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
 #
 # 1. Redistributions of source code must retain the above copyright notice, this
-#    list of conditions and the following disclaimer.
+#   list of conditions and the following disclaimer.
 #
-# 2. Redistributions in binary form must reproduce the above copyright notice,
-#    this list of conditions and the following disclaimer in the documentation
-#    and/or other materials provided with the distribution.
+# 1. Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
 #
-# 3. Neither the name of the copyright holder nor the names of its
-#    contributors may be used to endorse or promote products derived from
-#    this software without specific prior written permission.
+# 1. Neither the name of the copyright holder nor the names of its contributors
+#   may be used to endorse or promote products derived from this software
+#   without specific prior written permission.
 #
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 # AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -30,13 +29,13 @@
 
 cmake_minimum_required(VERSION 3.16)
 
-project(
-  "rpc.hpp benchmarks"
-  LANGUAGES CXX
-)
+project("rpc.hpp benchmarks" LANGUAGES CXX)
 
 if(NOT TARGET RpcHpp::rpc_hpp)
-  message(FATAL_ERROR "RpcHpp::rpc_hpp alias not set. Please generate CMake from the root directory")
+  message(
+    FATAL_ERROR
+      "RpcHpp::rpc_hpp alias not set. Please generate CMake from the root directory"
+  )
 endif()
 
 if(NOT TARGET asio_lib)
@@ -64,7 +63,8 @@ if(${BENCH_GRPC})
   if(NOT TARGET grpc_lib)
     add_library(grpc_lib INTERFACE)
     find_package(gRPC CONFIG REQUIRED)
-    target_link_libraries(grpc_lib INTERFACE gRPC::gpr gRPC::grpc gRPC::grpc++ gRPC::grpc++_alts)
+    target_link_libraries(grpc_lib INTERFACE gRPC::gpr gRPC::grpc gRPC::grpc++
+                                             gRPC::grpc++_alts)
     target_link_libraries(grpc_lib INTERFACE re2::re2 c-ares::cares)
   endif()
 endif()
@@ -72,16 +72,18 @@ endif()
 if(${BENCH_RPCLIB})
   if(NOT TARGET rpclib_lib)
     add_library(rpclib_lib INTERFACE)
-      find_package(rpclib CONFIG REQUIRED)
-      target_link_libraries(rpclib_lib INTERFACE rpclib::rpc)
+    find_package(rpclib CONFIG REQUIRED)
+    target_link_libraries(rpclib_lib INTERFACE rpclib::rpc)
   endif()
 endif()
 
 if(${BENCH_GRPC})
-  add_executable(grpc_server grpc/benchmark.pb.cc grpc/benchmark.grpc.pb.cc grpc/server.cpp)
+  add_executable(grpc_server grpc/benchmark.pb.cc grpc/benchmark.grpc.pb.cc
+                             grpc/server.cpp)
   target_link_libraries(grpc_server PRIVATE grpc_lib)
 
-  add_library(grpc_client_obj OBJECT grpc/benchmark.pb.cc grpc/benchmark.grpc.pb.cc grpc/client.cpp)
+  add_library(grpc_client_obj OBJECT grpc/benchmark.pb.cc
+                                     grpc/benchmark.grpc.pb.cc grpc/client.cpp)
   target_link_libraries(grpc_client_obj PUBLIC grpc_lib)
 endif()
 
@@ -93,7 +95,8 @@ endif()
 add_executable(rpc_benchmark benchmark.cpp)
 target_compile_options(rpc_benchmark PRIVATE ${FULL_WARNING})
 target_include_directories(rpc_benchmark PRIVATE ../tests)
-target_link_libraries(rpc_benchmark PRIVATE rpc_hpp asio_lib doctest_lib nanobench_lib)
+target_link_libraries(rpc_benchmark PRIVATE rpc_hpp asio_lib doctest_lib
+                                            nanobench_lib)
 
 if(${USE_PCH})
   target_precompile_headers(rpc_benchmark PRIVATE pch.hpp)

@@ -228,6 +228,7 @@ private:
     nlohmann::json m_json{};
 };
 
+// TODO: Start dismantling this class and moving behavior into serializer/deserializer
 class njson_adapter : public serial_adapter_base<njson_adapter>
 {
 public:
@@ -525,9 +526,9 @@ private:
     template<typename T>
     static void push_arg(T&& arg, nlohmann::json& obj)
     {
-        njson_serializer s;
-        s.serialize_object(std::forward<T>(arg));
-        obj = std::move(s).object();
+        njson_serializer ser;
+        ser.serialize_object(std::forward<T>(arg));
+        obj = std::move(ser).object();
     }
 
     template<typename T>

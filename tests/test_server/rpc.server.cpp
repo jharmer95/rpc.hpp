@@ -278,6 +278,7 @@ std::string HashComplex(const ComplexObject& cx_obj)
     {
         const int acc =
             (cx_obj.flag2) ? (cx_obj.name[i] + values[i % 12]) : (cx_obj.name[i] - values[i % 12]);
+
         hash << std::hex << acc;
     }
 

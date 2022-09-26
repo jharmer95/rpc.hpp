@@ -90,7 +90,4 @@ private:
     asio::ip::tcp::resolver m_resolver;
     std::array<uint8_t, buffer_sz> m_buffer{};
 };
-
-template<typename Serial>
-TestClient<Serial>& GetClient();
 } //namespace rpc_hpp::tests

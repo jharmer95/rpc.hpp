@@ -98,18 +98,27 @@ constexpr size_t bitsery_adapter::config::max_container_size = 1'000;
 #  define TEST_RAPIDJSON_T
 #endif
 
+#if !defined(TEST_USE_COMMA)
+#  error At least one adapter must be enabled for testing
+#endif
+
 #define RPC_TEST_TYPES TEST_BITSERY_T TEST_BOOST_JSON_T TEST_NJSON_T TEST_RAPIDJSON_T
 
 namespace rpc_hpp::tests
 {
+template<typename Serial>
+static TestClient<Serial>& GetClient();
+
+#if defined(RPC_HPP_ENABLE_NJSON)
 using adapters::njson_adapter;
 
 template<>
-[[nodiscard]] TestClient<njson_adapter>& GetClient()
+[[nodiscard]] inline TestClient<njson_adapter>& GetClient()
 {
     static TestClient<njson_adapter> njson_client{ "127.0.0.1", "5000" };
     return njson_client;
 }
+#endif
 
 #if defined(RPC_HPP_ENABLE_RAPIDJSON)
 using adapters::rapidjson_adapter;
@@ -506,6 +515,8 @@ TEST_CASE_TEMPLATE("FunctionMismatch", TestType, RPC_TEST_TYPES)
     // TODO: Figure out why bitsery isn't reporting errors
     if constexpr (!std::is_same_v<TestType, rpc_hpp::adapters::bitsery_adapter>)
     {
+#endif
+
         REQUIRE(obj.is_error());
         REQUIRE(obj.get_error_type() == rpc_hpp::exception_type::signature_mismatch);
 
@@ -523,6 +534,8 @@ TEST_CASE_TEMPLATE("FunctionMismatch", TestType, RPC_TEST_TYPES)
 
         REQUIRE(obj.is_error());
         REQUIRE(obj.get_error_type() == rpc_hpp::exception_type::signature_mismatch);
+
+#if defined(RPC_HPP_USE_BITSERY)
     }
 #endif
 

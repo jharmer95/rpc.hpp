@@ -967,6 +967,7 @@ namespace adapters
         }
     };
 
+    // TODO: Start dismantling this class and moving behavior into serializer/deserializer
     template<typename Adapter>
     class serial_adapter_base
     {
