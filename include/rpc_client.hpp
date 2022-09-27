@@ -2,6 +2,7 @@
 #define RPC_CLIENT_HPP
 
 #include "rpc.hpp"
+#include <type_traits>
 
 #define RPC_HEADER_FUNC(RETURN, FUNCNAME, ...) inline RETURN (*FUNCNAME)(__VA_ARGS__) = nullptr
 #define call_header_func(FUNCNAME, ...) call_header_func_impl(FUNCNAME, #FUNCNAME, __VA_ARGS__)
@@ -57,7 +58,7 @@ public:
             throw client_send_error(ex.what());
         }
 
-        response = recv_loop();
+        recv_loop(response);
         return response;
     }
 
@@ -77,7 +78,7 @@ public:
             throw client_send_error(ex.what());
         }
 
-        response = recv_loop();
+        recv_loop(response);
         detail::tuple_bind(response.template get_args<detail::decay_str_t<Args>...>(),
             std::forward<Args>(args)...);
 
@@ -100,7 +101,7 @@ public:
             throw client_send_error(ex.what());
         }
 
-        response = recv_loop();
+        recv_loop(response);
         detail::tuple_bind(response.template get_args<detail::decay_str_t<Args>...>(),
             std::forward<Args>(args)...);
 
@@ -253,7 +254,7 @@ private:
     }
 #endif
 
-    object_t recv_loop()
+    void recv_loop(object_t& response)
     {
         bytes_t bytes;
 
@@ -266,14 +267,14 @@ private:
             throw client_receive_error(ex.what());
         }
 
-        if (auto o_response = object_t::parse_bytes(std::move(bytes)); o_response.has_value())
+        if (auto response_opt = object_t::parse_bytes(std::move(bytes)); response_opt.has_value())
         {
-            switch (auto& response = o_response.value(); response.type())
+            switch (response = std::move(response_opt).value(); response.type())
             {
                 case rpc_type::func_result:
                 case rpc_type::func_result_w_bind:
                 case rpc_type::func_error:
-                    return response;
+                    return;
 
                 case rpc_type::callback_request:
                 case rpc_type::func_request:
@@ -290,7 +291,7 @@ private:
                         throw client_send_error(ex.what());
                     }
 
-                    return recv_loop();
+                    return recv_loop(response);
                 }
 #else
                     [[fallthrough]];

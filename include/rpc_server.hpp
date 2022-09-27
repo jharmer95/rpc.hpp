@@ -53,8 +53,7 @@ public:
         bind<R, Args...>(std::move(func_name), std::function<R(Args...)>{ std::forward<F>(func) });
     }
 
-    RPC_HPP_NODISCARD("the bytes are consumed by this function")
-    object_t handle_bytes(bytes_t&& bytes)
+    void handle_bytes(bytes_t& bytes)
     {
         if (auto rpc_opt = object_t::parse_bytes(std::move(bytes)); rpc_opt.has_value())
         {
@@ -65,14 +64,16 @@ public:
             {
                 case rpc_type::func_request:
                     dispatch(rpc_obj);
-                    return rpc_obj;
+                    bytes = rpc_obj.to_bytes();
+                    return;
 
                 case rpc_type::callback_install_request:
 #if defined(RPC_HPP_ENABLE_CALLBACKS)
                     rpc_obj.is_callback_uninstall() ? uninstall_callback(rpc_obj)
                                                     : install_callback(rpc_obj);
 
-                    return rpc_obj;
+                    bytes = rpc_obj.to_bytes();
+                    return;
 
 #else
                     [[fallthrough]];
@@ -84,10 +85,13 @@ public:
 #if defined(RPC_HPP_ENABLE_CALLBACKS)
                     [[fallthrough]];
 #else
-                    return object_t{ detail::func_error{ "",
-                        rpc_object_mismatch(
-                            "Invalid rpc_object type detected (NOTE: callbacks are not "
-                            "enabled on this server)") } };
+                    bytes = object_t{
+                        detail::func_error{ "",
+                            rpc_object_mismatch(
+                                "Invalid rpc_object type detected (NOTE: callbacks are not "
+                                "enabled on this server)") }
+                    }.to_bytes();
+                    return;
 #endif
 
                 case rpc_type::callback_request:
@@ -95,28 +99,17 @@ public:
                 case rpc_type::func_result:
                 case rpc_type::func_result_w_bind:
                 default:
-                    return object_t{ detail::func_error{
-                        func_name, rpc_object_mismatch("Invalid rpc_object type detected") } };
+                    bytes = object_t{
+                        detail::func_error{
+                            func_name, rpc_object_mismatch("Invalid rpc_object type detected") }
+                    }.to_bytes();
+                    return;
             }
         }
 
-        return object_t{ detail::func_error{
-            "", server_receive_error("Invalid RPC object received") } };
-    }
-
-    void dispatch(object_t& rpc_obj) const
-    {
-        const auto func_name = rpc_obj.get_func_name();
-
-        if (const auto find_it = m_dispatch_table.find(func_name);
-            find_it != m_dispatch_table.cend())
-        {
-            find_it->second(rpc_obj);
-            return;
-        }
-
-        rpc_obj = object_t{ detail::func_error{ func_name,
-            function_not_found("RPC error: Called function: \"" + func_name + "\" not found") } };
+        bytes = object_t{
+            detail::func_error{ "", server_receive_error("Invalid RPC object received") }
+        }.to_bytes();
     }
 
 protected:
@@ -157,6 +150,21 @@ private:
                     rpc_obj = object_t{ detail::func_error{ rpc_obj.get_func_name(), ex } };
                 }
             });
+    }
+
+    void dispatch(object_t& rpc_obj) const
+    {
+        const auto func_name = rpc_obj.get_func_name();
+
+        if (const auto find_it = m_dispatch_table.find(func_name);
+            find_it != m_dispatch_table.cend())
+        {
+            find_it->second(rpc_obj);
+            return;
+        }
+
+        rpc_obj = object_t{ detail::func_error{ func_name,
+            function_not_found("RPC error: Called function: \"" + func_name + "\" not found") } };
     }
 
 #if defined(RPC_HPP_ENABLE_CALLBACKS)
@@ -210,7 +218,7 @@ private:
             case rpc_type::callback_result:
             case rpc_type::callback_result_w_bind:
             case rpc_type::callback_error:
-                return response;
+                return std::move(response);
 
             case rpc_type::callback_install_request:
             case rpc_type::callback_request:

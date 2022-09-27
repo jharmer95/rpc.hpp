@@ -92,6 +92,11 @@ public:
     void as_array(std::string_view key, T& val)
     {
         auto arr = boost::json::array{};
+        
+        if constexpr (detail::has_size<T>::value)
+        {
+            arr.reserve(val.size());
+        }
 
         for (const auto& subval : val)
         {
@@ -282,7 +287,7 @@ private:
         }
     }
 
-    boost::json::value m_json{};
+    boost::json::value m_json;
 };
 
 class boost_json_adapter : public serial_adapter_base<boost_json_adapter>
@@ -308,7 +313,7 @@ public:
         if (const auto fname_it = obj.find("func_name");
             (fname_it == obj.end()) || (!fname_it->value().is_string()))
         {
-            throw deserialization_error("Boost::JSON: filed \"func_name\" not found or empty");
+            throw deserialization_error("Boost::JSON: field \"func_name\" not found");
         }
 
         return obj;
@@ -499,7 +504,6 @@ public:
             obj["type"] = static_cast<int64_t>(rpc_type::func_request);
         }
 
-        const auto dbg_str = boost::json::serialize(obj);
         return obj;
     }
 

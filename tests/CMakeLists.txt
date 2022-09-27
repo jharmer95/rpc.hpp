@@ -52,7 +52,12 @@ if(NOT TARGET asio_lib)
   add_library(asio_lib INTERFACE)
   target_compile_definitions(asio_lib INTERFACE ASIO_STANDALONE)
   find_package(asio CONFIG REQUIRED)
-  target_link_libraries_system(asio_lib INTERFACE asio asio::asio Threads::Threads)
+
+  # Workaround for GCC 12 detecting null errors
+  target_compile_options(asio_lib INTERFACE -Wno-error=null-dereference)
+
+  target_link_libraries_system(asio_lib INTERFACE asio asio::asio
+                               Threads::Threads)
 endif()
 
 add_executable(rpc_test)

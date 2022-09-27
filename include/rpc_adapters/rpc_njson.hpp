@@ -226,7 +226,7 @@ private:
         return key.empty() ? m_json : m_json[key];
     }
 
-    nlohmann::json m_json{};
+    nlohmann::json m_json;
 };
 
 // TODO: Start dismantling this class and moving behavior into serializer/deserializer

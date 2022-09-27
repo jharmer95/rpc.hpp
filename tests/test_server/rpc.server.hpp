@@ -132,6 +132,8 @@ class TestServer final : public rpc_hpp::server_interface<Serial>
 {
 public:
     using bytes_t = typename rpc_hpp::server_interface<Serial>::bytes_t;
+    using rpc_hpp::server_interface<Serial>::bind;
+    using rpc_hpp::server_interface<Serial>::handle_bytes;
 
     TestServer(asio::io_context& io_ctx, const uint16_t port)
         : m_accept(io_ctx, asio::ip::tcp::endpoint(asio::ip::tcp::v4(), port))
@@ -190,15 +192,15 @@ public:
             {
                 while (RUNNING)
                 {
-                    auto bytes = receive();
+                    auto recv_data = receive();
 
-                    if (std::size(bytes) == 0)
+                    if (std::size(recv_data) == 0)
                     {
                         break;
                     }
 
-                    auto response = this->handle_bytes(std::move(bytes));
-                    send(response.to_bytes());
+                    handle_bytes(recv_data);
+                    send(std::move(recv_data));
                 }
             }
             catch (const std::exception& ex)

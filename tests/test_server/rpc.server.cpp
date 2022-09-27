@@ -35,34 +35,10 @@
 ///
 
 //#define RPC_HPP_ENABLE_SERVER_CACHE
-#include <cstdint>
 #define RPC_HPP_ENABLE_CALLBACKS
 
 #include "rpc.server.hpp"
 #include "../static_funcs.hpp"
-
-#include <algorithm>
-#include <chrono>
-#include <cmath>
-#include <map>
-#include <random>
-#include <sstream>
-#include <thread>
-
-#if defined(RPC_HPP_ENABLE_SERVER_CACHE)
-#  if defined(__cpp_lib_filesystem)
-#    include <filesystem>
-
-namespace filesystem = std::filesystem;
-#  else
-#    include <experimental/filesystem>
-
-namespace filesystem = std::experimental::filesystem;
-#  endif
-
-#  include <fstream>
-#  include <utility>
-#endif
 
 #if defined(RPC_HPP_ENABLE_NJSON)
 #  include <rpc_adapters/rpc_njson.hpp>
@@ -91,6 +67,15 @@ constexpr size_t bitsery_adapter::config::max_func_name_size = 30;
 constexpr size_t bitsery_adapter::config::max_string_size = 2'048;
 constexpr size_t bitsery_adapter::config::max_container_size = 1'000;
 #endif
+
+#include <algorithm>
+#include <chrono>
+#include <cmath>
+#include <cstdint>
+#include <map>
+#include <random>
+#include <sstream>
+#include <thread>
 
 namespace test_server
 {

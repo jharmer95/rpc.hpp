@@ -62,6 +62,10 @@ if(${BUILD_ADAPTER_NJSON})
   add_library(njson_adapter INTERFACE)
   target_compile_definitions(njson_adapter INTERFACE RPC_HPP_ENABLE_NJSON)
   find_package(nlohmann_json CONFIG REQUIRED)
+  
+  # Workaround for GCC 12 detecting null errors
+  target_compile_options(njson_adapter INTERFACE -Wno-error=null-dereference)
+  
   target_link_libraries_system(njson_adapter INTERFACE
                                nlohmann_json::nlohmann_json)
 

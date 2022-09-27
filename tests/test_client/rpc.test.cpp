@@ -34,6 +34,8 @@
 ///OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ///
 
+#include <cstdio>
+#include <type_traits>
 #define RPC_HPP_ENABLE_CALLBACKS
 
 #include "rpc.client.hpp"
@@ -158,7 +160,6 @@ static void TestType()
 {
     auto& client = GetClient<Serial>();
     const auto response = client.call_func("SimpleSum", 1, 2);
-
     CHECK(response.type() == rpc_hpp::rpc_type::func_result);
     REQUIRE(response.template get_result<int>() == 3);
 }
