@@ -2,6 +2,7 @@
 #define RPC_HPP
 
 #include <cassert>
+#include <exception>
 #include <optional>
 #include <stdexcept>
 #include <string>

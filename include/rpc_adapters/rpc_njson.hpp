@@ -138,17 +138,19 @@ public:
     template<typename... Args>
     void as_tuple(std::string_view key, std::tuple<Args...>& val)
     {
+        // Need to create the subobject in case args is empty
+        auto& arg_arr = subobject(key);
+
         detail::for_each_tuple(val,
-            [this, key](auto&& elem)
-            { push_args(std::forward<decltype(elem)>(elem), subobject(key)); });
+            [&arg_arr](auto&& elem) { push_args(std::forward<decltype(elem)>(elem), arg_arr); });
+
+        RPC_HPP_POSTCONDITION(arg_arr.size() == sizeof...(Args));
     }
 
     template<typename T>
     void as_object(std::string_view key, T& val)
     {
-        njson_serializer ser{};
-        ser.serialize_object(val);
-        subobject(key) = std::move(ser).object();
+        push_arg(val, subobject(key));
     }
 
 private:
@@ -256,15 +258,19 @@ public:
     template<typename... Args>
     void as_tuple(std::string_view key, std::tuple<Args...>& val) const
     {
-        [[maybe_unused]] unsigned arg_counter = 0;
+        if (subobject(key).size() != sizeof...(Args))
+        {
+            throw function_mismatch{ "NJSON: invalid number of args" };
+        }
+
+        unsigned arg_counter = 0;
         val = { parse_args<Args>(subobject(key), arg_counter)... };
     }
 
     template<typename T>
     void as_object(std::string_view key, T& val) const
     {
-        njson_deserializer ser{ subobject(key) };
-        ser.deserialize_object(val);
+        val = parse_arg<T>(subobject(key));
     }
 
 private:
@@ -407,40 +413,19 @@ public:
         RPC_HPP_PRECONDITION((IsCallback && serial_obj["type"] == rpc_type::callback_result)
             || (!IsCallback && serial_obj["type"] == rpc_type::func_result));
 
-        if constexpr (std::is_void_v<R>)
-        {
-            return { serial_obj["func_name"].get<std::string>() };
-        }
-        else
-        {
-            return { serial_obj["func_name"].get<std::string>(),
-                parse_arg<R>(serial_obj["result"]) };
-        }
+        detail::rpc_result<IsCallback, R> result;
+        njson_deserializer ser{ serial_obj };
+        ser.deserialize_object(result);
+        return result;
     }
 
     template<bool IsCallback, typename R>
     [[nodiscard]] static nlohmann::json serialize_result(
         const detail::rpc_result<IsCallback, R>& result)
     {
-        nlohmann::json obj{};
-        obj["func_name"] = result.func_name;
-
-        if constexpr (!std::is_void_v<R>)
-        {
-            obj["result"] = {};
-            push_arg(result.result, obj["result"]);
-        }
-
-        if constexpr (IsCallback)
-        {
-            obj["type"] = static_cast<int>(rpc_type::callback_result);
-        }
-        else
-        {
-            obj["type"] = static_cast<int>(rpc_type::func_result);
-        }
-
-        return obj;
+        njson_serializer ser;
+        ser.serialize_object(result);
+        return std::move(ser).object();
     }
 
     template<bool IsCallback, typename R, typename... Args>
@@ -450,53 +435,19 @@ public:
         RPC_HPP_PRECONDITION((IsCallback && serial_obj["type"] == rpc_type::callback_result_w_bind)
             || (!IsCallback && serial_obj["type"] == rpc_type::func_result_w_bind));
 
-        const auto& args_val = serial_obj["args"];
-        RPC_HPP_UNUSED unsigned arg_counter = 0;
-
-        if constexpr (std::is_void_v<R>)
-        {
-            return { serial_obj["func_name"].get<std::string>(),
-                parse_args<Args>(args_val, arg_counter)... };
-        }
-        else
-        {
-            return { serial_obj["func_name"].get<std::string>(),
-                parse_arg<R>(serial_obj["result"], parse_args<Args>(args_val, arg_counter)...) };
-        }
+        detail::rpc_result_w_bind<IsCallback, R, Args...> result;
+        njson_deserializer ser{ serial_obj };
+        ser.deserialize_object(result);
+        return result;
     }
 
     template<bool IsCallback, typename R, typename... Args>
     [[nodiscard]] static nlohmann::json serialize_result_w_bind(
         const detail::rpc_result_w_bind<IsCallback, R, Args...>& result)
     {
-        nlohmann::json obj{};
-
-        obj["func_name"] = result.func_name;
-        obj["args"] = nlohmann::json::array();
-
-        if constexpr (!std::is_void_v<R>)
-        {
-            obj["result"] = {};
-            push_arg(result.result, obj["result"]);
-        }
-
-        auto& arg_arr = obj["args"];
-        obj["bind_args"] = true;
-        arg_arr.get_ref<nlohmann::json::array_t&>().reserve(sizeof...(Args));
-
-        detail::for_each_tuple(result.args,
-            [&arg_arr](auto&& elem) { push_args(std::forward<decltype(elem)>(elem), arg_arr); });
-
-        if constexpr (IsCallback)
-        {
-            obj["type"] = static_cast<int>(rpc_type::callback_result_w_bind);
-        }
-        else
-        {
-            obj["type"] = static_cast<int>(rpc_type::func_result_w_bind);
-        }
-
-        return obj;
+        njson_serializer ser;
+        ser.serialize_object(result);
+        return std::move(ser).object();
     }
 
     template<bool IsCallback, typename... Args>
@@ -510,49 +461,19 @@ public:
                 && (serial_obj["type"] == rpc_type::func_request
                     || serial_obj["type"] == rpc_type::func_result_w_bind)));
 
-        const auto& args_val = serial_obj["args"];
-        const bool is_bound_args = serial_obj["bind_args"];
-
-        if (args_val.size() != sizeof...(Args))
-        {
-            throw function_mismatch("Argument count mismatch");
-        }
-
-        RPC_HPP_UNUSED unsigned arg_counter = 0;
-        typename detail::rpc_request<IsCallback, Args...>::args_t args = { parse_args<Args>(
-            args_val, arg_counter)... };
-
-        return is_bound_args
-            ? detail::rpc_request<IsCallback, Args...>{ detail::bind_args_tag{},
-                  serial_obj["func_name"].get<std::string>(), std::move(args) }
-            : detail::rpc_request<IsCallback, Args...>{ serial_obj["func_name"].get<std::string>(),
-                  std::move(args) };
+        detail::rpc_request<IsCallback, Args...> request;
+        njson_deserializer ser{ serial_obj };
+        ser.deserialize_object(request);
+        return request;
     }
 
     template<bool IsCallback, typename... Args>
     [[nodiscard]] static nlohmann::json serialize_request(
         const detail::rpc_request<IsCallback, Args...>& request)
     {
-        nlohmann::json obj{};
-        obj["func_name"] = request.func_name;
-        obj["args"] = nlohmann::json::array();
-        auto& arg_arr = obj["args"];
-        obj["bind_args"] = request.bind_args;
-        arg_arr.get_ref<nlohmann::json::array_t&>().reserve(sizeof...(Args));
-
-        detail::for_each_tuple(request.args,
-            [&arg_arr](auto&& elem) { push_args(std::forward<decltype(elem)>(elem), arg_arr); });
-
-        if constexpr (IsCallback)
-        {
-            obj["type"] = static_cast<int>(rpc_type::callback_request);
-        }
-        else
-        {
-            obj["type"] = static_cast<int>(rpc_type::func_request);
-        }
-
-        return obj;
+        njson_serializer ser;
+        ser.serialize_object(request);
+        return std::move(ser).object();
     }
 
     template<bool IsCallback>
@@ -561,29 +482,18 @@ public:
         RPC_HPP_PRECONDITION((IsCallback && serial_obj["type"] == rpc_type::callback_error)
             || (!IsCallback && serial_obj["type"] == rpc_type::func_error));
 
-        return { serial_obj["func_name"].get<std::string>(),
-            static_cast<exception_type>(serial_obj["except_type"]),
-            serial_obj["err_mesg"].get<std::string>() };
+        detail::rpc_error<IsCallback> error;
+        njson_deserializer ser{ serial_obj };
+        ser.deserialize_object(error);
+        return error;
     }
 
     template<bool IsCallback>
     [[nodiscard]] static nlohmann::json serialize_error(const detail::rpc_error<IsCallback>& error)
     {
-        nlohmann::json obj{};
-        obj["func_name"] = error.func_name;
-        obj["err_mesg"] = error.err_mesg;
-        obj["except_type"] = static_cast<int>(error.except_type);
-
-        if constexpr (IsCallback)
-        {
-            obj["type"] = static_cast<int>(rpc_type::callback_error);
-        }
-        else
-        {
-            obj["type"] = static_cast<int>(rpc_type::func_error);
-        }
-
-        return obj;
+        njson_serializer ser;
+        ser.serialize_object(error);
+        return std::move(ser).object();
     }
 
     [[nodiscard]] static callback_install_request get_callback_install(
@@ -591,123 +501,23 @@ public:
     {
         RPC_HPP_PRECONDITION(serial_obj["type"] == rpc_type::callback_install_request);
 
-        callback_install_request callback_req{ serial_obj["func_name"].get<std::string>() };
-        callback_req.is_uninstall = serial_obj["is_uninstall"];
-        return callback_req;
+        callback_install_request cbk_req;
+        njson_deserializer ser{ serial_obj };
+        ser.deserialize_object(cbk_req);
+        return cbk_req;
     }
 
     [[nodiscard]] static nlohmann::json serialize_callback_install(
         const callback_install_request& callback_req)
     {
-        nlohmann::json obj{};
-        obj["func_name"] = callback_req.func_name;
-        obj["is_uninstall"] = callback_req.is_uninstall;
-        obj["type"] = static_cast<int>(rpc_type::callback_install_request);
-        return obj;
+        njson_serializer ser;
+        ser.serialize_object(callback_req);
+        return std::move(ser).object();
     }
 
     [[nodiscard]] static bool has_bound_args(const nlohmann::json& serial_obj)
     {
         return serial_obj["bind_args"];
-    }
-
-private:
-    template<typename T>
-    RPC_HPP_NODISCARD("function is pointless without checking the bool")
-    static constexpr bool validate_arg(const nlohmann::json& arg) noexcept
-    {
-        if constexpr (std::is_same_v<T, bool>)
-        {
-            return arg.is_boolean();
-        }
-        else if constexpr (std::is_integral_v<T>)
-        {
-            return arg.is_number() && (!arg.is_number_float());
-        }
-        else if constexpr (std::is_floating_point_v<T>)
-        {
-            return arg.is_number_float();
-        }
-        else if constexpr (detail::is_stringlike_v<T>)
-        {
-            return arg.is_string();
-        }
-        else if constexpr (detail::is_map_v<T>)
-        {
-            return arg.is_object();
-        }
-        else if constexpr (detail::is_container_v<T>)
-        {
-            return arg.is_array();
-        }
-        else
-        {
-            return !arg.is_null();
-        }
-    }
-
-    RPC_HPP_NODISCARD("expect_type is consumed by the function")
-    static std::string mismatch_string(std::string&& expect_type, const nlohmann::json& arg)
-    {
-        return { "njson expected type: " + std::move(expect_type)
-            + ", got type: " + arg.type_name() };
-    }
-
-    template<typename T>
-    static void push_arg(T&& arg, nlohmann::json& obj)
-    {
-        njson_serializer ser;
-        ser.serialize_object(std::forward<T>(arg));
-        obj = std::move(ser).object();
-    }
-
-    template<typename T>
-    static void push_args(T&& arg, nlohmann::json& obj_arr)
-    {
-        nlohmann::json tmp{};
-        push_arg(std::forward<T>(arg), tmp);
-        obj_arr.push_back(std::move(tmp));
-    }
-
-    template<typename T>
-    RPC_HPP_NODISCARD("parsing can be expensive and it makes no sense to not use the parsed result")
-    static detail::remove_cvref_t<detail::decay_str_t<T>> parse_arg(const nlohmann::json& arg)
-    {
-        using no_ref_t = detail::remove_cvref_t<detail::decay_str_t<T>>;
-
-        if (!validate_arg<T>(arg))
-        {
-#ifdef RPC_HPP_NO_RTTI
-            throw function_mismatch{ mismatch_string("{NO-RTTI}", arg) };
-#else
-            throw function_mismatch{ mismatch_string(typeid(T).name(), arg) };
-#endif
-        }
-
-        njson_deserializer ser{ arg };
-        no_ref_t out_val;
-        ser.deserialize_object(out_val);
-        return out_val;
-    }
-
-    template<typename T>
-    RPC_HPP_NODISCARD("parsing can be expensive and it makes no sense to not use the parsed result")
-    static detail::remove_cvref_t<detail::decay_str_t<T>> parse_args(
-        const nlohmann::json& arg_arr, unsigned& index)
-    {
-        if (index >= arg_arr.size())
-        {
-            throw function_mismatch("Argument count mismatch");
-        }
-
-        if (arg_arr.is_array())
-        {
-            const auto old_idx = index;
-            ++index;
-            return parse_arg<T>(arg_arr[old_idx]);
-        }
-
-        return parse_arg<T>(arg_arr);
     }
 };
 } //namespace rpc_hpp::adapters
