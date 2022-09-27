@@ -34,8 +34,6 @@
 ///OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ///
 
-#include <cstdio>
-#include <type_traits>
 #define RPC_HPP_ENABLE_CALLBACKS
 
 #include "rpc.client.hpp"
@@ -50,9 +48,9 @@
 #include <unordered_set>
 
 #if defined(RPC_HPP_ENABLE_BITSERY)
-constexpr size_t bitsery_adapter::config::max_func_name_size = 30;
-constexpr size_t bitsery_adapter::config::max_string_size = 2'048;
-constexpr size_t bitsery_adapter::config::max_container_size = 1'000;
+constexpr size_t rpc_hpp::adapters::bitsery_adapter::config::max_func_name_size = 30;
+constexpr size_t rpc_hpp::adapters::bitsery_adapter::config::max_string_size = 2'048;
+constexpr size_t rpc_hpp::adapters::bitsery_adapter::config::max_container_size = 1'000;
 #endif
 
 // TODO: Clean this up somehow
@@ -507,16 +505,15 @@ TEST_CASE_TEMPLATE("Function not found", TestType, RPC_TEST_TYPES)
 
 TEST_CASE_TEMPLATE("FunctionMismatch", TestType, RPC_TEST_TYPES)
 {
-    auto& client = GetClient<TestType>();
-
-    rpc_hpp::rpc_object<TestType> obj =
-        client.call_func("SimpleSum", 2, std::string{ "Hello, world" });
-
-#if defined(RPC_HPP_USE_BITSERY)
+#if defined(RPC_HPP_ENABLE_BITSERY)
     // TODO: Figure out why bitsery isn't reporting errors
     if constexpr (!std::is_same_v<TestType, rpc_hpp::adapters::bitsery_adapter>)
     {
 #endif
+        auto& client = GetClient<TestType>();
+
+        rpc_hpp::rpc_object<TestType> obj =
+            client.call_func("SimpleSum", 2, std::string{ "Hello, world" });
 
         REQUIRE(obj.is_error());
         REQUIRE(obj.get_error_type() == rpc_hpp::exception_type::signature_mismatch);
@@ -536,18 +533,17 @@ TEST_CASE_TEMPLATE("FunctionMismatch", TestType, RPC_TEST_TYPES)
         REQUIRE(obj.is_error());
         REQUIRE(obj.get_error_type() == rpc_hpp::exception_type::signature_mismatch);
 
-#if defined(RPC_HPP_USE_BITSERY)
+        obj = client.call_func("StdDev", -4, 125.325, 552.125, 55, 2599.6, 1245.125663, 9783.49,
+            125.12, 553.3333333333, 2266.1);
+        REQUIRE(obj.is_error());
+        REQUIRE(obj.get_error_type() == rpc_hpp::exception_type::signature_mismatch);
+
+        obj = client.call_func("StdDev", -4.2, 125.325);
+        REQUIRE(obj.is_error());
+        REQUIRE(obj.get_error_type() == rpc_hpp::exception_type::signature_mismatch);
+#if defined(RPC_HPP_ENABLE_BITSERY)
     }
 #endif
-
-    obj = client.call_func("StdDev", -4, 125.325, 552.125, 55, 2599.6, 1245.125663, 9783.49, 125.12,
-        553.3333333333, 2266.1);
-    REQUIRE(obj.is_error());
-    REQUIRE(obj.get_error_type() == rpc_hpp::exception_type::signature_mismatch);
-
-    obj = client.call_func("StdDev", -4.2, 125.325);
-    REQUIRE(obj.is_error());
-    REQUIRE(obj.get_error_type() == rpc_hpp::exception_type::signature_mismatch);
 }
 
 TEST_CASE_TEMPLATE("ThrowError", TestType, RPC_TEST_TYPES)

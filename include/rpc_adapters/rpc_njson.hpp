@@ -40,6 +40,7 @@
 #include "../rpc.hpp"
 
 #include <nlohmann/json.hpp>
+#include <string_view>
 
 #ifndef RPC_HPP_NO_RTTI
 #  include <typeinfo>
@@ -134,10 +135,42 @@ public:
         subobject(key) = std::move(obj);
     }
 
+    template<typename... Args>
+    void as_tuple(std::string_view key, std::tuple<Args...>& val)
+    {
+        detail::for_each_tuple(val,
+            [this, key](auto&& elem)
+            { push_args(std::forward<decltype(elem)>(elem), subobject(key)); });
+    }
+
+    template<typename T>
+    void as_object(std::string_view key, T& val)
+    {
+        njson_serializer ser{};
+        ser.serialize_object(val);
+        subobject(key) = std::move(ser).object();
+    }
+
 private:
     [[nodiscard]] nlohmann::json& subobject(std::string_view key)
     {
         return key.empty() ? m_json : m_json[key];
+    }
+
+    template<typename T>
+    static void push_arg(T&& arg, nlohmann::json& obj)
+    {
+        njson_serializer ser;
+        ser.serialize_object(std::forward<T>(arg));
+        obj = std::move(ser).object();
+    }
+
+    template<typename T>
+    static void push_args(T&& arg, nlohmann::json& obj_arr)
+    {
+        nlohmann::json tmp{};
+        push_arg(std::forward<T>(arg), tmp);
+        obj_arr.push_back(std::move(tmp));
     }
 
     nlohmann::json m_json{};
@@ -220,10 +253,106 @@ public:
         }
     }
 
+    template<typename... Args>
+    void as_tuple(std::string_view key, std::tuple<Args...>& val) const
+    {
+        [[maybe_unused]] unsigned arg_counter = 0;
+        val = { parse_args<Args>(subobject(key), arg_counter)... };
+    }
+
+    template<typename T>
+    void as_object(std::string_view key, T& val) const
+    {
+        njson_deserializer ser{ subobject(key) };
+        ser.deserialize_object(val);
+    }
+
 private:
     [[nodiscard]] const nlohmann::json& subobject(std::string_view key) const
     {
         return key.empty() ? m_json : m_json[key];
+    }
+
+    template<typename T>
+    RPC_HPP_NODISCARD("function is pointless without checking the bool")
+    static constexpr bool validate_arg(const nlohmann::json& arg) noexcept
+    {
+        if constexpr (std::is_same_v<T, bool>)
+        {
+            return arg.is_boolean();
+        }
+        else if constexpr (std::is_integral_v<T>)
+        {
+            return arg.is_number() && (!arg.is_number_float());
+        }
+        else if constexpr (std::is_floating_point_v<T>)
+        {
+            return arg.is_number_float();
+        }
+        else if constexpr (detail::is_stringlike_v<T>)
+        {
+            return arg.is_string();
+        }
+        else if constexpr (detail::is_map_v<T>)
+        {
+            return arg.is_object();
+        }
+        else if constexpr (detail::is_container_v<T>)
+        {
+            return arg.is_array();
+        }
+        else
+        {
+            return !arg.is_null();
+        }
+    }
+
+    RPC_HPP_NODISCARD("expect_type is consumed by the function")
+    static std::string mismatch_string(std::string&& expect_type, const nlohmann::json& arg)
+    {
+        return { "njson expected type: " + std::move(expect_type)
+            + ", got type: " + arg.type_name() };
+    }
+
+    template<typename T>
+    RPC_HPP_NODISCARD("parsing can be expensive and it makes no sense to not use the parsed result")
+    static detail::remove_cvref_t<detail::decay_str_t<T>> parse_arg(const nlohmann::json& arg)
+    {
+        using no_ref_t = detail::remove_cvref_t<detail::decay_str_t<T>>;
+
+        if (!validate_arg<T>(arg))
+        {
+#ifdef RPC_HPP_NO_RTTI
+            throw function_mismatch{ mismatch_string("{NO-RTTI}", arg) };
+#else
+            throw function_mismatch{ mismatch_string(typeid(T).name(), arg) };
+#endif
+        }
+
+        njson_deserializer ser{ arg };
+        no_ref_t out_val;
+        ser.deserialize_object(out_val);
+        return out_val;
+    }
+
+    template<typename T>
+    RPC_HPP_NODISCARD("parsing can be expensive and it makes no sense to not use the parsed result")
+    static detail::remove_cvref_t<detail::decay_str_t<T>> parse_args(
+        const nlohmann::json& arg_arr, unsigned& index)
+    {
+        if (index >= arg_arr.size())
+        {
+            throw function_mismatch("Argument count mismatch");
+        }
+
+        if (arg_arr.is_array())
+        {
+            const auto old_idx = index;
+            ++index;
+            return parse_arg<T>(arg_arr[old_idx]);
+        }
+
+        return parse_arg<T>(arg_arr);
     }
 
     nlohmann::json m_json;

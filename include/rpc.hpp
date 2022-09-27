@@ -422,6 +422,31 @@ namespace detail
     template<typename C>
     inline constexpr bool is_multimap_v = is_multimap<std::remove_cv_t<C>>::value;
 
+    template<typename C>
+    struct has_set_key
+    {
+    private:
+        template<typename T>
+        static constexpr auto check(RPC_HPP_UNUSED T* ptr) noexcept
+            -> std::bool_constant<std::is_same_v<typename T::value_type, typename T::key_type>>;
+
+        template<typename>
+        static constexpr std::false_type check(...) noexcept;
+
+        using type = decltype(check<C>(nullptr));
+
+    public:
+        static constexpr bool value = type::value;
+    };
+
+    template<typename C>
+    struct is_set : std::bool_constant<is_container_v<C> && has_set_key<C>::value>
+    {
+    };
+
+    template<typename C>
+    inline constexpr bool is_set_v = is_set<std::remove_cv_t<C>>::value;
+
     template<typename F, typename... Ts, size_t... Is>
     constexpr void for_each_tuple(
         const std::tuple<Ts...>& tuple, F&& func, RPC_HPP_UNUSED std::index_sequence<Is...> iseq)
@@ -888,6 +913,9 @@ namespace adapters
     template<typename Adapter>
     struct serial_traits;
 
+    template<typename Adapter>
+    struct config;
+
     template<typename Adapter, bool Deserialize>
     class serializer
     {
@@ -929,7 +957,7 @@ namespace adapters
         template<typename T>
         void as_int(std::string_view key, T& val)
         {
-            static_assert(std::is_integral_v<T>, "T must be an integral type");
+            static_assert(std::is_integral_v<T> || std::is_enum_v<T>, "T must be an integral type");
 
             (static_cast<Adapter*>(this))->as_int(key, val);
         }
@@ -964,6 +992,18 @@ namespace adapters
             {
                 (static_cast<Adapter*>(this))->as_map(key, val);
             }
+        }
+
+        template<typename... Args>
+        void as_tuple(std::string_view key, std::tuple<Args...>& val)
+        {
+            (static_cast<Adapter*>(this))->as_tuple(key, val);
+        }
+
+        template<typename T>
+        void as_object(std::string_view key, T& val)
+        {
+            (static_cast<Adapter*>(this))->as_object(key, val);
         }
     };
 
@@ -1145,6 +1185,114 @@ namespace detail
             throw remote_exec_error(ex.what());
         }
     }
+
+    // serialize functions for library types
+    template<typename Adapter, bool Deserialize, bool IsCallback, typename... Args>
+    void serialize(
+        adapters::serializer<Adapter, Deserialize>& ser, rpc_request<IsCallback, Args...>& rpc_obj)
+    {
+        auto type = []
+        {
+            if constexpr (IsCallback)
+            {
+                return static_cast<int>(rpc_type::callback_request);
+            }
+            else
+            {
+                return static_cast<int>(rpc_type::func_request);
+            }
+        }();
+
+        ser.as_int("type", type);
+        ser.as_string("func_name", rpc_obj.func_name);
+        ser.as_bool("bind_args", rpc_obj.bind_args);
+        ser.as_tuple("args", rpc_obj.args);
+    }
+
+    template<typename Adapter, bool Deserialize, bool IsCallback, typename R>
+    void serialize(
+        adapters::serializer<Adapter, Deserialize>& ser, rpc_result<IsCallback, R>& rpc_obj)
+    {
+        auto type = []
+        {
+            if constexpr (IsCallback)
+            {
+                return static_cast<int>(rpc_type::callback_result);
+            }
+            else
+            {
+                return static_cast<int>(rpc_type::func_result);
+            }
+        }();
+
+        ser.as_int("type", type);
+        ser.as_string("func_name", rpc_obj.func_name);
+
+        if constexpr (!std::is_void_v<R>)
+        {
+            ser.as_object("result", rpc_obj.result);
+        }
+    }
+
+    template<typename Adapter, bool Deserialize, bool IsCallback, typename R, typename... Args>
+    void serialize(adapters::serializer<Adapter, Deserialize>& ser,
+        rpc_result_w_bind<IsCallback, R, Args...>& rpc_obj)
+    {
+        auto type = []
+        {
+            if constexpr (IsCallback)
+            {
+                return static_cast<int>(rpc_type::callback_result_w_bind);
+            }
+            else
+            {
+                return static_cast<int>(rpc_type::func_result_w_bind);
+            }
+        }();
+
+        bool bind_args = true;
+
+        ser.as_int("type", type);
+        ser.as_string("func_name", rpc_obj.func_name);
+        ser.as_bool("bind_args", bind_args);
+        ser.as_tuple("args", rpc_obj.args);
+
+        if constexpr (!std::is_void_v<R>)
+        {
+            ser.as_object("result", rpc_obj.result);
+        }
+    }
+
+    template<typename Adapter, bool Deserialize, bool IsCallback>
+    void serialize(adapters::serializer<Adapter, Deserialize>& ser, rpc_error<IsCallback>& rpc_obj)
+    {
+        auto type = []
+        {
+            if constexpr (IsCallback)
+            {
+                return static_cast<int>(rpc_type::callback_error);
+            }
+            else
+            {
+                return static_cast<int>(rpc_type::func_error);
+            }
+        }();
+
+        ser.as_int("type", type);
+        ser.as_string("func_name", rpc_obj.func_name);
+        ser.as_int("except_type", rpc_obj.except_type);
+        ser.as_string("err_mesg", rpc_obj.err_mesg);
+    }
 } //namespace detail
+
+template<typename Adapter, bool Deserialize>
+void serialize(adapters::serializer<Adapter, Deserialize>& ser, callback_install_request& rpc_obj)
+{
+    auto type = static_cast<int>(rpc_type::callback_install_request);
+
+    ser.as_int("type", type);
+    ser.as_string("func_name", rpc_obj.func_name);
+    ser.as_bool("is_uninstall", rpc_obj.is_uninstall);
+}
 } //namespace rpc_hpp
 #endif
