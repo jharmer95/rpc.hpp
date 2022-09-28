@@ -53,8 +53,10 @@ if(NOT TARGET asio_lib)
   target_compile_definitions(asio_lib INTERFACE ASIO_STANDALONE)
   find_package(asio CONFIG REQUIRED)
 
-  # Workaround for GCC 12 detecting null errors
-  target_compile_options(asio_lib INTERFACE -Wno-error=null-dereference)
+  if(${CXX_GCC} OR ${CXX_MINGW})
+    # Workaround for GCC 12 detecting null errors
+    target_compile_options(asio_lib INTERFACE -Wno-error=null-dereference)
+  endif()
 
   target_link_libraries_system(asio_lib INTERFACE asio asio::asio
                                Threads::Threads)

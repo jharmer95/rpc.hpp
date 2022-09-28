@@ -43,6 +43,10 @@
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
 
+#ifdef _MSC_VER
+#  undef GetObject
+#endif
+
 namespace rpc_hpp::adapters
 {
 class rapidjson_adapter;

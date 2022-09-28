@@ -195,7 +195,8 @@ void RemoveFromList(
             const auto str_tolower = [](std::string tmp_str)
             {
                 std::transform(tmp_str.begin(), tmp_str.end(), tmp_str.begin(),
-                    [](unsigned char tmp_char) { return std::tolower(tmp_char); });
+                    [](unsigned char tmp_char)
+                    { return static_cast<char>(std::tolower(tmp_char)); });
 
                 return tmp_str;
             };

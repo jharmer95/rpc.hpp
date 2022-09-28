@@ -143,8 +143,6 @@ public:
 
         detail::for_each_tuple(val,
             [&arg_arr](auto&& elem) { push_args(std::forward<decltype(elem)>(elem), arg_arr); });
-
-        RPC_HPP_POSTCONDITION(arg_arr.size() == sizeof...(Args));
     }
 
     template<typename T>

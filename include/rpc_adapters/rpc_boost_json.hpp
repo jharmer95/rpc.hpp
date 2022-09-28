@@ -314,9 +314,9 @@ public:
     template<typename... Args>
     void as_tuple(std::string_view key, std::tuple<Args...>& val) const
     {
-        const auto& arg_arr = subobject(key).as_array();
+        const auto& arg_arr = subobject(key);
 
-        if (arg_arr.size() != sizeof...(Args))
+        if (arg_arr.as_array().size() != sizeof...(Args))
         {
             throw function_mismatch{ "Boost.JSON: invalid number of args" };
         }
@@ -360,7 +360,7 @@ private:
         {
             return arg.is_object();
         }
-        else if constexpr (rpc_hpp::detail::is_container_v<T>)
+        else if constexpr (detail::is_container_v<T>)
         {
             return arg.is_array();
         }
