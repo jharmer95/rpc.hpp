@@ -39,22 +39,6 @@
 #include <asio.hpp>
 #include <rpc_client.hpp>
 
-#if defined(RPC_HPP_ENABLE_BITSERY)
-#  include <rpc_adapters/rpc_bitsery.hpp>
-#endif
-
-#if defined(RPC_HPP_ENABLE_BOOST_JSON)
-#  include <rpc_adapters/rpc_boost_json.hpp>
-#endif
-
-#if defined(RPC_HPP_ENABLE_NJSON)
-#  include <rpc_adapters/rpc_njson.hpp>
-#endif
-
-#if defined(RPC_HPP_ENABLE_RAPIDJSON)
-#  include <rpc_adapters/rpc_rapidjson.hpp>
-#endif
-
 namespace rpc_hpp::tests
 {
 template<typename Serial>

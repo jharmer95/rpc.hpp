@@ -49,12 +49,12 @@ enum class exception_type
 class rpc_exception : public std::runtime_error
 {
 public:
-    explicit rpc_exception(const std::string& mesg, exception_type type) noexcept
+    explicit rpc_exception(const std::string& mesg, exception_type type)
         : std::runtime_error(mesg), m_type(type)
     {
     }
 
-    explicit rpc_exception(const char* mesg, exception_type type) noexcept
+    explicit rpc_exception(const char* mesg, exception_type type)
         : std::runtime_error(mesg), m_type(type)
     {
     }
@@ -68,12 +68,12 @@ private:
 class function_not_found : public rpc_exception
 {
 public:
-    explicit function_not_found(const std::string& mesg) noexcept
+    explicit function_not_found(const std::string& mesg)
         : rpc_exception(mesg, exception_type::func_not_found)
     {
     }
 
-    explicit function_not_found(const char* mesg) noexcept
+    explicit function_not_found(const char* mesg)
         : rpc_exception(mesg, exception_type::func_not_found)
     {
     }
@@ -82,13 +82,12 @@ public:
 class remote_exec_error : public rpc_exception
 {
 public:
-    explicit remote_exec_error(const std::string& mesg) noexcept
+    explicit remote_exec_error(const std::string& mesg)
         : rpc_exception(mesg, exception_type::remote_exec)
     {
     }
 
-    explicit remote_exec_error(const char* mesg) noexcept
-        : rpc_exception(mesg, exception_type::remote_exec)
+    explicit remote_exec_error(const char* mesg) : rpc_exception(mesg, exception_type::remote_exec)
     {
     }
 };
@@ -96,12 +95,12 @@ public:
 class serialization_error : public rpc_exception
 {
 public:
-    explicit serialization_error(const std::string& mesg) noexcept
+    explicit serialization_error(const std::string& mesg)
         : rpc_exception(mesg, exception_type::serialization)
     {
     }
 
-    explicit serialization_error(const char* mesg) noexcept
+    explicit serialization_error(const char* mesg)
         : rpc_exception(mesg, exception_type::serialization)
     {
     }
@@ -110,12 +109,12 @@ public:
 class deserialization_error : public rpc_exception
 {
 public:
-    explicit deserialization_error(const std::string& mesg) noexcept
+    explicit deserialization_error(const std::string& mesg)
         : rpc_exception(mesg, exception_type::deserialization)
     {
     }
 
-    explicit deserialization_error(const char* mesg) noexcept
+    explicit deserialization_error(const char* mesg)
         : rpc_exception(mesg, exception_type::deserialization)
     {
     }
@@ -124,12 +123,12 @@ public:
 class function_mismatch : public rpc_exception
 {
 public:
-    explicit function_mismatch(const std::string& mesg) noexcept
+    explicit function_mismatch(const std::string& mesg)
         : rpc_exception(mesg, exception_type::signature_mismatch)
     {
     }
 
-    explicit function_mismatch(const char* mesg) noexcept
+    explicit function_mismatch(const char* mesg)
         : rpc_exception(mesg, exception_type::signature_mismatch)
     {
     }
@@ -138,13 +137,12 @@ public:
 class client_send_error : public rpc_exception
 {
 public:
-    explicit client_send_error(const std::string& mesg) noexcept
+    explicit client_send_error(const std::string& mesg)
         : rpc_exception(mesg, exception_type::client_send)
     {
     }
 
-    explicit client_send_error(const char* mesg) noexcept
-        : rpc_exception(mesg, exception_type::client_send)
+    explicit client_send_error(const char* mesg) : rpc_exception(mesg, exception_type::client_send)
     {
     }
 };
@@ -152,12 +150,12 @@ public:
 class client_receive_error : public rpc_exception
 {
 public:
-    explicit client_receive_error(const std::string& mesg) noexcept
+    explicit client_receive_error(const std::string& mesg)
         : rpc_exception(mesg, exception_type::client_receive)
     {
     }
 
-    explicit client_receive_error(const char* mesg) noexcept
+    explicit client_receive_error(const char* mesg)
         : rpc_exception(mesg, exception_type::client_receive)
     {
     }
@@ -166,13 +164,12 @@ public:
 class server_send_error : public rpc_exception
 {
 public:
-    explicit server_send_error(const std::string& mesg) noexcept
+    explicit server_send_error(const std::string& mesg)
         : rpc_exception(mesg, exception_type::server_send)
     {
     }
 
-    explicit server_send_error(const char* mesg) noexcept
-        : rpc_exception(mesg, exception_type::server_send)
+    explicit server_send_error(const char* mesg) : rpc_exception(mesg, exception_type::server_send)
     {
     }
 };
@@ -180,12 +177,12 @@ public:
 class server_receive_error : public rpc_exception
 {
 public:
-    explicit server_receive_error(const std::string& mesg) noexcept
+    explicit server_receive_error(const std::string& mesg)
         : rpc_exception(mesg, exception_type::server_receive)
     {
     }
 
-    explicit server_receive_error(const char* mesg) noexcept
+    explicit server_receive_error(const char* mesg)
         : rpc_exception(mesg, exception_type::server_receive)
     {
     }
@@ -194,12 +191,12 @@ public:
 class rpc_object_mismatch : public rpc_exception
 {
 public:
-    explicit rpc_object_mismatch(const std::string& mesg) noexcept
+    explicit rpc_object_mismatch(const std::string& mesg)
         : rpc_exception(mesg, exception_type::rpc_object_mismatch)
     {
     }
 
-    explicit rpc_object_mismatch(const char* mesg) noexcept
+    explicit rpc_object_mismatch(const char* mesg)
         : rpc_exception(mesg, exception_type::rpc_object_mismatch)
     {
     }
@@ -208,12 +205,12 @@ public:
 class callback_install_error : public rpc_exception
 {
 public:
-    explicit callback_install_error(const std::string& mesg) noexcept
+    explicit callback_install_error(const std::string& mesg)
         : rpc_exception(mesg, exception_type::callback_install)
     {
     }
 
-    explicit callback_install_error(const char* mesg) noexcept
+    explicit callback_install_error(const char* mesg)
         : rpc_exception(mesg, exception_type::callback_install)
     {
     }
@@ -222,12 +219,12 @@ public:
 class callback_missing_error : public rpc_exception
 {
 public:
-    explicit callback_missing_error(const std::string& mesg) noexcept
+    explicit callback_missing_error(const std::string& mesg)
         : rpc_exception(mesg, exception_type::callback_missing)
     {
     }
 
-    explicit callback_missing_error(const char* mesg) noexcept
+    explicit callback_missing_error(const char* mesg)
         : rpc_exception(mesg, exception_type::callback_missing)
     {
     }
@@ -544,7 +541,7 @@ namespace detail
     template<bool IsCallback, typename R>
     struct rpc_result : rpc_base<IsCallback>
     {
-        R result;
+        R result{};
     };
 
     template<bool IsCallback>
@@ -588,7 +585,6 @@ namespace detail
     template<bool IsCallback>
     struct rpc_error : rpc_base<IsCallback>
     {
-    public:
         rpc_error() = default;
         rpc_error(std::string t_func_name, const rpc_exception& except)
             : rpc_base<IsCallback>{ std::move(t_func_name) },
@@ -662,7 +658,7 @@ namespace detail
 struct callback_install_request : detail::rpc_base<true>
 {
     callback_install_request() = default;
-    explicit callback_install_request(std::string t_func_name)
+    explicit callback_install_request(std::string t_func_name) noexcept
         : rpc_base<true>{ std::move(t_func_name) }
     {
     }
@@ -904,7 +900,7 @@ public:
 
 private:
     explicit rpc_object(const serial_t& serial) : m_obj(serial) {}
-    explicit rpc_object(serial_t&& serial) : m_obj(std::move(serial)) {}
+    explicit rpc_object(serial_t&& serial) noexcept : m_obj(std::move(serial)) {}
 
     serial_t m_obj;
 };

@@ -8,7 +8,13 @@
 #include <unordered_map>
 #include <unordered_set>
 
-#define RPC_HEADER_FUNC(RETURN, FUNCNAME, ...) extern RETURN FUNCNAME(__VA_ARGS__)
+#ifdef RPC_HEADER_FUNC
+#  error <rpc_client.hpp> and <rpc_server.hpp> cannot be included in the same binary, please double check your includes
+#endif
+
+#define RPC_HEADER_FUNC(RT, FNAME, ...) extern RT FNAME(__VA_ARGS__)
+#define RPC_HEADER_FUNC_EXTC(RT, FNAME, ...) extern "C" RT FNAME(__VA_ARGS__)
+#define RPC_HEADER_FUNC_NOEXCEPT(RT, FNAME, ...) extern RT FNAME(__VA_ARGS__) noexcept
 
 namespace rpc_hpp
 {
@@ -233,13 +239,11 @@ private:
 
     void install_callback(object_t& rpc_obj)
     {
-        auto func_name = rpc_obj.get_func_name();
-
-        auto [_, inserted] = m_installed_callbacks.insert(std::move(func_name));
+        const auto func_name = rpc_obj.get_func_name();
+        const auto [_, inserted] = m_installed_callbacks.insert(func_name);
 
         if (!inserted)
         {
-            // NOTE: since insertion did not occur, func_name was not moved so it is safe to use here
             rpc_obj = object_t{ detail::callback_error{ func_name,
                 callback_install_error("Callback: \"" + func_name + "\" is already installed") } };
         }

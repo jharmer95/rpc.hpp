@@ -40,7 +40,6 @@
 #include "../rpc.hpp"
 
 #include <nlohmann/json.hpp>
-#include <string_view>
 
 #ifndef RPC_HPP_NO_RTTI
 #  include <typeinfo>
@@ -61,8 +60,8 @@ class njson_serializer : public serializer<njson_serializer, false>
 {
 public:
     njson_serializer() = default;
-    [[nodiscard]] const nlohmann::json& object() const& { return m_json; }
-    [[nodiscard]] nlohmann::json&& object() && { return std::move(m_json); }
+    [[nodiscard]] const nlohmann::json& object() const& noexcept { return m_json; }
+    [[nodiscard]] nlohmann::json&& object() && noexcept { return std::move(m_json); }
 
     template<typename T>
     void as_bool(std::string_view key, T& val)
@@ -180,7 +179,7 @@ class njson_deserializer : public serializer<njson_deserializer, true>
 {
 public:
     explicit njson_deserializer(const nlohmann::json& obj) : m_json(obj) {}
-    explicit njson_deserializer(nlohmann::json&& obj) : m_json(std::move(obj)) {}
+    explicit njson_deserializer(nlohmann::json&& obj) noexcept : m_json(std::move(obj)) {}
 
     template<typename T>
     void as_bool(std::string_view key, T& val) const
@@ -233,8 +232,7 @@ public:
 
         for (const auto& [k, v] : obj.items())
         {
-            val.insert(
-                { nlohmann::json::parse(k).front().template get<typename T::key_type>(), v });
+            val.insert({ nlohmann::json::parse(k).front().get<typename T::key_type>(), v });
         }
     }
 
@@ -247,8 +245,8 @@ public:
         {
             for (const auto& subval : v)
             {
-                val.insert({ nlohmann::json::parse(k).front().template get<typename T::key_type>(),
-                    subval });
+                val.insert(
+                    { nlohmann::json::parse(k).front().get<typename T::key_type>(), subval });
             }
         }
     }

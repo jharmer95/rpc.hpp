@@ -46,86 +46,13 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
-#include <forward_list>
-#include <map>
-#include <numeric>
 #include <stdexcept>
 #include <string>
-#include <unordered_set>
-#include <vector>
+
 
 namespace test_server
 {
-inline std::atomic<bool> RUNNING{ false };
-
-// Forward declares
-[[noreturn]] void ThrowError() noexcept(false);
-void KillServer() noexcept;
-
-// cached
-constexpr int SimpleSum(const int num1, const int num2)
-{
-    return num1 + num2;
-}
-
-size_t StrLen(std::string_view str);
-std::vector<int> AddOneToEach(std::vector<int> vec);
-void AddOneToEachRef(std::vector<int>& vec);
-
-// cached
-constexpr uint64_t Fibonacci(const uint64_t number)
-{
-    uint64_t num1{ 0 };
-    uint64_t num2{ 1 };
-
-    if (number == 0)
-    {
-        return 0;
-    }
-
-    for (uint64_t i = 2; i <= number; ++i)
-    {
-        const uint64_t next{ num1 + num2 };
-        num1 = num2;
-        num2 = next;
-    }
-
-    return num2;
-}
-
-void FibonacciRef(uint64_t& number);
-
-// cached
-constexpr double Average(const double num1, const double num2, const double num3, const double num4,
-    const double num5, const double num6, const double num7, const double num8, const double num9,
-    const double num10)
-{
-    return (num1 + num2 + num3 + num4 + num5 + num6 + num7 + num8 + num9 + num10) / 10.00;
-}
-
-double StdDev(double num1, double num2, double num3, double num4, double num5, double num6,
-    double num7, double num8, double num9, double num10);
-
-void SquareRootRef(double& num1, double& num2, double& num3, double& num4, double& num5,
-    double& num6, double& num7, double& num8, double& num9, double& num10);
-
-// cached
-template<typename T>
-double AverageContainer(const std::vector<T>& vec)
-{
-    const double sum = std::accumulate(vec.begin(), vec.end(), 0.00);
-    return sum / static_cast<double>(vec.size());
-}
-
-void SquareArray(std::array<int, 12>& arr);
-void RemoveFromList(
-    std::forward_list<std::string>& list, const std::string& str, bool case_sensitive);
-std::map<char, unsigned> CharacterMap(std::string_view str);
-size_t CountResidents(const std::multimap<int, std::string>& registry, int floor_num);
-std::unordered_set<std::string> GetUniqueNames(const std::vector<std::string>& names);
-std::vector<uint64_t> GenRandInts(ValueRange<uint64_t> num_range, size_t num_ints);
-std::string HashComplex(const ComplexObject& cx_obj);
-void HashComplexRef(ComplexObject& cx_obj, std::string& hashStr);
+inline std::atomic_bool RUNNING{ false };
 
 template<typename Serial>
 class TestServer final : public rpc_hpp::server_interface<Serial>
@@ -135,8 +62,9 @@ public:
     using rpc_hpp::server_interface<Serial>::bind;
     using rpc_hpp::server_interface<Serial>::handle_bytes;
 
+    TestServer() = delete;
     TestServer(asio::io_context& io_ctx, const uint16_t port)
-        : m_accept(io_ctx, asio::ip::tcp::endpoint(asio::ip::tcp::v4(), port))
+        : rpc_hpp::server_interface<Serial>(), m_accept(io_ctx, asio::ip::tcp::endpoint(asio::ip::tcp::v4(), port))
     {
     }
 

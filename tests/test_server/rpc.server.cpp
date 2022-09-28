@@ -72,10 +72,25 @@ constexpr size_t bitsery_adapter::config::max_container_size = 1'000;
 #include <chrono>
 #include <cmath>
 #include <cstdint>
+#include <forward_list>
 #include <map>
+#include <numeric>
 #include <random>
 #include <sstream>
 #include <thread>
+#include <unordered_set>
+#include <vector>
+
+int CountChars(const std::string& str, char chr)
+{
+    return static_cast<int>(
+        std::count_if(str.begin(), str.end(), [chr](const char tmp_c) { return tmp_c == chr; }));
+}
+
+void AddOne(size_t& n) noexcept
+{
+    n += 1;
+}
 
 namespace test_server
 {
@@ -92,13 +107,35 @@ void KillServer() noexcept
 }
 
 // cached
-size_t StrLen(std::string_view str)
+size_t StrLen(std::string_view str) noexcept
 {
     return str.size();
 }
 
 // cached
-std::vector<int> AddOneToEach(std::vector<int> vec)
+constexpr int SimpleSum(const int num1, const int num2)
+{
+    return num1 + num2;
+}
+
+// cached
+constexpr double Average(const double num1, const double num2, const double num3, const double num4,
+    const double num5, const double num6, const double num7, const double num8, const double num9,
+    const double num10)
+{
+    return (num1 + num2 + num3 + num4 + num5 + num6 + num7 + num8 + num9 + num10) / 10.00;
+}
+
+// cached
+template<typename T>
+double AverageContainer(const std::vector<T>& vec)
+{
+    const double sum = std::accumulate(vec.begin(), vec.end(), 0.00);
+    return sum / static_cast<double>(vec.size());
+}
+
+// cached
+std::vector<int> AddOneToEach(std::vector<int> vec) noexcept
 {
     for (auto& num : vec)
     {
@@ -108,7 +145,7 @@ std::vector<int> AddOneToEach(std::vector<int> vec)
     return vec;
 }
 
-void AddOneToEachRef(std::vector<int>& vec)
+void AddOneToEachRef(std::vector<int>& vec) noexcept
 {
     for (auto& num : vec)
     {
@@ -116,18 +153,28 @@ void AddOneToEachRef(std::vector<int>& vec)
     }
 }
 
-static int CountChars(const std::string& str, char chr)
+// cached
+constexpr uint64_t Fibonacci(const uint64_t number)
 {
-    return static_cast<int>(
-        std::count_if(str.begin(), str.end(), [chr](const char tmp_c) { return tmp_c == chr; }));
+    uint64_t num1{ 0 };
+    uint64_t num2{ 1 };
+
+    if (number == 0)
+    {
+        return 0;
+    }
+
+    for (uint64_t i = 2; i <= number; ++i)
+    {
+        const uint64_t next{ num1 + num2 };
+        num1 = num2;
+        num2 = next;
+    }
+
+    return num2;
 }
 
-static void AddOne(size_t& n)
-{
-    n += 1;
-}
-
-void FibonacciRef(uint64_t& number)
+void FibonacciRef(uint64_t& number) noexcept
 {
     uint64_t num1{ 0 };
     uint64_t num2{ 1 };
@@ -159,7 +206,7 @@ double StdDev(const double num1, const double num2, const double num3, const dou
 }
 
 void SquareRootRef(double& num1, double& num2, double& num3, double& num4, double& num5,
-    double& num6, double& num7, double& num8, double& num9, double& num10)
+    double& num6, double& num7, double& num8, double& num9, double& num10) noexcept
 {
     num1 = std::sqrt(num1);
     num2 = std::sqrt(num2);
@@ -173,7 +220,7 @@ void SquareRootRef(double& num1, double& num2, double& num3, double& num4, doubl
     num10 = std::sqrt(num10);
 }
 
-void SquareArray(std::array<int, 12>& arr)
+void SquareArray(std::array<int, 12>& arr) noexcept
 {
     for (int& val : arr)
     {
@@ -185,7 +232,7 @@ void RemoveFromList(
     std::forward_list<std::string>& list, const std::string& str, bool case_sensitive)
 {
     list.remove_if(
-        [case_sensitive, &str](const std::string& val)
+        [case_sensitive, &str](const std::string& val) noexcept
         {
             if (case_sensitive)
             {
@@ -304,7 +351,7 @@ static void BindFuncs(TestServer<Serial>& server)
 {
 #if defined(RPC_HPP_ENABLE_CALLBACKS)
     server.template bind<std::string>(
-        "GetConnectionInfo", std::move([&server] { return server.GetConnectionInfo(); }));
+        "GetConnectionInfo", [&server] { return server.GetConnectionInfo(); });
 #endif
 
     server.bind("KillServer", &KillServer);
@@ -316,7 +363,7 @@ static void BindFuncs(TestServer<Serial>& server)
     server.bind("HashComplexRef", &HashComplexRef);
     server.bind("SquareArray", &SquareArray);
     server.bind("RemoveFromList", &RemoveFromList);
-    server.template bind<void, size_t&>("AddOne", [](size_t& n) { AddOne(n); });
+    server.template bind<void, size_t&>("AddOne", [](size_t& n) noexcept { ::AddOne(n); });
 
     // Cached
     server.bind("SimpleSum", &SimpleSum);
@@ -328,14 +375,14 @@ static void BindFuncs(TestServer<Serial>& server)
     server.bind("AverageContainer<uint64_t>", &AverageContainer<uint64_t>);
     server.bind("AverageContainer<double>", &AverageContainer<double>);
     server.bind("HashComplex", &HashComplex);
-    server.bind("CountChars", &CountChars);
+    server.bind("CountChars", &::CountChars);
     server.bind("CharacterMap", &CharacterMap);
     server.bind("CountResidents", &CountResidents);
     server.bind("GetUniqueNames", &GetUniqueNames);
 }
 } //namespace test_server
 
-int main(const int argc, char* argv[])
+int main(const int argc, const char* argv[])
 {
     if ((argc > 1) && (std::strcmp(argv[1], "--help") == 0))
     {

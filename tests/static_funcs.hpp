@@ -40,4 +40,4 @@
 #include <string>
 
 RPC_HEADER_FUNC(int, CountChars, const std::string& str, char c);
-RPC_HEADER_FUNC(void, AddOne, size_t& n);
+RPC_HEADER_FUNC_NOEXCEPT(void, AddOne, size_t& n);

@@ -55,11 +55,7 @@
 #include <bitsery/traits/vector.h>
 
 #include <cassert>
-#include <forward_list>
 #include <numeric>
-#include <string_view>
-#include <type_traits>
-#include <vector>
 
 template<>
 struct std::hash<std::vector<uint8_t>>
@@ -419,7 +415,7 @@ public:
         RPC_HPP_PRECONDITION(bytes.size() >= sizeof(int));
 
         // Check that getting the type does not throw
-        RPC_HPP_UNUSED auto type = get_type(bytes);
+        RPC_HPP_UNUSED const auto type = get_type(bytes);
 
         if (get_func_name(bytes).empty())
         {
@@ -434,7 +430,7 @@ public:
         RPC_HPP_PRECONDITION(bytes.size() >= sizeof(int));
 
         // Check that getting the type does not throw
-        RPC_HPP_UNUSED auto type = get_type(bytes);
+        RPC_HPP_UNUSED const auto type = get_type(bytes);
 
         if (get_func_name(bytes).empty())
         {
@@ -641,7 +637,7 @@ private:
         return ((high_byte & 0x7FU) << 8U) | low_byte;
     }
 
-    static bool verify_type(const bit_buffer& bytes, rpc_type type)
+    static bool verify_type(const bit_buffer& bytes, rpc_type type) noexcept
     {
         RPC_HPP_PRECONDITION(bytes.size() >= sizeof(int));
 

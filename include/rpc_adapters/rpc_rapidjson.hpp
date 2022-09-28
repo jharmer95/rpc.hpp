@@ -62,8 +62,8 @@ class rapidjson_serializer : public serializer<rapidjson_serializer, false>
 {
 public:
     rapidjson_serializer() = default;
-    [[nodiscard]] const rapidjson::Document& object() const& { return m_json; }
-    [[nodiscard]] rapidjson::Document&& object() && { return std::move(m_json); }
+    [[nodiscard]] const rapidjson::Document& object() const& noexcept { return m_json; }
+    [[nodiscard]] rapidjson::Document&& object() && noexcept { return std::move(m_json); }
 
     template<typename T>
     void as_bool(std::string_view key, T& val)
@@ -252,8 +252,7 @@ private:
 class rapidjson_deserializer : public serializer<rapidjson_deserializer, true>
 {
 public:
-    explicit rapidjson_deserializer(const rapidjson::Value& obj) : m_json(obj) {}
-    explicit rapidjson_deserializer(rapidjson::Value&& obj) : m_json(std::move(obj)) {}
+    explicit rapidjson_deserializer(const rapidjson::Value& obj) noexcept : m_json(obj) {}
 
     template<typename T>
     void as_bool(std::string_view key, T& val) const

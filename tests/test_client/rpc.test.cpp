@@ -40,6 +40,22 @@
 #include "../test_structs.hpp"
 #include "../static_funcs.hpp"
 
+#if defined(RPC_HPP_ENABLE_BITSERY)
+#  include <rpc_adapters/rpc_bitsery.hpp>
+#endif
+
+#if defined(RPC_HPP_ENABLE_BOOST_JSON)
+#  include <rpc_adapters/rpc_boost_json.hpp>
+#endif
+
+#if defined(RPC_HPP_ENABLE_NJSON)
+#  include <rpc_adapters/rpc_njson.hpp>
+#endif
+
+#if defined(RPC_HPP_ENABLE_RAPIDJSON)
+#  include <rpc_adapters/rpc_rapidjson.hpp>
+#endif
+
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include <doctest/doctest.h>
 
@@ -197,7 +213,7 @@ TEST_CASE_TEMPLATE("CountChars (static)", TestType, RPC_TEST_TYPES)
     const auto response = client.call_header_func(CountChars, test_str, 'p');
 
     REQUIRE(!response.is_error());
-    REQUIRE(response.template get_result<int>() == 9);
+    REQUIRE(response.get_result<int>() == 9);
 }
 
 TEST_CASE_TEMPLATE("AddOne (static)", TestType, RPC_TEST_TYPES)

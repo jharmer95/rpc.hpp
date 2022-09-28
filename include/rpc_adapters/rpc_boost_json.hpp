@@ -38,15 +38,8 @@
 #define RPC_ADAPTERS_BOOST_JSON_HPP
 
 #include "../rpc.hpp"
-#include "rpc_adapters/rpc_njson.hpp"
 
 #include <boost/json.hpp>
-#include <boost/json/array.hpp>
-#include <boost/json/object.hpp>
-#include <boost/json/serialize.hpp>
-#include <string_view>
-#include <tuple>
-#include <type_traits>
 
 namespace rpc_hpp::adapters
 {
@@ -64,8 +57,8 @@ class boost_json_serializer : public serializer<boost_json_serializer, false>
 public:
     boost_json_serializer() noexcept { m_json.emplace_object(); }
 
-    [[nodiscard]] const boost::json::value& object() const& { return m_json; }
-    [[nodiscard]] boost::json::value&& object() && { return std::move(m_json); }
+    [[nodiscard]] const boost::json::value& object() const& noexcept { return m_json; }
+    [[nodiscard]] boost::json::value&& object() && noexcept { return std::move(m_json); }
 
     template<typename T>
     void as_bool(std::string_view key, T& val)
@@ -213,7 +206,7 @@ class boost_json_deserializer : public serializer<boost_json_deserializer, true>
 {
 public:
     explicit boost_json_deserializer(const boost::json::value& obj) : m_json(obj) {}
-    explicit boost_json_deserializer(boost::json::value&& obj) : m_json(std::move(obj)) {}
+    explicit boost_json_deserializer(boost::json::value&& obj) noexcept : m_json(std::move(obj)) {}
 
     template<typename T>
     void as_bool(std::string_view key, T& val) const
