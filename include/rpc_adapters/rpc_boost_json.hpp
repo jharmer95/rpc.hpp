@@ -254,7 +254,7 @@ public:
 
         if (arr.size() != N)
         {
-            throw std::out_of_range("JSON array out of bounds");
+            throw std::out_of_range{ "JSON array out of bounds" };
         }
 
         std::transform(
@@ -470,12 +470,12 @@ public:
 
         if (err_code)
         {
-            throw deserialization_error(err_code.what());
+            throw deserialization_error{ err_code.what() };
         }
 
         if (!val.is_object())
         {
-            throw deserialization_error("Boost::JSON: not an object");
+            throw deserialization_error{ "Boost::JSON: not an object" };
         }
 
         const auto& obj = val.get_object();
@@ -483,7 +483,7 @@ public:
         if (const auto fname_it = obj.find("func_name");
             (fname_it == obj.cend()) || (!fname_it->value().is_string()))
         {
-            throw deserialization_error("Boost::JSON: field \"func_name\" not found");
+            throw deserialization_error{ "Boost::JSON: field \"func_name\" not found" };
         }
 
         return obj;

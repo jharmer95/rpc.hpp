@@ -41,11 +41,9 @@
 
 #include <bitsery/bitsery.h>
 #include <bitsery/adapter/buffer.h>
-#include <bitsery/deserializer.h>
 #include <bitsery/ext/std_set.h>
 #include <bitsery/ext/std_map.h>
 #include <bitsery/ext/std_tuple.h>
-#include <bitsery/serializer.h>
 #include <bitsery/traits/array.h>
 #include <bitsery/traits/core/traits.h>
 #include <bitsery/traits/deque.h>
@@ -56,7 +54,6 @@
 
 #include <cassert>
 #include <numeric>
-#include <type_traits>
 
 template<>
 struct std::hash<std::vector<uint8_t>>
@@ -75,7 +72,6 @@ struct std::hash<std::vector<uint8_t>>
 namespace rpc_hpp::adapters
 {
 class bitsery_adapter;
-class bitsery_adapter2;
 
 template<>
 struct serial_traits<bitsery_adapter>
@@ -84,8 +80,7 @@ struct serial_traits<bitsery_adapter>
     using bytes_t = std::vector<uint8_t>;
 };
 
-template<>
-struct config<bitsery_adapter>
+struct bitsery_config
 {
 #if defined(RPC_HPP_BITSERY_EXACT_SZ)
     static constexpr bool use_exact_size = true;
@@ -98,11 +93,11 @@ struct config<bitsery_adapter>
     static const size_t max_container_size;
 };
 
-// TODO: Move this function
+// TODO: Move this function out of the upper namespace
 template<typename S, typename T, typename Adapter, bool Deserialize>
 void parse_obj(S& ser, serializer<Adapter, Deserialize>& fallback, T& val)
 {
-    using config = config<bitsery_adapter>;
+    using config = bitsery_config;
 
     if constexpr (std::is_arithmetic_v<T>)
     {
@@ -124,7 +119,7 @@ void parse_obj(S& ser, serializer<Adapter, Deserialize>& fallback, T& val)
         using key_t = typename T::key_type;
         using val_t = typename T::mapped_type;
 
-        ser.ext(val, ::bitsery::ext::StdMap{ config::max_container_size },
+        ser.ext(val, bitsery::ext::StdMap{ config::max_container_size },
             [&fallback](S& s_ser, key_t& map_key, val_t& map_val)
             {
                 parse_obj(s_ser, fallback, map_key);
@@ -135,7 +130,7 @@ void parse_obj(S& ser, serializer<Adapter, Deserialize>& fallback, T& val)
     {
         using key_t = typename T::key_type;
 
-        ser.ext(val, ::bitsery::ext::StdSet{ config::max_container_size },
+        ser.ext(val, bitsery::ext::StdSet{ config::max_container_size },
             [&fallback](S& s_ser, key_t& key_val) { parse_obj(s_ser, fallback, key_val); });
     }
     else if constexpr (detail::is_container_v<T>)
@@ -144,7 +139,7 @@ void parse_obj(S& ser, serializer<Adapter, Deserialize>& fallback, T& val)
 
         if constexpr (std::is_arithmetic_v<val_t>)
         {
-            if constexpr (::bitsery::traits::ContainerTraits<std::remove_cv_t<T>>::isResizable)
+            if constexpr (bitsery::traits::ContainerTraits<std::remove_cv_t<T>>::isResizable)
             {
                 ser.template container<sizeof(val_t), std::remove_cv_t<T>>(
                     val, config::max_container_size);
@@ -156,7 +151,7 @@ void parse_obj(S& ser, serializer<Adapter, Deserialize>& fallback, T& val)
         }
         else
         {
-            if constexpr (::bitsery::traits::ContainerTraits<std::remove_cv_t<T>>::isResizable)
+            if constexpr (bitsery::traits::ContainerTraits<std::remove_cv_t<T>>::isResizable)
             {
                 ser.container(val, config::max_container_size,
                     [](S& s_ser, std::string& substr)
@@ -248,11 +243,11 @@ public:
     template<typename T>
     void as_map(RPC_HPP_UNUSED const std::string_view key, const T& val)
     {
-        using S = ::bitsery::Serializer<output_adapter>;
+        using S = bitsery::Serializer<output_adapter>;
         using key_t = typename T::key_type;
         using val_t = typename T::mapped_type;
 
-        m_ser.ext(val, ::bitsery::ext::StdMap{ config::max_container_size },
+        m_ser.ext(val, bitsery::ext::StdMap{ config::max_container_size },
             [this](S& ser, key_t& map_key, val_t& map_val)
             {
                 parse_obj(ser, *this, map_key);
@@ -269,10 +264,10 @@ public:
     template<typename... Args>
     void as_tuple(RPC_HPP_UNUSED const std::string_view key, const std::tuple<Args...>& val)
     {
-        using S = ::bitsery::Serializer<output_adapter>;
+        using S = bitsery::Serializer<output_adapter>;
 
         m_ser.ext(val,
-            ::bitsery::ext::StdTuple{ [this](S& ser, auto& subval)
+            bitsery::ext::StdTuple{ [this](S& ser, auto& subval)
                 {
                     parse_obj(ser, *this, subval);
                 } });
@@ -285,8 +280,8 @@ public:
     }
 
 private:
-    using config = config<bitsery_adapter>;
-    using output_adapter = ::bitsery::OutputBufferAdapter<std::vector<uint8_t>>;
+    using config = bitsery_config;
+    using output_adapter = bitsery::OutputBufferAdapter<std::vector<uint8_t>>;
 
     void flush()
     {
@@ -295,7 +290,7 @@ private:
     }
 
     std::vector<uint8_t> m_bytes{};
-    ::bitsery::Serializer<output_adapter> m_ser;
+    bitsery::Serializer<output_adapter> m_ser;
 };
 
 class bitsery_deserializer : public serializer<bitsery_deserializer, true>
@@ -359,11 +354,11 @@ public:
     template<typename T>
     void as_map(RPC_HPP_UNUSED const std::string_view key, T& val)
     {
-        using S = ::bitsery::Deserializer<input_adapter>;
+        using S = bitsery::Deserializer<input_adapter>;
         using key_t = typename T::key_type;
         using val_t = typename T::mapped_type;
 
-        m_ser.ext(val, ::bitsery::ext::StdMap{ config::max_container_size },
+        m_ser.ext(val, bitsery::ext::StdMap{ config::max_container_size },
             [this](S& ser, key_t& map_key, val_t& map_val)
             {
                 parse_obj(ser, *this, map_key);
@@ -380,10 +375,10 @@ public:
     template<typename... Args>
     void as_tuple(RPC_HPP_UNUSED const std::string_view key, std::tuple<Args...>& val)
     {
-        using S = ::bitsery::Deserializer<input_adapter>;
+        using S = bitsery::Deserializer<input_adapter>;
 
         m_ser.ext(val,
-            ::bitsery::ext::StdTuple{ [this](S& ser, auto& subval)
+            bitsery::ext::StdTuple{ [this](S& ser, auto& subval)
                 {
                     parse_obj(ser, *this, subval);
                 } });
@@ -396,32 +391,17 @@ public:
     }
 
 private:
-    using config = config<bitsery_adapter>;
-    using input_adapter = ::bitsery::InputBufferAdapter<std::vector<uint8_t>>;
+    using config = bitsery_config;
+    using input_adapter = bitsery::InputBufferAdapter<std::vector<uint8_t>>;
 
     const std::vector<uint8_t>& m_bytes;
-    ::bitsery::Deserializer<input_adapter> m_ser;
+    bitsery::Deserializer<input_adapter> m_ser;
 };
 
 class bitsery_adapter : public serial_adapter_base<bitsery_adapter>
 {
 public:
-    using config = config<bitsery_adapter>;
-
-    [[nodiscard]] static std::vector<uint8_t> from_bytes(const std::vector<uint8_t>& bytes)
-    {
-        RPC_HPP_PRECONDITION(bytes.size() >= sizeof(int));
-
-        // Check that getting the type does not throw
-        RPC_HPP_UNUSED const auto type = get_type(bytes);
-
-        if (get_func_name(bytes).empty())
-        {
-            throw deserialization_error("Bitsery: func_name could not be extracted from bytes");
-        }
-
-        return bytes;
-    }
+    using config = bitsery_config;
 
     [[nodiscard]] static std::vector<uint8_t> from_bytes(std::vector<uint8_t>&& bytes)
     {
@@ -432,7 +412,7 @@ public:
 
         if (get_func_name(bytes).empty())
         {
-            throw deserialization_error("Bitsery: func_name could not be extracted from bytes");
+            throw deserialization_error{ "Bitsery: func_name could not be extracted from bytes" };
         }
 
         return bytes;
@@ -451,12 +431,11 @@ public:
         size_t index = sizeof(int);
         const auto len = extract_length(serial_obj, index);
 
-        assert(index + len <= std::numeric_limits<ptrdiff_t>::max());
-        assert(index + len < serial_obj.size());
+        RPC_HPP_POSTCONDITION(index + len <= std::numeric_limits<ptrdiff_t>::max());
+        RPC_HPP_POSTCONDITION(index + len < serial_obj.size());
 
         return { std::next(serial_obj.begin(), static_cast<ptrdiff_t>(index)),
-            std::next(
-                serial_obj.begin(), static_cast<ptrdiff_t>(index + len)) };
+            std::next(serial_obj.begin(), static_cast<ptrdiff_t>(index + len)) };
     }
 
     static rpc_type get_type(const std::vector<uint8_t>& serial_obj)
@@ -470,7 +449,7 @@ public:
         if ((n_type < static_cast<int>(rpc_type::callback_install_request))
             || (n_type > static_cast<int>(rpc_type::func_result_w_bind)))
         {
-            throw deserialization_error("Bitsery: invalid type field detected");
+            throw deserialization_error{ "Bitsery: invalid type field detected" };
         }
 
         return static_cast<rpc_type>(n_type);
@@ -563,24 +542,11 @@ public:
 
     [[nodiscard]] static bool has_bound_args(const std::vector<uint8_t>& serial_obj)
     {
-        switch (get_type(serial_obj))
-        {
-            case rpc_type::callback_request:
-            case rpc_type::func_request:
-                return deserialize_rpc_object<detail::func_request<>>(serial_obj).bind_args;
-
-            case rpc_type::callback_result_w_bind:
-            case rpc_type::func_result_w_bind:
-                return true;
-
-            case rpc_type::callback_error:
-            case rpc_type::callback_install_request:
-            case rpc_type::callback_result:
-            case rpc_type::func_error:
-            case rpc_type::func_result:
-            default:
-                return false;
-        }
+        const auto type = get_type(serial_obj);
+        return ((type == rpc_type::callback_request) || (type == rpc_type::func_request))
+            ? deserialize_rpc_object<detail::func_request<>>(serial_obj).bind_args
+            : ((type == rpc_type::callback_result_w_bind)
+                || (type == rpc_type::func_result_w_bind));
     }
 
 private:

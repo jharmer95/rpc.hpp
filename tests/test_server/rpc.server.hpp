@@ -49,7 +49,6 @@
 #include <stdexcept>
 #include <string>
 
-
 namespace test_server
 {
 inline std::atomic_bool RUNNING{ false };
@@ -64,7 +63,8 @@ public:
 
     TestServer() = delete;
     TestServer(asio::io_context& io_ctx, const uint16_t port)
-        : rpc_hpp::server_interface<Serial>(), m_accept(io_ctx, asio::ip::tcp::endpoint(asio::ip::tcp::v4(), port))
+        : rpc_hpp::server_interface<Serial>{},
+          m_accept(io_ctx, asio::ip::tcp::endpoint(asio::ip::tcp::v4(), port))
     {
     }
 
@@ -86,7 +86,7 @@ public:
         // other error
         if (error)
         {
-            throw asio::system_error(error);
+            throw asio::system_error{ error };
         }
 
         return { data.data(), data.data() + len };

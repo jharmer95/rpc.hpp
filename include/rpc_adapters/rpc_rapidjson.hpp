@@ -312,7 +312,7 @@ public:
 
         if (arr.Size() != N)
         {
-            throw std::out_of_range("JSON array out of bounds");
+            throw std::out_of_range{ "JSON array out of bounds" };
         }
 
         std::transform(arr.begin(), arr.end(), val.begin(), yield_value<detail::remove_cvref_t<T>>);
@@ -620,13 +620,13 @@ public:
 
         if (doc.HasParseError())
         {
-            throw deserialization_error("rapidjson: parsing error occurred");
+            throw deserialization_error{ "rapidjson: parsing error occurred" };
         }
 
         if (const auto fname_it = doc.FindMember("func_name");
             (fname_it == doc.MemberEnd()) || (!fname_it->value.IsString()))
         {
-            throw deserialization_error("rapidjson: field \"func_name\" not found");
+            throw deserialization_error{ "rapidjson: field \"func_name\" not found" };
         }
 
         return doc;

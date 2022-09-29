@@ -218,7 +218,7 @@ public:
 
         if (arr.size() != N)
         {
-            throw std::out_of_range("JSON array out of bounds");
+            throw std::out_of_range{ "JSON array out of bounds" };
         }
 
         std::copy(cbegin(arr), cend(arr), begin(val));
@@ -231,7 +231,8 @@ public:
 
         for (const auto& [k, v] : obj.items())
         {
-            val.insert({ nlohmann::json::parse(k).front().get<typename T::key_type>(), v });
+            val.insert(
+                { nlohmann::json::parse(k).front().template get<typename T::key_type>(), v });
         }
     }
 
@@ -244,8 +245,8 @@ public:
         {
             for (const auto& subval : v)
             {
-                val.insert(
-                    { nlohmann::json::parse(k).front().get<typename T::key_type>(), subval });
+                val.insert({ nlohmann::json::parse(k).front().template get<typename T::key_type>(),
+                    subval });
             }
         }
     }
@@ -343,7 +344,7 @@ private:
     {
         if (index >= arg_arr.size())
         {
-            throw function_mismatch("Argument count mismatch");
+            throw function_mismatch{ "Argument count mismatch" };
         }
 
         if (arg_arr.is_array())
@@ -369,13 +370,13 @@ public:
 
         if (!obj.is_object())
         {
-            throw deserialization_error("NJSON: not an object");
+            throw deserialization_error{ "NJSON: not an object" };
         }
 
         if (const auto fname_it = obj.find("func_name");
             (fname_it == obj.end()) || (!fname_it->is_string()) || (fname_it->empty()))
         {
-            throw deserialization_error("NJSON: field \"func_name\" not found");
+            throw deserialization_error{ "NJSON: field \"func_name\" not found" };
         }
 
         return obj;

@@ -2,7 +2,6 @@
 #define RPC_HPP
 
 #include <cassert>
-#include <exception>
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -272,9 +271,7 @@ namespace detail
     struct decay_str
     {
         static_assert(!std::is_pointer_v<remove_cvref_t<T>>, "Pointer parameters are not allowed");
-
-        static_assert(
-            !std::is_array_v<remove_cvref_t<T>>, "C-style array parameters are not allowed");
+        static_assert(!std::is_array_v<remove_cvref_t<T>>, "C array parameters are not allowed");
 
         using type = T;
     };
@@ -502,10 +499,6 @@ namespace detail
     template<typename R, typename... Args>
     using fptr_t = R (*)(Args...);
 
-    struct bind_args_tag
-    {
-    };
-
     template<bool IsCallback>
     struct rpc_base
     {
@@ -519,14 +512,10 @@ namespace detail
         using args_t = std::tuple<remove_cvref_t<decay_str_t<Args>>...>;
 
         rpc_request() noexcept = default;
-        rpc_request(std::string t_func_name, args_t t_args)
-            : rpc_base<IsCallback>{ std::move(t_func_name) }, args(std::move(t_args))
-        {
-        }
 
-        rpc_request(RPC_HPP_UNUSED const bind_args_tag tag, std::string t_func_name, args_t t_args)
+        rpc_request(std::string t_func_name, args_t t_args, bool t_bind_args = false)
             : rpc_base<IsCallback>{ std::move(t_func_name) },
-              bind_args(true),
+              bind_args(t_bind_args),
               args(std::move(t_args))
         {
         }
@@ -779,7 +768,7 @@ public:
             case rpc_type::callback_request:
             case rpc_type::func_request:
             default:
-                throw rpc_object_mismatch("Invalid rpc_object type detected");
+                throw rpc_object_mismatch{ "Invalid rpc_object type detected" };
         }
     }
 
@@ -803,19 +792,16 @@ public:
             case rpc_type::func_error:
             case rpc_type::func_result:
             default:
-                throw rpc_object_mismatch("Invalid rpc_object type detected");
+                throw rpc_object_mismatch{ "Invalid rpc_object type detected" };
         }
     }
 
     RPC_HPP_NODISCARD("extracting data from serial object may be expensive")
     bool is_callback_uninstall() const
     {
-        if (type() != rpc_type::callback_install_request)
-        {
-            return false;
-        }
-
-        return Serial::get_callback_install(m_obj).is_uninstall;
+        return type() == rpc_type::callback_install_request
+            ? Serial::get_callback_install(m_obj).is_uninstall
+            : false;
     }
 
     RPC_HPP_NODISCARD("extracting data from serial object may be expensive")
@@ -837,7 +823,7 @@ public:
             case rpc_type::func_result:
             case rpc_type::func_result_w_bind:
             default:
-                throw rpc_object_mismatch("Invalid rpc_object type detected");
+                throw rpc_object_mismatch{ "Invalid rpc_object type detected" };
         }
     }
 
@@ -861,7 +847,7 @@ public:
             case rpc_type::func_result:
             case rpc_type::func_result_w_bind:
             default:
-                throw rpc_object_mismatch("Invalid rpc_object type detected");
+                throw rpc_object_mismatch{ "Invalid rpc_object type detected" };
         }
     }
 
@@ -884,7 +870,7 @@ public:
             case rpc_type::func_error:
             case rpc_type::func_result:
             default:
-                throw rpc_object_mismatch("Invalid rpc_object type detected");
+                throw rpc_object_mismatch{ "Invalid rpc_object type detected" };
         }
     }
 
@@ -932,6 +918,7 @@ namespace adapters
         void deserialize_object(T&& val)
         {
             static_assert(is_deserializer, "Cannot call deserialize_object() on a serializer");
+
             serialize(*this, std::forward<T>(val));
         }
 
@@ -1178,7 +1165,7 @@ namespace detail
         }
         catch (const std::exception& ex)
         {
-            throw remote_exec_error(ex.what());
+            throw remote_exec_error{ ex.what() };
         }
     }
 
@@ -1285,7 +1272,6 @@ template<typename Adapter, bool Deserialize>
 void serialize(adapters::serializer<Adapter, Deserialize>& ser, callback_install_request& rpc_obj)
 {
     auto type = static_cast<int>(rpc_type::callback_install_request);
-
     ser.as_int("type", type);
     ser.as_string("func_name", rpc_obj.func_name);
     ser.as_bool("is_uninstall", rpc_obj.is_uninstall);

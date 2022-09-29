@@ -4,7 +4,6 @@
 #include "rpc.hpp"
 
 #include <functional>
-#include <string>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -73,11 +72,9 @@ public:
 
                     bytes = rpc_obj.to_bytes();
                     return;
-
 #else
                     [[fallthrough]];
 #endif
-
                 case rpc_type::callback_result:
                 case rpc_type::callback_result_w_bind:
                 case rpc_type::callback_error:
@@ -92,7 +89,6 @@ public:
                     }.to_bytes();
                     return;
 #endif
-
                 case rpc_type::callback_request:
                 case rpc_type::func_error:
                 case rpc_type::func_result:
@@ -118,14 +114,16 @@ protected:
     template<typename R, typename... Args>
     [[nodiscard]] R call_callback(const std::string& func_name, Args&&... args)
     {
-        auto response = call_callback_impl<R, Args...>(func_name, std::forward<Args>(args)...);
+        const auto response =
+            call_callback_impl<R, Args...>(func_name, std::forward<Args>(args)...);
         return response.template get_result<R>();
     }
 
     template<typename R, typename... Args>
     [[nodiscard]] R call_callback_w_bind(const std::string& func_name, Args&&... args)
     {
-        auto response = call_callback_impl<R, Args...>(func_name, std::forward<Args>(args)...);
+        const auto response =
+            call_callback_impl<R, Args...>(func_name, std::forward<Args>(args)...);
         detail::tuple_bind(response.template get_args<true, detail::decay_str_t<Args>...>(),
             std::forward<Args>(args)...);
 
@@ -172,8 +170,8 @@ private:
     {
         if (m_installed_callbacks.find(func_name) == m_installed_callbacks.cend())
         {
-            throw callback_missing_error(
-                "Callback \"" + func_name + "\" was called but not installed");
+            throw callback_missing_error{ "Callback \"" + func_name
+                + "\" was called but not installed" };
         }
 
         object_t response = object_t{ detail::callback_request<detail::decay_str_t<Args>...>{
@@ -185,12 +183,13 @@ private:
         }
         catch (const std::exception& ex)
         {
-            throw server_send_error(ex.what());
+            throw server_send_error{ ex.what() };
         }
 
         return recv_impl();
     }
 
+    // TODO: Make this pass-by-ref?
     [[nodiscard]] object_t recv_impl()
     {
         bytes_t bytes = [this]
@@ -201,7 +200,7 @@ private:
             }
             catch (const std::exception& ex)
             {
-                throw server_receive_error(ex.what());
+                throw server_receive_error{ ex.what() };
             }
         }();
 
@@ -209,7 +208,7 @@ private:
 
         if (!o_response.has_value())
         {
-            throw server_receive_error("Invalid RPC object received");
+            throw server_receive_error{ "Invalid RPC object received" };
         }
 
         switch (auto& response = o_response.value(); response.type())
@@ -226,7 +225,7 @@ private:
             case rpc_type::func_result:
             case rpc_type::func_result_w_bind:
             default:
-                throw rpc_object_mismatch("Invalid rpc_object type detected");
+                throw rpc_object_mismatch{ "Invalid rpc_object type detected" };
         }
     }
 

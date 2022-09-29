@@ -3,8 +3,6 @@
 
 #include "rpc.hpp"
 
-#include <type_traits>
-
 #ifdef RPC_HEADER_FUNC
 #  error <rpc_client.hpp> and <rpc_server.hpp> cannot be included in the same binary, please double check your includes
 #endif
@@ -42,7 +40,7 @@ public:
         }
         catch (const std::exception& ex)
         {
-            throw client_send_error(ex.what());
+            throw client_send_error{ ex.what() };
         }
 
         recv_loop(response);
@@ -54,7 +52,7 @@ public:
     object_t call_func_w_bind(std::string func_name, Args&&... args)
     {
         auto response = object_t{ detail::func_request<detail::decay_str_t<Args>...>{
-            detail::bind_args_tag{}, std::move(func_name), std::forward_as_tuple(args...) } };
+            std::move(func_name), std::forward_as_tuple(args...), true } };
 
         try
         {
@@ -62,7 +60,7 @@ public:
         }
         catch (const std::exception& ex)
         {
-            throw client_send_error(ex.what());
+            throw client_send_error{ ex.what() };
         }
 
         recv_loop(response);
@@ -125,8 +123,9 @@ public:
         if (const auto response = object_t::parse_bytes(receive());
             !response.has_value() || response.value().type() != rpc_type::callback_install_request)
         {
-            throw callback_install_error(
-                "server did not respond to callback_install_request (uninstall)");
+            throw callback_install_error{
+                "server did not respond to callback_install_request (uninstall)"
+            };
         }
     }
 #endif
@@ -166,13 +165,13 @@ private:
         }
         catch (const std::exception& ex)
         {
-            throw client_send_error(ex.what());
+            throw client_send_error{ ex.what() };
         }
 
         if (auto response = object_t::parse_bytes(receive());
             !response.has_value() || response.value().type() != rpc_type::callback_install_request)
         {
-            throw callback_install_error("server did not respond to callback_install_request");
+            throw callback_install_error{ "server did not respond to callback_install_request" };
         }
 
         return cb;
@@ -203,7 +202,7 @@ private:
             }
             catch (const std::exception& ex)
             {
-                throw client_receive_error(ex.what());
+                throw client_receive_error{ ex.what() };
             }
         }();
 
@@ -228,7 +227,7 @@ private:
                     }
                     catch (const std::exception& ex)
                     {
-                        throw client_send_error(ex.what());
+                        throw client_send_error{ ex.what() };
                     }
 
                     return recv_loop(response);
@@ -242,11 +241,11 @@ private:
                 case rpc_type::callback_result:
                 case rpc_type::callback_result_w_bind:
                 default:
-                    throw rpc_object_mismatch("Invalid rpc_object type detected");
+                    throw rpc_object_mismatch{ "Invalid rpc_object type detected" };
             }
         }
 
-        throw client_receive_error("Invalid RPC object received");
+        throw client_receive_error{ "Invalid RPC object received" };
     }
 
 #if defined(RPC_HPP_ENABLE_CALLBACKS)

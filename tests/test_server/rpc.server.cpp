@@ -34,7 +34,6 @@
 ///OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ///
 
-//#define RPC_HPP_ENABLE_SERVER_CACHE
 #define RPC_HPP_ENABLE_CALLBACKS
 
 #include "rpc.server.hpp"
@@ -96,7 +95,7 @@ namespace test_server
 {
 [[noreturn]] void ThrowError() noexcept(false)
 {
-    throw std::domain_error("THIS IS A TEST ERROR!");
+    throw std::domain_error{ "THIS IS A TEST ERROR!" };
 }
 
 // NOTE: This function is only for testing purposes. Obviously you would not want this in a production server!
