@@ -312,7 +312,7 @@ public:
             throw function_mismatch{ "Boost.JSON: invalid number of args" };
         }
 
-        [[maybe_unused]] unsigned arg_counter = 0;
+        [[maybe_unused]] size_t arg_counter = 0;
         val = { parse_args<Args>(arg_arr, arg_counter)... };
     }
 
@@ -418,7 +418,7 @@ private:
 
     template<typename T>
     [[nodiscard]] static detail::remove_cvref_t<detail::decay_str_t<T>> parse_args(
-        const boost::json::value& arg_arr, unsigned& index)
+        const boost::json::value& arg_arr, size_t& index)
     {
         if (!arg_arr.is_array())
         {

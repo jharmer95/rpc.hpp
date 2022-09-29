@@ -379,7 +379,7 @@ public:
             throw function_mismatch{ "rapidjson: invalid number of args" };
         }
 
-        unsigned arg_counter = 0;
+        [[maybe_unused]] rapidjson::SizeType arg_counter = 0;
         val = { parse_args<Args>(subobject(key), arg_counter)... };
     }
 
@@ -549,7 +549,7 @@ private:
     RPC_HPP_NODISCARD(
         "parsing can be expensive, and it makes no sense to not use the parsed result")
     static detail::remove_cvref_t<detail::decay_str_t<T>> parse_args(
-        const rapidjson::Value& arg_arr, unsigned& index)
+        const rapidjson::Value& arg_arr, rapidjson::SizeType& index)
     {
         if (!arg_arr.IsArray())
         {

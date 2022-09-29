@@ -53,7 +53,7 @@ if(NOT TARGET asio_lib)
   target_compile_definitions(asio_lib INTERFACE ASIO_STANDALONE)
   find_package(asio CONFIG REQUIRED)
 
-  if(${CXX_GCC} OR ${CXX_MINGW})
+  if(CXX_GCC OR CXX_MINGW)
     # Workaround for GCC 12 detecting null errors
     target_compile_options(asio_lib INTERFACE -Wno-error=null-dereference)
   endif()

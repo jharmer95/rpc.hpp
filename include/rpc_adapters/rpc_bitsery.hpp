@@ -448,7 +448,7 @@ public:
         RPC_HPP_PRECONDITION(serial_obj.size() > sizeof(int));
 
         // First 4 bytes represent the type
-        size_t index = 4;
+        size_t index = sizeof(int);
         const auto len = extract_length(serial_obj, index);
 
         assert(index + len <= std::numeric_limits<ptrdiff_t>::max());
@@ -456,7 +456,7 @@ public:
 
         return { std::next(serial_obj.begin(), static_cast<ptrdiff_t>(index)),
             std::next(
-                serial_obj.begin(), static_cast<ptrdiff_t>(index) + static_cast<ptrdiff_t>(len)) };
+                serial_obj.begin(), static_cast<ptrdiff_t>(index + len)) };
     }
 
     static rpc_type get_type(const std::vector<uint8_t>& serial_obj)

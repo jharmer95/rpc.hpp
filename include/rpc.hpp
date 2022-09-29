@@ -29,7 +29,7 @@
 
 namespace rpc_hpp
 {
-enum class exception_type
+enum class exception_type : int
 {
     none,
     func_not_found,
@@ -670,7 +670,7 @@ struct callback_install_request : detail::rpc_base<true>
     bool is_uninstall{ false };
 };
 
-enum class rpc_type
+enum class rpc_type : int
 {
     callback_install_request,
     callback_error,

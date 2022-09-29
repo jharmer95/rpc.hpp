@@ -258,7 +258,7 @@ public:
             throw function_mismatch{ "NJSON: invalid number of args" };
         }
 
-        unsigned arg_counter = 0;
+        [[maybe_unused]] size_t arg_counter = 0;
         val = { parse_args<Args>(subobject(key), arg_counter)... };
     }
 
@@ -339,7 +339,7 @@ private:
     template<typename T>
     RPC_HPP_NODISCARD("parsing can be expensive and it makes no sense to not use the parsed result")
     static detail::remove_cvref_t<detail::decay_str_t<T>> parse_args(
-        const nlohmann::json& arg_arr, unsigned& index)
+        const nlohmann::json& arg_arr, size_t& index)
     {
         if (index >= arg_arr.size())
         {

@@ -63,7 +63,7 @@ if(${BUILD_ADAPTER_NJSON})
   target_compile_definitions(njson_adapter INTERFACE RPC_HPP_ENABLE_NJSON)
   find_package(nlohmann_json CONFIG REQUIRED)
 
-  if(${CXX_GCC} OR ${CXX_MINGW})
+  if(CXX_GCC OR CXX_MINGW)
     # Workaround for GCC 12 detecting null errors
     target_compile_options(njson_adapter INTERFACE -Wno-error=null-dereference)
   endif()
