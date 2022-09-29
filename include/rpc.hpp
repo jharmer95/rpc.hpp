@@ -920,121 +920,13 @@ private:
 namespace adapters
 {
     template<typename Adapter>
-    struct serial_traits;
-
-    template<typename Adapter>
-    struct config;
-
-    template<typename Adapter, bool Deserialize>
-    class serializer
+    struct serial_adapter_base
     {
-    public:
-        static constexpr bool is_deserializer = Deserialize;
-
-        template<typename T>
-        void serialize_object(const T& val)
-        {
-            static_assert(!is_deserializer, "Cannot call serialize_object() on a deserializer");
-
-            // Necessary for bi-directional serialization
-            serialize(*this, const_cast<T&>(val)); // NOLINT(cppcoreguidelines-pro-type-const-cast)
-        }
-
-        template<typename T>
-        void deserialize_object(T&& val)
-        {
-            static_assert(is_deserializer, "Cannot call deserialize_object() on a serializer");
-
-            serialize(*this, std::forward<T>(val));
-        }
-
-        template<typename T>
-        void as_bool(const std::string_view key, T& val)
-        {
-            static_assert(detail::is_boolean_testable_v<T>, "T must be convertible to bool");
-
-            (static_cast<Adapter*>(this))->as_bool(key, val);
-        }
-
-        template<typename T>
-        void as_float(const std::string_view key, T& val)
-        {
-            static_assert(std::is_floating_point_v<T>, "T must be a floating-point type");
-
-            (static_cast<Adapter*>(this))->as_float(key, val);
-        }
-
-        template<typename T>
-        void as_int(const std::string_view key, T& val)
-        {
-            static_assert(std::is_integral_v<T> || std::is_enum_v<T>, "T must be an integral type");
-
-            (static_cast<Adapter*>(this))->as_int(key, val);
-        }
-
-        template<typename T>
-        void as_string(const std::string_view key, T& val)
-        {
-            static_assert(detail::is_stringlike_v<T>, "T must be convertible to std::string_view");
-
-            (static_cast<Adapter*>(this))->as_string(key, val);
-        }
-
-        template<typename T>
-        void as_array(const std::string_view key, T& val)
-        {
-            static_assert(detail::is_container_v<T>, "T must have begin() and end()");
-
-            (static_cast<Adapter*>(this))->as_array(key, val);
-        }
-
-        template<typename T>
-        void as_map(const std::string_view key, T& val)
-        {
-            static_assert(detail::is_map_v<T>, "T must be a map type");
-
-            if constexpr (detail::is_multimap_v<T>)
-            {
-                (static_cast<Adapter*>(this))->as_multimap(key, val);
-            }
-            else
-            {
-                (static_cast<Adapter*>(this))->as_map(key, val);
-            }
-        }
-
-        template<typename T1, typename T2>
-        void as_tuple(const std::string_view key, std::pair<T1, T2>& val)
-        {
-            (static_cast<Adapter*>(this))->as_tuple(key, val);
-        }
-
-        template<typename... Args>
-        void as_tuple(const std::string_view key, std::tuple<Args...>& val)
-        {
-            (static_cast<Adapter*>(this))->as_tuple(key, val);
-        }
-
-        template<typename T>
-        void as_optional(const std::string_view key, std::optional<T>& val)
-        {
-            (static_cast<Adapter*>(this))->as_optional(key, val);
-        }
-
-        template<typename T>
-        void as_object(const std::string_view key, T& val)
-        {
-            (static_cast<Adapter*>(this))->as_object(key, val);
-        }
-    };
-
-    // TODO: Start dismantling this class and moving behavior into serializer/deserializer
-    template<typename Adapter>
-    class serial_adapter_base
-    {
-    public:
-        using serial_t = typename serial_traits<Adapter>::serial_t;
-        using bytes_t = typename serial_traits<Adapter>::bytes_t;
+        using bytes_t = typename Adapter::bytes_t;
+        using serial_t = typename Adapter::serial_t;
+        using serializer_t = typename Adapter::serializer_t;
+        using deserializer_t = typename Adapter::deserializer_t;
+        using config = typename Adapter::config;
 
         static serial_t from_bytes(bytes_t&& bytes) = delete;
         static bytes_t to_bytes(const serial_t& serial_obj) = delete;
@@ -1073,56 +965,205 @@ namespace adapters
         static bool has_bound_args(const serial_t& serial_obj) = delete;
     };
 
+    template<typename Adapter, bool Deserialize>
+    class serializer_base
+    {
+    public:
+        using serializer_t = std::conditional_t<Deserialize, typename Adapter::deserializer_t,
+            typename Adapter::serializer_t>;
+
+        template<typename T>
+        void serialize_object(const T& val)
+        {
+            static_assert(!Deserialize, "Cannot call serialize_object() on a deserializer");
+
+            // Necessary for bi-directional serialization
+            serialize(*this, const_cast<T&>(val)); // NOLINT(cppcoreguidelines-pro-type-const-cast)
+        }
+
+        template<typename T>
+        void deserialize_object(T&& val)
+        {
+            static_assert(Deserialize, "Cannot call deserialize_object() on a serializer");
+
+            serialize(*this, std::forward<T>(val));
+        }
+
+        template<typename T>
+        void as_bool(const std::string_view key, T& val)
+        {
+            static_assert(detail::is_boolean_testable_v<T>, "T must be convertible to bool");
+
+            (static_cast<serializer_t*>(this))->as_bool(key, val);
+        }
+
+        template<typename T>
+        void as_float(const std::string_view key, T& val)
+        {
+            static_assert(std::is_floating_point_v<T>, "T must be a floating-point type");
+
+            (static_cast<serializer_t*>(this))->as_float(key, val);
+        }
+
+        template<typename T>
+        void as_int(const std::string_view key, T& val)
+        {
+            static_assert(std::is_integral_v<T> || std::is_enum_v<T>, "T must be an integral type");
+
+            (static_cast<serializer_t*>(this))->as_int(key, val);
+        }
+
+        template<typename T>
+        void as_string(const std::string_view key, T& val)
+        {
+            static_assert(detail::is_stringlike_v<T>, "T must be convertible to std::string_view");
+
+            (static_cast<serializer_t*>(this))->as_string(key, val);
+        }
+
+        template<typename T>
+        void as_array(const std::string_view key, T& val)
+        {
+            static_assert(detail::is_container_v<T>, "T must have begin() and end()");
+
+            (static_cast<serializer_t*>(this))->as_array(key, val);
+        }
+
+        template<typename T>
+        void as_map(const std::string_view key, T& val)
+        {
+            static_assert(detail::is_map_v<T>, "T must be a map type");
+
+            if constexpr (detail::is_multimap_v<T>)
+            {
+                (static_cast<serializer_t*>(this))->as_multimap(key, val);
+            }
+            else
+            {
+                (static_cast<serializer_t*>(this))->as_map(key, val);
+            }
+        }
+
+        template<typename T1, typename T2>
+        void as_tuple(const std::string_view key, std::pair<T1, T2>& val)
+        {
+            (static_cast<serializer_t*>(this))->as_tuple(key, val);
+        }
+
+        template<typename... Args>
+        void as_tuple(const std::string_view key, std::tuple<Args...>& val)
+        {
+            (static_cast<serializer_t*>(this))->as_tuple(key, val);
+        }
+
+        template<typename T>
+        void as_optional(const std::string_view key, std::optional<T>& val)
+        {
+            (static_cast<serializer_t*>(this))->as_optional(key, val);
+        }
+
+        template<typename T>
+        void as_object(const std::string_view key, T& val)
+        {
+            (static_cast<serializer_t*>(this))->as_object(key, val);
+        }
+    };
+
+    // // TODO: Start dismantling this class and moving behavior into serializer/deserializer
+    // template<typename Adapter>
+    // class serial_adapter_base
+    // {
+    // public:
+    //     using serial_t = typename serial_traits<Adapter>::serial_t;
+    //     using bytes_t = typename serial_traits<Adapter>::bytes_t;
+
+    //     static serial_t from_bytes(bytes_t&& bytes) = delete;
+    //     static bytes_t to_bytes(const serial_t& serial_obj) = delete;
+    //     static bytes_t to_bytes(serial_t&& serial_obj) = delete;
+    //     static std::string get_func_name(const serial_t& serial_obj) = delete;
+    //     static rpc_type get_type(const serial_t& serial_obj) = delete;
+
+    //     template<bool IsCallback, typename R>
+    //     static detail::rpc_result<IsCallback, R> get_result(const serial_t& serial_obj) = delete;
+
+    //     template<bool IsCallback, typename R>
+    //     static serial_t serialize_result(const detail::rpc_result<IsCallback, R>& result) = delete;
+
+    //     template<bool IsCallback, typename R, typename... Args>
+    //     static serial_t serialize_result_w_bind(
+    //         const detail::rpc_result_w_bind<IsCallback, R, Args...>& result) = delete;
+
+    //     template<bool IsCallback, typename... Args>
+    //     static detail::rpc_request<IsCallback, Args...> get_request(
+    //         const serial_t& serial_obj) = delete;
+
+    //     template<bool IsCallback, typename... Args>
+    //     static serial_t serialize_request(
+    //         const detail::rpc_request<IsCallback, Args...>& request) = delete;
+
+    //     template<bool IsCallback>
+    //     static detail::rpc_error<IsCallback> get_error(const serial_t& serial_obj) = delete;
+
+    //     template<bool IsCallback>
+    //     static serial_t serialize_error(const detail::rpc_error<IsCallback>& error) = delete;
+
+    //     static callback_install_request get_callback_install(const serial_t& serial_obj) = delete;
+    //     static serial_t serialize_callback_install(
+    //         const callback_install_request& callback_req) = delete;
+
+    //     static bool has_bound_args(const serial_t& serial_obj) = delete;
+    // };
+
     // Overloads for common types
     template<typename Adapter>
-    void serialize(serializer<Adapter, false>& ser, const bool val)
+    void serialize(serializer_base<Adapter, false>& ser, const bool val)
     {
         ser.as_bool("", val);
     }
 
     template<typename Adapter>
-    void serialize(serializer<Adapter, true>& ser, bool& val)
+    void serialize(serializer_base<Adapter, true>& ser, bool& val)
     {
         ser.as_bool("", val);
     }
 
     template<typename Adapter, typename T,
         std::enable_if_t<(std::is_integral_v<T> && (!std::is_same_v<T, bool>)), bool> = true>
-    void serialize(serializer<Adapter, false>& ser, const T val)
+    void serialize(serializer_base<Adapter, false>& ser, const T val)
     {
         ser.as_int("", val);
     }
 
     template<typename Adapter, typename T,
         std::enable_if_t<(std::is_integral_v<T> && (!std::is_same_v<T, bool>)), bool> = true>
-    void serialize(serializer<Adapter, true>& ser, T& val)
+    void serialize(serializer_base<Adapter, true>& ser, T& val)
     {
         ser.as_int("", val);
     }
 
     template<typename Adapter, typename T,
         std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
-    void serialize(serializer<Adapter, false>& ser, const T val)
+    void serialize(serializer_base<Adapter, false>& ser, const T val)
     {
         ser.as_float("", val);
     }
 
     template<typename Adapter, typename T,
         std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
-    void serialize(serializer<Adapter, true>& ser, T& val)
+    void serialize(serializer_base<Adapter, true>& ser, T& val)
     {
         ser.as_float("", val);
     }
 
     template<typename Adapter>
-    void serialize(serializer<Adapter, false>& ser, const std::string_view val)
+    void serialize(serializer_base<Adapter, false>& ser, const std::string_view val)
     {
         ser.as_string("", val);
     }
 
     template<typename Adapter, typename T,
         std::enable_if_t<detail::is_stringlike_v<T>, bool> = true>
-    void serialize(serializer<Adapter, true>& ser, T& val)
+    void serialize(serializer_base<Adapter, true>& ser, T& val)
     {
         ser.as_string("", val);
     }
@@ -1131,32 +1172,32 @@ namespace adapters
         std::enable_if_t<
             (detail::is_container_v<T> && (!detail::is_stringlike_v<T>)&&(!detail::is_map_v<T>)),
             bool> = true>
-    void serialize(serializer<Adapter, Deserialize>& ser, T& val)
+    void serialize(serializer_base<Adapter, Deserialize>& ser, T& val)
     {
         ser.as_array("", val);
     }
 
     template<typename Adapter, bool Deserialize, typename T,
         std::enable_if_t<detail::is_map_v<T>, bool> = true>
-    void serialize(serializer<Adapter, Deserialize>& ser, T& val)
+    void serialize(serializer_base<Adapter, Deserialize>& ser, T& val)
     {
         ser.as_map("", val);
     }
 
     template<typename Adapter, bool Deserialize, typename T1, typename T2>
-    void serialize(serializer<Adapter, Deserialize>& ser, std::pair<T1, T2>& val)
+    void serialize(serializer_base<Adapter, Deserialize>& ser, std::pair<T1, T2>& val)
     {
         ser.as_tuple("", val);
     }
 
     template<typename Adapter, bool Deserialize, typename... Args>
-    void serialize(serializer<Adapter, Deserialize>& ser, std::tuple<Args...>& val)
+    void serialize(serializer_base<Adapter, Deserialize>& ser, std::tuple<Args...>& val)
     {
         ser.as_tuple("", val);
     }
 
     template<typename Adapter, bool Deserialize, typename T>
-    void serialize(serializer<Adapter, Deserialize>& ser, std::optional<T>& val)
+    void serialize(serializer_base<Adapter, Deserialize>& ser, std::optional<T>& val)
     {
         ser.as_optional("", val);
     }
@@ -1213,8 +1254,8 @@ namespace detail
 
     // serialize functions for library types
     template<typename Adapter, bool Deserialize, bool IsCallback, typename... Args>
-    void serialize(
-        adapters::serializer<Adapter, Deserialize>& ser, rpc_request<IsCallback, Args...>& rpc_obj)
+    void serialize(adapters::serializer_base<Adapter, Deserialize>& ser,
+        rpc_request<IsCallback, Args...>& rpc_obj)
     {
         auto type = []
         {
@@ -1236,7 +1277,7 @@ namespace detail
 
     template<typename Adapter, bool Deserialize, bool IsCallback, typename R>
     void serialize(
-        adapters::serializer<Adapter, Deserialize>& ser, rpc_result<IsCallback, R>& rpc_obj)
+        adapters::serializer_base<Adapter, Deserialize>& ser, rpc_result<IsCallback, R>& rpc_obj)
     {
         auto type = []
         {
@@ -1260,7 +1301,7 @@ namespace detail
     }
 
     template<typename Adapter, bool Deserialize, bool IsCallback, typename R, typename... Args>
-    void serialize(adapters::serializer<Adapter, Deserialize>& ser,
+    void serialize(adapters::serializer_base<Adapter, Deserialize>& ser,
         rpc_result_w_bind<IsCallback, R, Args...>& rpc_obj)
     {
         auto type = []
@@ -1289,7 +1330,8 @@ namespace detail
     }
 
     template<typename Adapter, bool Deserialize, bool IsCallback>
-    void serialize(adapters::serializer<Adapter, Deserialize>& ser, rpc_error<IsCallback>& rpc_obj)
+    void serialize(
+        adapters::serializer_base<Adapter, Deserialize>& ser, rpc_error<IsCallback>& rpc_obj)
     {
         auto type = []
         {
@@ -1311,7 +1353,8 @@ namespace detail
 } //namespace detail
 
 template<typename Adapter, bool Deserialize>
-void serialize(adapters::serializer<Adapter, Deserialize>& ser, callback_install_request& rpc_obj)
+void serialize(
+    adapters::serializer_base<Adapter, Deserialize>& ser, callback_install_request& rpc_obj)
 {
     auto type = static_cast<int>(rpc_type::callback_install_request);
     ser.as_int("type", type);

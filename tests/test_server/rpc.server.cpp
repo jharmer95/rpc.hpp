@@ -314,7 +314,7 @@ std::pair<int, int> TopTwo(const std::vector<int>& num_list) noexcept
             if (max2 > max1)
             {
                 std::swap(max1, max2);
-            }            
+            }
         }
     }
 

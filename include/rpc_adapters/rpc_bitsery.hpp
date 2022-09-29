@@ -72,383 +72,356 @@ struct std::hash<std::vector<uint8_t>>
 
 namespace rpc_hpp::adapters
 {
-class bitsery_adapter;
-
-template<>
-struct serial_traits<bitsery_adapter>
+namespace detail_bitsery
 {
-    using serial_t = std::vector<uint8_t>;
-    using bytes_t = std::vector<uint8_t>;
-};
+    class serializer;
+    class deserializer;
 
-struct bitsery_config
-{
+    struct adapter_impl
+    {
+        using bytes_t = std::vector<uint8_t>;
+        using serial_t = std::vector<uint8_t>;
+        using serializer_t = serializer;
+        using deserializer_t = deserializer;
+
+        struct config
+        {
 #if defined(RPC_HPP_BITSERY_EXACT_SZ)
-    static constexpr bool use_exact_size = true;
+            static constexpr bool use_exact_size = true;
 #else
-    static constexpr bool use_exact_size = false;
+            static constexpr bool use_exact_size = false;
 #endif
 
-    static const size_t max_func_name_size;
-    static const size_t max_string_size;
-    static const size_t max_container_size;
-};
+            static const size_t max_func_name_size;
+            static const size_t max_string_size;
+            static const size_t max_container_size;
+        };
+    };
 
-// TODO: Move this function out of the upper namespace
-template<typename S, typename T, typename Adapter, bool Deserialize>
-void parse_obj(S& ser, serializer<Adapter, Deserialize>& fallback, T& val)
-{
-    using config = bitsery_config;
-
-    if constexpr (std::is_arithmetic_v<T>)
+    class serial_adapter : public serial_adapter_base<adapter_impl>
     {
-        if constexpr (config::use_exact_size)
+    public:
+        [[nodiscard]] static serial_t from_bytes(bytes_t&& bytes);
+        [[nodiscard]] static bytes_t to_bytes(const serial_t& serial_obj);
+        [[nodiscard]] static bytes_t to_bytes(serial_t&& serial_obj);
+        [[nodiscard]] static std::string get_func_name(const serial_t& serial_obj);
+        [[nodiscard]] static rpc_type get_type(const serial_t& serial_obj);
+
+        template<bool IsCallback, typename R>
+        [[nodiscard]] static detail::rpc_result<IsCallback, R> get_result(
+            const serial_t& serial_obj);
+
+        template<bool IsCallback, typename R>
+        [[nodiscard]] static serial_t serialize_result(
+            const detail::rpc_result<IsCallback, R>& result);
+
+        template<bool IsCallback, typename R, typename... Args>
+        [[nodiscard]] static detail::rpc_result_w_bind<IsCallback, R, Args...> get_result_w_bind(
+            const serial_t& serial_obj);
+
+        template<bool IsCallback, typename R, typename... Args>
+        [[nodiscard]] static serial_t serialize_result_w_bind(
+            const detail::rpc_result_w_bind<IsCallback, R, Args...>& result);
+
+        template<bool IsCallback, typename... Args>
+        [[nodiscard]] static detail::rpc_request<IsCallback, Args...> get_request(
+            const serial_t& serial_obj);
+
+        template<bool IsCallback, typename... Args>
+        [[nodiscard]] static serial_t serialize_request(
+            const detail::rpc_request<IsCallback, Args...>& request);
+
+        template<bool IsCallback>
+        [[nodiscard]] static detail::rpc_error<IsCallback> get_error(const serial_t& serial_obj);
+
+        template<bool IsCallback>
+        [[nodiscard]] static serial_t serialize_error(const detail::rpc_error<IsCallback>& error);
+
+        [[nodiscard]] static callback_install_request get_callback_install(
+            const serial_t& serial_obj);
+
+        [[nodiscard]] static serial_t serialize_callback_install(
+            const callback_install_request& callback_req);
+
+        [[nodiscard]] static bool has_bound_args(const serial_t& serial_obj);
+
+        template<typename S, typename T, typename Adapter, bool Deserialize>
+        static void parse_obj(S& ser, serializer_base<Adapter, Deserialize>& fallback, T& val);
+
+    private:
+        using output_adapter = bitsery::OutputBufferAdapter<std::vector<uint8_t>>;
+        using input_adapter = bitsery::InputBufferAdapter<std::vector<uint8_t>>;
+
+        template<typename T>
+        static T deserialize_rpc_object(const std::vector<uint8_t>& buffer);
+
+        template<typename T>
+        static std::vector<uint8_t> serialize_rpc_object(const T& rpc_obj);
+
+        static unsigned extract_length(const std::vector<uint8_t>& bytes, size_t& index) noexcept;
+        static bool verify_type(const std::vector<uint8_t>& bytes, rpc_type type) noexcept;
+    };
+
+    class serializer : public serializer_base<serial_adapter, false>
+    {
+    public:
+        serializer() : m_ser(m_bytes) { m_bytes.reserve(64UL); }
+
+        [[nodiscard]] const std::vector<uint8_t>& object() &
         {
-            ser.template value<sizeof(T)>(val);
+            flush();
+            return m_bytes;
         }
-        else
+
+        [[nodiscard]] std::vector<uint8_t>&& object() &&
         {
-            ser.value8b(val);
+            flush();
+            return std::move(m_bytes);
         }
-    }
-    else if constexpr (detail::is_stringlike_v<T>)
-    {
-        ser.text1b(val, config::max_string_size);
-    }
-    else if constexpr (detail::is_pair_v<T>)
-    {
-        parse_obj(ser, fallback, val.first);
-        parse_obj(ser, fallback, val.second);
-    }
-    else if constexpr (detail::is_optional_v<T>)
-    {
-        using val_t = typename T::value_type;
 
-        ser.ext(val, bitsery::ext::StdOptional{},
-            [&fallback](S& s_ser, val_t& u_val) { parse_obj(s_ser, fallback, u_val); });
-    }
-    else if constexpr (detail::is_map_v<T>)
-    {
-        using key_t = typename T::key_type;
-        using val_t = typename T::mapped_type;
-
-        ser.ext(val, bitsery::ext::StdMap{ config::max_container_size },
-            [&fallback](S& s_ser, key_t& map_key, val_t& map_val)
-            {
-                parse_obj(s_ser, fallback, map_key);
-                parse_obj(s_ser, fallback, map_val);
-            });
-    }
-    else if constexpr (detail::is_set_v<T>)
-    {
-        using key_t = typename T::key_type;
-
-        ser.ext(val, bitsery::ext::StdSet{ config::max_container_size },
-            [&fallback](S& s_ser, key_t& key_val) { parse_obj(s_ser, fallback, key_val); });
-    }
-    else if constexpr (detail::is_container_v<T>)
-    {
-        using val_t = typename T::value_type;
-
-        if constexpr (std::is_arithmetic_v<val_t>)
+        template<typename T>
+        void as_bool(RPC_HPP_UNUSED const std::string_view key, const T& val)
         {
-            if constexpr (bitsery::traits::ContainerTraits<std::remove_cv_t<T>>::isResizable)
+            m_ser.value1b(val);
+        }
+
+        template<typename T>
+        void as_float(RPC_HPP_UNUSED const std::string_view key, const T& val)
+        {
+            m_ser.value<sizeof(T)>(val);
+        }
+
+        template<typename T>
+        void as_int(RPC_HPP_UNUSED const std::string_view key, const T& val)
+        {
+            m_ser.value<sizeof(T)>(val);
+        }
+
+        template<typename T>
+        void as_string(RPC_HPP_UNUSED const std::string_view key, const T& val)
+        {
+            m_ser.text1b(val, config::max_string_size);
+        }
+
+        template<typename T>
+        void as_array(RPC_HPP_UNUSED const std::string_view key, const T& val)
+        {
+            using val_t = typename T::value_type;
+
+            if constexpr (std::is_arithmetic_v<val_t>)
             {
-                ser.template container<sizeof(val_t), std::remove_cv_t<T>>(
-                    val, config::max_container_size);
+                m_ser.container<sizeof(val_t)>(val, config::max_container_size);
             }
             else
             {
-                ser.template container<sizeof(val_t), std::remove_cv_t<T>>(val);
+                m_ser.container(val, config::max_container_size);
             }
         }
-        else
+
+        template<typename T, size_t N>
+        void as_array(RPC_HPP_UNUSED const std::string_view key, const std::array<T, N>& val)
         {
-            if constexpr (bitsery::traits::ContainerTraits<std::remove_cv_t<T>>::isResizable)
+            if constexpr (std::is_arithmetic_v<T>)
             {
-                ser.container(val, config::max_container_size,
-                    [](S& s_ser, std::string& substr)
-                    { s_ser.text1b(substr, config::max_string_size); });
+                m_ser.container<sizeof(T)>(val);
             }
             else
             {
-                ser.container(val,
-                    [](S& s_ser, std::string& substr)
-                    { s_ser.text1b(substr, config::max_string_size); });
+                m_ser.container(val);
             }
         }
-    }
-    else
-    {
-        serialize(fallback, val);
-    }
-}
 
-class bitsery_serializer : public serializer<bitsery_serializer, false>
-{
-public:
-    bitsery_serializer() : m_ser(m_bytes) { m_bytes.reserve(64UL); }
-
-    [[nodiscard]] const std::vector<uint8_t>& object() &
-    {
-        flush();
-        return m_bytes;
-    }
-
-    [[nodiscard]] std::vector<uint8_t>&& object() &&
-    {
-        flush();
-        return std::move(m_bytes);
-    }
-
-    template<typename T>
-    void as_bool(RPC_HPP_UNUSED const std::string_view key, const T& val)
-    {
-        m_ser.value1b(val);
-    }
-
-    template<typename T>
-    void as_float(RPC_HPP_UNUSED const std::string_view key, const T& val)
-    {
-        m_ser.value<sizeof(T)>(val);
-    }
-
-    template<typename T>
-    void as_int(RPC_HPP_UNUSED const std::string_view key, const T& val)
-    {
-        m_ser.value<sizeof(T)>(val);
-    }
-
-    template<typename T>
-    void as_string(RPC_HPP_UNUSED const std::string_view key, const T& val)
-    {
-        m_ser.text1b(val, config::max_string_size);
-    }
-
-    template<typename T>
-    void as_array(RPC_HPP_UNUSED const std::string_view key, const T& val)
-    {
-        using val_t = typename T::value_type;
-
-        if constexpr (std::is_arithmetic_v<val_t>)
+        template<typename T>
+        void as_map(RPC_HPP_UNUSED const std::string_view key, const T& val)
         {
-            m_ser.container<sizeof(val_t)>(val, config::max_container_size);
-        }
-        else
-        {
-            m_ser.container(val, config::max_container_size);
-        }
-    }
+            using S = bitsery::Serializer<output_adapter>;
+            using key_t = typename T::key_type;
+            using val_t = typename T::mapped_type;
 
-    template<typename T, size_t N>
-    void as_array(RPC_HPP_UNUSED const std::string_view key, const std::array<T, N>& val)
-    {
-        if constexpr (std::is_arithmetic_v<T>)
-        {
-            m_ser.container<sizeof(T)>(val);
-        }
-        else
-        {
-            m_ser.container(val);
-        }
-    }
-
-    template<typename T>
-    void as_map(RPC_HPP_UNUSED const std::string_view key, const T& val)
-    {
-        using S = bitsery::Serializer<output_adapter>;
-        using key_t = typename T::key_type;
-        using val_t = typename T::mapped_type;
-
-        m_ser.ext(val, bitsery::ext::StdMap{ config::max_container_size },
-            [this](S& ser, key_t& map_key, val_t& map_val)
-            {
-                parse_obj(ser, *this, map_key);
-                parse_obj(ser, *this, map_val);
-            });
-    }
-
-    template<typename T>
-    void as_multimap(RPC_HPP_UNUSED const std::string_view key, const T& val)
-    {
-        as_map(key, val);
-    }
-
-    template<typename T1, typename T2>
-    void as_tuple(RPC_HPP_UNUSED const std::string_view key, const std::pair<T1, T2>& val)
-    {
-        parse_obj(m_ser, *this, val.first);
-        parse_obj(m_ser, *this, val.second);
-    }
-
-    template<typename... Args>
-    void as_tuple(RPC_HPP_UNUSED const std::string_view key, const std::tuple<Args...>& val)
-    {
-        using S = bitsery::Serializer<output_adapter>;
-
-        m_ser.ext(val,
-            bitsery::ext::StdTuple{ [this](S& ser, auto& subval)
+            m_ser.ext(val, bitsery::ext::StdMap{ config::max_container_size },
+                [this](S& ser, key_t& map_key, val_t& map_val)
                 {
-                    parse_obj(ser, *this, subval);
-                } });
-    }
-
-    template<typename T>
-    void as_optional(RPC_HPP_UNUSED const std::string_view key, const std::optional<T>& val)
-    {
-        using S = bitsery::Deserializer<output_adapter>;
-
-        m_ser.ext(val, bitsery::ext::StdOptional{},
-            [this](S& ser, T& subval) { parse_obj(ser, *this, subval); });
-    }
-
-    template<typename T>
-    void as_object(RPC_HPP_UNUSED const std::string_view key, const T& val)
-    {
-        parse_obj(m_ser, *this, val);
-    }
-
-private:
-    using config = bitsery_config;
-    using output_adapter = bitsery::OutputBufferAdapter<std::vector<uint8_t>>;
-
-    void flush()
-    {
-        m_ser.adapter().flush();
-        m_bytes.resize(m_ser.adapter().writtenBytesCount());
-    }
-
-    std::vector<uint8_t> m_bytes{};
-    bitsery::Serializer<output_adapter> m_ser;
-};
-
-class bitsery_deserializer : public serializer<bitsery_deserializer, true>
-{
-public:
-    explicit bitsery_deserializer(const std::vector<uint8_t>& bytes)
-        : m_bytes(bytes), m_ser(m_bytes.cbegin(), m_bytes.size())
-    {
-    }
-
-    template<typename T>
-    void as_bool(RPC_HPP_UNUSED const std::string_view key, T& val)
-    {
-        m_ser.value1b(val);
-    }
-
-    template<typename T>
-    void as_float(RPC_HPP_UNUSED const std::string_view key, T& val)
-    {
-        m_ser.value<sizeof(T)>(val);
-    }
-
-    template<typename T>
-    void as_int(RPC_HPP_UNUSED const std::string_view key, T& val)
-    {
-        m_ser.value<sizeof(T)>(val);
-    }
-
-    template<typename T>
-    void as_string(RPC_HPP_UNUSED const std::string_view key, T& val)
-    {
-        m_ser.text1b(val, config::max_string_size);
-    }
-
-    template<typename T>
-    void as_array(RPC_HPP_UNUSED const std::string_view key, T& val)
-    {
-        if constexpr (std::is_arithmetic_v<typename T::value_type>)
-        {
-            m_ser.container<sizeof(typename T::value_type)>(val, config::max_container_size);
+                    serial_adapter::parse_obj(ser, *this, map_key);
+                    serial_adapter::parse_obj(ser, *this, map_val);
+                });
         }
-        else
-        {
-            m_ser.container(val, config::max_container_size);
-        }
-    }
 
-    template<typename T, size_t N>
-    void as_array(RPC_HPP_UNUSED const std::string_view key, std::array<T, N>& val)
+        template<typename T>
+        void as_multimap(RPC_HPP_UNUSED const std::string_view key, const T& val)
+        {
+            as_map(key, val);
+        }
+
+        template<typename T1, typename T2>
+        void as_tuple(RPC_HPP_UNUSED const std::string_view key, const std::pair<T1, T2>& val)
+        {
+            serial_adapter::parse_obj(m_ser, *this, val.first);
+            serial_adapter::parse_obj(m_ser, *this, val.second);
+        }
+
+        template<typename... Args>
+        void as_tuple(RPC_HPP_UNUSED const std::string_view key, const std::tuple<Args...>& val)
+        {
+            using S = bitsery::Serializer<output_adapter>;
+
+            m_ser.ext(val,
+                bitsery::ext::StdTuple{ [this](S& ser, auto& subval)
+                    {
+                        serial_adapter::parse_obj(ser, *this, subval);
+                    } });
+        }
+
+        template<typename T>
+        void as_optional(RPC_HPP_UNUSED const std::string_view key, const std::optional<T>& val)
+        {
+            using S = bitsery::Deserializer<output_adapter>;
+
+            m_ser.ext(val, bitsery::ext::StdOptional{},
+                [this](S& ser, T& subval) { serial_adapter::parse_obj(ser, *this, subval); });
+        }
+
+        template<typename T>
+        void as_object(RPC_HPP_UNUSED const std::string_view key, const T& val)
+        {
+            serial_adapter::parse_obj(m_ser, *this, val);
+        }
+
+    private:
+        using config = typename serial_adapter::config;
+        using output_adapter = bitsery::OutputBufferAdapter<std::vector<uint8_t>>;
+
+        void flush()
+        {
+            m_ser.adapter().flush();
+            m_bytes.resize(m_ser.adapter().writtenBytesCount());
+        }
+
+        std::vector<uint8_t> m_bytes{};
+        bitsery::Serializer<output_adapter> m_ser;
+    };
+
+    class deserializer : public serializer_base<serial_adapter, true>
     {
-        if constexpr (std::is_arithmetic_v<T>)
+    public:
+        explicit deserializer(const std::vector<uint8_t>& bytes)
+            : m_bytes(bytes), m_ser(m_bytes.cbegin(), m_bytes.size())
         {
-            m_ser.container<sizeof(T)>(val);
         }
-        else
+
+        template<typename T>
+        void as_bool(RPC_HPP_UNUSED const std::string_view key, T& val)
         {
-            m_ser.container(val);
+            m_ser.value1b(val);
         }
-    }
 
-    template<typename T>
-    void as_map(RPC_HPP_UNUSED const std::string_view key, T& val)
-    {
-        using S = bitsery::Deserializer<input_adapter>;
-        using key_t = typename T::key_type;
-        using val_t = typename T::mapped_type;
+        template<typename T>
+        void as_float(RPC_HPP_UNUSED const std::string_view key, T& val)
+        {
+            m_ser.value<sizeof(T)>(val);
+        }
 
-        m_ser.ext(val, bitsery::ext::StdMap{ config::max_container_size },
-            [this](S& ser, key_t& map_key, val_t& map_val)
+        template<typename T>
+        void as_int(RPC_HPP_UNUSED const std::string_view key, T& val)
+        {
+            m_ser.value<sizeof(T)>(val);
+        }
+
+        template<typename T>
+        void as_string(RPC_HPP_UNUSED const std::string_view key, T& val)
+        {
+            m_ser.text1b(val, config::max_string_size);
+        }
+
+        template<typename T>
+        void as_array(RPC_HPP_UNUSED const std::string_view key, T& val)
+        {
+            if constexpr (std::is_arithmetic_v<typename T::value_type>)
             {
-                parse_obj(ser, *this, map_key);
-                parse_obj(ser, *this, map_val);
-            });
-    }
+                m_ser.container<sizeof(typename T::value_type)>(val, config::max_container_size);
+            }
+            else
+            {
+                m_ser.container(val, config::max_container_size);
+            }
+        }
 
-    template<typename T>
-    void as_multimap(RPC_HPP_UNUSED const std::string_view key, T& val)
-    {
-        as_map(key, val);
-    }
+        template<typename T, size_t N>
+        void as_array(RPC_HPP_UNUSED const std::string_view key, std::array<T, N>& val)
+        {
+            if constexpr (std::is_arithmetic_v<T>)
+            {
+                m_ser.container<sizeof(T)>(val);
+            }
+            else
+            {
+                m_ser.container(val);
+            }
+        }
 
-    template<typename T1, typename T2>
-    void as_tuple(RPC_HPP_UNUSED const std::string_view key, std::pair<T1, T2>& val)
-    {
-        parse_obj(m_ser, *this, val.first);
-        parse_obj(m_ser, *this, val.second);
-    }
+        template<typename T>
+        void as_map(RPC_HPP_UNUSED const std::string_view key, T& val)
+        {
+            using S = bitsery::Deserializer<input_adapter>;
+            using key_t = typename T::key_type;
+            using val_t = typename T::mapped_type;
 
-    template<typename... Args>
-    void as_tuple(RPC_HPP_UNUSED const std::string_view key, std::tuple<Args...>& val)
-    {
-        using S = bitsery::Deserializer<input_adapter>;
-
-        m_ser.ext(val,
-            bitsery::ext::StdTuple{ [this](S& ser, auto& subval)
+            m_ser.ext(val, bitsery::ext::StdMap{ config::max_container_size },
+                [this](S& ser, key_t& map_key, val_t& map_val)
                 {
-                    parse_obj(ser, *this, subval);
-                } });
-    }
+                    serial_adapter::parse_obj(ser, *this, map_key);
+                    serial_adapter::parse_obj(ser, *this, map_val);
+                });
+        }
 
-    template<typename T>
-    void as_optional(RPC_HPP_UNUSED const std::string_view key, std::optional<T>& val)
-    {
-        using S = bitsery::Deserializer<input_adapter>;
+        template<typename T>
+        void as_multimap(RPC_HPP_UNUSED const std::string_view key, T& val)
+        {
+            as_map(key, val);
+        }
 
-        m_ser.ext(val, bitsery::ext::StdOptional{},
-            [this](S& ser, T& subval) { parse_obj(ser, *this, subval); });
-    }
+        template<typename T1, typename T2>
+        void as_tuple(RPC_HPP_UNUSED const std::string_view key, std::pair<T1, T2>& val)
+        {
+            serial_adapter::parse_obj(m_ser, *this, val.first);
+            serial_adapter::parse_obj(m_ser, *this, val.second);
+        }
 
-    template<typename T>
-    void as_object(RPC_HPP_UNUSED const std::string_view key, T& val)
-    {
-        parse_obj(m_ser, *this, val);
-    }
+        template<typename... Args>
+        void as_tuple(RPC_HPP_UNUSED const std::string_view key, std::tuple<Args...>& val)
+        {
+            using S = bitsery::Deserializer<input_adapter>;
 
-private:
-    using config = bitsery_config;
-    using input_adapter = bitsery::InputBufferAdapter<std::vector<uint8_t>>;
+            m_ser.ext(val,
+                bitsery::ext::StdTuple{ [this](S& ser, auto& subval)
+                    {
+                        serial_adapter::parse_obj(ser, *this, subval);
+                    } });
+        }
 
-    const std::vector<uint8_t>& m_bytes;
-    bitsery::Deserializer<input_adapter> m_ser;
-};
+        template<typename T>
+        void as_optional(RPC_HPP_UNUSED const std::string_view key, std::optional<T>& val)
+        {
+            using S = bitsery::Deserializer<input_adapter>;
 
-class bitsery_adapter : public serial_adapter_base<bitsery_adapter>
-{
-public:
-    using config = bitsery_config;
+            m_ser.ext(val, bitsery::ext::StdOptional{},
+                [this](S& ser, T& subval) { serial_adapter::parse_obj(ser, *this, subval); });
+        }
 
-    [[nodiscard]] static std::vector<uint8_t> from_bytes(std::vector<uint8_t>&& bytes)
+        template<typename T>
+        void as_object(RPC_HPP_UNUSED const std::string_view key, T& val)
+        {
+            serial_adapter::parse_obj(m_ser, *this, val);
+        }
+
+    private:
+        using config = typename serial_adapter::config;
+        using input_adapter = bitsery::InputBufferAdapter<std::vector<uint8_t>>;
+
+        const std::vector<uint8_t>& m_bytes;
+        bitsery::Deserializer<input_adapter> m_ser;
+    };
+
+    inline std::vector<uint8_t> serial_adapter::from_bytes(std::vector<uint8_t>&& bytes)
     {
         RPC_HPP_PRECONDITION(bytes.size() >= sizeof(int));
 
@@ -463,12 +436,17 @@ public:
         return bytes;
     }
 
-    [[nodiscard]] static std::vector<uint8_t> to_bytes(const std::vector<uint8_t>& serial_obj)
+    inline std::vector<uint8_t> serial_adapter::to_bytes(const std::vector<uint8_t>& serial_obj)
     {
         return serial_obj;
     }
 
-    [[nodiscard]] static std::string get_func_name(const std::vector<uint8_t>& serial_obj)
+    inline std::vector<uint8_t> serial_adapter::to_bytes(std::vector<uint8_t>&& serial_obj)
+    {
+        return serial_obj;
+    }
+
+    inline std::string serial_adapter::get_func_name(const std::vector<uint8_t>& serial_obj)
     {
         RPC_HPP_PRECONDITION(serial_obj.size() > sizeof(int));
 
@@ -483,7 +461,7 @@ public:
             std::next(serial_obj.begin(), static_cast<ptrdiff_t>(index + len)) };
     }
 
-    static rpc_type get_type(const std::vector<uint8_t>& serial_obj)
+    inline rpc_type serial_adapter::get_type(const std::vector<uint8_t>& serial_obj)
     {
         RPC_HPP_PRECONDITION(serial_obj.size() >= sizeof(int));
 
@@ -501,7 +479,7 @@ public:
     }
 
     template<bool IsCallback, typename R>
-    [[nodiscard]] static detail::rpc_result<IsCallback, R> get_result(
+    detail::rpc_result<IsCallback, R> serial_adapter::get_result(
         const std::vector<uint8_t>& serial_obj)
     {
         RPC_HPP_PRECONDITION(verify_type(
@@ -511,14 +489,14 @@ public:
     }
 
     template<bool IsCallback, typename R>
-    [[nodiscard]] static std::vector<uint8_t> serialize_result(
+    std::vector<uint8_t> serial_adapter::serialize_result(
         const detail::rpc_result<IsCallback, R>& result)
     {
         return serialize_rpc_object<detail::rpc_result<IsCallback, R>>(result);
     }
 
     template<bool IsCallback, typename R, typename... Args>
-    [[nodiscard]] static detail::rpc_result_w_bind<IsCallback, R, Args...> get_result_w_bind(
+    detail::rpc_result_w_bind<IsCallback, R, Args...> serial_adapter::get_result_w_bind(
         const std::vector<uint8_t>& serial_obj)
     {
         RPC_HPP_PRECONDITION(verify_type(serial_obj,
@@ -529,14 +507,14 @@ public:
     }
 
     template<bool IsCallback, typename R, typename... Args>
-    [[nodiscard]] static std::vector<uint8_t> serialize_result_w_bind(
+    std::vector<uint8_t> serial_adapter::serialize_result_w_bind(
         const detail::rpc_result_w_bind<IsCallback, R, Args...>& result)
     {
         return serialize_rpc_object<detail::rpc_result_w_bind<IsCallback, R, Args...>>(result);
     }
 
     template<bool IsCallback, typename... Args>
-    [[nodiscard]] static detail::rpc_request<IsCallback, Args...> get_request(
+    detail::rpc_request<IsCallback, Args...> serial_adapter::get_request(
         const std::vector<uint8_t>& serial_obj)
     {
         RPC_HPP_PRECONDITION(verify_type(serial_obj,
@@ -548,15 +526,14 @@ public:
     }
 
     template<bool IsCallback, typename... Args>
-    [[nodiscard]] static std::vector<uint8_t> serialize_request(
+    std::vector<uint8_t> serial_adapter::serialize_request(
         const detail::rpc_request<IsCallback, Args...>& request)
     {
         return serialize_rpc_object<detail::rpc_request<IsCallback, Args...>>(request);
     }
 
     template<bool IsCallback>
-    [[nodiscard]] static detail::rpc_error<IsCallback> get_error(
-        const std::vector<uint8_t>& serial_obj)
+    detail::rpc_error<IsCallback> serial_adapter::get_error(const std::vector<uint8_t>& serial_obj)
     {
         RPC_HPP_PRECONDITION(
             verify_type(serial_obj, IsCallback ? rpc_type::callback_error : rpc_type::func_error));
@@ -565,13 +542,12 @@ public:
     }
 
     template<bool IsCallback>
-    [[nodiscard]] static std::vector<uint8_t> serialize_error(
-        const detail::rpc_error<IsCallback>& error)
+    std::vector<uint8_t> serial_adapter::serialize_error(const detail::rpc_error<IsCallback>& error)
     {
         return serialize_rpc_object<detail::rpc_error<IsCallback>>(error);
     }
 
-    [[nodiscard]] static callback_install_request get_callback_install(
+    inline callback_install_request serial_adapter::get_callback_install(
         const std::vector<uint8_t>& serial_obj)
     {
         RPC_HPP_PRECONDITION(verify_type(serial_obj, rpc_type::callback_install_request));
@@ -579,13 +555,13 @@ public:
         return deserialize_rpc_object<callback_install_request>(serial_obj);
     }
 
-    [[nodiscard]] static std::vector<uint8_t> serialize_callback_install(
+    inline std::vector<uint8_t> serial_adapter::serialize_callback_install(
         const callback_install_request& callback_req)
     {
         return serialize_rpc_object<callback_install_request>(callback_req);
     }
 
-    [[nodiscard]] static bool has_bound_args(const std::vector<uint8_t>& serial_obj)
+    inline bool serial_adapter::has_bound_args(const std::vector<uint8_t>& serial_obj)
     {
         const auto type = get_type(serial_obj);
         return ((type == rpc_type::callback_request) || (type == rpc_type::func_request))
@@ -594,30 +570,26 @@ public:
                 || (type == rpc_type::func_result_w_bind));
     }
 
-private:
-    using bit_buffer = std::vector<uint8_t>;
-    using output_adapter = bitsery::OutputBufferAdapter<bit_buffer>;
-    using input_adapter = bitsery::InputBufferAdapter<bit_buffer>;
-
     template<typename T>
-    static T deserialize_rpc_object(const std::vector<uint8_t>& buffer)
+    T serial_adapter::deserialize_rpc_object(const std::vector<uint8_t>& buffer)
     {
         T ret_obj;
-        bitsery_deserializer ser{ buffer };
+        deserializer ser{ buffer };
         ser.deserialize_object(ret_obj);
         return ret_obj;
     }
 
     template<typename T>
-    static std::vector<uint8_t> serialize_rpc_object(const T& rpc_obj)
+    std::vector<uint8_t> serial_adapter::serialize_rpc_object(const T& rpc_obj)
     {
-        bitsery_serializer ser{};
+        serializer ser{};
         ser.serialize_object(rpc_obj);
         return std::move(ser).object();
     }
 
     // Borrowed from Bitsery library for compatibility
-    static unsigned extract_length(const bit_buffer& bytes, size_t& index) noexcept
+    inline unsigned serial_adapter::extract_length(
+        const std::vector<uint8_t>& bytes, size_t& index) noexcept
     {
         RPC_HPP_PRECONDITION(index < bytes.size());
 
@@ -644,12 +616,102 @@ private:
         return ((high_byte & 0x7FU) << 8U) | low_byte;
     }
 
-    static bool verify_type(const bit_buffer& bytes, rpc_type type) noexcept
+    inline bool serial_adapter::verify_type(
+        const std::vector<uint8_t>& bytes, rpc_type type) noexcept
     {
         RPC_HPP_PRECONDITION(bytes.size() >= sizeof(int));
 
         return std::memcmp(&type, bytes.data(), sizeof(int)) == 0;
     }
-};
+
+    template<typename S, typename T, typename Adapter, bool Deserialize>
+    void serial_adapter::parse_obj(S& ser, serializer_base<Adapter, Deserialize>& fallback, T& val)
+    {
+        if constexpr (std::is_arithmetic_v<T>)
+        {
+            if constexpr (config::use_exact_size)
+            {
+                ser.template value<sizeof(T)>(val);
+            }
+            else
+            {
+                ser.value8b(val);
+            }
+        }
+        else if constexpr (detail::is_stringlike_v<T>)
+        {
+            ser.text1b(val, config::max_string_size);
+        }
+        else if constexpr (detail::is_pair_v<T>)
+        {
+            parse_obj(ser, fallback, val.first);
+            parse_obj(ser, fallback, val.second);
+        }
+        else if constexpr (detail::is_optional_v<T>)
+        {
+            using val_t = typename T::value_type;
+
+            ser.ext(val, bitsery::ext::StdOptional{},
+                [&fallback](S& s_ser, val_t& u_val) { parse_obj(s_ser, fallback, u_val); });
+        }
+        else if constexpr (detail::is_map_v<T>)
+        {
+            using key_t = typename T::key_type;
+            using val_t = typename T::mapped_type;
+
+            ser.ext(val, bitsery::ext::StdMap{ config::max_container_size },
+                [&fallback](S& s_ser, key_t& map_key, val_t& map_val)
+                {
+                    parse_obj(s_ser, fallback, map_key);
+                    parse_obj(s_ser, fallback, map_val);
+                });
+        }
+        else if constexpr (detail::is_set_v<T>)
+        {
+            using key_t = typename T::key_type;
+
+            ser.ext(val, bitsery::ext::StdSet{ config::max_container_size },
+                [&fallback](S& s_ser, key_t& key_val) { parse_obj(s_ser, fallback, key_val); });
+        }
+        else if constexpr (detail::is_container_v<T>)
+        {
+            using val_t = typename T::value_type;
+
+            if constexpr (std::is_arithmetic_v<val_t>)
+            {
+                if constexpr (bitsery::traits::ContainerTraits<std::remove_cv_t<T>>::isResizable)
+                {
+                    ser.template container<sizeof(val_t), std::remove_cv_t<T>>(
+                        val, config::max_container_size);
+                }
+                else
+                {
+                    ser.template container<sizeof(val_t), std::remove_cv_t<T>>(val);
+                }
+            }
+            else
+            {
+                if constexpr (bitsery::traits::ContainerTraits<std::remove_cv_t<T>>::isResizable)
+                {
+                    ser.container(val, config::max_container_size,
+                        [](S& s_ser, std::string& substr)
+                        { s_ser.text1b(substr, config::max_string_size); });
+                }
+                else
+                {
+                    ser.container(val,
+                        [](S& s_ser, std::string& substr)
+                        { s_ser.text1b(substr, config::max_string_size); });
+                }
+            }
+        }
+        else
+        {
+            serialize(fallback, val);
+        }
+    }
+} //namespace detail_bitsery
+
+using bitsery_adapter = detail_bitsery::serial_adapter;
 } //namespace rpc_hpp::adapters
 #endif

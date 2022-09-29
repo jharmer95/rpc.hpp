@@ -56,7 +56,7 @@ struct ComplexObject
 };
 
 template<typename Adapter, bool Deserialize>
-void serialize(rpc_hpp::adapters::serializer<Adapter, Deserialize>& ser, ComplexObject& cx_obj)
+void serialize(rpc_hpp::adapters::serializer_base<Adapter, Deserialize>& ser, ComplexObject& cx_obj)
 {
     ser.as_int("id", cx_obj.id);
     ser.as_string("name", cx_obj.name);
@@ -91,7 +91,7 @@ struct ValueRange
 };
 
 template<typename Adapter, bool Deserialize, typename T>
-void serialize(rpc_hpp::adapters::serializer<Adapter, Deserialize>& ser, ValueRange<T>& range)
+void serialize(rpc_hpp::adapters::serializer_base<Adapter, Deserialize>& ser, ValueRange<T>& range)
 {
     if constexpr (std::is_floating_point_v<T>)
     {
