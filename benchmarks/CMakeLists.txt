@@ -27,10 +27,6 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-cmake_minimum_required(VERSION 3.16)
-
-project("rpc.hpp benchmarks" LANGUAGES CXX)
-
 if(NOT TARGET RpcHpp::rpc_hpp)
   message(
     FATAL_ERROR
@@ -38,34 +34,43 @@ if(NOT TARGET RpcHpp::rpc_hpp)
   )
 endif()
 
+include(system_link)
+
 if(NOT TARGET asio_lib)
   find_package(Threads REQUIRED)
   add_library(asio_lib INTERFACE)
   target_compile_definitions(asio_lib INTERFACE ASIO_STANDALONE)
   target_link_libraries(asio_lib INTERFACE Threads::Threads)
   find_package(asio CONFIG REQUIRED)
-  target_link_libraries(asio_lib INTERFACE asio asio::asio)
+
+  if(CXX_GCC OR CXX_MINGW)
+    # Workaround for GCC 12 detecting null errors
+    target_compile_options(asio_lib INTERFACE -Wno-error=null-dereference)
+  endif()
+
+  target_link_libraries_system(asio_lib INTERFACE asio asio::asio)
 endif()
 
 if(NOT TARGET doctest_lib)
   add_library(doctest_lib INTERFACE)
   find_package(doctest CONFIG REQUIRED)
-  target_link_libraries(doctest_lib INTERFACE doctest::doctest)
+  target_link_libraries_system(doctest_lib INTERFACE doctest::doctest)
 endif()
 
 if(NOT TARGET nanobench_lib)
   add_library(nanobench_lib INTERFACE)
   find_path(NANOBENCH_INCLUDE_DIRS "nanobench.h")
-  target_include_directories(nanobench_lib INTERFACE ${NANOBENCH_INCLUDE_DIRS})
+  target_include_directories(nanobench_lib SYSTEM
+                             INTERFACE ${NANOBENCH_INCLUDE_DIRS})
 endif()
 
 if(${BENCH_GRPC})
   if(NOT TARGET grpc_lib)
     add_library(grpc_lib INTERFACE)
     find_package(gRPC CONFIG REQUIRED)
-    target_link_libraries(grpc_lib INTERFACE gRPC::gpr gRPC::grpc gRPC::grpc++
-                                             gRPC::grpc++_alts)
-    target_link_libraries(grpc_lib INTERFACE re2::re2 c-ares::cares)
+    target_link_libraries_system(grpc_lib INTERFACE gRPC::gpr gRPC::grpc
+                                 gRPC::grpc++ gRPC::grpc++_alts)
+    target_link_libraries_system(grpc_lib INTERFACE re2::re2 c-ares::cares)
   endif()
 endif()
 
@@ -73,7 +78,7 @@ if(${BENCH_RPCLIB})
   if(NOT TARGET rpclib_lib)
     add_library(rpclib_lib INTERFACE)
     find_package(rpclib CONFIG REQUIRED)
-    target_link_libraries(rpclib_lib INTERFACE rpclib::rpc)
+    target_link_libraries_system(rpclib_lib INTERFACE rpclib::rpc)
   endif()
 endif()
 

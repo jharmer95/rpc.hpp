@@ -191,7 +191,6 @@ private:
         return recv_impl();
     }
 
-    // TODO: Make this pass-by-ref?
     [[nodiscard]] object_t recv_impl()
     {
         bytes_t bytes = [this]

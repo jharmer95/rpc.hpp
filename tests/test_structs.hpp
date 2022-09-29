@@ -88,6 +88,10 @@ struct ValueRange
 
     T min;
     T max;
+
+#if defined(RPC_HPP_BENCH_RPCLIB)
+    MSGPACK_DEFINE_ARRAY(min, max)
+#endif
 };
 
 template<typename S, typename T>

@@ -40,22 +40,6 @@
 #include "../test_structs.hpp"
 #include "../static_funcs.hpp"
 
-#if defined(RPC_HPP_ENABLE_BITSERY)
-#  include <rpc_adapters/rpc_bitsery.hpp>
-#endif
-
-#if defined(RPC_HPP_ENABLE_BOOST_JSON)
-#  include <rpc_adapters/rpc_boost_json.hpp>
-#endif
-
-#if defined(RPC_HPP_ENABLE_NJSON)
-#  include <rpc_adapters/rpc_njson.hpp>
-#endif
-
-#if defined(RPC_HPP_ENABLE_RAPIDJSON)
-#  include <rpc_adapters/rpc_rapidjson.hpp>
-#endif
-
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include <doctest/doctest.h>
 
@@ -122,53 +106,6 @@ constexpr size_t rpc_hpp::adapters::bitsery_adapter::config::max_container_size 
 
 namespace rpc_hpp::tests
 {
-template<typename Serial>
-static TestClient<Serial>& GetClient();
-
-#if defined(RPC_HPP_ENABLE_NJSON)
-using adapters::njson_adapter;
-
-template<>
-[[nodiscard]] inline TestClient<njson_adapter>& GetClient()
-{
-    static TestClient<njson_adapter> njson_client{ "127.0.0.1", "5000" };
-    return njson_client;
-}
-#endif
-
-#if defined(RPC_HPP_ENABLE_RAPIDJSON)
-using adapters::rapidjson_adapter;
-
-template<>
-[[nodiscard]] inline TestClient<rapidjson_adapter>& GetClient()
-{
-    static TestClient<rapidjson_adapter> rapidjson_client{ "127.0.0.1", "5001" };
-    return rapidjson_client;
-}
-#endif
-
-#if defined(RPC_HPP_ENABLE_BOOST_JSON)
-using adapters::boost_json_adapter;
-
-template<>
-[[nodiscard]] inline TestClient<boost_json_adapter>& GetClient()
-{
-    static TestClient<boost_json_adapter> boost_json_client{ "127.0.0.1", "5002" };
-    return boost_json_client;
-}
-#endif
-
-#if defined(RPC_HPP_ENABLE_BITSERY)
-using adapters::bitsery_adapter;
-
-template<>
-[[nodiscard]] inline TestClient<bitsery_adapter>& GetClient()
-{
-    static TestClient<bitsery_adapter> bitsery_client{ "127.0.0.1", "5003" };
-    return bitsery_client;
-}
-#endif
-
 template<typename Serial>
 static void TestType()
 {
