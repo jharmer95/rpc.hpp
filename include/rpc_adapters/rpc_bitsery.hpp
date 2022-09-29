@@ -56,6 +56,7 @@
 
 #include <cassert>
 #include <numeric>
+#include <type_traits>
 
 template<>
 struct std::hash<std::vector<uint8_t>>
@@ -97,6 +98,7 @@ struct config<bitsery_adapter>
     static const size_t max_container_size;
 };
 
+// TODO: Move this function
 template<typename S, typename T, typename Adapter, bool Deserialize>
 void parse_obj(S& ser, serializer<Adapter, Deserialize>& fallback, T& val)
 {
@@ -142,18 +144,19 @@ void parse_obj(S& ser, serializer<Adapter, Deserialize>& fallback, T& val)
 
         if constexpr (std::is_arithmetic_v<val_t>)
         {
-            if constexpr (::bitsery::traits::ContainerTraits<T>::isResizable)
+            if constexpr (::bitsery::traits::ContainerTraits<std::remove_cv_t<T>>::isResizable)
             {
-                ser.template container<sizeof(val_t), T>(val, config::max_container_size);
+                ser.template container<sizeof(val_t), std::remove_cv_t<T>>(
+                    val, config::max_container_size);
             }
             else
             {
-                ser.template container<sizeof(val_t), T>(val);
+                ser.template container<sizeof(val_t), std::remove_cv_t<T>>(val);
             }
         }
         else
         {
-            if constexpr (::bitsery::traits::ContainerTraits<T>::isResizable)
+            if constexpr (::bitsery::traits::ContainerTraits<std::remove_cv_t<T>>::isResizable)
             {
                 ser.container(val, config::max_container_size,
                     [](S& s_ser, std::string& substr)
@@ -191,31 +194,31 @@ public:
     }
 
     template<typename T>
-    void as_bool(RPC_HPP_UNUSED std::string_view key, T& val)
+    void as_bool(RPC_HPP_UNUSED const std::string_view key, const T& val)
     {
         m_ser.value1b(val);
     }
 
     template<typename T>
-    void as_float(RPC_HPP_UNUSED std::string_view key, T& val)
+    void as_float(RPC_HPP_UNUSED const std::string_view key, const T& val)
     {
         m_ser.value<sizeof(T)>(val);
     }
 
     template<typename T>
-    void as_int(RPC_HPP_UNUSED std::string_view key, T& val)
+    void as_int(RPC_HPP_UNUSED const std::string_view key, const T& val)
     {
         m_ser.value<sizeof(T)>(val);
     }
 
     template<typename T>
-    void as_string(RPC_HPP_UNUSED std::string_view key, T& val)
+    void as_string(RPC_HPP_UNUSED const std::string_view key, const T& val)
     {
         m_ser.text1b(val, config::max_string_size);
     }
 
     template<typename T>
-    void as_array(RPC_HPP_UNUSED std::string_view key, T& val)
+    void as_array(RPC_HPP_UNUSED const std::string_view key, const T& val)
     {
         using val_t = typename T::value_type;
 
@@ -230,7 +233,7 @@ public:
     }
 
     template<typename T, size_t N>
-    void as_array(RPC_HPP_UNUSED std::string_view key, std::array<T, N>& val)
+    void as_array(RPC_HPP_UNUSED const std::string_view key, const std::array<T, N>& val)
     {
         if constexpr (std::is_arithmetic_v<T>)
         {
@@ -243,7 +246,7 @@ public:
     }
 
     template<typename T>
-    void as_map(RPC_HPP_UNUSED std::string_view key, T& val)
+    void as_map(RPC_HPP_UNUSED const std::string_view key, const T& val)
     {
         using S = ::bitsery::Serializer<output_adapter>;
         using key_t = typename T::key_type;
@@ -258,13 +261,13 @@ public:
     }
 
     template<typename T>
-    void as_multimap(RPC_HPP_UNUSED std::string_view key, T& val)
+    void as_multimap(RPC_HPP_UNUSED const std::string_view key, const T& val)
     {
         as_map(key, val);
     }
 
     template<typename... Args>
-    void as_tuple(RPC_HPP_UNUSED std::string_view key, std::tuple<Args...>& val)
+    void as_tuple(RPC_HPP_UNUSED const std::string_view key, const std::tuple<Args...>& val)
     {
         using S = ::bitsery::Serializer<output_adapter>;
 
@@ -276,7 +279,7 @@ public:
     }
 
     template<typename T>
-    void as_object(RPC_HPP_UNUSED std::string_view key, T& val)
+    void as_object(RPC_HPP_UNUSED const std::string_view key, const T& val)
     {
         parse_obj(m_ser, *this, val);
     }
@@ -299,41 +302,36 @@ class bitsery_deserializer : public serializer<bitsery_deserializer, true>
 {
 public:
     explicit bitsery_deserializer(const std::vector<uint8_t>& bytes)
-        : m_bytes(bytes), m_ser(m_bytes.begin(), m_bytes.size())
-    {
-    }
-
-    explicit bitsery_deserializer(std::vector<uint8_t>&& bytes)
-        : m_bytes(std::move(bytes)), m_ser(m_bytes.begin(), m_bytes.size())
+        : m_bytes(bytes), m_ser(m_bytes.cbegin(), m_bytes.size())
     {
     }
 
     template<typename T>
-    void as_bool(RPC_HPP_UNUSED std::string_view key, T& val)
+    void as_bool(RPC_HPP_UNUSED const std::string_view key, T& val)
     {
         m_ser.value1b(val);
     }
 
     template<typename T>
-    void as_float(RPC_HPP_UNUSED std::string_view key, T& val)
+    void as_float(RPC_HPP_UNUSED const std::string_view key, T& val)
     {
         m_ser.value<sizeof(T)>(val);
     }
 
     template<typename T>
-    void as_int(RPC_HPP_UNUSED std::string_view key, T& val)
+    void as_int(RPC_HPP_UNUSED const std::string_view key, T& val)
     {
         m_ser.value<sizeof(T)>(val);
     }
 
     template<typename T>
-    void as_string(RPC_HPP_UNUSED std::string_view key, T& val)
+    void as_string(RPC_HPP_UNUSED const std::string_view key, T& val)
     {
         m_ser.text1b(val, config::max_string_size);
     }
 
     template<typename T>
-    void as_array(RPC_HPP_UNUSED std::string_view key, T& val)
+    void as_array(RPC_HPP_UNUSED const std::string_view key, T& val)
     {
         if constexpr (std::is_arithmetic_v<typename T::value_type>)
         {
@@ -346,7 +344,7 @@ public:
     }
 
     template<typename T, size_t N>
-    void as_array(RPC_HPP_UNUSED std::string_view key, std::array<T, N>& val)
+    void as_array(RPC_HPP_UNUSED const std::string_view key, std::array<T, N>& val)
     {
         if constexpr (std::is_arithmetic_v<T>)
         {
@@ -359,7 +357,7 @@ public:
     }
 
     template<typename T>
-    void as_map(RPC_HPP_UNUSED std::string_view key, T& val)
+    void as_map(RPC_HPP_UNUSED const std::string_view key, T& val)
     {
         using S = ::bitsery::Deserializer<input_adapter>;
         using key_t = typename T::key_type;
@@ -374,13 +372,13 @@ public:
     }
 
     template<typename T>
-    void as_multimap(RPC_HPP_UNUSED std::string_view key, T& val)
+    void as_multimap(RPC_HPP_UNUSED const std::string_view key, T& val)
     {
         as_map(key, val);
     }
 
     template<typename... Args>
-    void as_tuple(RPC_HPP_UNUSED std::string_view key, std::tuple<Args...>& val)
+    void as_tuple(RPC_HPP_UNUSED const std::string_view key, std::tuple<Args...>& val)
     {
         using S = ::bitsery::Deserializer<input_adapter>;
 
@@ -392,7 +390,7 @@ public:
     }
 
     template<typename T>
-    void as_object(RPC_HPP_UNUSED std::string_view key, T& val)
+    void as_object(RPC_HPP_UNUSED const std::string_view key, T& val)
     {
         parse_obj(m_ser, *this, val);
     }
@@ -401,7 +399,7 @@ private:
     using config = config<bitsery_adapter>;
     using input_adapter = ::bitsery::InputBufferAdapter<std::vector<uint8_t>>;
 
-    std::vector<uint8_t> m_bytes;
+    const std::vector<uint8_t>& m_bytes;
     ::bitsery::Deserializer<input_adapter> m_ser;
 };
 
@@ -437,7 +435,7 @@ public:
             throw deserialization_error("Bitsery: func_name could not be extracted from bytes");
         }
 
-        return std::move(bytes);
+        return bytes;
     }
 
     [[nodiscard]] static std::vector<uint8_t> to_bytes(const std::vector<uint8_t>& serial_obj)
@@ -593,11 +591,9 @@ private:
     template<typename T>
     static T deserialize_rpc_object(const std::vector<uint8_t>& buffer)
     {
-        T ret_obj{};
-
+        T ret_obj;
         bitsery_deserializer ser{ buffer };
         ser.deserialize_object(ret_obj);
-        RPC_HPP_POSTCONDITION(!ret_obj.func_name.empty());
         return ret_obj;
     }
 

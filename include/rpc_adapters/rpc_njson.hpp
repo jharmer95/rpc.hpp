@@ -59,36 +59,36 @@ struct serial_traits<njson_adapter>
 class njson_serializer : public serializer<njson_serializer, false>
 {
 public:
-    njson_serializer() = default;
+    njson_serializer() noexcept = default;
     [[nodiscard]] const nlohmann::json& object() const& noexcept { return m_json; }
     [[nodiscard]] nlohmann::json&& object() && noexcept { return std::move(m_json); }
 
     template<typename T>
-    void as_bool(std::string_view key, T& val)
+    void as_bool(const std::string_view key, const T& val)
     {
         subobject(key) = static_cast<bool>(val);
     }
 
     template<typename T>
-    void as_float(std::string_view key, T& val)
+    void as_float(const std::string_view key, const T& val)
     {
         subobject(key) = val;
     }
 
     template<typename T>
-    void as_int(std::string_view key, T& val)
+    void as_int(const std::string_view key, const T& val)
     {
         subobject(key) = val;
     }
 
     template<typename T>
-    void as_string(std::string_view key, T& val)
+    void as_string(const std::string_view key, const T& val)
     {
         subobject(key) = val;
     }
 
     template<typename T>
-    void as_array(std::string_view key, T& val)
+    void as_array(const std::string_view key, const T& val)
     {
         auto arr = nlohmann::json::array();
 
@@ -101,7 +101,7 @@ public:
     }
 
     template<typename T>
-    void as_map(std::string_view key, T& val)
+    void as_map(const std::string_view key, const T& val)
     {
         auto obj = nlohmann::json::object();
 
@@ -115,7 +115,7 @@ public:
     }
 
     template<typename T>
-    void as_multimap(std::string_view key, T& val)
+    void as_multimap(const std::string_view key, const T& val)
     {
         auto obj = nlohmann::json::object();
 
@@ -135,7 +135,7 @@ public:
     }
 
     template<typename... Args>
-    void as_tuple(std::string_view key, std::tuple<Args...>& val)
+    void as_tuple(const std::string_view key, const std::tuple<Args...>& val)
     {
         // Need to create the subobject in case args is empty
         auto& arg_arr = subobject(key);
@@ -145,13 +145,13 @@ public:
     }
 
     template<typename T>
-    void as_object(std::string_view key, T& val)
+    void as_object(const std::string_view key, const T& val)
     {
         push_arg(val, subobject(key));
     }
 
 private:
-    [[nodiscard]] nlohmann::json& subobject(std::string_view key)
+    [[nodiscard]] nlohmann::json& subobject(const std::string_view key)
     {
         return key.empty() ? m_json : m_json[key];
     }
@@ -159,7 +159,7 @@ private:
     template<typename T>
     static void push_arg(T&& arg, nlohmann::json& obj)
     {
-        njson_serializer ser;
+        njson_serializer ser{};
         ser.serialize_object(std::forward<T>(arg));
         obj = std::move(ser).object();
     }
@@ -178,42 +178,41 @@ private:
 class njson_deserializer : public serializer<njson_deserializer, true>
 {
 public:
-    explicit njson_deserializer(const nlohmann::json& obj) : m_json(obj) {}
-    explicit njson_deserializer(nlohmann::json&& obj) noexcept : m_json(std::move(obj)) {}
+    explicit njson_deserializer(const nlohmann::json& obj) noexcept : m_json(obj) {}
 
     template<typename T>
-    void as_bool(std::string_view key, T& val) const
+    void as_bool(const std::string_view key, T& val) const
     {
         val = subobject(key).get<bool>();
     }
 
     template<typename T>
-    void as_float(std::string_view key, T& val) const
+    void as_float(const std::string_view key, T& val) const
     {
         val = subobject(key).get<T>();
     }
 
     template<typename T>
-    void as_int(std::string_view key, T& val) const
+    void as_int(const std::string_view key, T& val) const
     {
         val = subobject(key).get<T>();
     }
 
     template<typename T>
-    void as_string(std::string_view key, T& val) const
+    void as_string(const std::string_view key, T& val) const
     {
         val = subobject(key).get<std::string>();
     }
 
     template<typename T>
-    void as_array(std::string_view key, T& val) const
+    void as_array(const std::string_view key, T& val) const
     {
         const auto& arr = subobject(key);
         val = T{ cbegin(arr), cend(arr) };
     }
 
     template<typename T, size_t N>
-    void as_array(std::string_view key, std::array<T, N>& val) const
+    void as_array(const std::string_view key, std::array<T, N>& val) const
     {
         const auto& arr = subobject(key);
 
@@ -226,7 +225,7 @@ public:
     }
 
     template<typename T>
-    void as_map(std::string_view key, T& val) const
+    void as_map(const std::string_view key, T& val) const
     {
         const auto& obj = subobject(key);
 
@@ -237,7 +236,7 @@ public:
     }
 
     template<typename T>
-    void as_multimap(std::string_view key, T& val) const
+    void as_multimap(const std::string_view key, T& val) const
     {
         const auto& obj = subobject(key);
 
@@ -252,7 +251,7 @@ public:
     }
 
     template<typename... Args>
-    void as_tuple(std::string_view key, std::tuple<Args...>& val) const
+    void as_tuple(const std::string_view key, std::tuple<Args...>& val) const
     {
         if (subobject(key).size() != sizeof...(Args))
         {
@@ -264,13 +263,13 @@ public:
     }
 
     template<typename T>
-    void as_object(std::string_view key, T& val) const
+    void as_object(const std::string_view key, T& val) const
     {
         val = parse_arg<T>(subobject(key));
     }
 
 private:
-    [[nodiscard]] const nlohmann::json& subobject(std::string_view key) const
+    [[nodiscard]] const nlohmann::json& subobject(const std::string_view key) const
     {
         return key.empty() ? m_json : m_json[key];
     }
@@ -331,8 +330,8 @@ private:
 #endif
         }
 
-        njson_deserializer ser{ arg };
         no_ref_t out_val;
+        njson_deserializer ser{ arg };
         ser.deserialize_object(out_val);
         return out_val;
     }
@@ -357,7 +356,7 @@ private:
         return parse_arg<T>(arg_arr);
     }
 
-    nlohmann::json m_json;
+    const nlohmann::json& m_json;
 };
 
 // TODO: Start dismantling this class and moving behavior into serializer/deserializer
@@ -419,7 +418,7 @@ public:
     [[nodiscard]] static nlohmann::json serialize_result(
         const detail::rpc_result<IsCallback, R>& result)
     {
-        njson_serializer ser;
+        njson_serializer ser{};
         ser.serialize_object(result);
         return std::move(ser).object();
     }
@@ -441,7 +440,7 @@ public:
     [[nodiscard]] static nlohmann::json serialize_result_w_bind(
         const detail::rpc_result_w_bind<IsCallback, R, Args...>& result)
     {
-        njson_serializer ser;
+        njson_serializer ser{};
         ser.serialize_object(result);
         return std::move(ser).object();
     }
@@ -467,7 +466,7 @@ public:
     [[nodiscard]] static nlohmann::json serialize_request(
         const detail::rpc_request<IsCallback, Args...>& request)
     {
-        njson_serializer ser;
+        njson_serializer ser{};
         ser.serialize_object(request);
         return std::move(ser).object();
     }
@@ -487,7 +486,7 @@ public:
     template<bool IsCallback>
     [[nodiscard]] static nlohmann::json serialize_error(const detail::rpc_error<IsCallback>& error)
     {
-        njson_serializer ser;
+        njson_serializer ser{};
         ser.serialize_object(error);
         return std::move(ser).object();
     }
@@ -506,7 +505,7 @@ public:
     [[nodiscard]] static nlohmann::json serialize_callback_install(
         const callback_install_request& callback_req)
     {
-        njson_serializer ser;
+        njson_serializer ser{};
         ser.serialize_object(callback_req);
         return std::move(ser).object();
     }

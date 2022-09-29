@@ -49,12 +49,12 @@ enum class exception_type
 class rpc_exception : public std::runtime_error
 {
 public:
-    explicit rpc_exception(const std::string& mesg, exception_type type)
+    explicit rpc_exception(const std::string& mesg, const exception_type type)
         : std::runtime_error(mesg), m_type(type)
     {
     }
 
-    explicit rpc_exception(const char* mesg, exception_type type)
+    explicit rpc_exception(const char* const mesg, const exception_type type)
         : std::runtime_error(mesg), m_type(type)
     {
     }
@@ -73,7 +73,7 @@ public:
     {
     }
 
-    explicit function_not_found(const char* mesg)
+    explicit function_not_found(const char* const mesg)
         : rpc_exception(mesg, exception_type::func_not_found)
     {
     }
@@ -87,7 +87,8 @@ public:
     {
     }
 
-    explicit remote_exec_error(const char* mesg) : rpc_exception(mesg, exception_type::remote_exec)
+    explicit remote_exec_error(const char* const mesg)
+        : rpc_exception(mesg, exception_type::remote_exec)
     {
     }
 };
@@ -100,7 +101,7 @@ public:
     {
     }
 
-    explicit serialization_error(const char* mesg)
+    explicit serialization_error(const char* const mesg)
         : rpc_exception(mesg, exception_type::serialization)
     {
     }
@@ -114,7 +115,7 @@ public:
     {
     }
 
-    explicit deserialization_error(const char* mesg)
+    explicit deserialization_error(const char* const mesg)
         : rpc_exception(mesg, exception_type::deserialization)
     {
     }
@@ -128,7 +129,7 @@ public:
     {
     }
 
-    explicit function_mismatch(const char* mesg)
+    explicit function_mismatch(const char* const mesg)
         : rpc_exception(mesg, exception_type::signature_mismatch)
     {
     }
@@ -142,7 +143,8 @@ public:
     {
     }
 
-    explicit client_send_error(const char* mesg) : rpc_exception(mesg, exception_type::client_send)
+    explicit client_send_error(const char* const mesg)
+        : rpc_exception(mesg, exception_type::client_send)
     {
     }
 };
@@ -155,7 +157,7 @@ public:
     {
     }
 
-    explicit client_receive_error(const char* mesg)
+    explicit client_receive_error(const char* const mesg)
         : rpc_exception(mesg, exception_type::client_receive)
     {
     }
@@ -169,7 +171,8 @@ public:
     {
     }
 
-    explicit server_send_error(const char* mesg) : rpc_exception(mesg, exception_type::server_send)
+    explicit server_send_error(const char* const mesg)
+        : rpc_exception(mesg, exception_type::server_send)
     {
     }
 };
@@ -182,7 +185,7 @@ public:
     {
     }
 
-    explicit server_receive_error(const char* mesg)
+    explicit server_receive_error(const char* const mesg)
         : rpc_exception(mesg, exception_type::server_receive)
     {
     }
@@ -196,7 +199,7 @@ public:
     {
     }
 
-    explicit rpc_object_mismatch(const char* mesg)
+    explicit rpc_object_mismatch(const char* const mesg)
         : rpc_exception(mesg, exception_type::rpc_object_mismatch)
     {
     }
@@ -210,7 +213,7 @@ public:
     {
     }
 
-    explicit callback_install_error(const char* mesg)
+    explicit callback_install_error(const char* const mesg)
         : rpc_exception(mesg, exception_type::callback_install)
     {
     }
@@ -224,7 +227,7 @@ public:
     {
     }
 
-    explicit callback_missing_error(const char* mesg)
+    explicit callback_missing_error(const char* const mesg)
         : rpc_exception(mesg, exception_type::callback_missing)
     {
     }
@@ -446,8 +449,8 @@ namespace detail
     inline constexpr bool is_set_v = is_set<std::remove_cv_t<C>>::value;
 
     template<typename F, typename... Ts, size_t... Is>
-    constexpr void for_each_tuple(
-        const std::tuple<Ts...>& tuple, F&& func, RPC_HPP_UNUSED std::index_sequence<Is...> iseq)
+    constexpr void for_each_tuple(const std::tuple<Ts...>& tuple, F&& func,
+        RPC_HPP_UNUSED const std::index_sequence<Is...> iseq)
     {
         using expander = int[];
         std::ignore = expander{ 0, ((void)std::forward<F>(func)(std::get<Is>(tuple)), 0)... };
@@ -474,7 +477,7 @@ namespace detail
 
     template<typename... Args, size_t... Is>
     constexpr void tuple_bind(const std::tuple<remove_cvref_t<decay_str_t<Args>>...>& src,
-        RPC_HPP_UNUSED std::index_sequence<Is...> iseq, Args&&... dest)
+        RPC_HPP_UNUSED const std::index_sequence<Is...> iseq, Args&&... dest)
     {
         using expander = int[];
         std::ignore = expander{ 0,
@@ -515,13 +518,13 @@ namespace detail
     {
         using args_t = std::tuple<remove_cvref_t<decay_str_t<Args>>...>;
 
-        rpc_request() = default;
+        rpc_request() noexcept = default;
         rpc_request(std::string t_func_name, args_t t_args)
             : rpc_base<IsCallback>{ std::move(t_func_name) }, args(std::move(t_args))
         {
         }
 
-        rpc_request(RPC_HPP_UNUSED bind_args_tag tag, std::string t_func_name, args_t t_args)
+        rpc_request(RPC_HPP_UNUSED const bind_args_tag tag, std::string t_func_name, args_t t_args)
             : rpc_base<IsCallback>{ std::move(t_func_name) },
               bind_args(true),
               args(std::move(t_args))
@@ -560,6 +563,7 @@ namespace detail
     {
         using args_t = std::tuple<remove_cvref_t<decay_str_t<Args>>...>;
 
+        rpc_result_w_bind() noexcept = default;
         rpc_result_w_bind(std::string t_func_name, R t_result, args_t t_args)
             : rpc_result<IsCallback, R>{ std::move(t_func_name), std::move(t_result) },
               args(std::move(t_args))
@@ -585,7 +589,7 @@ namespace detail
     template<bool IsCallback>
     struct rpc_error : rpc_base<IsCallback>
     {
-        rpc_error() = default;
+        rpc_error() noexcept = default;
         rpc_error(std::string t_func_name, const rpc_exception& except)
             : rpc_base<IsCallback>{ std::move(t_func_name) },
               except_type(except.get_type()),
@@ -593,7 +597,7 @@ namespace detail
         {
         }
 
-        rpc_error(std::string t_func_name, exception_type t_ex_type, std::string t_err_mesg)
+        rpc_error(std::string t_func_name, const exception_type t_ex_type, std::string t_err_mesg)
             : rpc_base<IsCallback>{ std::move(t_func_name) },
               except_type(t_ex_type),
               err_mesg(std::move(t_err_mesg))
@@ -657,7 +661,7 @@ namespace detail
 
 struct callback_install_request : detail::rpc_base<true>
 {
-    callback_install_request() = default;
+    callback_install_request() noexcept = default;
     explicit callback_install_request(std::string t_func_name) noexcept
         : rpc_base<true>{ std::move(t_func_name) }
     {
@@ -728,15 +732,11 @@ public:
     {
     }
 
-    RPC_HPP_NODISCARD("converting to bytes may be expensive") bytes_t to_bytes() const&
-    {
-        return Serial::to_bytes(m_obj);
-    }
+    RPC_HPP_NODISCARD("converting to bytes may be expensive")
+    bytes_t to_bytes() const& { return Serial::to_bytes(m_obj); }
 
-    RPC_HPP_NODISCARD("converting to bytes consumes object") bytes_t to_bytes() &&
-    {
-        return Serial::to_bytes(std::move(m_obj));
-    }
+    RPC_HPP_NODISCARD("converting to bytes consumes object")
+    bytes_t to_bytes() && { return Serial::to_bytes(std::move(m_obj)); }
 
     RPC_HPP_NODISCARD("extracting data from serial object may be expensive")
     std::string get_func_name() const { return Serial::get_func_name(m_obj); }
@@ -924,7 +924,7 @@ namespace adapters
         {
             static_assert(!is_deserializer, "Cannot call serialize_object() on a deserializer");
 
-            // Necessary for bi-directional serialization, the const qualifier in this function still provides correctness
+            // Necessary for bi-directional serialization
             serialize(*this, const_cast<T&>(val)); // NOLINT(cppcoreguidelines-pro-type-const-cast)
         }
 
@@ -936,15 +936,15 @@ namespace adapters
         }
 
         template<typename T>
-        void as_bool(std::string_view key, T& val)
+        void as_bool(const std::string_view key, T& val)
         {
-            static_assert(std::is_convertible_v<T, bool>, "T must be convertible to bool");
+            static_assert(detail::is_boolean_testable_v<T>, "T must be convertible to bool");
 
             (static_cast<Adapter*>(this))->as_bool(key, val);
         }
 
         template<typename T>
-        void as_float(std::string_view key, T& val)
+        void as_float(const std::string_view key, T& val)
         {
             static_assert(std::is_floating_point_v<T>, "T must be a floating-point type");
 
@@ -952,7 +952,7 @@ namespace adapters
         }
 
         template<typename T>
-        void as_int(std::string_view key, T& val)
+        void as_int(const std::string_view key, T& val)
         {
             static_assert(std::is_integral_v<T> || std::is_enum_v<T>, "T must be an integral type");
 
@@ -960,16 +960,15 @@ namespace adapters
         }
 
         template<typename T>
-        void as_string(std::string_view key, T& val)
+        void as_string(const std::string_view key, T& val)
         {
-            static_assert(std::is_convertible_v<T, std::string_view>,
-                "T must be convertible to std::string_view");
+            static_assert(detail::is_stringlike_v<T>, "T must be convertible to std::string_view");
 
             (static_cast<Adapter*>(this))->as_string(key, val);
         }
 
         template<typename T>
-        void as_array(std::string_view key, T& val)
+        void as_array(const std::string_view key, T& val)
         {
             static_assert(detail::is_container_v<T>, "T must have begin() and end()");
 
@@ -977,7 +976,7 @@ namespace adapters
         }
 
         template<typename T>
-        void as_map(std::string_view key, T& val)
+        void as_map(const std::string_view key, T& val)
         {
             static_assert(detail::is_map_v<T>, "T must be a map type");
 
@@ -992,13 +991,13 @@ namespace adapters
         }
 
         template<typename... Args>
-        void as_tuple(std::string_view key, std::tuple<Args...>& val)
+        void as_tuple(const std::string_view key, std::tuple<Args...>& val)
         {
             (static_cast<Adapter*>(this))->as_tuple(key, val);
         }
 
         template<typename T>
-        void as_object(std::string_view key, T& val)
+        void as_object(const std::string_view key, T& val)
         {
             (static_cast<Adapter*>(this))->as_object(key, val);
         }
@@ -1051,7 +1050,7 @@ namespace adapters
 
     // Overloads for common types
     template<typename Adapter>
-    void serialize(serializer<Adapter, false>& ser, bool val)
+    void serialize(serializer<Adapter, false>& ser, const bool val)
     {
         ser.as_bool("", val);
     }
@@ -1064,7 +1063,7 @@ namespace adapters
 
     template<typename Adapter, typename T,
         std::enable_if_t<(std::is_integral_v<T> && (!std::is_same_v<T, bool>)), bool> = true>
-    void serialize(serializer<Adapter, false>& ser, T val)
+    void serialize(serializer<Adapter, false>& ser, const T val)
     {
         ser.as_int("", val);
     }
@@ -1078,7 +1077,7 @@ namespace adapters
 
     template<typename Adapter, typename T,
         std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
-    void serialize(serializer<Adapter, false>& ser, T val)
+    void serialize(serializer<Adapter, false>& ser, const T val)
     {
         ser.as_float("", val);
     }
@@ -1091,7 +1090,7 @@ namespace adapters
     }
 
     template<typename Adapter>
-    void serialize(serializer<Adapter, false>& ser, std::string_view val)
+    void serialize(serializer<Adapter, false>& ser, const std::string_view val)
     {
         ser.as_string("", val);
     }

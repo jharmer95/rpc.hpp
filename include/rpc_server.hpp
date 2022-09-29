@@ -27,7 +27,6 @@ public:
 
     virtual ~server_interface() noexcept = default;
     server_interface() noexcept = default;
-
     server_interface(const server_interface&) = delete;
     server_interface& operator=(const server_interface&) = delete;
     server_interface& operator=(server_interface&&) noexcept = delete;
@@ -36,19 +35,13 @@ public:
     virtual bytes_t receive() = 0;
 
     template<typename R, typename... Args>
-    void bind(std::string func_name, const std::function<R(Args...)>& func)
-    {
-        bind_impl<R, Args...>(std::move(func_name), func);
-    }
-
-    template<typename R, typename... Args>
-    void bind(std::string func_name, std::function<R(Args...)>&& func)
+    void bind(std::string func_name, std::function<R(Args...)> func)
     {
         bind_impl<R, Args...>(std::move(func_name), std::move(func));
     }
 
     template<typename R, typename... Args>
-    void bind(std::string func_name, detail::fptr_t<R, Args...> func_ptr)
+    void bind(std::string func_name, const detail::fptr_t<R, Args...> func_ptr)
     {
         bind_impl<R, Args...>(std::move(func_name), func_ptr);
     }

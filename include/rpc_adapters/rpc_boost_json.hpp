@@ -61,19 +61,19 @@ public:
     [[nodiscard]] boost::json::value&& object() && noexcept { return std::move(m_json); }
 
     template<typename T>
-    void as_bool(std::string_view key, T& val)
+    void as_bool(const std::string_view key, const T& val)
     {
         subobject(key) = static_cast<bool>(val);
     }
 
     template<typename T>
-    void as_float(std::string_view key, T& val)
+    void as_float(const std::string_view key, const T& val)
     {
         subobject(key) = val;
     }
 
     template<typename T>
-    void as_int(std::string_view key, T& val)
+    void as_int(const std::string_view key, const T& val)
     {
         if constexpr (std::is_enum_v<T>)
         {
@@ -86,13 +86,13 @@ public:
     }
 
     template<typename T>
-    void as_string(std::string_view key, T& val)
+    void as_string(const std::string_view key, const T& val)
     {
         subobject(key) = val;
     }
 
     template<typename T>
-    void as_array(std::string_view key, T& val)
+    void as_array(const std::string_view key, const T& val)
     {
         auto arr = boost::json::array{};
 
@@ -120,7 +120,7 @@ public:
     }
 
     template<typename T>
-    void as_map(std::string_view key, T& val)
+    void as_map(const std::string_view key, const T& val)
     {
         auto obj = boost::json::object{};
 
@@ -134,7 +134,7 @@ public:
     }
 
     template<typename T>
-    void as_multimap(std::string_view key, T& val)
+    void as_multimap(const std::string_view key, const T& val)
     {
         auto obj = boost::json::object{};
 
@@ -161,7 +161,7 @@ public:
     }
 
     template<typename... Args>
-    void as_tuple(std::string_view key, std::tuple<Args...>& val)
+    void as_tuple(const std::string_view key, const std::tuple<Args...>& val)
     {
         auto arg_arr = boost::json::array{};
         arg_arr.reserve(sizeof...(Args));
@@ -172,13 +172,13 @@ public:
     }
 
     template<typename T>
-    void as_object(std::string_view key, T& val)
+    void as_object(const std::string_view key, const T& val)
     {
         push_arg(val, subobject(key));
     }
 
 private:
-    [[nodiscard]] boost::json::value& subobject(std::string_view key)
+    [[nodiscard]] boost::json::value& subobject(const std::string_view key)
     {
         return key.empty() ? m_json : m_json.get_object()[key];
     }
@@ -186,7 +186,7 @@ private:
     template<typename T>
     static void push_arg(T&& arg, boost::json::value& obj)
     {
-        boost_json_serializer ser;
+        boost_json_serializer ser{};
         ser.serialize_object(std::forward<T>(arg));
         obj = std::move(ser).object();
     }
@@ -209,19 +209,19 @@ public:
     explicit boost_json_deserializer(boost::json::value&& obj) noexcept : m_json(std::move(obj)) {}
 
     template<typename T>
-    void as_bool(std::string_view key, T& val) const
+    void as_bool(const std::string_view key, T& val) const
     {
         val = boost::json::value_to<bool>(subobject(key));
     }
 
     template<typename T>
-    void as_float(std::string_view key, T& val) const
+    void as_float(const std::string_view key, T& val) const
     {
         val = boost::json::value_to<T>(subobject(key));
     }
 
     template<typename T>
-    void as_int(std::string_view key, T& val) const
+    void as_int(const std::string_view key, T& val) const
     {
         if constexpr (std::is_enum_v<T>)
         {
@@ -234,22 +234,21 @@ public:
     }
 
     template<typename T>
-    void as_string(std::string_view key, T& val) const
+    void as_string(const std::string_view key, T& val) const
     {
         val = subobject(key).get_string().c_str();
     }
 
     template<typename T>
-    void as_array(std::string_view key, T& val) const
+    void as_array(const std::string_view key, T& val) const
     {
         const auto& arr = subobject(key).as_array();
-
-        std::transform(arr.begin(), arr.end(), std::inserter(val, val.end()),
+        std::transform(arr.cbegin(), arr.cend(), std::inserter(val, val.end()),
             yield_value<detail::remove_cvref_t<typename T::value_type>>);
     }
 
     template<typename T, size_t N>
-    void as_array(std::string_view key, std::array<T, N>& val) const
+    void as_array(const std::string_view key, std::array<T, N>& val) const
     {
         const auto& arr = subobject(key).as_array();
 
@@ -263,10 +262,9 @@ public:
     }
 
     template<typename T, typename Alloc>
-    void as_array(std::string_view key, std::forward_list<T, Alloc>& val) const
+    void as_array(const std::string_view key, std::forward_list<T, Alloc>& val) const
     {
         const auto& arr = subobject(key).as_array();
-
         const auto arr_rend = arr.crend();
 
         for (auto it = arr.crbegin(); it != arr_rend; ++it)
@@ -276,20 +274,20 @@ public:
     }
 
     template<typename T>
-    void as_map(std::string_view key, T& val) const
+    void as_map(const std::string_view key, T& val) const
     {
         const auto& obj = subobject(key).as_object();
 
         for (const auto& [k, v] : obj)
         {
-            boost::json::value key_val = boost::json::parse(k).as_array().front();
+            const boost::json::value key_val = boost::json::parse(k).as_array().front();
             val.insert({ boost::json::value_to<typename T::key_type>(key_val),
                 boost::json::value_to<typename T::mapped_type>(v) });
         }
     }
 
     template<typename T>
-    void as_multimap(std::string_view key, T& val) const
+    void as_multimap(const std::string_view key, T& val) const
     {
         const auto& obj = subobject(key).as_object();
 
@@ -297,7 +295,7 @@ public:
         {
             for (const auto& subval : v.as_array())
             {
-                boost::json::value key_val = boost::json::parse(k).as_array().front();
+                const boost::json::value key_val = boost::json::parse(k).as_array().front();
                 val.insert({ boost::json::value_to<typename T::key_type>(key_val),
                     boost::json::value_to<typename T::mapped_type>(subval) });
             }
@@ -305,7 +303,7 @@ public:
     }
 
     template<typename... Args>
-    void as_tuple(std::string_view key, std::tuple<Args...>& val) const
+    void as_tuple(const std::string_view key, std::tuple<Args...>& val) const
     {
         const auto& arg_arr = subobject(key);
 
@@ -319,7 +317,7 @@ public:
     }
 
     template<typename T>
-    void as_object(std::string_view key, T& val) const
+    void as_object(const std::string_view key, T& val) const
     {
         val = parse_arg<T>(subobject(key));
     }
@@ -412,8 +410,8 @@ private:
             throw function_mismatch{ mismatch_string(typeid(no_ref_t).name(), arg) };
         }
 
-        boost_json_deserializer ser{ arg };
         no_ref_t out_val;
+        boost_json_deserializer ser{ arg };
         ser.deserialize_object(out_val);
         return out_val;
     }
@@ -452,8 +450,8 @@ private:
         }
         else
         {
+            T tmp_val;
             boost_json_deserializer ser{ val };
-            T tmp_val{};
             ser.deserialize_object(tmp_val);
             return tmp_val;
         }
@@ -467,7 +465,7 @@ class boost_json_adapter : public serial_adapter_base<boost_json_adapter>
 public:
     [[nodiscard]] static boost::json::object from_bytes(std::string&& bytes)
     {
-        boost::system::error_code err_code;
+        boost::system::error_code err_code{};
         boost::json::value val = boost::json::parse(bytes, err_code);
 
         if (err_code)
@@ -480,10 +478,10 @@ public:
             throw deserialization_error("Boost::JSON: not an object");
         }
 
-        auto& obj = val.get_object();
+        const auto& obj = val.get_object();
 
         if (const auto fname_it = obj.find("func_name");
-            (fname_it == obj.end()) || (!fname_it->value().is_string()))
+            (fname_it == obj.cend()) || (!fname_it->value().is_string()))
         {
             throw deserialization_error("Boost::JSON: field \"func_name\" not found");
         }
@@ -532,7 +530,7 @@ public:
     [[nodiscard]] static boost::json::object serialize_result(
         const detail::rpc_result<IsCallback, R>& result)
     {
-        boost_json_serializer ser;
+        boost_json_serializer ser{};
         ser.serialize_object(result);
         return std::move(ser).object().get_object();
     }
@@ -558,7 +556,7 @@ public:
     [[nodiscard]] static boost::json::object serialize_result_w_bind(
         const detail::rpc_result_w_bind<IsCallback, R, Args...>& result)
     {
-        boost_json_serializer ser;
+        boost_json_serializer ser{};
         ser.serialize_object(result);
         return std::move(ser).object().get_object();
     }
@@ -588,7 +586,7 @@ public:
     [[nodiscard]] static boost::json::object serialize_request(
         const detail::rpc_request<IsCallback, Args...>& request)
     {
-        boost_json_serializer ser;
+        boost_json_serializer ser{};
         ser.serialize_object(request);
         return std::move(ser).object().get_object();
     }
@@ -614,7 +612,7 @@ public:
     [[nodiscard]] static boost::json::object serialize_error(
         const detail::rpc_error<IsCallback>& error)
     {
-        boost_json_serializer ser;
+        boost_json_serializer ser{};
         ser.serialize_object(error);
         return std::move(ser).object().get_object();
     }
@@ -634,7 +632,7 @@ public:
     [[nodiscard]] static boost::json::object serialize_callback_install(
         const callback_install_request& callback_req)
     {
-        boost_json_serializer ser;
+        boost_json_serializer ser{};
         ser.serialize_object(callback_req);
         return std::move(ser).object().get_object();
     }

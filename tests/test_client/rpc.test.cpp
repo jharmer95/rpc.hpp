@@ -213,7 +213,7 @@ TEST_CASE_TEMPLATE("CountChars (static)", TestType, RPC_TEST_TYPES)
     const auto response = client.call_header_func(CountChars, test_str, 'p');
 
     REQUIRE(!response.is_error());
-    REQUIRE(response.get_result<int>() == 9);
+    REQUIRE(response.template get_result<int>() == 9);
 }
 
 TEST_CASE_TEMPLATE("AddOne (static)", TestType, RPC_TEST_TYPES)

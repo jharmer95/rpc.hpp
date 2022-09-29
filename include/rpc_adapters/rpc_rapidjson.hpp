@@ -61,24 +61,24 @@ struct serial_traits<rapidjson_adapter>
 class rapidjson_serializer : public serializer<rapidjson_serializer, false>
 {
 public:
-    rapidjson_serializer() = default;
+    rapidjson_serializer() noexcept = default;
     [[nodiscard]] const rapidjson::Document& object() const& noexcept { return m_json; }
     [[nodiscard]] rapidjson::Document&& object() && noexcept { return std::move(m_json); }
 
     template<typename T>
-    void as_bool(std::string_view key, T& val)
+    void as_bool(const std::string_view key, const T& val)
     {
         subobject(key).SetBool(val);
     }
 
     template<typename T>
-    void as_float(std::string_view key, T& val)
+    void as_float(const std::string_view key, const T& val)
     {
         subobject(key).Set<T>(val);
     }
 
     template<typename T>
-    void as_int(std::string_view key, T& val)
+    void as_int(const std::string_view key, const T& val)
     {
         if constexpr (std::is_enum_v<T>)
         {
@@ -102,13 +102,13 @@ public:
     }
 
     template<typename T>
-    void as_string(std::string_view key, T& val)
+    void as_string(const std::string_view key, const T& val)
     {
         subobject(key).SetString(std::data(val), allocator());
     }
 
     template<typename T>
-    void as_array(std::string_view key, T& val)
+    void as_array(const std::string_view key, const T& val)
     {
         auto& arr = subobject(key).SetArray();
 
@@ -133,7 +133,7 @@ public:
     }
 
     template<typename T>
-    void as_map(std::string_view key, T& val)
+    void as_map(const std::string_view key, const T& val)
     {
         auto& obj = subobject(key).SetObject();
 
@@ -150,7 +150,7 @@ public:
     }
 
     template<typename T>
-    void as_multimap(std::string_view key, T& val)
+    void as_multimap(const std::string_view key, const T& val)
     {
         auto& obj = subobject(key).SetObject();
 
@@ -179,7 +179,7 @@ public:
     }
 
     template<typename... Args>
-    void as_tuple(std::string_view key, std::tuple<Args...>& val)
+    void as_tuple(const std::string_view key, const std::tuple<Args...>& val)
     {
         auto& arg_arr = subobject(key).SetArray();
         arg_arr.Reserve(static_cast<rapidjson::SizeType>(sizeof...(Args)), allocator());
@@ -190,13 +190,13 @@ public:
     }
 
     template<typename T>
-    void as_object(std::string_view key, T& val)
+    void as_object(const std::string_view key, const T& val)
     {
         push_arg(val, subobject(key), allocator());
     }
 
 private:
-    [[nodiscard]] rapidjson::Value& subobject(std::string_view key)
+    [[nodiscard]] rapidjson::Value& subobject(const std::string_view key)
     {
         if (key.empty())
         {
@@ -230,7 +230,7 @@ private:
     template<typename T>
     static void push_arg(T&& arg, rapidjson::Value& obj, rapidjson::MemoryPoolAllocator<>& alloc)
     {
-        rapidjson_serializer ser;
+        rapidjson_serializer ser{};
         ser.serialize_object(std::forward<T>(arg));
         obj.CopyFrom(std::move(ser).object(), alloc);
     }
@@ -255,19 +255,19 @@ public:
     explicit rapidjson_deserializer(const rapidjson::Value& obj) noexcept : m_json(obj) {}
 
     template<typename T>
-    void as_bool(std::string_view key, T& val) const
+    void as_bool(const std::string_view key, T& val) const
     {
         val = subobject(key).GetBool();
     }
 
     template<typename T>
-    void as_float(std::string_view key, T& val) const
+    void as_float(const std::string_view key, T& val) const
     {
         val = subobject(key).Get<T>();
     }
 
     template<typename T>
-    void as_int(std::string_view key, T& val) const
+    void as_int(const std::string_view key, T& val) const
     {
         if constexpr (std::is_enum_v<T>)
         {
@@ -292,22 +292,21 @@ public:
     }
 
     template<typename T>
-    void as_string(std::string_view key, T& val) const
+    void as_string(const std::string_view key, T& val) const
     {
         val = subobject(key).GetString();
     }
 
     template<typename T>
-    void as_array(std::string_view key, T& val) const
+    void as_array(const std::string_view key, T& val) const
     {
         const auto& arr = subobject(key).GetArray();
-
         std::transform(arr.begin(), arr.end(), std::inserter(val, val.end()),
             yield_value<detail::remove_cvref_t<typename T::value_type>>);
     }
 
     template<typename T, size_t N>
-    void as_array(std::string_view key, std::array<T, N>& val) const
+    void as_array(const std::string_view key, std::array<T, N>& val) const
     {
         const auto& arr = subobject(key).GetArray();
 
@@ -320,13 +319,12 @@ public:
     }
 
     template<typename T, typename Alloc>
-    void as_array(std::string_view key, std::forward_list<T, Alloc>& val) const
+    void as_array(const std::string_view key, std::forward_list<T, Alloc>& val) const
     {
         using rev_iter_t =
             std::reverse_iterator<rapidjson::GenericArray<true, rapidjson::Value>::ValueIterator>;
 
         const auto& arr = subobject(key).GetArray();
-
         const rev_iter_t arr_rbegin{ arr.end() };
         const rev_iter_t arr_rend{ arr.begin() };
 
@@ -337,7 +335,7 @@ public:
     }
 
     template<typename T>
-    void as_map(std::string_view key, T& val) const
+    void as_map(const std::string_view key, T& val) const
     {
         const auto& obj = subobject(key).GetObject();
         const auto mem_end = obj.MemberEnd();
@@ -353,7 +351,7 @@ public:
     }
 
     template<typename T>
-    void as_multimap(std::string_view key, T& val) const
+    void as_multimap(const std::string_view key, T& val) const
     {
         const auto& obj = subobject(key).GetObject();
         const auto mem_end = obj.MemberEnd();
@@ -374,7 +372,7 @@ public:
     }
 
     template<typename... Args>
-    void as_tuple(std::string_view key, std::tuple<Args...>& val) const
+    void as_tuple(const std::string_view key, std::tuple<Args...>& val) const
     {
         if (subobject(key).GetArray().Size() != sizeof...(Args))
         {
@@ -386,13 +384,13 @@ public:
     }
 
     template<typename T>
-    void as_object(std::string_view key, T& val) const
+    void as_object(const std::string_view key, T& val) const
     {
         val = parse_arg<T>(subobject(key));
     }
 
 private:
-    [[nodiscard]] const rapidjson::Value& subobject(std::string_view key) const
+    [[nodiscard]] const rapidjson::Value& subobject(const std::string_view key) const
     {
         if (key.empty())
         {
@@ -541,8 +539,8 @@ private:
             throw function_mismatch{ mismatch_message(typeid(no_ref_t).name(), arg) };
         }
 
-        rapidjson_deserializer ser{ arg };
         no_ref_t out_val;
+        rapidjson_deserializer ser{ arg };
         ser.deserialize_object(out_val);
         return out_val;
     }
@@ -601,8 +599,8 @@ private:
         }
         else
         {
-            rapidjson_deserializer ser{ val };
             T tmp_val;
+            rapidjson_deserializer ser{ val };
             ser.deserialize_object(tmp_val);
             return tmp_val;
         }
@@ -680,7 +678,7 @@ public:
     [[nodiscard]] static rapidjson::Document serialize_result(
         const detail::rpc_result<IsCallback, R>& result)
     {
-        rapidjson_serializer ser;
+        rapidjson_serializer ser{};
         ser.serialize_object(result);
         return std::move(ser).object();
     }
@@ -706,7 +704,7 @@ public:
     [[nodiscard]] static rapidjson::Document serialize_result_w_bind(
         const detail::rpc_result_w_bind<IsCallback, R, Args...>& result)
     {
-        rapidjson_serializer ser;
+        rapidjson_serializer ser{};
         ser.serialize_object(result);
         return std::move(ser).object();
     }
@@ -735,7 +733,7 @@ public:
     [[nodiscard]] static rapidjson::Document serialize_request(
         const detail::rpc_request<IsCallback, Args...>& request)
     {
-        rapidjson_serializer ser;
+        rapidjson_serializer ser{};
         ser.serialize_object(request);
         return std::move(ser).object();
     }
@@ -760,7 +758,7 @@ public:
     [[nodiscard]] static rapidjson::Document serialize_error(
         const detail::rpc_error<IsCallback>& error)
     {
-        rapidjson_serializer ser;
+        rapidjson_serializer ser{};
         ser.serialize_object(error);
         return std::move(ser).object();
     }
@@ -780,7 +778,7 @@ public:
     [[nodiscard]] static rapidjson::Document serialize_callback_install(
         const callback_install_request& callback_req)
     {
-        rapidjson_serializer ser;
+        rapidjson_serializer ser{};
         ser.serialize_object(callback_req);
         return std::move(ser).object();
     }
