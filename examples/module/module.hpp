@@ -1,6 +1,7 @@
 #pragma once
 
 #include <rpc_adapters/rpc_njson.hpp>
+#include <rpc_server.hpp>
 
 using rpc_hpp::adapters::njson_adapter;
 
@@ -8,17 +9,17 @@ using rpc_hpp::adapters::njson_adapter;
 #include <vector>
 
 #if defined(_WIN32)
-#    if defined(RPC_HPP_EXPORT)
-#        define DLL_PUBLIC __declspec(dllexport)
-#    else
-#        define DLL_PUBLIC __declspec(dllimport)
-#    endif
+#  if defined(RPC_HPP_EXPORT)
+#    define DLL_PUBLIC __declspec(dllexport)
+#  else
+#    define DLL_PUBLIC __declspec(dllimport)
+#  endif
 
-#    define DLL_PRIVATE
+#  define DLL_PRIVATE
 
 #elif defined(__unix__)
-#    define DLL_PUBLIC __attribute__((visibility("default")))
-#    define DLL_PRIVATE __attribute__((visibility("hidden")))
+#  define DLL_PUBLIC __attribute__((visibility("default")))
+#  define DLL_PRIVATE __attribute__((visibility("hidden")))
 #endif
 
 // C++ private functions
@@ -36,4 +37,7 @@ class RpcModule : public rpc_hpp::server_interface<njson_adapter>
 {
 public:
     RpcModule();
+
+    std::string receive() override { return {}; }
+    void send(std::string&&) override {}
 };

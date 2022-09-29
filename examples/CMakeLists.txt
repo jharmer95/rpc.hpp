@@ -27,10 +27,6 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-cmake_minimum_required(VERSION 3.16)
-
-project("rpc.hpp examples" LANGUAGES CXX)
-
 if(NOT TARGET RpcHpp::rpc_hpp)
   message(
     FATAL_ERROR
@@ -38,13 +34,21 @@ if(NOT TARGET RpcHpp::rpc_hpp)
   )
 endif()
 
+include(system_link)
+
 if(NOT TARGET asio_lib)
   find_package(Threads REQUIRED)
   add_library(asio_lib INTERFACE)
   target_compile_definitions(asio_lib INTERFACE ASIO_STANDALONE)
-  target_link_libraries(asio_lib INTERFACE Threads::Threads)
+  target_link_libraries_system(asio_lib INTERFACE Threads::Threads)
   find_package(asio CONFIG REQUIRED)
-  target_link_libraries(asio_lib INTERFACE asio asio::asio)
+
+  if(CXX_GCC OR CXX_MINGW)
+    # Workaround for GCC 12 detecting null errors
+    target_compile_options(asio_lib INTERFACE -Wno-error=null-dereference)
+  endif()
+
+  target_link_libraries_system(asio_lib INTERFACE asio asio::asio)
 endif()
 
 add_executable(rpc_server "tcp_server/server.cpp")

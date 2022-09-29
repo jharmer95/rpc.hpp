@@ -1,5 +1,3 @@
-#define RPC_HPP_CLIENT_IMPL
-
 #include "client.hpp"
 
 #include <exception>
@@ -23,7 +21,15 @@ int main(int argc, char* argv[])
         // Trivial function example
         {
             currentFuncName = "Sum";
-            const auto result = client.template call_func<int>("Sum", 1, 2);
+
+            const auto response = client.call_func("Sum", 1, 2);
+
+            if (response.is_error())
+            {
+                throw std::runtime_error{ "Received an error: " + response.get_error_mesg() };
+            }
+
+            const auto result = response.template get_result<int>();
             std::cout << "Sum(1, 2) == " << result << '\n';
         }
 
@@ -32,7 +38,13 @@ int main(int argc, char* argv[])
             currentFuncName = "AddOneToEach";
             std::vector<int> vec{ 1, 2, 3, 4, 5 };
 
-            client.template call_func<void>("AddOneToEach", vec);
+            const auto response = client.template call_func_w_bind("AddOneToEach", vec);
+
+            if (response.is_error())
+            {
+                throw std::runtime_error{ "Received an error: " + response.get_error_mesg() };
+            }
+
             std::cout << "AddOneToEach({ 1, 2, 3, 4, 5 }) == {";
 
             for (size_t i = 0; i < vec.size() - 1; ++i)
@@ -46,25 +58,43 @@ int main(int argc, char* argv[])
         // Template function example
         {
             currentFuncName = "GetTypeName<int>";
-            auto result = client.template call_func<std::string>("GetTypeName<int>");
+            auto response = client.call_func("GetTypeName<int>");
 
+            if (response.is_error())
+            {
+                throw std::runtime_error{ "Received an error: " + response.get_error_mesg() };
+            }
+
+            auto result = response.template get_result<std::string>();
             std::cout << "GetTypeName<int>() == \"" << result << "\"\n";
 
             currentFuncName = "GetTypeName<double>";
-            result = client.template call_func<std::string>("GetTypeName<double>");
+            response = client.call_func("GetTypeName<double>");
 
+            if (response.is_error())
+            {
+                throw std::runtime_error{ "Received an error: " + response.get_error_mesg() };
+            }
+
+            result = response.template get_result<std::string>();
             std::cout << "GetTypeName<double>() == \"" << result << "\"\n";
 
             currentFuncName = "GetTypeName<std::string>";
-            result = client.template call_func<std::string>("GetTypeName<std::string>");
+            response = client.call_func("GetTypeName<std::string>");
 
+            if (response.is_error())
+            {
+                throw std::runtime_error{ "Received an error: " + response.get_error_mesg() };
+            }
+
+            result = response.template get_result<std::string>();
             std::cout << "GetTypeName<std::string>() == \"" << result << "\"\n";
         }
 
         // Now shutdown the server
         {
             currentFuncName = "KillServer";
-            client.call_func("KillServer");
+            [[maybe_unused]] const auto response = client.call_func("KillServer");
             std::cout << "Server shutdown remotely...\n";
         }
 

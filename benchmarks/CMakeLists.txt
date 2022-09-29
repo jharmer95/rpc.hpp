@@ -40,7 +40,7 @@ if(NOT TARGET asio_lib)
   find_package(Threads REQUIRED)
   add_library(asio_lib INTERFACE)
   target_compile_definitions(asio_lib INTERFACE ASIO_STANDALONE)
-  target_link_libraries(asio_lib INTERFACE Threads::Threads)
+  target_link_libraries_system(asio_lib INTERFACE Threads::Threads)
   find_package(asio CONFIG REQUIRED)
 
   if(CXX_GCC OR CXX_MINGW)

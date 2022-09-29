@@ -2,13 +2,14 @@
 
 #include <asio.hpp>
 #include <rpc_adapters/rpc_njson.hpp>
+#include <rpc_client.hpp>
 
 #include <string>
 
 using asio::ip::tcp;
 using rpc_hpp::adapters::njson_adapter;
 
-class RpcClient : public rpc_hpp::client::client_interface<njson_adapter>
+class RpcClient : public rpc_hpp::client_interface<njson_adapter>
 {
 public:
     static constexpr auto BUF_SZ = 256;
@@ -21,9 +22,9 @@ public:
     std::string getIP() const { return m_socket.remote_endpoint().address().to_string(); }
 
 private:
-    void send(const std::string& mesg) override
+    void send(std::string&& mesg) override
     {
-        asio::write(m_socket, asio::buffer(mesg, mesg.size()));
+        asio::write(m_socket, asio::buffer(std::move(mesg), mesg.size()));
     }
 
     std::string receive() override

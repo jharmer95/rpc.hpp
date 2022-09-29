@@ -1,29 +1,31 @@
 #pragma once
 
 #if defined(_WIN32)
-#    define WIN32_LEAN_AND_MEAN
-#    define NOMINMAX
-#    include <Windows.h> // for FreeLibrary, GetProcAddress, HMODULE, LoadLibrary
+#  define WIN32_LEAN_AND_MEAN
+#  define NOMINMAX
+#  include <Windows.h> // for FreeLibrary, GetProcAddress, HMODULE, LoadLibrary
 
 using module_t = HMODULE;
 
 #elif defined(__unix__)
-#    include <dlfcn.h> // for dlclose, dlsym, dlopen
+#  include <dlfcn.h> // for dlclose, dlsym, dlopen
 
 // For cleaner syntax, match macros w/ Windows (not recommended for production as behaviors/flags can be different)
-#    define FreeLibrary(X) dlclose(X)
-#    define GetProcAddress(X, Y) dlsym(X, Y)
-#    define LoadLibrary(X) dlopen(X, RTLD_LOCAL | RTLD_LAZY)
+#  define FreeLibrary(X) dlclose(X)
+#  define GetProcAddress(X, Y) dlsym(X, Y)
+#  define LoadLibrary(X) dlopen(X, RTLD_LOCAL | RTLD_LAZY)
+
 using module_t = void*;
 #endif
 
 #include <rpc_adapters/rpc_njson.hpp>
+#include <rpc_client.hpp>
 
 #include <string>
 
 using rpc_hpp::adapters::njson_adapter;
 
-class RpcClient : public rpc_hpp::client::client_interface<njson_adapter>
+class RpcClient : public rpc_hpp::client_interface<njson_adapter>
 {
 public:
     using remote_func_type = int (*)(char*, size_t);
@@ -38,10 +40,9 @@ public:
     }
 
     RpcClient(const std::string& module_path);
-
+    
     // Cannot copy a client, module could be unloaded by a copy
     RpcClient(const RpcClient&) = delete;
-    RpcClient& operator=(const RpcClient&) = delete;
 
     // Moving is OK, module pointer will not be unloaded
     RpcClient(RpcClient&& other) noexcept
@@ -50,6 +51,9 @@ public:
         other.m_module = nullptr;
         other.m_func = nullptr;
     }
+
+    // Cannot copy a client, module could be unloaded by a copy
+    RpcClient& operator=(const RpcClient&) = delete;
 
     RpcClient& operator=(RpcClient&& other) & noexcept
     {
@@ -64,7 +68,7 @@ public:
     }
 
 private:
-    void send(const std::string& mesg) override;
+    void send(std::string&& mesg) override;
 
     [[nodiscard]] std::string receive() override
     {

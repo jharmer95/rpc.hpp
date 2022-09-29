@@ -1,8 +1,4 @@
-#define RPC_HPP_CLIENT_IMPL
-
 #include "client.hpp"
-
-#include <rpc_adapters/rpc_njson.hpp>
 
 #include <iostream>
 #include <stdexcept>
@@ -16,7 +12,7 @@ RpcClient::RpcClient(const std::string& module_path) : m_module{ LoadLibrary(mod
     // Load the module into the application's memory
     if (m_module == nullptr)
     {
-        throw std::runtime_error("Could not load module!");
+        throw std::runtime_error{ "Could not load module!" };
     }
 
     // Locate the rpc.hpp handler function within the module
@@ -24,18 +20,18 @@ RpcClient::RpcClient(const std::string& module_path) : m_module{ LoadLibrary(mod
 
     if (m_func == nullptr)
     {
-        throw std::runtime_error("Could not load function 'RunRemoteFunc'!");
+        throw std::runtime_error{ "Could not load function 'RunRemoteFunc'!" };
     }
 }
 
-void RpcClient::send(const std::string& mesg)
+void RpcClient::send(std::string&& mesg)
 {
     // Interoperable with C-compatible code, so need to create a character buffer (keeping it small for this example)
     constexpr auto BUF_SZ = 128;
 
     if (mesg.size() >= BUF_SZ)
     {
-        throw std::runtime_error("String buffer was not big enough for request!");
+        throw std::runtime_error{ "String buffer was not big enough for request!" };
     }
 
     char buf[BUF_SZ];
@@ -44,14 +40,14 @@ void RpcClient::send(const std::string& mesg)
     strcpy_s(buf, mesg.c_str());
 
 #elif defined(__unix__)
-    strcpy(buf, mesg.c_str());
+    std::strcpy(buf, std::move(mesg).c_str());
 #endif
 
     const auto result = m_func(buf, BUF_SZ);
 
     if (result == 1)
     {
-        throw std::runtime_error("String buffer was not big enough for response!");
+        throw std::runtime_error{ "String buffer was not big enough for response!" };
     }
 
     m_result = std::string{ buf };
@@ -76,7 +72,14 @@ int main(int argc, char* argv[])
             {
                 funcName = "Sum";
 
-                const auto result = client.template call_func<int>("Sum", 1, 2);
+                const auto response = client.call_func("Sum", 1, 2);
+
+                if (response.is_error())
+                {
+                    throw std::runtime_error{ "Received an error: " + response.get_error_mesg() };
+                }
+
+                const auto result = response.template get_result<int>();
                 std::cout << "Sum(1, 2) == " << result << '\n';
             }
 
@@ -85,7 +88,13 @@ int main(int argc, char* argv[])
                 funcName = "AddOneToEach";
                 std::vector<int> vec{ 1, 2, 3, 4, 5 };
 
-                client.call_func("AddOneToEach", vec);
+                const auto response = client.call_func_w_bind("AddOneToEach", vec);
+
+                if (response.is_error())
+                {
+                    throw std::runtime_error{ "Received an error: " + response.get_error_mesg() };
+                }
+
                 std::cout << "AddOneToEach({ 1, 2, 3, 4, 5 }) == {";
 
                 for (size_t i = 0; i < vec.size() - 1; ++i)
@@ -101,7 +110,13 @@ int main(int argc, char* argv[])
                 funcName = "GetName";
                 std::string mod_name;
 
-                client.call_func("GetName", mod_name);
+                const auto response = client.call_func_w_bind("GetName", mod_name);
+
+                if (response.is_error())
+                {
+                    throw std::runtime_error{ "Received an error: " + response.get_error_mesg() };
+                }
+
                 std::cout << "GetName() == \"" << mod_name << "\"\n";
             }
 
