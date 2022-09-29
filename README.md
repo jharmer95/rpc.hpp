@@ -60,13 +60,11 @@ For more examples see [examples](examples).
 server.cpp
 
 ```C++
-#define RPC_HPP_SERVER_IMPL
-
 #include <rpc_adapters/rpc_njson.hpp>
+#include <rpc_server.hpp>
 
 #include <string>
 
-using rpc_hpp::adapters::njson;
 using rpc_hpp::adapters::njson_adapter;
 
 int Add(int n1, int n2)
@@ -87,18 +85,22 @@ public:
         // initialize server...
     }
 
+    // Provide overrides for virtual base
+    std::string receive() override;
+    void send(std::string&& bytes) override;
+
     // ...
 
     void Run()
     {
-        std::string data;
-
         // Get data from client...
+        std::string data = receive();
 
         // Sink data into the dispatch function to get result data
-		auto result_data = dispatch(std::move(data));
+        handle_bytes(data);
 
         // Send result data back to client...
+        send(std::move(data));
     }
 };
 
@@ -106,7 +108,7 @@ int main()
 {
     RpcServer my_server{"address"};
     my_server.bind("Add", &Add);
-    my_server.bind("AppendStr",
+    my_server.template bind<void, std::string&, const std::string&>("AppendStr",
         [](std::string& str, const std::string& append) {
             AppendStr(str, append.c_str());
         }
@@ -122,9 +124,8 @@ int main()
 client.cpp
 
 ```C++
-#define RPC_HPP_CLIENT_IMPL
-
 #include <rpc_adapters/rpc_njson.hpp>
+#include <rpc_client.hpp>
 
 #include <cassert>
 #include <string>
@@ -142,11 +143,6 @@ public:
     // ...
 
 private:
-    void send(const std::string& mesg) override
-    {
-        // Send mesg to server...
-    }
-
     void send(std::string&& mesg) override
     {
         // Send mesg to server...
@@ -162,11 +158,13 @@ int main()
 {
     RpcClient my_client{ "address" };
 
-    const auto result = my_client.template call_func<int>("Sum", 1, 2);
-    assert(result == 3);
+    auto response = my_client.call_func("Sum", 1, 2);
+    assert(!response.is_error());
+    assert(response.template get_result<int>() == 3);
 
     std::string str{ "Hello" };
-    my_client.call_func("AppendStr", str, " world!");
+    response = my_client.call_func("AppendStr", str, " world!");
+    assert(!response.is_error());
     assert(str == "Hello world!");
 }
 ```

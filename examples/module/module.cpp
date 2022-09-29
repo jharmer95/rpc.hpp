@@ -1,5 +1,3 @@
-#define RPC_HPP_MODULE_IMPL
-
 #include "module.hpp"
 
 #include <cstring>
@@ -34,7 +32,8 @@ RpcModule::RpcModule()
 
 int RunRemoteFunc(char* const json_str, const size_t json_buf_len)
 {
-    const auto input = rpc_mod.dispatch(json_str);
+    std::string input{ json_str };
+    rpc_mod.handle_bytes(input);
 
     if (input.size() >= json_buf_len)
     {
@@ -45,7 +44,8 @@ int RunRemoteFunc(char* const json_str, const size_t json_buf_len)
     strcpy_s(json_str, json_buf_len, input.c_str());
 
 #elif defined(__unix__)
-    strcpy(json_str, input.c_str());
+    std::strcpy(json_str, input.c_str());
 #endif
+
     return 0;
 }

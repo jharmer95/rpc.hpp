@@ -43,48 +43,14 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include <doctest/doctest.h>
 
-#if defined(RPC_HPP_ENABLE_BITSERY)
-constexpr size_t bitsery_adapter::config::max_func_name_size = 30;
-constexpr size_t bitsery_adapter::config::max_string_size = 2'048;
-constexpr size_t bitsery_adapter::config::max_container_size = 1'000;
-#endif
-
-template<typename Serial>
-void TestType()
-{
-    auto& client = GetClient<Serial>();
-    const auto response = client.call_func("SimpleSum", 1, 2);
-
-    REQUIRE(response.type() == rpc_hpp::rpc_type::func_result);
-    REQUIRE(response.template get_result<int>() == 3);
-}
-
-#if defined(RPC_HPP_ENABLE_NJSON)
-TEST_CASE("NJSON")
-{
-    TestType<njson_adapter>();
-}
-#endif
-
-#if defined(RPC_HPP_ENABLE_RAPIDJSON)
-TEST_CASE("RAPIDJSON")
-{
-    TestType<rapidjson_adapter>();
-}
-#endif
-
-#if defined(RPC_HPP_ENABLE_BOOST_JSON)
-TEST_CASE("BOOST_JSON")
-{
-    TestType<boost_json_adapter>();
-}
-#endif
+#include <forward_list>
+#include <map>
+#include <unordered_set>
 
 #if defined(RPC_HPP_ENABLE_BITSERY)
-TEST_CASE("BITSERY")
-{
-    TestType<bitsery_adapter>();
-}
+constexpr size_t rpc_hpp::adapters::bitsery_adapter::config::max_func_name_size = 30;
+constexpr size_t rpc_hpp::adapters::bitsery_adapter::config::max_string_size = 2'048;
+constexpr size_t rpc_hpp::adapters::bitsery_adapter::config::max_container_size = 1'000;
 #endif
 
 // TODO: Clean this up somehow
@@ -132,13 +98,56 @@ TEST_CASE("BITSERY")
 #  define TEST_RAPIDJSON_T
 #endif
 
+#if !defined(TEST_USE_COMMA)
+#  error At least one adapter must be enabled for testing
+#endif
+
 #define RPC_TEST_TYPES TEST_BITSERY_T TEST_BOOST_JSON_T TEST_NJSON_T TEST_RAPIDJSON_T
+
+namespace rpc_hpp::tests
+{
+template<typename Serial>
+static void TestType()
+{
+    auto& client = GetClient<Serial>();
+    const auto response = client.call_func("SimpleSum", 1, 2);
+    CHECK(response.type() == rpc_hpp::rpc_type::func_result);
+    REQUIRE(response.template get_result<int>() == 3);
+}
+
+#if defined(RPC_HPP_ENABLE_NJSON)
+TEST_CASE("NJSON")
+{
+    TestType<njson_adapter>();
+}
+#endif
+
+#if defined(RPC_HPP_ENABLE_RAPIDJSON)
+TEST_CASE("RAPIDJSON")
+{
+    TestType<rapidjson_adapter>();
+}
+#endif
+
+#if defined(RPC_HPP_ENABLE_BOOST_JSON)
+TEST_CASE("BOOST_JSON")
+{
+    TestType<boost_json_adapter>();
+}
+#endif
+
+#if defined(RPC_HPP_ENABLE_BITSERY)
+TEST_CASE("BITSERY")
+{
+    TestType<bitsery_adapter>();
+}
+#endif
 
 TEST_CASE_TEMPLATE("CountChars (static)", TestType, RPC_TEST_TYPES)
 {
     auto& client = GetClient<TestType>();
-    const std::string s = "peter piper picked a pack of pickled peppers";
-    const auto response = client.call_header_func(CountChars, s, 'p');
+    const std::string test_str = "peter piper picked a pack of pickled peppers";
+    const auto response = client.call_header_func(CountChars, test_str, 'p');
 
     REQUIRE(!response.is_error());
     REQUIRE(response.template get_result<int>() == 9);
@@ -148,32 +157,32 @@ TEST_CASE_TEMPLATE("AddOne (static)", TestType, RPC_TEST_TYPES)
 {
     auto& client = GetClient<TestType>();
 
-    size_t n = 2;
-    auto response = client.call_header_func(AddOne, n);
+    size_t test_num = 2;
+    auto response = client.call_header_func(AddOne, test_num);
 
-    REQUIRE(!response.is_error());
+    CHECK(!response.is_error());
 
-    response = client.call_header_func(AddOne, n);
+    response = client.call_header_func(AddOne, test_num);
 
-    REQUIRE(!response.is_error());
-    REQUIRE(n == 4);
+    CHECK(!response.is_error());
+    REQUIRE(test_num == 4);
 }
 
 TEST_CASE_TEMPLATE("StrLen", TestType, RPC_TEST_TYPES)
 {
     auto& client = GetClient<TestType>();
 
-    static constexpr auto test_str_len = 2048U;
+    static constexpr size_t test_str_len = 2048UL;
     const std::string test_str(test_str_len, 'f');
     const auto response = client.call_func("StrLen", test_str);
 
     static constexpr char cstr[] = "12345";
     const auto response2 = client.call_func("StrLen", cstr);
 
-    REQUIRE(response.type() == rpc_hpp::rpc_type::func_result);
+    CHECK(response.type() == rpc_hpp::rpc_type::func_result);
     REQUIRE(response.template get_result<size_t>() == test_str_len);
 
-    REQUIRE(response2.type() == rpc_hpp::rpc_type::func_result);
+    CHECK(response2.type() == rpc_hpp::rpc_type::func_result);
     REQUIRE(response2.template get_result<size_t>() == 5);
 }
 
@@ -183,15 +192,17 @@ TEST_CASE_TEMPLATE("AddOneToEach", TestType, RPC_TEST_TYPES)
     const std::vector<int> vec{ 2, 4, 6, 8 };
     const auto response = client.call_func("AddOneToEach", vec);
 
-    REQUIRE(response.type() == rpc_hpp::rpc_type::func_result);
+    CHECK(response.type() == rpc_hpp::rpc_type::func_result);
 
     const auto result = response.template get_result<std::vector<int>>();
 
     REQUIRE(result.size() == vec.size());
 
-    for (size_t i = 0; i < result.size(); ++i)
+    const auto result_sz = result.size();
+
+    for (size_t i = 0; i < result_sz; ++i)
     {
-        REQUIRE(result[i] == vec[i] + 1);
+        CHECK(result[i] == vec[i] + 1);
     }
 }
 
@@ -202,36 +213,39 @@ TEST_CASE_TEMPLATE("AddOneToEachRef", TestType, RPC_TEST_TYPES)
     std::vector<int> vec2{ 1, 3, 5, 7 };
     const auto response = client.call_func_w_bind("AddOneToEachRef", vec2);
 
-    REQUIRE(response.type() == rpc_hpp::rpc_type::func_result_w_bind);
+    CHECK(response.type() == rpc_hpp::rpc_type::func_result_w_bind);
     REQUIRE(vec2.size() == vec.size());
 
-    for (size_t i = 0; i < vec2.size(); ++i)
+    const auto vec2_sz = vec2.size();
+
+    for (size_t i = 0; i < vec2_sz; ++i)
     {
-        REQUIRE(vec2[i] == vec[i]);
+        CHECK(vec2[i] == vec[i]);
     }
 }
 
 TEST_CASE_TEMPLATE("Fibonacci", TestType, RPC_TEST_TYPES)
 {
-    static constexpr uint64_t expected = 10946;
-    static constexpr uint64_t input = 20;
+    static constexpr uint64_t expected = 6'765;
+    static constexpr uint64_t test_val = 20;
     auto& client = GetClient<TestType>();
 
-    const auto response = client.call_func("Fibonacci", input);
+    const auto response = client.call_func("Fibonacci", test_val);
 
-    REQUIRE(response.type() == rpc_hpp::rpc_type::func_result);
+    CHECK(response.type() == rpc_hpp::rpc_type::func_result);
     REQUIRE(response.template get_result<uint64_t>() == expected);
 }
 
 TEST_CASE_TEMPLATE("FibonacciRef", TestType, RPC_TEST_TYPES)
 {
-    static constexpr uint64_t expected = 10946;
+    static constexpr uint64_t expected = 6'765;
+    static constexpr uint64_t test_val = 20;
     auto& client = GetClient<TestType>();
 
-    uint64_t test = 20;
+    uint64_t test = test_val;
     const auto response = client.call_func_w_bind("FibonacciRef", test);
 
-    REQUIRE(response.type() == rpc_hpp::rpc_type::func_result_w_bind);
+    CHECK(response.type() == rpc_hpp::rpc_type::func_result_w_bind);
     REQUIRE(expected == test);
 }
 
@@ -243,7 +257,7 @@ TEST_CASE_TEMPLATE("StdDev", TestType, RPC_TEST_TYPES)
     const auto response = client.call_func("StdDev", 55.65, 125.325, 552.125, 12.767, 2599.6,
         1245.125663, 9783.49, 125.12, 553.3333333333, 2266.1);
 
-    REQUIRE(response.type() == rpc_hpp::rpc_type::func_result);
+    CHECK(response.type() == rpc_hpp::rpc_type::func_result);
     REQUIRE(response.template get_result<double>() == doctest::Approx(expected));
 }
 
@@ -252,23 +266,23 @@ TEST_CASE_TEMPLATE("SquareRootRef", TestType, RPC_TEST_TYPES)
     static constexpr double expected = 313.2216436152;
     auto& client = GetClient<TestType>();
 
-    double n1 = 55.65;
-    double n2 = 125.325;
-    double n3 = 552.125;
-    double n4 = 12.767;
-    double n5 = 2599.6;
-    double n6 = 1245.125663;
-    double n7 = 9783.49;
-    double n8 = 125.12;
-    double n9 = 553.3333333333;
-    double n10 = 2266.1;
+    double num1 = 55.65;
+    double num2 = 125.325;
+    double num3 = 552.125;
+    double num4 = 12.767;
+    double num5 = 2599.6;
+    double num6 = 1245.125663;
+    double num7 = 9783.49;
+    double num8 = 125.12;
+    double num9 = 553.3333333333;
+    double num10 = 2266.1;
 
-    const auto response =
-        client.call_func_w_bind("SquareRootRef", n1, n2, n3, n4, n5, n6, n7, n8, n9, n10);
+    const auto response = client.call_func_w_bind(
+        "SquareRootRef", num1, num2, num3, num4, num5, num6, num7, num8, num9, num10);
 
-    REQUIRE(response.type() == rpc_hpp::rpc_type::func_result_w_bind);
+    CHECK(response.type() == rpc_hpp::rpc_type::func_result_w_bind);
 
-    const auto test = n1 + n2 + n3 + n4 + n5 + n6 + n7 + n8 + n9 + n10;
+    const auto test = num1 + num2 + num3 + num4 + num5 + num6 + num7 + num8 + num9 + num10;
     REQUIRE(test == doctest::Approx(expected).epsilon(0.001));
 }
 
@@ -282,8 +296,126 @@ TEST_CASE_TEMPLATE("AverageContainer<double>", TestType, RPC_TEST_TYPES)
 
     const auto response = client.call_func("AverageContainer<double>", vec);
 
-    REQUIRE(response.type() == rpc_hpp::rpc_type::func_result);
+    CHECK(response.type() == rpc_hpp::rpc_type::func_result);
     REQUIRE(response.template get_result<double>() == doctest::Approx(expected).epsilon(0.001));
+}
+
+TEST_CASE_TEMPLATE("SquareArray", TestType, RPC_TEST_TYPES)
+{
+    auto& client = GetClient<TestType>();
+
+    std::array<int, 12> arr{ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 };
+
+    const auto response = client.call_func_w_bind("SquareArray", arr);
+    CHECK(response.type() == rpc_hpp::rpc_type::func_result_w_bind);
+    REQUIRE(arr[0] == 1);
+    REQUIRE(arr[11] == 144);
+}
+
+TEST_CASE_TEMPLATE("RemoveFromList", TestType, RPC_TEST_TYPES)
+{
+    auto& client = GetClient<TestType>();
+
+    std::forward_list<std::string> word_list{ "Test", "word", "fox", "test", "sphere", "Word",
+        "test", "Test" };
+
+    const auto response1 = client.call_func_w_bind("RemoveFromList", word_list, "Word", false);
+    CHECK(response1.type() == rpc_hpp::rpc_type::func_result_w_bind);
+    REQUIRE(std::distance(word_list.begin(), word_list.end()) == 6);
+
+    const auto response2 = client.call_func_w_bind("RemoveFromList", word_list, "test", true);
+    CHECK(response2.type() == rpc_hpp::rpc_type::func_result_w_bind);
+    REQUIRE(std::distance(word_list.begin(), word_list.end()) == 4);
+}
+
+TEST_CASE_TEMPLATE("CharacterMap", TestType, RPC_TEST_TYPES)
+{
+    auto& client = GetClient<TestType>();
+
+    const std::string str = "The quick brown fox ran over the hill last night";
+
+    const auto response = client.call_func("CharacterMap", str);
+
+    CHECK(response.type() == rpc_hpp::rpc_type::func_result);
+
+    const auto char_map = response.template get_result<std::map<char, unsigned>>();
+
+    REQUIRE(!char_map.empty());
+    REQUIRE(char_map.at('e') == 3U);
+    REQUIRE(char_map.at('x') == 1U);
+}
+
+TEST_CASE_TEMPLATE("CountResidents", TestType, RPC_TEST_TYPES)
+{
+    auto& client = GetClient<TestType>();
+
+    const std::multimap<int, std::string> registry{ { 1, "Fred Jones" }, { 1, "Ron Taylor" },
+        { 1, "Janice Filber" }, { 2, "Peter Reynolds" }, { 2, "Jonathan Fields" },
+        { 3, "Dorothy Petras" } };
+
+    const auto response1 = client.call_func("CountResidents", registry, 1);
+    CHECK(response1.type() == rpc_hpp::rpc_type::func_result);
+    const auto result1 = response1.template get_result<size_t>();
+    REQUIRE(result1 == 3UL);
+
+    const auto response2 = client.call_func("CountResidents", registry, 4);
+    CHECK(response2.type() == rpc_hpp::rpc_type::func_result);
+    const auto result2 = response2.template get_result<size_t>();
+    REQUIRE(result2 == 0UL);
+}
+
+TEST_CASE_TEMPLATE("GetUniqueNames", TestType, RPC_TEST_TYPES)
+{
+    auto& client = GetClient<TestType>();
+
+    const std::vector<std::string> names{ "John", "Frank", "Susan", "John", "Darlene", "Frank",
+        "John", "Steve" };
+
+    const auto response = client.call_func("GetUniqueNames", names);
+
+    CHECK(response.type() == rpc_hpp::rpc_type::func_result);
+
+    const auto result = response.template get_result<std::unordered_set<std::string>>();
+    REQUIRE(!result.empty());
+    REQUIRE(result.size() == 5UL);
+}
+
+TEST_CASE_TEMPLATE("SafeDivide", TestType, RPC_TEST_TYPES)
+{
+    auto& client = GetClient<TestType>();
+
+    const auto response1 = client.call_func("SafeDivide", 10, 2);
+
+    CHECK(response1.type() == rpc_hpp::rpc_type::func_result);
+
+    const auto result1 = response1.template get_result<std::optional<int>>();
+    REQUIRE(result1.has_value());
+    REQUIRE(result1.value() == 5);
+
+    const auto response2 = client.call_func("SafeDivide", 10, 0);
+
+    CHECK(response2.type() == rpc_hpp::rpc_type::func_result);
+
+    const auto result2 = response2.template get_result<std::optional<int>>();
+    REQUIRE(!result2.has_value());
+}
+
+TEST_CASE_TEMPLATE("TopTwo", TestType, RPC_TEST_TYPES)
+{
+    auto& client = GetClient<TestType>();
+
+    static constexpr std::pair<int, int> expected{ 7382, 6668 };
+    const std::vector<int> vec{ -9022, -122, 6668, 3853, -9304, -2002, -4100, -8521, -8155, -9358,
+        485, -4806, -2263, 7382, -696, 5695, -2946, 3698, -2103, -4112, 3001, -686, -5925, -8116,
+        -1509, 1537, -3898, -6371, -2197, 369 };
+
+    const auto response = client.call_func("TopTwo", vec);
+
+    CHECK(response.type() == rpc_hpp::rpc_type::func_result);
+
+    const auto result = response.template get_result<std::pair<int, int>>();
+    REQUIRE(result.first == expected.first);
+    REQUIRE(result.second == expected.second);
 }
 
 TEST_CASE_TEMPLATE("HashComplex", TestType, RPC_TEST_TYPES)
@@ -291,12 +423,12 @@ TEST_CASE_TEMPLATE("HashComplex", TestType, RPC_TEST_TYPES)
     const std::string expected = "467365747274747d315a473a527073796c7e707b85";
     auto& client = GetClient<TestType>();
 
-    const ComplexObject cx{ 24, "Franklin D. Roosevelt", false, true,
+    const ComplexObject test_obj{ 24, "Franklin D. Roosevelt", false, true,
         { 0, 1, 4, 6, 7, 8, 11, 15, 17, 22, 25, 26 } };
 
-    const auto response = client.call_func("HashComplex", cx);
+    const auto response = client.call_func("HashComplex", test_obj);
 
-    REQUIRE(response.type() == rpc_hpp::rpc_type::func_result);
+    CHECK(response.type() == rpc_hpp::rpc_type::func_result);
     REQUIRE(response.template get_result<std::string>() == expected);
 }
 
@@ -305,16 +437,16 @@ TEST_CASE_TEMPLATE("HashComplexRef", TestType, RPC_TEST_TYPES)
     const std::string expected = "467365747274747d315a473a527073796c7e707b85";
     auto& client = GetClient<TestType>();
 
-    ComplexObject cx{ 24, "Franklin D. Roosevelt", false, true,
+    ComplexObject test_obj{ 24, "Franklin D. Roosevelt", false, true,
         { 0, 1, 4, 6, 7, 8, 11, 15, 17, 22, 25, 26 } };
 
     // initialize empty string to pass
     std::string test{};
 
     // re-assign string to arg<1>
-    const auto response = client.call_func_w_bind("HashComplexRef", cx, test);
+    const auto response = client.call_func_w_bind("HashComplexRef", test_obj, test);
 
-    REQUIRE(response.type() == rpc_hpp::rpc_type::func_result_w_bind);
+    CHECK(response.type() == rpc_hpp::rpc_type::func_result_w_bind);
     REQUIRE(expected == test);
 }
 
@@ -328,7 +460,7 @@ TEST_CASE_TEMPLATE("GetConnectionInfo", TestType, RPC_TEST_TYPES)
 
     const auto response = client.call_func("GetConnectionInfo");
 
-    REQUIRE(response.type() == rpc_hpp::rpc_type::func_result);
+    CHECK(response.type() == rpc_hpp::rpc_type::func_result);
 
     const auto value = response.template get_result<std::string>();
     REQUIRE(!value.empty());
@@ -364,14 +496,16 @@ TEST_CASE_TEMPLATE("Function not found", TestType, RPC_TEST_TYPES)
 
 TEST_CASE_TEMPLATE("FunctionMismatch", TestType, RPC_TEST_TYPES)
 {
-    auto& client = GetClient<TestType>();
-
-    rpc_hpp::rpc_object<TestType> obj =
-        client.call_func("SimpleSum", 2, std::string{ "Hello, world" });
-
+#if defined(RPC_HPP_ENABLE_BITSERY)
     // TODO: Figure out why bitsery isn't reporting errors
     if constexpr (!std::is_same_v<TestType, rpc_hpp::adapters::bitsery_adapter>)
     {
+#endif
+        auto& client = GetClient<TestType>();
+
+        rpc_hpp::rpc_object<TestType> obj =
+            client.call_func("SimpleSum", 2, std::string{ "Hello, world" });
+
         REQUIRE(obj.is_error());
         REQUIRE(obj.get_error_type() == rpc_hpp::exception_type::signature_mismatch);
 
@@ -389,28 +523,30 @@ TEST_CASE_TEMPLATE("FunctionMismatch", TestType, RPC_TEST_TYPES)
 
         REQUIRE(obj.is_error());
         REQUIRE(obj.get_error_type() == rpc_hpp::exception_type::signature_mismatch);
+
+        obj = client.call_func("StdDev", -4, 125.325, 552.125, 55, 2599.6, 1245.125663, 9783.49,
+            125.12, 553.3333333333, 2266.1);
+        REQUIRE(obj.is_error());
+        REQUIRE(obj.get_error_type() == rpc_hpp::exception_type::signature_mismatch);
+
+        obj = client.call_func("StdDev", -4.2, 125.325);
+        REQUIRE(obj.is_error());
+        REQUIRE(obj.get_error_type() == rpc_hpp::exception_type::signature_mismatch);
+#if defined(RPC_HPP_ENABLE_BITSERY)
     }
-
-    obj = client.call_func("StdDev", -4, 125.325, 552.125, 55, 2599.6, 1245.125663, 9783.49, 125.12,
-        553.3333333333, 2266.1);
-    REQUIRE(obj.is_error());
-    REQUIRE(obj.get_error_type() == rpc_hpp::exception_type::signature_mismatch);
-
-    obj = client.call_func("StdDev", -4.2, 125.325);
-    REQUIRE(obj.is_error());
-    REQUIRE(obj.get_error_type() == rpc_hpp::exception_type::signature_mismatch);
+#endif
 }
 
 TEST_CASE_TEMPLATE("ThrowError", TestType, RPC_TEST_TYPES)
 {
     auto& client = GetClient<TestType>();
 
-    const auto exp = [&client]
+    const auto bad_call = [&client]
     {
         client.call_func("ThrowError").template get_result<void>();
     };
 
-    REQUIRE_THROWS_AS(exp(), rpc_hpp::remote_exec_error);
+    REQUIRE_THROWS_AS(bad_call(), rpc_hpp::remote_exec_error);
 }
 
 TEST_CASE_TEMPLATE("InvalidObject", TestType, RPC_TEST_TYPES)
@@ -424,14 +560,15 @@ TEST_CASE_TEMPLATE("InvalidObject", TestType, RPC_TEST_TYPES)
     }
 #endif
 
-    typename TestType::bytes_t bytes{};
-    bytes.resize(8);
+    static constexpr size_t test_sz = 8UL;
+    typename TestType::bytes_t bytes(test_sz, {});
 
     std::iota(bytes.begin(), bytes.end(), typename TestType::bytes_t::value_type{});
 
     auto& client = GetClient<TestType>();
     client.send(std::move(bytes));
     bytes = client.receive();
+
     auto rpc_obj = rpc_hpp::rpc_object<TestType>::parse_bytes(std::move(bytes));
 
     REQUIRE(rpc_obj.has_value());
@@ -446,19 +583,17 @@ TEST_CASE("KillServer")
 {
     auto& client = GetClient<njson_adapter>();
 
-    const auto exp = [&client]
+    const auto bad_call = [&client]
     {
         std::ignore = client.call_func("SimpleSum", 1, 2);
     };
 
-    try
+    const auto kill_server = [&client]
     {
         std::ignore = client.call_func("KillServer");
-    }
-    catch (...)
-    {
-        // Exception is expected so continue
-    }
+    };
 
-    REQUIRE_THROWS_AS(exp(), rpc_hpp::client_receive_error);
+    WARN_NOTHROW(kill_server());
+    REQUIRE_THROWS_AS(bad_call(), rpc_hpp::client_receive_error);
 }
+} //namespace rpc_hpp::tests

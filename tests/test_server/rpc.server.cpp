@@ -34,7 +34,6 @@
 ///OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ///
 
-//#define RPC_HPP_ENABLE_SERVER_CACHE
 #define RPC_HPP_ENABLE_CALLBACKS
 
 #include "rpc.server.hpp"
@@ -69,161 +68,311 @@ constexpr size_t bitsery_adapter::config::max_container_size = 1'000;
 #endif
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
+#include <cstdint>
+#include <forward_list>
+#include <limits>
+#include <map>
+#include <numeric>
+#include <optional>
+#include <random>
 #include <sstream>
 #include <thread>
+#include <unordered_set>
+#include <vector>
 
-#if defined(RPC_HPP_ENABLE_SERVER_CACHE)
-#  if defined(__cpp_lib_filesystem)
-#    include <filesystem>
+int CountChars(const std::string& str, char chr)
+{
+    return static_cast<int>(
+        std::count_if(str.begin(), str.end(), [chr](const char tmp_c) { return tmp_c == chr; }));
+}
 
-namespace filesystem = std::filesystem;
-#  else
-#    include <experimental/filesystem>
+void AddOne(size_t& n) noexcept
+{
+    n += 1;
+}
 
-namespace filesystem = std::experimental::filesystem;
-#  endif
-
-#  include <fstream>
-#  include <utility>
-#endif
-
-std::atomic_bool RUNNING{ false };
-
+namespace test_server
+{
 [[noreturn]] void ThrowError() noexcept(false)
 {
-    throw std::runtime_error("THIS IS A TEST ERROR!");
+    throw std::domain_error{ "THIS IS A TEST ERROR!" };
 }
 
 // NOTE: This function is only for testing purposes. Obviously you would not want this in a production server!
 void KillServer() noexcept
 {
-    puts("\nShutting down from remote KillServer call...");
+    std::puts("\nShutting down from remote KillServer call...");
     RUNNING = false;
 }
 
 // cached
-size_t StrLen(const std::string& str)
+size_t StrLen(std::string_view str) noexcept
 {
     return str.size();
 }
 
 // cached
-std::vector<int> AddOneToEach(std::vector<int> vec)
+constexpr int SimpleSum(const int num1, const int num2)
 {
-    for (auto& n : vec)
+    return num1 + num2;
+}
+
+// cached
+constexpr double Average(const double num1, const double num2, const double num3, const double num4,
+    const double num5, const double num6, const double num7, const double num8, const double num9,
+    const double num10)
+{
+    return (num1 + num2 + num3 + num4 + num5 + num6 + num7 + num8 + num9 + num10) / 10.00;
+}
+
+// cached
+template<typename T>
+double AverageContainer(const std::vector<T>& vec)
+{
+    const double sum = std::accumulate(vec.begin(), vec.end(), 0.00);
+    return sum / static_cast<double>(vec.size());
+}
+
+// cached
+std::vector<int> AddOneToEach(std::vector<int> vec) noexcept
+{
+    for (auto& num : vec)
     {
-        ++n;
+        ++num;
     }
 
     return vec;
 }
 
-void AddOneToEachRef(std::vector<int>& vec)
+void AddOneToEachRef(std::vector<int>& vec) noexcept
 {
-    for (auto& n : vec)
+    for (auto& num : vec)
     {
-        ++n;
-    }
-}
-
-int CountChars(const std::string& str, char c)
-{
-    return static_cast<int>(
-        std::count_if(str.begin(), str.end(), [c](const char x) { return x == c; }));
-}
-
-void AddOne(size_t& n)
-{
-    n += 1;
-}
-
-void FibonacciRef(uint64_t& number)
-{
-    if (number < 2)
-    {
-        number = 1;
-    }
-    else
-    {
-        uint64_t n1 = number - 1;
-        uint64_t n2 = number - 2;
-        FibonacciRef(n1);
-        FibonacciRef(n2);
-        number = n1 + n2;
+        ++num;
     }
 }
 
 // cached
-double StdDev(const double n1, const double n2, const double n3, const double n4, const double n5,
-    const double n6, const double n7, const double n8, const double n9, const double n10)
+constexpr uint64_t Fibonacci(const uint64_t number)
 {
-    const auto avg = Average(
-        n1 * n1, n2 * n2, n3 * n3, n4 * n4, n5 * n5, n6 * n6, n7 * n7, n8 * n8, n9 * n9, n10 * n10);
+    uint64_t num1{ 0 };
+    uint64_t num2{ 1 };
+
+    if (number == 0)
+    {
+        return 0;
+    }
+
+    for (uint64_t i = 2; i <= number; ++i)
+    {
+        const uint64_t next{ num1 + num2 };
+        num1 = num2;
+        num2 = next;
+    }
+
+    return num2;
+}
+
+void FibonacciRef(uint64_t& number) noexcept
+{
+    uint64_t num1{ 0 };
+    uint64_t num2{ 1 };
+
+    if (number == 0)
+    {
+        return;
+    }
+
+    for (uint64_t i = 2; i <= number; ++i)
+    {
+        const uint64_t next{ num1 + num2 };
+        num1 = num2;
+        num2 = next;
+    }
+
+    number = num2;
+}
+
+// cached
+double StdDev(const double num1, const double num2, const double num3, const double num4,
+    const double num5, const double num6, const double num7, const double num8, const double num9,
+    const double num10)
+{
+    const auto avg = Average(num1 * num1, num2 * num2, num3 * num3, num4 * num4, num5 * num5,
+        num6 * num6, num7 * num7, num8 * num8, num9 * num9, num10 * num10);
 
     return std::sqrt(avg);
 }
 
-void SquareRootRef(double& n1, double& n2, double& n3, double& n4, double& n5, double& n6,
-    double& n7, double& n8, double& n9, double& n10)
+void SquareRootRef(double& num1, double& num2, double& num3, double& num4, double& num5,
+    double& num6, double& num7, double& num8, double& num9, double& num10) noexcept
 {
-    n1 = std::sqrt(n1);
-    n2 = std::sqrt(n2);
-    n3 = std::sqrt(n3);
-    n4 = std::sqrt(n4);
-    n5 = std::sqrt(n5);
-    n6 = std::sqrt(n6);
-    n7 = std::sqrt(n7);
-    n8 = std::sqrt(n8);
-    n9 = std::sqrt(n9);
-    n10 = std::sqrt(n10);
+    num1 = std::sqrt(num1);
+    num2 = std::sqrt(num2);
+    num3 = std::sqrt(num3);
+    num4 = std::sqrt(num4);
+    num5 = std::sqrt(num5);
+    num6 = std::sqrt(num6);
+    num7 = std::sqrt(num7);
+    num8 = std::sqrt(num8);
+    num9 = std::sqrt(num9);
+    num10 = std::sqrt(num10);
 }
 
-std::vector<uint64_t> GenRandInts(const uint64_t min, const uint64_t max, const size_t sz)
+void SquareArray(std::array<int, 12>& arr) noexcept
 {
-    std::vector<uint64_t> vec;
-    vec.reserve(sz);
-
-    for (size_t i = 0; i < sz; ++i)
+    for (int& val : arr)
     {
-        vec.push_back(static_cast<uint64_t>(std::rand()) % (max - min + 1) + min);
+        val *= val;
+    }
+}
+
+void RemoveFromList(
+    std::forward_list<std::string>& list, const std::string& str, bool case_sensitive)
+{
+    list.remove_if(
+        [case_sensitive, &str](const std::string& val) noexcept
+        {
+            if (case_sensitive)
+            {
+                return val == str;
+            }
+
+            const auto str_tolower = [](std::string tmp_str)
+            {
+                std::transform(tmp_str.begin(), tmp_str.end(), tmp_str.begin(),
+                    [](unsigned char tmp_char)
+                    { return static_cast<char>(std::tolower(tmp_char)); });
+
+                return tmp_str;
+            };
+
+            return str_tolower(val) == str_tolower(str);
+        });
+}
+
+std::map<char, unsigned> CharacterMap(std::string_view str)
+{
+    std::map<char, unsigned> ret_map;
+
+    for (const auto chr : str)
+    {
+        if (ret_map.find(chr) != ret_map.end())
+        {
+            ret_map[chr] += 1;
+        }
+        else
+        {
+            ret_map[chr] = 1;
+        }
     }
 
+    return ret_map;
+}
+
+size_t CountResidents(const std::multimap<int, std::string>& registry, int floor_num)
+{
+    return registry.count(floor_num);
+}
+
+std::unordered_set<std::string> GetUniqueNames(const std::vector<std::string>& names)
+{
+    std::unordered_set<std::string> result;
+
+    for (const auto& str : names)
+    {
+        result.insert(str);
+    }
+
+    return result;
+}
+
+std::optional<int> SafeDivide(int numerator, int denominator) noexcept
+{
+    if (denominator == 0)
+    {
+        return std::nullopt;
+    }
+
+    return numerator / denominator;
+}
+
+std::pair<int, int> TopTwo(const std::vector<int>& num_list) noexcept
+{
+    // TODO: Replace this naive version with algorithm (transform/reduce?)
+    int max1{ std::numeric_limits<int>::min() };
+    int max2{ std::numeric_limits<int>::min() };
+
+    for (const auto num : num_list)
+    {
+        if (num > max2)
+        {
+            max2 = num;
+
+            if (max2 > max1)
+            {
+                std::swap(max1, max2);
+            }
+        }
+    }
+
+    return { max1, max2 };
+}
+
+std::vector<uint64_t> GenRandInts(const ValueRange<uint64_t> num_range, const size_t num_ints)
+{
+    static std::mt19937_64 mt_gen{ static_cast<uint_fast64_t>(
+        std::chrono::steady_clock::now().time_since_epoch().count()) };
+
+    std::uniform_int_distribution<uint64_t> distribution{ num_range.min, num_range.max };
+    std::vector<uint64_t> vec(num_ints);
+    std::generate(begin(vec), end(vec), [&distribution] { return distribution(mt_gen); });
     return vec;
 }
 
 // cached
-std::string HashComplex(const ComplexObject& cx)
+std::string HashComplex(const ComplexObject& cx_obj)
 {
     std::stringstream hash;
-    auto values = cx.vals;
+    auto rev_vals = cx_obj.vals;
 
-    if (cx.flag1)
+    if (cx_obj.flag1)
     {
-        std::reverse(values.begin(), values.end());
+        std::reverse(rev_vals.begin(), rev_vals.end());
     }
 
-    for (size_t i = 0; i < cx.name.size(); ++i)
+    const auto name_sz = cx_obj.name.size();
+
+    for (size_t i = 0; i < name_sz; ++i)
     {
-        const int acc = cx.flag2 ? cx.name[i] + values[i % 12] : cx.name[i] - values[i % 12];
+        const size_t wrap_idx = i % rev_vals.size();
+        const int acc = (cx_obj.flag2) ? (cx_obj.name[i] + rev_vals[wrap_idx])
+                                       : (cx_obj.name[i] - rev_vals[wrap_idx]);
+
         hash << std::hex << acc;
     }
 
     return hash.str();
 }
 
-void HashComplexRef(ComplexObject& cx, std::string& hashStr)
+void HashComplexRef(ComplexObject& cx_obj, std::string& hashStr)
 {
     std::stringstream hash;
 
-    if (cx.flag1)
+    if (cx_obj.flag1)
     {
-        std::reverse(cx.vals.begin(), cx.vals.end());
+        std::reverse(cx_obj.vals.begin(), cx_obj.vals.end());
     }
 
-    for (size_t i = 0; i < cx.name.size(); ++i)
+    const auto name_sz = cx_obj.name.size();
+
+    for (size_t i = 0; i < name_sz; ++i)
     {
-        const int acc = cx.flag2 ? cx.name[i] + cx.vals[i % 12] : cx.name[i] - cx.vals[i % 12];
+        const size_t wrap_idx = i % cx_obj.vals.size();
+        const int acc = (cx_obj.flag2) ? (cx_obj.name[i] + cx_obj.vals[wrap_idx])
+                                       : (cx_obj.name[i] - cx_obj.vals[wrap_idx]);
         hash << std::hex << acc;
     }
 
@@ -231,15 +380,11 @@ void HashComplexRef(ComplexObject& cx, std::string& hashStr)
 }
 
 template<typename Serial>
-void BindFuncs(TestServer<Serial>& server)
+static void BindFuncs(TestServer<Serial>& server)
 {
 #if defined(RPC_HPP_ENABLE_CALLBACKS)
-    static std::function<std::string()> get_connection_info = [&server]
-    {
-        return server.GetConnectionInfo();
-    };
-
-    server.bind("GetConnectionInfo", get_connection_info);
+    server.template bind<std::string>(
+        "GetConnectionInfo", [&server] { return server.GetConnectionInfo(); });
 #endif
 
     server.bind("KillServer", &KillServer);
@@ -249,7 +394,9 @@ void BindFuncs(TestServer<Serial>& server)
     server.bind("SquareRootRef", &SquareRootRef);
     server.bind("GenRandInts", &GenRandInts);
     server.bind("HashComplexRef", &HashComplexRef);
-    server.template bind<void, size_t&>("AddOne", [](size_t& n) { AddOne(n); });
+    server.bind("SquareArray", &SquareArray);
+    server.bind("RemoveFromList", &RemoveFromList);
+    server.template bind<void, size_t&>("AddOne", [](size_t& n) noexcept { ::AddOne(n); });
 
     // Cached
     server.bind("SimpleSum", &SimpleSum);
@@ -261,209 +408,68 @@ void BindFuncs(TestServer<Serial>& server)
     server.bind("AverageContainer<uint64_t>", &AverageContainer<uint64_t>);
     server.bind("AverageContainer<double>", &AverageContainer<double>);
     server.bind("HashComplex", &HashComplex);
-    server.bind("CountChars", &CountChars);
+    server.bind("CountChars", &::CountChars);
+    server.bind("CharacterMap", &CharacterMap);
+    server.bind("CountResidents", &CountResidents);
+    server.bind("GetUniqueNames", &GetUniqueNames);
+    server.bind("SafeDivide", &SafeDivide);
+    server.bind("TopTwo", &TopTwo);
 }
+} //namespace test_server
 
-#if defined(RPC_HPP_ENABLE_SERVER_CACHE)
-template<typename Serial, typename R, typename... Args>
-void dump_cache(TestServer<Serial>& server, RPC_HPP_UNUSED R (*func)(Args...),
-    const std::string& func_name, const std::string& dump_dir)
+int main(const int argc, const char* argv[])
 {
-    auto& cache = server.template get_func_cache<R>(func_name);
-    std::string file_name = func_name;
-
-    std::replace(file_name.begin(), file_name.end(), '<', '(');
-    std::replace(file_name.begin(), file_name.end(), '>', ')');
-
-    std::ofstream ofile(dump_dir + "/" + std::move(file_name) + ".dump");
-
-    if constexpr (std::is_arithmetic_v<R> || std::is_same_v<R, std::string>)
-    {
-        for (const auto& [key, value] : cache)
-        {
-            ofile << key << '\034' << value << '\n';
-        }
-    }
-    else if constexpr (std::is_same_v<R, std::vector<int>>)
-    {
-        std::stringstream ss;
-
-        for (const auto& [key, value] : cache)
-        {
-            if (value.empty())
-            {
-                continue;
-            }
-
-            ss << '[';
-            auto it = value.begin();
-
-            for (; it != value.end() - 1; ++it)
-            {
-                ss << *it << ',';
-            }
-
-            ss << *it << ']';
-            ofile << key << '\034' << ss.str() << '\n';
-        }
-    }
-}
-
-template<typename Serial, typename R, typename... Args>
-void load_cache(TestServer<Serial>& server, RPC_HPP_UNUSED R (*func)(Args...),
-    const std::string& func_name, const std::string& dump_dir)
-{
-    auto& cache = server.template get_func_cache<R>(func_name);
-    std::string file_name = func_name;
-
-    std::replace(file_name.begin(), file_name.end(), '<', '(');
-    std::replace(file_name.begin(), file_name.end(), '>', ')');
-
-    std::ifstream ifile(dump_dir + "/" + std::move(file_name) + ".dump");
-
-    if (!ifile.is_open())
-    {
-        printf("Could not load cache for function: %s\n", func_name.c_str());
-        return;
-    }
-
-    std::stringstream ss;
-    std::string val_str;
-
-    while (ifile.get(*ss.rdbuf(), '\034'))
-    {
-        // Toss out separator
-        std::ignore = ifile.get();
-
-        std::getline(ifile, val_str);
-
-        if constexpr (std::is_arithmetic_v<R>)
-        {
-            R value;
-            std::stringstream ss2(val_str);
-
-            ss2 >> value;
-            cache.emplace(ss.str(), value);
-        }
-        else if constexpr (std::is_same_v<R, std::string>)
-        {
-            cache.emplace(ss.str(), std::move(val_str));
-        }
-        else if constexpr (std::is_same_v<R, std::vector<int>>)
-        {
-            std::vector<int> value;
-            std::stringstream ss2(val_str);
-
-            // ignore first '['
-            ss2.ignore();
-
-            for (int i; ss2 >> i;)
-            {
-                value.push_back(i);
-
-                if (ss2.peek() == ',' || ss2.peek() == ']')
-                {
-                    ss2.ignore();
-                }
-            }
-
-            cache.emplace(ss.str(), std::move(value));
-        }
-
-        // clear stream and its buffer
-        std::stringstream{}.swap(ss);
-    }
-}
-
-#  define DUMP_CACHE(SERVER, FUNCNAME, DIR) dump_cache(SERVER, FUNCNAME, #  FUNCNAME, DIR)
-#  define LOAD_CACHE(SERVER, FUNCNAME, DIR) load_cache(SERVER, FUNCNAME, #  FUNCNAME, DIR)
-#endif
-
-int main(const int argc, char* argv[])
-{
-    if (argc > 1 && strcmp(argv[1], "--help") == 0)
+    if ((argc > 1) && (std::strcmp(argv[1], "--help") == 0))
     {
         return 0;
     }
 
     try
     {
-        asio::io_context io_context{};
-        RUNNING = true;
+        asio::io_context io_ctx{};
+        test_server::RUNNING = true;
 
         std::vector<std::thread> threads;
 
 #if defined(RPC_HPP_ENABLE_NJSON)
-        TestServer<njson_adapter> njson_server{ io_context, 5000U };
-        BindFuncs(njson_server);
-
-#  if defined(RPC_HPP_ENABLE_SERVER_CACHE)
-        const std::string njson_dump_path("dump_cache");
-
-        if (filesystem::exists(njson_dump_path) && filesystem::is_directory(njson_dump_path))
-        {
-            LOAD_CACHE(njson_server, SimpleSum, njson_dump_path);
-            LOAD_CACHE(njson_server, StrLen, njson_dump_path);
-            LOAD_CACHE(njson_server, AddOneToEach, njson_dump_path);
-            LOAD_CACHE(njson_server, Fibonacci, njson_dump_path);
-            LOAD_CACHE(njson_server, Average, njson_dump_path);
-            LOAD_CACHE(njson_server, StdDev, njson_dump_path);
-            LOAD_CACHE(njson_server, AverageContainer<uint64_t>, njson_dump_path);
-            LOAD_CACHE(njson_server, AverageContainer<double>, njson_dump_path);
-            LOAD_CACHE(njson_server, HashComplex, njson_dump_path);
-            LOAD_CACHE(njson_server, CountChars, njson_dump_path);
-        }
-#  endif
-
-        threads.emplace_back(&TestServer<njson_adapter>::Run, &njson_server);
-        puts("Running njson server on port 5000...");
+        test_server::TestServer<njson_adapter> njson_server{ io_ctx, 5000U };
+        test_server::BindFuncs(njson_server);
+        threads.emplace_back(&test_server::TestServer<njson_adapter>::Run, &njson_server);
+        std::puts("Running njson server on port 5000...");
 #endif
 
 #if defined(RPC_HPP_ENABLE_RAPIDJSON)
-        TestServer<rapidjson_adapter> rapidjson_server{ io_context, 5001U };
-        BindFuncs(rapidjson_server);
-        threads.emplace_back(&TestServer<rapidjson_adapter>::Run, &rapidjson_server);
-        puts("Running rapidjson server on port 5001...");
+        test_server::TestServer<rapidjson_adapter> rapidjson_server{ io_ctx, 5001U };
+        test_server::BindFuncs(rapidjson_server);
+        threads.emplace_back(&test_server::TestServer<rapidjson_adapter>::Run, &rapidjson_server);
+        std::puts("Running rapidjson server on port 5001...");
 #endif
 
 #if defined(RPC_HPP_ENABLE_BOOST_JSON)
-        TestServer<boost_json_adapter> bjson_server{ io_context, 5002U };
-        BindFuncs(bjson_server);
-        threads.emplace_back(&TestServer<boost_json_adapter>::Run, &bjson_server);
-        puts("Running Boost.JSON server on port 5002...");
+        test_server::TestServer<boost_json_adapter> bjson_server{ io_ctx, 5002U };
+        test_server::BindFuncs(bjson_server);
+        threads.emplace_back(&test_server::TestServer<boost_json_adapter>::Run, &bjson_server);
+        std::puts("Running Boost.JSON server on port 5002...");
 #endif
 
 #if defined(RPC_HPP_ENABLE_BITSERY)
-        TestServer<bitsery_adapter> bitsery_server{ io_context, 5003U };
-        BindFuncs(bitsery_server);
-        threads.emplace_back(&TestServer<bitsery_adapter>::Run, &bitsery_server);
-        puts("Running Bitsery server on port 5003...");
+        test_server::TestServer<bitsery_adapter> bitsery_server{ io_ctx, 5003U };
+        test_server::BindFuncs(bitsery_server);
+        threads.emplace_back(&test_server::TestServer<bitsery_adapter>::Run, &bitsery_server);
+        std::puts("Running Bitsery server on port 5003...");
 #endif
 
-        for (auto& th : threads)
+        for (auto& thrd : threads)
         {
-            th.join();
+            thrd.join();
         }
 
-#if defined(RPC_HPP_ENABLE_NJSON) && defined(RPC_HPP_ENABLE_SERVER_CACHE)
-        DUMP_CACHE(njson_server, SimpleSum, njson_dump_path);
-        DUMP_CACHE(njson_server, StrLen, njson_dump_path);
-        DUMP_CACHE(njson_server, AddOneToEach, njson_dump_path);
-        DUMP_CACHE(njson_server, Fibonacci, njson_dump_path);
-        DUMP_CACHE(njson_server, Average, njson_dump_path);
-        DUMP_CACHE(njson_server, StdDev, njson_dump_path);
-        DUMP_CACHE(njson_server, AverageContainer<uint64_t>, njson_dump_path);
-        DUMP_CACHE(njson_server, AverageContainer<double>, njson_dump_path);
-        DUMP_CACHE(njson_server, HashComplex, njson_dump_path);
-        DUMP_CACHE(njson_server, CountChars, njson_dump_path);
-#endif
-
-        puts("Exited normally");
+        std::puts("Exited normally");
         return 0;
     }
     catch (const std::exception& ex)
     {
-        fprintf(stderr, "Exception: %s\n", ex.what());
+        std::fprintf(stderr, "Exception: %s\n", ex.what());
         return 1;
     }
 }

@@ -3,8 +3,14 @@
 
 #include "rpc.hpp"
 
-#define RPC_HEADER_FUNC(RETURN, FUNCNAME, ...) inline RETURN (*FUNCNAME)(__VA_ARGS__) = nullptr
-#define call_header_func(FUNCNAME, ...) call_header_func_impl(FUNCNAME, #FUNCNAME, __VA_ARGS__)
+#ifdef RPC_HEADER_FUNC
+#  error <rpc_client.hpp> and <rpc_server.hpp> cannot be included in the same binary, please double check your includes
+#endif
+
+#define RPC_HEADER_FUNC(RT, FNAME, ...) inline RT (*FNAME)(__VA_ARGS__) = nullptr
+#define RPC_HEADER_FUNC_EXTC(RT, FNAME, ...) extern "C" inline RT (*FNAME)(__VA_ARGS__) = nullptr
+#define RPC_HEADER_FUNC_NOEXCEPT(RT, FNAME, ...) inline RT (*FNAME)(__VA_ARGS__) noexcept = nullptr
+#define call_header_func(FNAME, ...) call_header_func_impl(FNAME, #FNAME, __VA_ARGS__)
 
 namespace rpc_hpp
 {
@@ -23,27 +29,7 @@ public:
 
     template<typename... Args>
     RPC_HPP_NODISCARD("the rpc_object should be checked for its type")
-    object_t call_func(const std::string& func_name, Args&&... args)
-    {
-        auto response = object_t{ detail::func_request<detail::decay_str_t<Args>...>{
-            func_name, std::forward_as_tuple(args...) } };
-
-        try
-        {
-            send(response.to_bytes());
-        }
-        catch (const std::exception& ex)
-        {
-            throw client_send_error(ex.what());
-        }
-
-        response = recv_loop();
-        return response;
-    }
-
-    template<typename... Args>
-    RPC_HPP_NODISCARD("the rpc_object should be checked for its type")
-    object_t call_func(std::string&& func_name, Args&&... args)
+    object_t call_func(std::string func_name, Args&&... args)
     {
         auto response = object_t{ detail::func_request<detail::decay_str_t<Args>...>{
             std::move(func_name), std::forward_as_tuple(args...) } };
@@ -54,19 +40,19 @@ public:
         }
         catch (const std::exception& ex)
         {
-            throw client_send_error(ex.what());
+            throw client_send_error{ ex.what() };
         }
 
-        response = recv_loop();
+        recv_loop(response);
         return response;
     }
 
     template<typename... Args>
     RPC_HPP_NODISCARD("the rpc_object should be checked for its type")
-    object_t call_func_w_bind(const std::string& func_name, Args&&... args)
+    object_t call_func_w_bind(std::string func_name, Args&&... args)
     {
         auto response = object_t{ detail::func_request<detail::decay_str_t<Args>...>{
-            detail::bind_args_tag{}, func_name, std::forward_as_tuple(args...) } };
+            std::move(func_name), std::forward_as_tuple(args...), true } };
 
         try
         {
@@ -74,33 +60,10 @@ public:
         }
         catch (const std::exception& ex)
         {
-            throw client_send_error(ex.what());
+            throw client_send_error{ ex.what() };
         }
 
-        response = recv_loop();
-        detail::tuple_bind(response.template get_args<detail::decay_str_t<Args>...>(),
-            std::forward<Args>(args)...);
-
-        return response;
-    }
-
-    template<typename... Args>
-    RPC_HPP_NODISCARD("the rpc_object should be checked for its type")
-    object_t call_func_w_bind(std::string&& func_name, Args&&... args)
-    {
-        auto response = object_t{ detail::func_request<detail::decay_str_t<Args>...>{
-            detail::bind_args_tag{}, std::move(func_name), std::forward_as_tuple(args...) } };
-
-        try
-        {
-            send(response.to_bytes());
-        }
-        catch (const std::exception& ex)
-        {
-            throw client_send_error(ex.what());
-        }
-
-        response = recv_loop();
+        recv_loop(response);
         detail::tuple_bind(response.template get_args<detail::decay_str_t<Args>...>(),
             std::forward<Args>(args)...);
 
@@ -110,23 +73,7 @@ public:
     template<typename R, typename... Args>
     RPC_HPP_NODISCARD("the rpc_object should be checked for its type")
     object_t call_header_func_impl(
-        RPC_HPP_UNUSED R (*func)(Args...), const std::string& func_name, Args&&... args)
-    {
-        // If any parameters are non-const lvalue references...
-        if constexpr (detail::has_ref_args<Args...>())
-        {
-            return call_func_w_bind<Args...>(func_name, std::forward<Args>(args)...);
-        }
-        else
-        {
-            return call_func<Args...>(func_name, std::forward<Args>(args)...);
-        }
-    }
-
-    template<typename R, typename... Args>
-    RPC_HPP_NODISCARD("the rpc_object should be checked for its type")
-    object_t call_header_func_impl(
-        RPC_HPP_UNUSED R (*func)(Args...), std::string&& func_name, Args&&... args)
+        RPC_HPP_UNUSED const detail::fptr_t<R, Args...> func, std::string func_name, Args&&... args)
     {
         // If any parameters are non-const lvalue references...
         if constexpr (detail::has_ref_args<Args...>())
@@ -140,37 +87,30 @@ public:
     }
 
 #if defined(RPC_HPP_ENABLE_CALLBACKS)
-    bool has_callback(const std::string& func_name)
+    bool has_callback(std::string_view func_name)
     {
         return m_callback_map.find(func_name) != m_callback_map.end();
     }
 
     template<typename R, typename... Args>
     RPC_HPP_NODISCARD("the returned callback_install_request is an input to uninstall_callback")
-    callback_install_request
-        install_callback(std::string func_name, const std::function<R(Args...)>& func)
-    {
-        return install_callback_impl<R, Args...>(std::move(func_name), func);
-    }
-
-    template<typename R, typename... Args>
-    RPC_HPP_NODISCARD("the returned callback_install_request is an input to uninstall_callback")
-    callback_install_request
-        install_callback(std::string func_name, std::function<R(Args...)>&& func)
+    RPC_HPP_INLINE callback_install_request
+        install_callback(std::string func_name, std::function<R(Args...)> func)
     {
         return install_callback_impl<R, Args...>(std::move(func_name), std::move(func));
     }
 
     template<typename R, typename... Args>
     RPC_HPP_NODISCARD("the returned callback_install_request is an input to uninstall_callback")
-    callback_install_request install_callback(std::string func_name, R (*func_ptr)(Args...))
+    RPC_HPP_INLINE callback_install_request
+        install_callback(std::string func_name, const detail::fptr_t<R, Args...> func_ptr)
     {
         return install_callback_impl<R, Args...>(std::move(func_name), func_ptr);
     }
 
     template<typename R, typename... Args, typename F>
     RPC_HPP_NODISCARD("the returned callback_install_request is an input to uninstall_callback")
-    callback_install_request install_callback(std::string func_name, F&& func)
+    RPC_HPP_INLINE callback_install_request install_callback(std::string func_name, F&& func)
     {
         return install_callback_impl<R, Args...>(
             std::move(func_name), std::function<R(Args...)>{ std::forward<F>(func) });
@@ -179,14 +119,14 @@ public:
     void uninstall_callback(callback_install_request&& callback)
     {
         callback.is_uninstall = true;
-        object_t request{ std::move(callback) };
-        send(request.to_bytes());
+        send(object_t{ std::move(callback) }.to_bytes());
 
-        if (auto response = object_t::parse_bytes(receive());
+        if (const auto response = object_t::parse_bytes(receive());
             !response.has_value() || response.value().type() != rpc_type::callback_install_request)
         {
-            throw callback_install_error(
-                "server did not respond to callback_install_request (uninstall)");
+            throw callback_install_error{
+                "server did not respond to callback_install_request (uninstall)"
+            };
         }
     }
 #endif
@@ -226,13 +166,13 @@ private:
         }
         catch (const std::exception& ex)
         {
-            throw client_send_error(ex.what());
+            throw client_send_error{ ex.what() };
         }
 
         if (auto response = object_t::parse_bytes(receive());
             !response.has_value() || response.value().type() != rpc_type::callback_install_request)
         {
-            throw callback_install_error("server did not respond to callback_install_request");
+            throw callback_install_error{ "server did not respond to callback_install_request" };
         }
 
         return cb;
@@ -253,27 +193,28 @@ private:
     }
 #endif
 
-    object_t recv_loop()
+    void recv_loop(object_t& response)
     {
-        bytes_t bytes;
+        bytes_t bytes = [this]
+        {
+            try
+            {
+                return receive();
+            }
+            catch (const std::exception& ex)
+            {
+                throw client_receive_error{ ex.what() };
+            }
+        }();
 
-        try
+        if (auto response_opt = object_t::parse_bytes(std::move(bytes)); response_opt.has_value())
         {
-            bytes = receive();
-        }
-        catch (const std::exception& ex)
-        {
-            throw client_receive_error(ex.what());
-        }
-
-        if (auto o_response = object_t::parse_bytes(std::move(bytes)); o_response.has_value())
-        {
-            switch (auto& response = o_response.value(); response.type())
+            switch (response = std::move(response_opt).value(); response.type())
             {
                 case rpc_type::func_result:
                 case rpc_type::func_result_w_bind:
                 case rpc_type::func_error:
-                    return response;
+                    return;
 
                 case rpc_type::callback_request:
                 case rpc_type::func_request:
@@ -287,10 +228,10 @@ private:
                     }
                     catch (const std::exception& ex)
                     {
-                        throw client_send_error(ex.what());
+                        throw client_send_error{ ex.what() };
                     }
 
-                    return recv_loop();
+                    return recv_loop(response);
                 }
 #else
                     [[fallthrough]];
@@ -301,11 +242,11 @@ private:
                 case rpc_type::callback_result:
                 case rpc_type::callback_result_w_bind:
                 default:
-                    throw rpc_object_mismatch("Invalid rpc_object type detected");
+                    throw rpc_object_mismatch{ "Invalid rpc_object type detected" };
             }
         }
 
-        throw client_receive_error("Invalid RPC object received");
+        throw client_receive_error{ "Invalid RPC object received" };
     }
 
 #if defined(RPC_HPP_ENABLE_CALLBACKS)

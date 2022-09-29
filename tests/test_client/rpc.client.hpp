@@ -41,30 +41,25 @@
 
 #if defined(RPC_HPP_ENABLE_BITSERY)
 #  include <rpc_adapters/rpc_bitsery.hpp>
-
-using rpc_hpp::adapters::bitsery_adapter;
 #endif
 
 #if defined(RPC_HPP_ENABLE_BOOST_JSON)
 #  include <rpc_adapters/rpc_boost_json.hpp>
-
-using rpc_hpp::adapters::boost_json_adapter;
 #endif
 
 #if defined(RPC_HPP_ENABLE_NJSON)
 #  include <rpc_adapters/rpc_njson.hpp>
-
-using rpc_hpp::adapters::njson_adapter;
 #endif
 
 #if defined(RPC_HPP_ENABLE_RAPIDJSON)
 #  include <rpc_adapters/rpc_rapidjson.hpp>
-
-using rpc_hpp::adapters::rapidjson_adapter;
 #endif
 
-using asio::ip::tcp;
+#include <array>
+#include <string>
 
+namespace rpc_hpp::tests
+{
 template<typename Serial>
 class TestClient final : public rpc_hpp::client_interface<Serial>
 {
@@ -75,64 +70,74 @@ public:
         asio::connect(m_socket, m_resolver.resolve(host, port));
     }
 
-    // nodiscard because string is being allocated for return
-    [[nodiscard]] std::string getIP() const
-    {
-        return m_socket.remote_endpoint().address().to_string();
-    }
+    RPC_HPP_NODISCARD("string is being allocated for return")
+    std::string getIP() const { return m_socket.remote_endpoint().address().to_string(); }
 
     void send(typename Serial::bytes_t&& mesg) override
     {
         asio::write(m_socket, asio::buffer(std::move(mesg), mesg.size()));
     }
 
-    // nodiscard because data is lost after receive
-    [[nodiscard]] typename Serial::bytes_t receive() override
+    RPC_HPP_NODISCARD("data is lost after receive")
+    typename Serial::bytes_t receive() override
     {
-        const auto sz = m_socket.read_some(asio::buffer(m_buffer, m_buffer.size()));
-        return typename Serial::bytes_t{ m_buffer.begin(), m_buffer.begin() + sz };
+        const auto bytes_received = m_socket.read_some(asio::buffer(m_buffer, m_buffer.size()));
+        return typename Serial::bytes_t{ m_buffer.begin(), m_buffer.begin() + bytes_received };
     }
 
 private:
+    static constexpr size_t buffer_sz{ 64UL * 1024UL };
+
     asio::io_context m_io{};
-    tcp::socket m_socket;
-    tcp::resolver m_resolver;
-    std::array<uint8_t, 64UL * 1024UL> m_buffer{};
+    asio::ip::tcp::socket m_socket;
+    asio::ip::tcp::resolver m_resolver;
+    std::array<uint8_t, buffer_sz> m_buffer{};
 };
 
 template<typename Serial>
-TestClient<Serial>& GetClient();
+static TestClient<Serial>& GetClient();
+
+#if defined(RPC_HPP_ENABLE_NJSON)
+using adapters::njson_adapter;
 
 template<>
 [[nodiscard]] inline TestClient<njson_adapter>& GetClient()
 {
-    static TestClient<njson_adapter> client("127.0.0.1", "5000");
-    return client;
+    static TestClient<njson_adapter> njson_client{ "127.0.0.1", "5000" };
+    return njson_client;
 }
+#endif
 
 #if defined(RPC_HPP_ENABLE_RAPIDJSON)
+using adapters::rapidjson_adapter;
+
 template<>
 [[nodiscard]] inline TestClient<rapidjson_adapter>& GetClient()
 {
-    static TestClient<rapidjson_adapter> client("127.0.0.1", "5001");
-    return client;
+    static TestClient<rapidjson_adapter> rapidjson_client{ "127.0.0.1", "5001" };
+    return rapidjson_client;
 }
 #endif
 
 #if defined(RPC_HPP_ENABLE_BOOST_JSON)
+using adapters::boost_json_adapter;
+
 template<>
 [[nodiscard]] inline TestClient<boost_json_adapter>& GetClient()
 {
-    static TestClient<boost_json_adapter> client("127.0.0.1", "5002");
-    return client;
+    static TestClient<boost_json_adapter> boost_json_client{ "127.0.0.1", "5002" };
+    return boost_json_client;
 }
 #endif
 
 #if defined(RPC_HPP_ENABLE_BITSERY)
+using adapters::bitsery_adapter;
+
 template<>
 [[nodiscard]] inline TestClient<bitsery_adapter>& GetClient()
 {
-    static TestClient<bitsery_adapter> client("127.0.0.1", "5003");
-    return client;
+    static TestClient<bitsery_adapter> bitsery_client{ "127.0.0.1", "5003" };
+    return bitsery_client;
 }
 #endif
+} //namespace rpc_hpp::tests

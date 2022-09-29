@@ -4,11 +4,16 @@
 #include "rpc.hpp"
 
 #include <functional>
-#include <string>
 #include <unordered_map>
 #include <unordered_set>
 
-#define RPC_HEADER_FUNC(RETURN, FUNCNAME, ...) extern RETURN FUNCNAME(__VA_ARGS__)
+#ifdef RPC_HEADER_FUNC
+#  error <rpc_client.hpp> and <rpc_server.hpp> cannot be included in the same binary, please double check your includes
+#endif
+
+#define RPC_HEADER_FUNC(RT, FNAME, ...) extern RT FNAME(__VA_ARGS__)
+#define RPC_HEADER_FUNC_EXTC(RT, FNAME, ...) extern "C" RT FNAME(__VA_ARGS__)
+#define RPC_HEADER_FUNC_NOEXCEPT(RT, FNAME, ...) extern RT FNAME(__VA_ARGS__) noexcept
 
 namespace rpc_hpp
 {
@@ -21,7 +26,6 @@ public:
 
     virtual ~server_interface() noexcept = default;
     server_interface() noexcept = default;
-
     server_interface(const server_interface&) = delete;
     server_interface& operator=(const server_interface&) = delete;
     server_interface& operator=(server_interface&&) noexcept = delete;
@@ -30,31 +34,24 @@ public:
     virtual bytes_t receive() = 0;
 
     template<typename R, typename... Args>
-    void bind(std::string func_name, const std::function<R(Args...)>& func)
-    {
-        bind_impl<R, Args...>(std::move(func_name), func);
-    }
-
-    template<typename R, typename... Args>
-    void bind(std::string func_name, std::function<R(Args...)>&& func)
+    RPC_HPP_INLINE void bind(std::string func_name, std::function<R(Args...)> func)
     {
         bind_impl<R, Args...>(std::move(func_name), std::move(func));
     }
 
     template<typename R, typename... Args>
-    void bind(std::string func_name, R (*func_ptr)(Args...))
+    RPC_HPP_INLINE void bind(std::string func_name, const detail::fptr_t<R, Args...> func_ptr)
     {
         bind_impl<R, Args...>(std::move(func_name), func_ptr);
     }
 
     template<typename R, typename... Args, typename F>
-    void bind(std::string func_name, F&& func)
+    RPC_HPP_INLINE void bind(std::string func_name, F&& func)
     {
         bind<R, Args...>(std::move(func_name), std::function<R(Args...)>{ std::forward<F>(func) });
     }
 
-    RPC_HPP_NODISCARD("the bytes are consumed by this function")
-    object_t handle_bytes(bytes_t&& bytes)
+    void handle_bytes(bytes_t& bytes)
     {
         if (auto rpc_opt = object_t::parse_bytes(std::move(bytes)); rpc_opt.has_value())
         {
@@ -65,57 +62,49 @@ public:
             {
                 case rpc_type::func_request:
                     dispatch(rpc_obj);
-                    return rpc_obj;
+                    bytes = rpc_obj.to_bytes();
+                    return;
 
                 case rpc_type::callback_install_request:
 #if defined(RPC_HPP_ENABLE_CALLBACKS)
                     rpc_obj.is_callback_uninstall() ? uninstall_callback(rpc_obj)
                                                     : install_callback(rpc_obj);
 
-                    return rpc_obj;
-
+                    bytes = rpc_obj.to_bytes();
+                    return;
 #else
                     [[fallthrough]];
 #endif
-
                 case rpc_type::callback_result:
                 case rpc_type::callback_result_w_bind:
                 case rpc_type::callback_error:
 #if defined(RPC_HPP_ENABLE_CALLBACKS)
                     [[fallthrough]];
 #else
-                    return object_t{ detail::func_error{ "",
-                        rpc_object_mismatch(
-                            "Invalid rpc_object type detected (NOTE: callbacks are not "
-                            "enabled on this server)") } };
+                    bytes = object_t{
+                        detail::func_error{ "",
+                            rpc_object_mismatch(
+                                "Invalid rpc_object type detected (NOTE: callbacks are not "
+                                "enabled on this server)") }
+                    }.to_bytes();
+                    return;
 #endif
-
                 case rpc_type::callback_request:
                 case rpc_type::func_error:
                 case rpc_type::func_result:
                 case rpc_type::func_result_w_bind:
                 default:
-                    return object_t{ detail::func_error{
-                        func_name, rpc_object_mismatch("Invalid rpc_object type detected") } };
+                    bytes = object_t{
+                        detail::func_error{
+                            func_name, rpc_object_mismatch("Invalid rpc_object type detected") }
+                    }.to_bytes();
+                    return;
             }
         }
 
-        return object_t{ detail::func_error{
-            "", server_receive_error("Invalid RPC object received") } };
-    }
-
-    void dispatch(object_t& rpc_obj) const
-    {
-        const auto func_name = rpc_obj.get_func_name();
-
-        if (const auto it = m_dispatch_table.find(func_name); it != m_dispatch_table.cend())
-        {
-            it->second(rpc_obj);
-            return;
-        }
-
-        rpc_obj = object_t{ detail::func_error{ func_name,
-            function_not_found("RPC error: Called function: \"" + func_name + "\" not found") } };
+        bytes = object_t{
+            detail::func_error{ "", server_receive_error("Invalid RPC object received") }
+        }.to_bytes();
     }
 
 protected:
@@ -123,16 +112,20 @@ protected:
 
 #if defined(RPC_HPP_ENABLE_CALLBACKS)
     template<typename R, typename... Args>
-    [[nodiscard]] R call_callback(const std::string& func_name, Args&&... args)
+    [[nodiscard]] RPC_HPP_INLINE R call_callback(const std::string& func_name, Args&&... args)
     {
-        auto response = call_callback_impl<R, Args...>(func_name, std::forward<Args>(args)...);
+        const auto response =
+            call_callback_impl<R, Args...>(func_name, std::forward<Args>(args)...);
         return response.template get_result<R>();
     }
 
     template<typename R, typename... Args>
-    [[nodiscard]] R call_callback_w_bind(const std::string& func_name, Args&&... args)
+    [[nodiscard]] RPC_HPP_INLINE R call_callback_w_bind(
+        const std::string& func_name, Args&&... args)
     {
-        auto response = call_callback_impl<R, Args...>(func_name, std::forward<Args>(args)...);
+        const auto response =
+            call_callback_impl<R, Args...>(func_name, std::forward<Args>(args)...);
+
         detail::tuple_bind(response.template get_args<true, detail::decay_str_t<Args>...>(),
             std::forward<Args>(args)...);
 
@@ -158,14 +151,29 @@ private:
             });
     }
 
+    void dispatch(object_t& rpc_obj) const
+    {
+        const auto func_name = rpc_obj.get_func_name();
+
+        if (const auto find_it = m_dispatch_table.find(func_name);
+            find_it != m_dispatch_table.cend())
+        {
+            find_it->second(rpc_obj);
+            return;
+        }
+
+        rpc_obj = object_t{ detail::func_error{ func_name,
+            function_not_found("RPC error: Called function: \"" + func_name + "\" not found") } };
+    }
+
 #if defined(RPC_HPP_ENABLE_CALLBACKS)
     template<typename R, typename... Args>
     [[nodiscard]] object_t call_callback_impl(const std::string& func_name, Args&&... args)
     {
         if (m_installed_callbacks.find(func_name) == m_installed_callbacks.cend())
         {
-            throw callback_missing_error(
-                "Callback \"" + func_name + "\" was called but not installed");
+            throw callback_missing_error{ "Callback \"" + func_name
+                + "\" was called but not installed" };
         }
 
         object_t response = object_t{ detail::callback_request<detail::decay_str_t<Args>...>{
@@ -177,7 +185,7 @@ private:
         }
         catch (const std::exception& ex)
         {
-            throw server_send_error(ex.what());
+            throw server_send_error{ ex.what() };
         }
 
         return recv_impl();
@@ -193,7 +201,7 @@ private:
             }
             catch (const std::exception& ex)
             {
-                throw server_receive_error(ex.what());
+                throw server_receive_error{ ex.what() };
             }
         }();
 
@@ -201,7 +209,7 @@ private:
 
         if (!o_response.has_value())
         {
-            throw server_receive_error("Invalid RPC object received");
+            throw server_receive_error{ "Invalid RPC object received" };
         }
 
         switch (auto& response = o_response.value(); response.type())
@@ -209,7 +217,7 @@ private:
             case rpc_type::callback_result:
             case rpc_type::callback_result_w_bind:
             case rpc_type::callback_error:
-                return response;
+                return std::move(response);
 
             case rpc_type::callback_install_request:
             case rpc_type::callback_request:
@@ -218,19 +226,17 @@ private:
             case rpc_type::func_result:
             case rpc_type::func_result_w_bind:
             default:
-                throw rpc_object_mismatch("Invalid rpc_object type detected");
+                throw rpc_object_mismatch{ "Invalid rpc_object type detected" };
         }
     }
 
     void install_callback(object_t& rpc_obj)
     {
-        auto func_name = rpc_obj.get_func_name();
-
-        auto [_, inserted] = m_installed_callbacks.insert(std::move(func_name));
+        const auto func_name = rpc_obj.get_func_name();
+        const auto [_, inserted] = m_installed_callbacks.insert(func_name);
 
         if (!inserted)
         {
-            // NOTE: since insertion did not occur, func_name was not moved so it is safe to use here
             rpc_obj = object_t{ detail::callback_error{ func_name,
                 callback_install_error("Callback: \"" + func_name + "\" is already installed") } };
         }

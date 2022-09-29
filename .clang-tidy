@@ -1,5 +1,20 @@
 ---
-Checks: bugprone-*, cert-dcl21-cpp, cert-err34-c, cert-err58-cpp, core.DivideZero, core.NullDereference, cplusplus.NewDelete, cplusplus.NewDeleteLeaks, cppcoreguidelines-avoid-goto, cppcoreguidelines-c-copy-assignment-signature, cppcoreguidelines-interfaces-global-init, cppcoreguidelines-macro-usage, cppcoreguidelines-narrowing-conversions, cppcoreguidelines-no-malloc, google-readability-*, google-runtime-int, misc-redundant-expression, misc-unused-parameters, modernize-*, nullability.*, optin.cplusplus.VirtualCall, performance-*, readability-*, security.*, -readability-magic-numbers, -clang-diagnostic-unused-macros, -modernize-use-nodiscard, -modernize-use-trailing-return-type
+Checks: bugprone-*,
+  clang-analyzer-*,
+  cppcoreguidelines-*,
+  google-*,
+  hicpp-*,
+  misc-*,
+  modernize-*,
+  performance-*,
+  portability-*,
+  readability-*,
+  security-*,
+  -clang-diagnostic-unused-macros,
+  -cppcoreguidelines-avoid-magic-numbers,
+  -modernize-use-nodiscard,
+  -modernize-use-trailing-return-type,
+  -readability-magic-numbers
 WarningsAsErrors: ''
 HeaderFilterRegex: ''
 AnalyzeTemporaryDtors: false

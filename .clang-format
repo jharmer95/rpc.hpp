@@ -4,7 +4,7 @@ BasedOnStyle: Microsoft
 AccessModifierOffset: -4
 AlignAfterOpenBracket: DontAlign
 AlignConsecutiveAssignments: None
-AlignConsecutiveBitFields: true # 11
+AlignConsecutiveBitFields: "Consecutive" # 11
 AlignConsecutiveDeclarations: None
 AlignEscapedNewlines: Left
 AlignOperands: DontAlign

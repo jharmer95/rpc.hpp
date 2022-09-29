@@ -1,5 +1,3 @@
-#define RPC_HPP_SERVER_IMPL
-
 #include "server.hpp"
 
 #include <cstdlib>
@@ -39,37 +37,57 @@ std::string GetTypeName()
     return std::string{ typeid(T).name() };
 }
 
+std::string RpcServer::receive()
+{
+    RPC_HPP_PRECONDITION(m_socket.has_value());
+
+    static constexpr unsigned BUFFER_SZ = 64 * 1024;
+    static std::array<uint8_t, BUFFER_SZ> data{};
+
+    asio::error_code error;
+    const size_t len = m_socket.value().read_some(asio::buffer(data.data(), BUFFER_SZ), error);
+
+    if (error == asio::error::eof)
+    {
+        return {};
+    }
+
+    // other error
+    if (error)
+    {
+        throw asio::system_error{ error };
+    }
+
+    return { data.data(), data.data() + len };
+}
+
+void RpcServer::send(std::string&& bytes)
+{
+    RPC_HPP_PRECONDITION(m_socket.has_value());
+    write(m_socket.value(), asio::buffer(std::move(bytes), bytes.size()));
+}
+
 void RpcServer::Run()
 {
     m_running = true;
 
     while (m_running)
     {
-        tcp::acceptor acc(m_io, tcp::endpoint(tcp::v4(), m_port));
-        tcp::socket sock = acc.accept();
+        m_socket = m_accept.accept();
 
         try
         {
-            constexpr auto BUFFER_SZ = 128;
-            uint8_t data[BUFFER_SZ];
-            while (true)
+            while (m_running)
             {
-                asio::error_code error;
-                const size_t len = sock.read_some(asio::buffer(data, BUFFER_SZ), error);
+                auto recv_data = receive();
 
-                if (error == asio::error::eof)
+                if (std::size(recv_data) == 0)
                 {
                     break;
                 }
 
-                // other error
-                if (error)
-                {
-                    throw asio::system_error(error);
-                }
-
-                const auto bytes = dispatch({data, data + len});
-                write(sock, asio::buffer(bytes, bytes.size()));
+                handle_bytes(recv_data);
+                send(std::move(recv_data));
             }
         }
         catch (const std::exception& ex)
@@ -77,6 +95,8 @@ void RpcServer::Run()
             std::cerr << "Exception in server thread #" << std::this_thread::get_id() << ": "
                       << ex.what() << '\n';
         }
+
+        m_socket.reset();
     }
 }
 

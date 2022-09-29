@@ -34,178 +34,400 @@
 ///OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ///
 
-#pragma once
+#ifndef RPC_ADAPTERS_BOOST_JSON_HPP
+#define RPC_ADAPTERS_BOOST_JSON_HPP
 
 #include "../rpc.hpp"
 
 #include <boost/json.hpp>
 
-namespace rpc_hpp
+namespace rpc_hpp::adapters
 {
-namespace adapters
+namespace detail_boost_json
 {
-    class boost_json_adapter;
+    class serializer;
+    class deserializer;
 
-    template<>
-    struct serial_traits<boost_json_adapter>
+    struct adapter_impl
     {
-        using serial_t = boost::json::object;
         using bytes_t = std::string;
+        using serial_t = boost::json::object;
+        using serializer_t = serializer;
+        using deserializer_t = deserializer;
+        using config = void;
     };
 
-    class boost_json_adapter : public detail::serial_adapter_base<boost_json_adapter>
+    class serial_adapter : public serial_adapter_base<adapter_impl>
     {
     public:
-        [[nodiscard]] static std::string to_bytes(boost::json::value&& serial_obj)
+        [[nodiscard]] static serial_t from_bytes(bytes_t&& bytes);
+        [[nodiscard]] static bytes_t to_bytes(const serial_t& serial_obj);
+        [[nodiscard]] static bytes_t to_bytes(serial_t&& serial_obj);
+        [[nodiscard]] static std::string get_func_name(const serial_t& serial_obj);
+        [[nodiscard]] static rpc_type get_type(const serial_t& serial_obj);
+
+        template<bool IsCallback, typename R>
+        [[nodiscard]] static detail::rpc_result<IsCallback, R> get_result(
+            const serial_t& serial_obj);
+
+        template<bool IsCallback, typename R>
+        [[nodiscard]] static serial_t serialize_result(
+            const detail::rpc_result<IsCallback, R>& result);
+
+        template<bool IsCallback, typename R, typename... Args>
+        [[nodiscard]] static detail::rpc_result_w_bind<IsCallback, R, Args...> get_result_w_bind(
+            const serial_t& serial_obj);
+
+        template<bool IsCallback, typename R, typename... Args>
+        [[nodiscard]] static serial_t serialize_result_w_bind(
+            const detail::rpc_result_w_bind<IsCallback, R, Args...>& result);
+
+        template<bool IsCallback, typename... Args>
+        [[nodiscard]] static detail::rpc_request<IsCallback, Args...> get_request(
+            const serial_t& serial_obj);
+
+        template<bool IsCallback, typename... Args>
+        [[nodiscard]] static serial_t serialize_request(
+            const detail::rpc_request<IsCallback, Args...>& request);
+
+        template<bool IsCallback>
+        [[nodiscard]] static detail::rpc_error<IsCallback> get_error(const serial_t& serial_obj);
+
+        template<bool IsCallback>
+        [[nodiscard]] static serial_t serialize_error(const detail::rpc_error<IsCallback>& error);
+
+        [[nodiscard]] static callback_install_request get_callback_install(
+            const serial_t& serial_obj);
+
+        [[nodiscard]] static serial_t serialize_callback_install(
+            const callback_install_request& callback_req);
+
+        [[nodiscard]] static bool has_bound_args(const serial_t& serial_obj);
+    };
+
+    class serializer : public serializer_base<serial_adapter, false>
+    {
+    public:
+        serializer() noexcept { m_json.emplace_object(); }
+
+        [[nodiscard]] const boost::json::value& object() const& noexcept { return m_json; }
+        [[nodiscard]] boost::json::value&& object() && noexcept { return std::move(m_json); }
+
+        template<typename T>
+        void as_bool(const std::string_view key, const T& val)
         {
-            return boost::json::serialize(serial_obj);
+            subobject(key) = static_cast<bool>(val);
         }
 
-        [[nodiscard]] static std::optional<boost::json::object> from_bytes(std::string&& bytes)
+        template<typename T>
+        void as_float(const std::string_view key, const T& val)
         {
-            boost::system::error_code ec;
-            boost::json::value val = boost::json::parse(bytes, ec);
-
-            if (ec)
-            {
-                return std::nullopt;
-            }
-
-            if (!val.is_object())
-            {
-                return std::nullopt;
-            }
-
-            const auto& obj = val.get_object();
-
-            if (const auto ex_it = obj.find("except_type"); ex_it != obj.end())
-            {
-                if (const auto& ex_val = ex_it->value();
-                    !ex_val.is_int64() || (ex_val.get_int64() != 0 && !obj.contains("err_mesg")))
-                {
-                    return std::nullopt;
-                }
-
-                // Objects with exceptions can be otherwise empty
-                return std::make_optional(std::move(obj));
-            }
-
-            if (const auto fname_it = obj.find("func_name"); fname_it == obj.end()
-                || !fname_it->value().is_string() || fname_it->value().get_string().empty())
-            {
-                return std::nullopt;
-            }
-
-            if (const auto args_it = obj.find("args");
-                args_it == obj.end() || !args_it->value().is_array())
-            {
-                return std::nullopt;
-            }
-
-            return std::make_optional(std::move(obj));
+            subobject(key) = val;
         }
 
-        static boost::json::object empty_object() { return boost::json::object{}; }
-
-        template<typename R, typename... Args>
-        [[nodiscard]] static boost::json::object serialize_pack(
-            const detail::packed_func<R, Args...>& pack)
+        template<typename T>
+        void as_int(const std::string_view key, const T& val)
         {
-            boost::json::object obj{};
-            obj["func_name"] = pack.get_func_name();
-            auto& args = obj["args"].emplace_array();
-            args.reserve(sizeof...(Args));
-            detail::for_each_tuple(pack.get_args(),
-                [&args](auto&& elem) { push_args(std::forward<decltype(elem)>(elem), args); });
-
-            if (!pack)
+            if constexpr (std::is_enum_v<T>)
             {
-                obj["except_type"] = static_cast<int>(pack.get_except_type());
-                obj["err_mesg"] = pack.get_err_mesg();
-                return obj;
-            }
-
-            if constexpr (!std::is_void_v<R>)
-            {
-                obj["result"] = {};
-                push_arg(pack.get_result(), obj["result"]);
-            }
-
-            return obj;
-        }
-
-        template<typename R, typename... Args>
-        [[nodiscard]] static detail::packed_func<R, Args...> deserialize_pack(
-            const boost::json::object& serial_obj)
-        {
-            const auto& args_val = serial_obj.at("args");
-            [[maybe_unused]] unsigned arg_counter = 0;
-            typename detail::packed_func<R, Args...>::args_t args{ parse_args<Args>(
-                args_val, arg_counter)... };
-
-            if constexpr (std::is_void_v<R>)
-            {
-                detail::packed_func<void, Args...> pack(
-                    serial_obj.at("func_name").get_string().c_str(), std::move(args));
-
-                if (serial_obj.contains("except_type"))
-                {
-                    pack.set_exception(serial_obj.at("err_mesg").get_string().c_str(),
-                        static_cast<exception_type>(serial_obj.at("except_type").get_int64()));
-                }
-
-                return pack;
+                subobject(key) = static_cast<int64_t>(val);
             }
             else
             {
-                if (serial_obj.contains("result") && !serial_obj.at("result").is_null())
-                {
-                    return detail::packed_func<R, Args...>(
-                        serial_obj.at("func_name").get_string().c_str(),
-                        parse_arg<R>(serial_obj.at("result")), std::move(args));
-                }
-
-                detail::packed_func<R, Args...> pack(
-                    serial_obj.at("func_name").get_string().c_str(), std::nullopt, std::move(args));
-
-                if (serial_obj.contains("except_type"))
-                {
-                    pack.set_exception(serial_obj.at("err_mesg").get_string().c_str(),
-                        static_cast<exception_type>(serial_obj.at("except_type").get_int64()));
-                }
-
-                return pack;
+                subobject(key) = val;
             }
         }
 
-        [[nodiscard]] static std::string get_func_name(const boost::json::object& serial_obj)
+        template<typename T>
+        void as_string(const std::string_view key, const T& val)
         {
-            return  serial_obj.at("func_name").get_string().c_str();
-        }
-
-        [[nodiscard]] static rpc_exception extract_exception(const boost::json::object& serial_obj)
-        {
-            return rpc_exception{ serial_obj.at("err_mesg").as_string().c_str(),
-                static_cast<exception_type>(serial_obj.at("except_type").as_int64()) };
-        }
-
-        static void set_exception(boost::json::object& serial_obj, const rpc_exception& ex)
-        {
-            serial_obj["except_type"] = static_cast<int>(ex.get_type());
-            serial_obj["err_mesg"] = boost::json::string{ ex.what() };
+            subobject(key) = val;
         }
 
         template<typename T>
-        static boost::json::object serialize(const T& val) = delete;
+        void as_array(const std::string_view key, const T& val)
+        {
+            auto arr = boost::json::array{};
+
+            if constexpr (detail::has_size<T>::value)
+            {
+                arr.reserve(val.size());
+            }
+
+            for (const auto& subval : val)
+            {
+                if constexpr (detail::is_stringlike_v<detail::remove_cvref_t<decltype(subval)>>)
+                {
+                    boost::json::value v_subval{};
+                    auto& subval_str = v_subval.emplace_string();
+                    subval_str = subval;
+                    arr.push_back(std::move(v_subval));
+                }
+                else
+                {
+                    arr.push_back(subval);
+                }
+            }
+
+            subobject(key) = std::move(arr);
+        }
 
         template<typename T>
-        static T deserialize(const boost::json::object& serial_obj) = delete;
+        void as_map(const std::string_view key, const T& val)
+        {
+            auto obj = boost::json::object{};
+
+            for (const auto& [k, v] : val)
+            {
+                const auto key_str = boost::json::serialize(boost::json::value{ k });
+                obj[key_str] = v;
+            }
+
+            subobject(key) = std::move(obj);
+        }
+
+        template<typename T>
+        void as_multimap(const std::string_view key, const T& val)
+        {
+            auto obj = boost::json::object{};
+
+            for (const auto& [k, v] : val)
+            {
+                const auto key_str = boost::json::serialize(boost::json::value{ k });
+
+                if (obj.find(key_str) == obj.end())
+                {
+                    obj[key_str] = boost::json::array{};
+                }
+
+                if constexpr (detail::is_stringlike_v<detail::remove_cvref_t<decltype(v)>>)
+                {
+                    obj[key_str].get_array().push_back(boost::json::string{ v });
+                }
+                else
+                {
+                    obj[key_str].get_array().push_back(v);
+                }
+            }
+
+            subobject(key) = std::move(obj);
+        }
+
+        template<typename T1, typename T2>
+        void as_tuple(const std::string_view key, const std::pair<T1, T2>& val)
+        {
+            auto obj = boost::json::object{};
+            obj["first"] = val.first;
+            obj["second"] = val.second;
+            subobject(key) = std::move(obj);
+        }
+
+        template<typename... Args>
+        void as_tuple(const std::string_view key, const std::tuple<Args...>& val)
+        {
+            auto arg_arr = boost::json::array{};
+            arg_arr.reserve(sizeof...(Args));
+            detail::for_each_tuple(val,
+                [&arg_arr](auto&& elem)
+                { push_args(std::forward<decltype(elem)>(elem), arg_arr); });
+
+            subobject(key) = std::move(arg_arr);
+        }
+
+        template<typename T>
+        void as_optional(const std::string_view key, const std::optional<T>& val)
+        {
+            if (val.has_value())
+            {
+                subobject(key) = val.value();
+            }
+            else
+            {
+                subobject(key).emplace_null();
+            }
+        }
+
+        template<typename T>
+        void as_object(const std::string_view key, const T& val)
+        {
+            push_arg(val, subobject(key));
+        }
 
     private:
+        [[nodiscard]] boost::json::value& subobject(const std::string_view key)
+        {
+            return key.empty() ? m_json : m_json.get_object()[key];
+        }
+
+        template<typename T>
+        static void push_arg(T&& arg, boost::json::value& obj)
+        {
+            serializer ser{};
+            ser.serialize_object(std::forward<T>(arg));
+            obj = std::move(ser).object();
+        }
+
+        template<typename T>
+        static void push_args(T&& arg, boost::json::array& obj_arr)
+        {
+            boost::json::value tmp{};
+            push_arg(std::forward<T>(arg), tmp);
+            obj_arr.push_back(tmp);
+        }
+
+        boost::json::value m_json{};
+    };
+
+    class deserializer : public serializer_base<serial_adapter, true>
+    {
+    public:
+        explicit deserializer(const boost::json::value& obj) : m_json(obj) {}
+        explicit deserializer(boost::json::value&& obj) noexcept : m_json(std::move(obj)) {}
+
+        template<typename T>
+        void as_bool(const std::string_view key, T& val) const
+        {
+            val = boost::json::value_to<bool>(subobject(key));
+        }
+
+        template<typename T>
+        void as_float(const std::string_view key, T& val) const
+        {
+            val = boost::json::value_to<T>(subobject(key));
+        }
+
+        template<typename T>
+        void as_int(const std::string_view key, T& val) const
+        {
+            if constexpr (std::is_enum_v<T>)
+            {
+                val = static_cast<T>(subobject(key).get_int64());
+            }
+            else
+            {
+                val = boost::json::value_to<T>(subobject(key));
+            }
+        }
+
+        template<typename T>
+        void as_string(const std::string_view key, T& val) const
+        {
+            val = subobject(key).get_string().c_str();
+        }
+
+        template<typename T>
+        void as_array(const std::string_view key, T& val) const
+        {
+            const auto& arr = subobject(key).as_array();
+            std::transform(arr.cbegin(), arr.cend(), std::inserter(val, val.end()),
+                yield_value<detail::remove_cvref_t<typename T::value_type>>);
+        }
+
+        template<typename T, size_t N>
+        void as_array(const std::string_view key, std::array<T, N>& val) const
+        {
+            const auto& arr = subobject(key).as_array();
+
+            if (arr.size() != N)
+            {
+                throw std::out_of_range{ "JSON array out of bounds" };
+            }
+
+            std::transform(
+                arr.cbegin(), arr.cend(), val.begin(), yield_value<detail::remove_cvref_t<T>>);
+        }
+
+        template<typename T, typename Alloc>
+        void as_array(const std::string_view key, std::forward_list<T, Alloc>& val) const
+        {
+            const auto& arr = subobject(key).as_array();
+            const auto arr_rend = arr.crend();
+
+            for (auto it = arr.crbegin(); it != arr_rend; ++it)
+            {
+                val.push_front(yield_value<detail::remove_cvref_t<T>>(*it));
+            }
+        }
+
+        template<typename T>
+        void as_map(const std::string_view key, T& val) const
+        {
+            const auto& obj = subobject(key).as_object();
+
+            for (const auto& [k, v] : obj)
+            {
+                const boost::json::value key_val = boost::json::parse(k).as_array().front();
+                val.insert({ boost::json::value_to<typename T::key_type>(key_val),
+                    boost::json::value_to<typename T::mapped_type>(v) });
+            }
+        }
+
+        template<typename T>
+        void as_multimap(const std::string_view key, T& val) const
+        {
+            const auto& obj = subobject(key).as_object();
+
+            for (const auto& [k, v] : obj)
+            {
+                for (const auto& subval : v.as_array())
+                {
+                    const boost::json::value key_val = boost::json::parse(k).as_array().front();
+                    val.insert({ boost::json::value_to<typename T::key_type>(key_val),
+                        boost::json::value_to<typename T::mapped_type>(subval) });
+                }
+            }
+        }
+
+        template<typename T1, typename T2>
+        void as_tuple(const std::string_view key, std::pair<T1, T2>& val) const
+        {
+            const auto& obj = subobject(key).as_object();
+            val = { boost::json::value_to<T1>(obj.at("first")),
+                boost::json::value_to<T2>(obj.at("second")) };
+        }
+
+        template<typename... Args>
+        void as_tuple(const std::string_view key, std::tuple<Args...>& val) const
+        {
+            const auto& arg_arr = subobject(key);
+
+            if (arg_arr.as_array().size() != sizeof...(Args))
+            {
+                throw function_mismatch{ "Boost.JSON: invalid number of args" };
+            }
+
+            [[maybe_unused]] size_t arg_counter = 0;
+            val = { parse_args<Args>(arg_arr, arg_counter)... };
+        }
+
+        template<typename T>
+        void as_optional(const std::string_view key, std::optional<T>& val) const
+        {
+            const auto& obj = subobject(key);
+            val = obj.is_null() ? std::optional<T>{ std::nullopt }
+                                : std::optional<T>{ std::in_place, boost::json::value_to<T>(obj) };
+        }
+
+        template<typename T>
+        void as_object(const std::string_view key, T& val) const
+        {
+            val = parse_arg<T>(subobject(key));
+        }
+
+    private:
+        [[nodiscard]] const boost::json::value& subobject(std::string_view key) const
+        {
+            return key.empty() ? m_json : m_json.at(key);
+        }
+
         template<typename T>
         [[nodiscard]] static constexpr bool validate_arg(const boost::json::value& arg) noexcept
         {
-            if constexpr (std::is_same_v<T, bool>)
+            if constexpr (detail::is_optional_v<T>)
+            {
+                return arg.is_null() || validate_arg<typename T::value_type>(arg);
+            }
+            else if constexpr (std::is_same_v<T, bool>)
             {
                 return arg.is_bool();
             }
@@ -217,17 +439,21 @@ namespace adapters
             {
                 return arg.is_double();
             }
-            else if constexpr (std::is_same_v<T, std::string>)
+            else if constexpr (detail::is_stringlike_v<T>)
             {
                 return arg.is_string();
             }
-            else if constexpr (rpc_hpp::detail::is_container_v<T>)
+            else if constexpr (detail::is_map_v<T>)
+            {
+                return arg.is_object();
+            }
+            else if constexpr (detail::is_container_v<T>)
             {
                 return arg.is_array();
             }
             else
             {
-                return arg.is_object();
+                return !arg.is_null();
             }
         }
 
@@ -259,8 +485,8 @@ namespace adapters
                     case boost::json::kind::object:
                         return "object";
 
-                    default:
                     case boost::json::kind::null:
+                    default:
                         return "null";
                 }
             };
@@ -270,91 +496,25 @@ namespace adapters
         }
 
         template<typename T>
-        static void push_arg(T&& arg, boost::json::value& obj)
-        {
-            using no_ref_t = std::remove_cv_t<std::remove_reference_t<T>>;
-
-            if constexpr (std::is_arithmetic_v<no_ref_t>)
-            {
-                obj = arg;
-            }
-            else if constexpr (std::is_same_v<no_ref_t, std::string>)
-            {
-                obj = boost::json::string{ arg.c_str() };
-            }
-            else if constexpr (rpc_hpp::detail::is_container_v<no_ref_t>)
-            {
-                obj = boost::json::array{};
-                auto& arr = obj.get_array();
-                arr.reserve(arg.size());
-
-                for (auto&& val : arg)
-                {
-                    push_args(std::forward<decltype(val)>(val), arr);
-                }
-            }
-            else if constexpr (rpc_hpp::detail::is_serializable_v<boost_json_adapter, no_ref_t>)
-            {
-                obj = no_ref_t::template serialize<boost_json_adapter>(std::forward<T>(arg));
-            }
-            else
-            {
-                obj = serialize<no_ref_t>(std::forward<T>(arg));
-            }
-        }
-
-        template<typename T>
-        static void push_args(T&& arg, boost::json::array& obj_arr)
-        {
-            boost::json::value tmp{};
-            push_arg(std::forward<T>(arg), tmp);
-            obj_arr.push_back(std::move(tmp));
-        }
-
-        template<typename T>
-        [[nodiscard]] static std::remove_cv_t<std::remove_reference_t<T>> parse_arg(
+        [[nodiscard]] static detail::remove_cvref_t<detail::decay_str_t<T>> parse_arg(
             const boost::json::value& arg)
         {
-            using no_ref_t = std::remove_cv_t<std::remove_reference_t<T>>;
+            using no_ref_t = detail::remove_cvref_t<detail::decay_str_t<T>>;
 
             if (!validate_arg<no_ref_t>(arg))
             {
-                throw function_mismatch(mismatch_string(typeid(no_ref_t).name(), arg));
+                throw function_mismatch{ mismatch_string(typeid(no_ref_t).name(), arg) };
             }
 
-            if constexpr (std::is_arithmetic_v<no_ref_t> || std::is_same_v<no_ref_t, std::string>)
-            {
-                return boost::json::value_to<no_ref_t>(arg);
-            }
-            else if constexpr (rpc_hpp::detail::is_container_v<no_ref_t>)
-            {
-                using subvalue_t = typename no_ref_t::value_type;
-
-                auto& arr = arg.get_array();
-                no_ref_t container{};
-                container.reserve(arr.size());
-                unsigned arg_counter = 0;
-
-                for (const auto& val : arr)
-                {
-                    container.push_back(parse_args<subvalue_t>(val, arg_counter));
-                }
-
-                return container;
-            }
-            else if constexpr (rpc_hpp::detail::is_serializable_v<boost_json_adapter, no_ref_t>)
-            {
-                return no_ref_t::template deserialize<boost_json_adapter>(arg.get_object());
-            }
-            else
-            {
-                return deserialize<no_ref_t>(arg.get_object());
-            }
+            no_ref_t out_val;
+            deserializer ser{ arg };
+            ser.deserialize_object(out_val);
+            return out_val;
         }
 
         template<typename T>
-        [[nodiscard]] static std::remove_cv_t<std::remove_reference_t<T>> parse_args(
-            const boost::json::value& arg_arr, unsigned& index)
+        [[nodiscard]] static detail::remove_cvref_t<detail::decay_str_t<T>> parse_args(
+            const boost::json::value& arg_arr, size_t& index)
         {
             if (!arg_arr.is_array())
             {
@@ -365,11 +525,215 @@ namespace adapters
 
             if (index >= arr.size())
             {
-                throw function_mismatch("Argument count mismatch");
+                throw function_mismatch{ "Argument count mismatch" };
             }
 
-            return parse_arg<T>(arr[index++]);
+            const auto old_idx = index;
+            ++index;
+            return parse_arg<T>(arr[old_idx]);
         }
+
+        template<typename T>
+        static T yield_value(const boost::json::value& val)
+        {
+            if constexpr (std::is_arithmetic_v<T>)
+            {
+                return boost::json::value_to<T>(val);
+            }
+            else if constexpr (detail::is_stringlike_v<T>)
+            {
+                return T{ val.get_string().c_str() };
+            }
+            else
+            {
+                T tmp_val;
+                deserializer ser{ val };
+                ser.deserialize_object(tmp_val);
+                return tmp_val;
+            }
+        }
+
+        boost::json::value m_json;
     };
-} // namespace adapters
-} // namespace rpc_hpp
+
+    inline boost::json::object serial_adapter::from_bytes(std::string&& bytes)
+    {
+        boost::system::error_code err_code{};
+        boost::json::value val = boost::json::parse(bytes, err_code);
+
+        if (err_code)
+        {
+            throw deserialization_error{ err_code.what() };
+        }
+
+        if (!val.is_object())
+        {
+            throw deserialization_error{ "Boost::JSON: not an object" };
+        }
+
+        const auto& obj = val.get_object();
+
+        if (const auto fname_it = obj.find("func_name");
+            (fname_it == obj.cend()) || (!fname_it->value().is_string()))
+        {
+            throw deserialization_error{ "Boost::JSON: field \"func_name\" not found" };
+        }
+
+        return obj;
+    }
+
+    inline std::string serial_adapter::to_bytes(const boost::json::object& serial_obj)
+    {
+        return boost::json::serialize(serial_obj);
+    }
+
+    inline std::string serial_adapter::to_bytes(boost::json::object&& serial_obj)
+    {
+        return boost::json::serialize(serial_obj);
+    }
+
+    inline std::string serial_adapter::get_func_name(const boost::json::object& serial_obj)
+    {
+        return serial_obj.at("func_name").get_string().c_str();
+    }
+
+    inline rpc_type serial_adapter::get_type(const boost::json::object& serial_obj)
+    {
+        return static_cast<rpc_type>(serial_obj.at("type").get_int64());
+    }
+
+    template<bool IsCallback, typename R>
+    detail::rpc_result<IsCallback, R> serial_adapter::get_result(
+        const boost::json::object& serial_obj)
+    {
+        RPC_HPP_PRECONDITION((IsCallback
+                                 && static_cast<rpc_type>(serial_obj.at("type").as_int64())
+                                     == rpc_type::callback_result)
+            || (!IsCallback
+                && static_cast<rpc_type>(serial_obj.at("type").as_int64())
+                    == rpc_type::func_result));
+
+        detail::rpc_result<IsCallback, R> result;
+        deserializer ser{ serial_obj };
+        ser.deserialize_object(result);
+        return result;
+    }
+
+    template<bool IsCallback, typename R>
+    boost::json::object serial_adapter::serialize_result(
+        const detail::rpc_result<IsCallback, R>& result)
+    {
+        serializer ser{};
+        ser.serialize_object(result);
+        return std::move(ser).object().get_object();
+    }
+
+    template<bool IsCallback, typename R, typename... Args>
+    detail::rpc_result_w_bind<IsCallback, R, Args...> serial_adapter::get_result_w_bind(
+        const boost::json::object& serial_obj)
+    {
+        RPC_HPP_PRECONDITION((IsCallback
+                                 && static_cast<rpc_type>(serial_obj.at("type").as_int64())
+                                     == rpc_type::callback_result_w_bind)
+            || (!IsCallback
+                && static_cast<rpc_type>(serial_obj.at("type").as_int64())
+                    == rpc_type::func_result_w_bind));
+
+        detail::rpc_result_w_bind<IsCallback, R> result;
+        deserializer ser{ serial_obj };
+        ser.deserialize_object(result);
+        return result;
+    }
+
+    template<bool IsCallback, typename R, typename... Args>
+    boost::json::object serial_adapter::serialize_result_w_bind(
+        const detail::rpc_result_w_bind<IsCallback, R, Args...>& result)
+    {
+        serializer ser{};
+        ser.serialize_object(result);
+        return std::move(ser).object().get_object();
+    }
+
+    template<bool IsCallback, typename... Args>
+    detail::rpc_request<IsCallback, Args...> serial_adapter::get_request(
+        const boost::json::object& serial_obj)
+    {
+        RPC_HPP_PRECONDITION((IsCallback
+                                 && (static_cast<rpc_type>(serial_obj.at("type").as_int64())
+                                         == rpc_type::callback_request
+                                     || static_cast<rpc_type>(serial_obj.at("type").as_int64())
+                                         == rpc_type::callback_result_w_bind))
+            || (!IsCallback
+                && (static_cast<rpc_type>(serial_obj.at("type").as_int64())
+                        == rpc_type::func_request
+                    || static_cast<rpc_type>(serial_obj.at("type").as_int64())
+                        == rpc_type::func_result_w_bind)));
+
+        detail::rpc_request<IsCallback, Args...> request;
+        deserializer ser{ serial_obj };
+        ser.deserialize_object(request);
+        return request;
+    }
+
+    template<bool IsCallback, typename... Args>
+    boost::json::object serial_adapter::serialize_request(
+        const detail::rpc_request<IsCallback, Args...>& request)
+    {
+        serializer ser{};
+        ser.serialize_object(request);
+        return std::move(ser).object().get_object();
+    }
+
+    template<bool IsCallback>
+    detail::rpc_error<IsCallback> serial_adapter::get_error(const boost::json::object& serial_obj)
+    {
+        RPC_HPP_PRECONDITION((IsCallback
+                                 && static_cast<rpc_type>(serial_obj.at("type").as_int64())
+                                     == rpc_type::callback_error)
+            || (!IsCallback
+                && static_cast<rpc_type>(serial_obj.at("type").as_int64())
+                    == rpc_type::func_error));
+
+        detail::rpc_error<IsCallback> error;
+        deserializer ser{ serial_obj };
+        ser.deserialize_object(error);
+        return error;
+    }
+
+    template<bool IsCallback>
+    boost::json::object serial_adapter::serialize_error(const detail::rpc_error<IsCallback>& error)
+    {
+        serializer ser{};
+        ser.serialize_object(error);
+        return std::move(ser).object().get_object();
+    }
+
+    inline callback_install_request serial_adapter::get_callback_install(
+        const boost::json::object& serial_obj)
+    {
+        RPC_HPP_PRECONDITION(static_cast<rpc_type>(serial_obj.at("type").as_int64())
+            == rpc_type::callback_install_request);
+
+        callback_install_request cbk_req;
+        deserializer ser{ serial_obj };
+        ser.deserialize_object(cbk_req);
+        return cbk_req;
+    }
+
+    inline boost::json::object serial_adapter::serialize_callback_install(
+        const callback_install_request& callback_req)
+    {
+        serializer ser{};
+        ser.serialize_object(callback_req);
+        return std::move(ser).object().get_object();
+    }
+
+    inline bool serial_adapter::has_bound_args(const boost::json::object& serial_obj)
+    {
+        return serial_obj.at("bind_args").as_bool();
+    }
+} //namespace detail_boost_json
+
+using boost_json_adapter = detail_boost_json::serial_adapter;
+} //namespace rpc_hpp::adapters
+#endif

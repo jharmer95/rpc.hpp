@@ -1,8 +1,10 @@
 #include "funcs.hpp"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <memory>
+#include <random>
 #include <sstream>
 
 std::unique_ptr<rpc::server> P_SERVER;
@@ -10,32 +12,35 @@ std::unique_ptr<rpc::server> P_SERVER;
 double AverageContainer(const std::vector<uint64_t>& vec);
 double AverageContainer(const std::vector<double>& vec);
 
-std::vector<uint64_t> GenRandInts(const uint64_t min, const uint64_t max, const size_t sz)
+std::vector<uint64_t> GenRandInts(const uint64_t min, const uint64_t max, const size_t num_ints)
 {
-    std::vector<uint64_t> vec;
-    vec.reserve(sz);
+    static std::mt19937_64 mt_gen{ static_cast<uint_fast64_t>(
+        std::chrono::steady_clock::now().time_since_epoch().count()) };
 
-    for (size_t i = 0; i < sz; ++i)
-    {
-        vec.push_back(static_cast<uint64_t>(std::rand()) % (max - min + 1) + min);
-    }
-
+    std::uniform_int_distribution<uint64_t> distribution{ min, max };
+    std::vector<uint64_t> vec(num_ints);
+    std::generate(begin(vec), end(vec), [&distribution] { return distribution(mt_gen); });
     return vec;
 }
 
-std::string HashComplex(const ComplexObject& cx)
+std::string HashComplex(const ComplexObject& cx_obj)
 {
     std::stringstream hash;
-    auto values = cx.vals;
+    auto rev_vals = cx_obj.vals;
 
-    if (cx.flag1)
+    if (cx_obj.flag1)
     {
-        std::reverse(values.begin(), values.end());
+        std::reverse(rev_vals.begin(), rev_vals.end());
     }
 
-    for (size_t i = 0; i < cx.name.size(); ++i)
+    const auto name_sz = cx_obj.name.size();
+
+    for (size_t i = 0; i < name_sz; ++i)
     {
-        const int acc = cx.flag2 ? cx.name[i] + values[i % 12] : cx.name[i] - values[i % 12];
+        const size_t wrap_idx = i % rev_vals.size();
+        const int acc = (cx_obj.flag2) ? (cx_obj.name[i] + rev_vals[wrap_idx])
+                                       : (cx_obj.name[i] - rev_vals[wrap_idx]);
+
         hash << std::hex << acc;
     }
 

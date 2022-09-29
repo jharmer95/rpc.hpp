@@ -46,71 +46,25 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
-#include <numeric>
 #include <stdexcept>
 #include <string>
-#include <vector>
 
-using asio::ip::tcp;
-
-extern std::atomic<bool> RUNNING;
-
-// Forward declares
-[[noreturn]] void ThrowError() noexcept(false);
-void KillServer() noexcept;
-
-// cached
-constexpr int SimpleSum(const int n1, const int n2)
+namespace test_server
 {
-    return n1 + n2;
-}
-
-size_t StrLen(const std::string& str);
-std::vector<int> AddOneToEach(std::vector<int> vec);
-void AddOneToEachRef(std::vector<int>& vec);
-
-// cached
-constexpr uint64_t Fibonacci(const uint64_t number)
-{
-    return number < 2 ? 1 : Fibonacci(number - 1) + Fibonacci(number - 2);
-}
-
-void FibonacciRef(uint64_t& number);
-
-// cached
-constexpr double Average(const double n1, const double n2, const double n3, const double n4,
-    const double n5, const double n6, const double n7, const double n8, const double n9,
-    const double n10)
-{
-    return (n1 + n2 + n3 + n4 + n5 + n6 + n7 + n8 + n9 + n10) / 10.00;
-}
-
-double StdDev(double n1, double n2, double n3, double n4, double n5, double n6, double n7,
-    double n8, double n9, double n10);
-
-void SquareRootRef(double& n1, double& n2, double& n3, double& n4, double& n5, double& n6,
-    double& n7, double& n8, double& n9, double& n10);
-
-// cached
-template<typename T>
-double AverageContainer(const std::vector<T>& vec)
-{
-    const double sum = std::accumulate(vec.begin(), vec.end(), 0.00);
-    return sum / static_cast<double>(vec.size());
-}
-
-std::vector<uint64_t> GenRandInts(uint64_t min, uint64_t max, size_t sz);
-std::string HashComplex(const ComplexObject& cx);
-void HashComplexRef(ComplexObject& cx, std::string& hashStr);
+inline std::atomic_bool RUNNING{ false };
 
 template<typename Serial>
 class TestServer final : public rpc_hpp::server_interface<Serial>
 {
 public:
     using bytes_t = typename rpc_hpp::server_interface<Serial>::bytes_t;
+    using rpc_hpp::server_interface<Serial>::bind;
+    using rpc_hpp::server_interface<Serial>::handle_bytes;
 
-    TestServer(asio::io_context& io, const uint16_t port)
-        : m_accept(io, tcp::endpoint(tcp::v4(), port))
+    TestServer() = delete;
+    TestServer(asio::io_context& io_ctx, const uint16_t port)
+        : rpc_hpp::server_interface<Serial>{},
+          m_accept(io_ctx, asio::ip::tcp::endpoint(asio::ip::tcp::v4(), port))
     {
     }
 
@@ -132,7 +86,7 @@ public:
         // other error
         if (error)
         {
-            throw asio::system_error(error);
+            throw asio::system_error{ error };
         }
 
         return { data.data(), data.data() + len };
@@ -166,20 +120,20 @@ public:
             {
                 while (RUNNING)
                 {
-                    auto bytes = receive();
+                    auto recv_data = receive();
 
-                    if (std::size(bytes) == 0)
+                    if (std::size(recv_data) == 0)
                     {
                         break;
                     }
 
-                    auto response = this->handle_bytes(std::move(bytes));
-                    send(response.to_bytes());
+                    handle_bytes(recv_data);
+                    send(std::move(recv_data));
                 }
             }
             catch (const std::exception& ex)
             {
-                fprintf(stderr, "Exception in thread: %s\n", ex.what());
+                std::fprintf(stderr, "Exception in thread: %s\n", ex.what());
             }
 
             m_socket.reset();
@@ -187,6 +141,7 @@ public:
     }
 
 private:
-    tcp::acceptor m_accept;
-    std::optional<tcp::socket> m_socket{};
+    asio::ip::tcp::acceptor m_accept;
+    std::optional<asio::ip::tcp::socket> m_socket{};
 };
+} //namespace test_server

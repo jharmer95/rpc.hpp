@@ -16,7 +16,7 @@ struct ComplexObject
     bool flag1{};
     bool flag2{};
     std::array<uint8_t, 12> vals{};
-    MSGPACK_DEFINE_ARRAY(id, name, flag1, flag2, vals);
+    MSGPACK_DEFINE_ARRAY(id, name, flag1, flag2, vals)
 };
 
 double StdDev(double n1, double n2, double n3, double n4, double n5, double n6, double n7,
@@ -24,7 +24,22 @@ double StdDev(double n1, double n2, double n3, double n4, double n5, double n6, 
 
 constexpr uint64_t Fibonacci(const uint64_t number)
 {
-    return number < 2 ? 1 : Fibonacci(number - 1) + Fibonacci(number - 2);
+    uint64_t num1{ 0 };
+    uint64_t num2{ 1 };
+
+    if (number == 0)
+    {
+        return 0;
+    }
+
+    for (uint64_t i = 2; i <= number; ++i)
+    {
+        const uint64_t next{ num1 + num2 };
+        num1 = num2;
+        num2 = next;
+    }
+
+    return num2;
 }
 
 std::vector<uint64_t> GenRandInts(uint64_t min, uint64_t max, size_t sz);
