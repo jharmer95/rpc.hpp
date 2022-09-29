@@ -134,6 +134,15 @@ public:
         subobject(key) = std::move(obj);
     }
 
+    template<typename T1, typename T2>
+    void as_tuple(const std::string_view key, const std::pair<T1, T2>& val)
+    {
+        auto obj = nlohmann::json::object();
+        obj["first"] = val.first;
+        obj["second"] = val.second;
+        subobject(key) = std::move(obj);
+    }
+
     template<typename... Args>
     void as_tuple(const std::string_view key, const std::tuple<Args...>& val)
     {
@@ -142,6 +151,19 @@ public:
 
         detail::for_each_tuple(val,
             [&arg_arr](auto&& elem) { push_args(std::forward<decltype(elem)>(elem), arg_arr); });
+    }
+
+    template<typename T>
+    void as_optional(const std::string_view key, const std::optional<T>& val)
+    {
+        if (val.has_value())
+        {
+            subobject(key) = val.value();
+        }
+        else
+        {
+            subobject(key) = nullptr;
+        }
     }
 
     template<typename T>
@@ -251,6 +273,13 @@ public:
         }
     }
 
+    template<typename T1, typename T2>
+    void as_tuple(const std::string_view key, std::pair<T1, T2>& val) const
+    {
+        const auto& obj = subobject(key);
+        val = { obj["first"], obj["second"] };
+    }
+
     template<typename... Args>
     void as_tuple(const std::string_view key, std::tuple<Args...>& val) const
     {
@@ -261,6 +290,14 @@ public:
 
         [[maybe_unused]] size_t arg_counter = 0;
         val = { parse_args<Args>(subobject(key), arg_counter)... };
+    }
+
+    template<typename T>
+    void as_optional(const std::string_view key, std::optional<T>& val) const
+    {
+        const auto& obj = subobject(key);
+        val = obj.is_null() ? std::optional<T>{ std::nullopt }
+                            : std::optional<T>{ std::in_place, obj.template get<T>() };
     }
 
     template<typename T>
@@ -279,7 +316,11 @@ private:
     RPC_HPP_NODISCARD("function is pointless without checking the bool")
     static constexpr bool validate_arg(const nlohmann::json& arg) noexcept
     {
-        if constexpr (std::is_same_v<T, bool>)
+        if constexpr (detail::is_optional_v<T>)
+        {
+            return arg.is_null() || validate_arg<typename T::value_type>(arg);
+        }
+        else if constexpr (std::is_same_v<T, bool>)
         {
             return arg.is_boolean();
         }

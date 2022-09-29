@@ -160,6 +160,15 @@ public:
         subobject(key) = std::move(obj);
     }
 
+    template<typename T1, typename T2>
+    void as_tuple(const std::string_view key, const std::pair<T1, T2>& val)
+    {
+        auto obj = boost::json::object{};
+        obj["first"] = val.first;
+        obj["second"] = val.second;
+        subobject(key) = std::move(obj);
+    }
+
     template<typename... Args>
     void as_tuple(const std::string_view key, const std::tuple<Args...>& val)
     {
@@ -169,6 +178,19 @@ public:
             [&arg_arr](auto&& elem) { push_args(std::forward<decltype(elem)>(elem), arg_arr); });
 
         subobject(key) = std::move(arg_arr);
+    }
+
+    template<typename T>
+    void as_optional(const std::string_view key, const std::optional<T>& val)
+    {
+        if (val.has_value())
+        {
+            subobject(key) = val.value();
+        }
+        else
+        {
+            subobject(key).emplace_null();
+        }
     }
 
     template<typename T>
@@ -302,6 +324,14 @@ public:
         }
     }
 
+    template<typename T1, typename T2>
+    void as_tuple(const std::string_view key, std::pair<T1, T2>& val) const
+    {
+        const auto& obj = subobject(key).as_object();
+        val = { boost::json::value_to<T1>(obj.at("first")),
+            boost::json::value_to<T2>(obj.at("second")) };
+    }
+
     template<typename... Args>
     void as_tuple(const std::string_view key, std::tuple<Args...>& val) const
     {
@@ -314,6 +344,14 @@ public:
 
         [[maybe_unused]] size_t arg_counter = 0;
         val = { parse_args<Args>(arg_arr, arg_counter)... };
+    }
+
+    template<typename T>
+    void as_optional(const std::string_view key, std::optional<T>& val) const
+    {
+        const auto& obj = subobject(key);
+        val = obj.is_null() ? std::optional<T>{ std::nullopt }
+                            : std::optional<T>{ std::in_place, boost::json::value_to<T>(obj) };
     }
 
     template<typename T>
@@ -331,7 +369,11 @@ private:
     template<typename T>
     [[nodiscard]] static constexpr bool validate_arg(const boost::json::value& arg) noexcept
     {
-        if constexpr (std::is_same_v<T, bool>)
+        if constexpr (detail::is_optional_v<T>)
+        {
+            return arg.is_null() || validate_arg<typename T::value_type>(arg);
+        }
+        else if constexpr (std::is_same_v<T, bool>)
         {
             return arg.is_bool();
         }

@@ -445,6 +445,32 @@ namespace detail
     template<typename C>
     inline constexpr bool is_set_v = is_set<std::remove_cv_t<C>>::value;
 
+    template<typename C>
+    struct is_optional : std::false_type
+    {
+    };
+
+    template<typename T>
+    struct is_optional<std::optional<T>> : std::true_type
+    {
+    };
+
+    template<typename C>
+    inline constexpr bool is_optional_v = is_optional<std::remove_cv_t<C>>::value;
+
+    template<typename C>
+    struct is_pair : std::false_type
+    {
+    };
+
+    template<typename T1, typename T2>
+    struct is_pair<std::pair<T1, T2>> : std::true_type
+    {
+    };
+
+    template<typename C>
+    inline constexpr bool is_pair_v = is_pair<std::remove_cv_t<C>>::value;
+
     template<typename F, typename... Ts, size_t... Is>
     constexpr void for_each_tuple(const std::tuple<Ts...>& tuple, F&& func,
         RPC_HPP_UNUSED const std::index_sequence<Is...> iseq)
@@ -977,10 +1003,22 @@ namespace adapters
             }
         }
 
+        template<typename T1, typename T2>
+        void as_tuple(const std::string_view key, std::pair<T1, T2>& val)
+        {
+            (static_cast<Adapter*>(this))->as_tuple(key, val);
+        }
+
         template<typename... Args>
         void as_tuple(const std::string_view key, std::tuple<Args...>& val)
         {
             (static_cast<Adapter*>(this))->as_tuple(key, val);
+        }
+
+        template<typename T>
+        void as_optional(const std::string_view key, std::optional<T>& val)
+        {
+            (static_cast<Adapter*>(this))->as_optional(key, val);
         }
 
         template<typename T>
@@ -1089,34 +1127,38 @@ namespace adapters
         ser.as_string("", val);
     }
 
-    template<typename Adapter, typename T,
+    template<typename Adapter, bool Deserialize, typename T,
         std::enable_if_t<
             (detail::is_container_v<T> && (!detail::is_stringlike_v<T>)&&(!detail::is_map_v<T>)),
             bool> = true>
-    void serialize(serializer<Adapter, false>& ser, const T& val)
+    void serialize(serializer<Adapter, Deserialize>& ser, T& val)
     {
         ser.as_array("", val);
     }
 
-    template<typename Adapter, typename T,
-        std::enable_if_t<
-            (detail::is_container_v<T> && (!detail::is_stringlike_v<T>)&&(!detail::is_map_v<T>)),
-            bool> = true>
-    void serialize(serializer<Adapter, true>& ser, T& val)
-    {
-        ser.as_array("", val);
-    }
-
-    template<typename Adapter, typename T, std::enable_if_t<detail::is_map_v<T>, bool> = true>
-    void serialize(serializer<Adapter, false>& ser, const T& val)
+    template<typename Adapter, bool Deserialize, typename T,
+        std::enable_if_t<detail::is_map_v<T>, bool> = true>
+    void serialize(serializer<Adapter, Deserialize>& ser, T& val)
     {
         ser.as_map("", val);
     }
 
-    template<typename Adapter, typename T, std::enable_if_t<detail::is_map_v<T>, bool> = true>
-    void serialize(serializer<Adapter, true>& ser, T& val)
+    template<typename Adapter, bool Deserialize, typename T1, typename T2>
+    void serialize(serializer<Adapter, Deserialize>& ser, std::pair<T1, T2>& val)
     {
-        ser.as_map("", val);
+        ser.as_tuple("", val);
+    }
+
+    template<typename Adapter, bool Deserialize, typename... Args>
+    void serialize(serializer<Adapter, Deserialize>& ser, std::tuple<Args...>& val)
+    {
+        ser.as_tuple("", val);
+    }
+
+    template<typename Adapter, bool Deserialize, typename T>
+    void serialize(serializer<Adapter, Deserialize>& ser, std::optional<T>& val)
+    {
+        ser.as_optional("", val);
     }
 } //namespace adapters
 

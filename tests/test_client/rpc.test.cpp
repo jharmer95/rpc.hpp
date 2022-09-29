@@ -443,6 +443,44 @@ TEST_CASE_TEMPLATE("GetUniqueNames", TestType, RPC_TEST_TYPES)
     REQUIRE(result.size() == 5UL);
 }
 
+TEST_CASE_TEMPLATE("SafeDivide", TestType, RPC_TEST_TYPES)
+{
+    auto& client = GetClient<TestType>();
+
+    const auto response1 = client.call_func("SafeDivide", 10, 2);
+
+    CHECK(response1.type() == rpc_hpp::rpc_type::func_result);
+
+    const auto result1 = response1.template get_result<std::optional<int>>();
+    REQUIRE(result1.has_value());
+    REQUIRE(result1.value() == 5);
+
+    const auto response2 = client.call_func("SafeDivide", 10, 0);
+
+    CHECK(response2.type() == rpc_hpp::rpc_type::func_result);
+
+    const auto result2 = response2.template get_result<std::optional<int>>();
+    REQUIRE(!result2.has_value());
+}
+
+TEST_CASE_TEMPLATE("TopTwo", TestType, RPC_TEST_TYPES)
+{
+    auto& client = GetClient<TestType>();
+
+    static constexpr std::pair<int, int> expected{ 7382, 6668 };
+    const std::vector<int> vec{ -9022, -122, 6668, 3853, -9304, -2002, -4100, -8521, -8155, -9358,
+        485, -4806, -2263, 7382, -696, 5695, -2946, 3698, -2103, -4112, 3001, -686, -5925, -8116,
+        -1509, 1537, -3898, -6371, -2197, 369 };
+
+    const auto response = client.call_func("TopTwo", vec);
+
+    CHECK(response.type() == rpc_hpp::rpc_type::func_result);
+
+    const auto result = response.template get_result<std::pair<int, int>>();
+    REQUIRE(result.first == expected.first);
+    REQUIRE(result.second == expected.second);
+}
+
 TEST_CASE_TEMPLATE("HashComplex", TestType, RPC_TEST_TYPES)
 {
     const std::string expected = "467365747274747d315a473a527073796c7e707b85";

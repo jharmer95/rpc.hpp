@@ -39,6 +39,9 @@
 #include <asio.hpp>
 #include <rpc_client.hpp>
 
+#include <array>
+#include <string>
+
 namespace rpc_hpp::tests
 {
 template<typename Serial>

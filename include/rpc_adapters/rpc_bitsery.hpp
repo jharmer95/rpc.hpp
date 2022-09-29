@@ -41,8 +41,9 @@
 
 #include <bitsery/bitsery.h>
 #include <bitsery/adapter/buffer.h>
-#include <bitsery/ext/std_set.h>
 #include <bitsery/ext/std_map.h>
+#include <bitsery/ext/std_optional.h>
+#include <bitsery/ext/std_set.h>
 #include <bitsery/ext/std_tuple.h>
 #include <bitsery/traits/array.h>
 #include <bitsery/traits/core/traits.h>
@@ -113,6 +114,18 @@ void parse_obj(S& ser, serializer<Adapter, Deserialize>& fallback, T& val)
     else if constexpr (detail::is_stringlike_v<T>)
     {
         ser.text1b(val, config::max_string_size);
+    }
+    else if constexpr (detail::is_pair_v<T>)
+    {
+        parse_obj(ser, fallback, val.first);
+        parse_obj(ser, fallback, val.second);
+    }
+    else if constexpr (detail::is_optional_v<T>)
+    {
+        using val_t = typename T::value_type;
+
+        ser.ext(val, bitsery::ext::StdOptional{},
+            [&fallback](S& s_ser, val_t& u_val) { parse_obj(s_ser, fallback, u_val); });
     }
     else if constexpr (detail::is_map_v<T>)
     {
@@ -261,6 +274,13 @@ public:
         as_map(key, val);
     }
 
+    template<typename T1, typename T2>
+    void as_tuple(RPC_HPP_UNUSED const std::string_view key, const std::pair<T1, T2>& val)
+    {
+        parse_obj(m_ser, *this, val.first);
+        parse_obj(m_ser, *this, val.second);
+    }
+
     template<typename... Args>
     void as_tuple(RPC_HPP_UNUSED const std::string_view key, const std::tuple<Args...>& val)
     {
@@ -271,6 +291,15 @@ public:
                 {
                     parse_obj(ser, *this, subval);
                 } });
+    }
+
+    template<typename T>
+    void as_optional(RPC_HPP_UNUSED const std::string_view key, const std::optional<T>& val)
+    {
+        using S = bitsery::Deserializer<output_adapter>;
+
+        m_ser.ext(val, bitsery::ext::StdOptional{},
+            [this](S& ser, T& subval) { parse_obj(ser, *this, subval); });
     }
 
     template<typename T>
@@ -372,6 +401,13 @@ public:
         as_map(key, val);
     }
 
+    template<typename T1, typename T2>
+    void as_tuple(RPC_HPP_UNUSED const std::string_view key, std::pair<T1, T2>& val)
+    {
+        parse_obj(m_ser, *this, val.first);
+        parse_obj(m_ser, *this, val.second);
+    }
+
     template<typename... Args>
     void as_tuple(RPC_HPP_UNUSED const std::string_view key, std::tuple<Args...>& val)
     {
@@ -382,6 +418,15 @@ public:
                 {
                     parse_obj(ser, *this, subval);
                 } });
+    }
+
+    template<typename T>
+    void as_optional(RPC_HPP_UNUSED const std::string_view key, std::optional<T>& val)
+    {
+        using S = bitsery::Deserializer<input_adapter>;
+
+        m_ser.ext(val, bitsery::ext::StdOptional{},
+            [this](S& ser, T& subval) { parse_obj(ser, *this, subval); });
     }
 
     template<typename T>

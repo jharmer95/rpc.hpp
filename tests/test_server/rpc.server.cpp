@@ -72,8 +72,10 @@ constexpr size_t bitsery_adapter::config::max_container_size = 1'000;
 #include <cmath>
 #include <cstdint>
 #include <forward_list>
+#include <limits>
 #include <map>
 #include <numeric>
+#include <optional>
 #include <random>
 #include <sstream>
 #include <thread>
@@ -287,6 +289,38 @@ std::unordered_set<std::string> GetUniqueNames(const std::vector<std::string>& n
     return result;
 }
 
+std::optional<int> SafeDivide(int numerator, int denominator) noexcept
+{
+    if (denominator == 0)
+    {
+        return std::nullopt;
+    }
+
+    return numerator / denominator;
+}
+
+std::pair<int, int> TopTwo(const std::vector<int>& num_list) noexcept
+{
+    // TODO: Replace this naive version with algorithm (transform/reduce?)
+    int max1{ std::numeric_limits<int>::min() };
+    int max2{ std::numeric_limits<int>::min() };
+
+    for (const auto num : num_list)
+    {
+        if (num > max2)
+        {
+            max2 = num;
+
+            if (max2 > max1)
+            {
+                std::swap(max1, max2);
+            }            
+        }
+    }
+
+    return { max1, max2 };
+}
+
 std::vector<uint64_t> GenRandInts(const ValueRange<uint64_t> num_range, const size_t num_ints)
 {
     static std::mt19937_64 mt_gen{ static_cast<uint_fast64_t>(
@@ -378,6 +412,8 @@ static void BindFuncs(TestServer<Serial>& server)
     server.bind("CharacterMap", &CharacterMap);
     server.bind("CountResidents", &CountResidents);
     server.bind("GetUniqueNames", &GetUniqueNames);
+    server.bind("SafeDivide", &SafeDivide);
+    server.bind("TopTwo", &TopTwo);
 }
 } //namespace test_server
 

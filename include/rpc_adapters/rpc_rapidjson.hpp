@@ -140,10 +140,8 @@ public:
         for (const auto& [k, v] : val)
         {
             const auto key_str = key_string(k);
-
             rapidjson_serializer ser{};
             ser.serialize_object(v);
-
             obj.AddMember(rapidjson::Value{}.SetString(key_str.c_str(), allocator()),
                 std::move(ser).object(), allocator());
         }
@@ -164,18 +162,21 @@ public:
                     rapidjson::Value{}.SetArray(), allocator());
             }
 
-            if constexpr (detail::is_stringlike_v<detail::remove_cvref_t<decltype(v)>>)
-            {
-                obj[key_str.c_str()].PushBack(
-                    rapidjson::Value{}.SetString(
-                        std::data(v), static_cast<rapidjson::SizeType>(std::size(v)), allocator()),
-                    allocator());
-            }
-            else
-            {
-                obj[key_str.c_str()].PushBack(v, allocator());
-            }
+            rapidjson_serializer ser{};
+            ser.serialize_object(v);
+            obj[key_str.c_str()].PushBack(std::move(ser).object(), allocator());
         }
+    }
+
+    template<typename T1, typename T2>
+    void as_tuple(const std::string_view key, const std::pair<T1, T2>& val)
+    {
+        auto& obj = subobject(key).SetObject();
+        rapidjson_serializer ser{};
+        ser.serialize_object(val.first);
+        obj.AddMember("first", std::move(ser).object(), allocator());
+        ser.serialize_object(val.second);
+        obj.AddMember("second", std::move(ser).object(), allocator());
     }
 
     template<typename... Args>
@@ -183,10 +184,22 @@ public:
     {
         auto& arg_arr = subobject(key).SetArray();
         arg_arr.Reserve(static_cast<rapidjson::SizeType>(sizeof...(Args)), allocator());
-
         detail::for_each_tuple(val,
             [this, &arg_arr](auto&& elem)
             { push_args(std::forward<decltype(elem)>(elem), arg_arr, allocator()); });
+    }
+
+    template<typename T>
+    void as_optional(const std::string_view key, const std::optional<T>& val)
+    {
+        if (val.has_value())
+        {
+            push_arg(val.value(), subobject(key), allocator());
+        }
+        else
+        {
+            subobject(key).SetNull();
+        }
     }
 
     template<typename T>
@@ -209,7 +222,6 @@ private:
         }
 
         const std::string key_str{ key };
-
         m_json.AddMember(rapidjson::Value{}.SetString(key_str.c_str(), allocator()),
             rapidjson::Value{}, allocator());
 
@@ -344,7 +356,6 @@ public:
         {
             rapidjson::Document doc{};
             doc.Parse(it->name.GetString());
-
             val.insert({ yield_value<typename T::key_type>(doc),
                 yield_value<typename T::mapped_type>(it->value) });
         }
@@ -360,7 +371,6 @@ public:
         {
             rapidjson::Document doc{};
             doc.Parse(it->name.GetString());
-
             const auto& val_arr = it->value.GetArray();
 
             for (const auto& subval : val_arr)
@@ -369,6 +379,14 @@ public:
                     yield_value<typename T::mapped_type>(subval) });
             }
         }
+    }
+
+    template<typename T1, typename T2>
+    void as_tuple(const std::string_view key, std::pair<T1, T2>& val) const
+    {
+        const auto& obj = subobject(key).GetObject();
+        val.first = parse_arg<T1>(obj["first"]);
+        val.second = parse_arg<T2>(obj["second"]);
     }
 
     template<typename... Args>
@@ -381,6 +399,14 @@ public:
 
         [[maybe_unused]] rapidjson::SizeType arg_counter = 0;
         val = { parse_args<Args>(subobject(key), arg_counter)... };
+    }
+
+    template<typename T>
+    void as_optional(const std::string_view key, std::optional<T>& val) const
+    {
+        const auto& obj = subobject(key);
+        val = obj.IsNull() ? std::optional<T>{ std::nullopt }
+                           : std::optional<T>{ std::in_place, parse_arg<T>(obj) };
     }
 
     template<typename T>
@@ -404,7 +430,11 @@ private:
     RPC_HPP_NODISCARD("this function is pointless without checking the bool")
     static constexpr bool validate_arg(const rapidjson::Value& arg) noexcept
     {
-        if constexpr (std::is_same_v<T, bool>)
+        if constexpr (detail::is_optional_v<T>)
+        {
+            return arg.IsNull() || validate_arg<typename T::value_type>(arg);
+        }
+        else if constexpr (std::is_same_v<T, bool>)
         {
             return arg.IsBool();
         }
