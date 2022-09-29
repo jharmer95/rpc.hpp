@@ -94,14 +94,15 @@ public:
 
     template<typename R, typename... Args>
     RPC_HPP_NODISCARD("the returned callback_install_request is an input to uninstall_callback")
-    callback_install_request install_callback(std::string func_name, std::function<R(Args...)> func)
+    RPC_HPP_INLINE callback_install_request
+        install_callback(std::string func_name, std::function<R(Args...)> func)
     {
         return install_callback_impl<R, Args...>(std::move(func_name), std::move(func));
     }
 
     template<typename R, typename... Args>
     RPC_HPP_NODISCARD("the returned callback_install_request is an input to uninstall_callback")
-    callback_install_request
+    RPC_HPP_INLINE callback_install_request
         install_callback(std::string func_name, const detail::fptr_t<R, Args...> func_ptr)
     {
         return install_callback_impl<R, Args...>(std::move(func_name), func_ptr);
@@ -109,7 +110,7 @@ public:
 
     template<typename R, typename... Args, typename F>
     RPC_HPP_NODISCARD("the returned callback_install_request is an input to uninstall_callback")
-    callback_install_request install_callback(std::string func_name, F&& func)
+    RPC_HPP_INLINE callback_install_request install_callback(std::string func_name, F&& func)
     {
         return install_callback_impl<R, Args...>(
             std::move(func_name), std::function<R(Args...)>{ std::forward<F>(func) });

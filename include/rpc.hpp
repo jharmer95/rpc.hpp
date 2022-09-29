@@ -26,6 +26,14 @@
 #  define RPC_HPP_NODISCARD(REASON) [[nodiscard]]
 #endif
 
+#if defined(__GNUC__)
+#  define RPC_HPP_INLINE [[gnu::always_inline]]
+#elif defined(_MSC_VER)
+#  define RPC_HPP_INLINE __forceinline
+#else
+#  define RPC_HPP_INLINE
+#endif
+
 namespace rpc_hpp
 {
 enum class exception_type : int
@@ -238,7 +246,7 @@ namespace detail
     using std::remove_cvref;
     using std::remove_cvref_t;
 #else
-    // backport for C++20's remove_cvref
+    // backport of C++20's remove_cvref
     template<typename T>
     struct remove_cvref
     {
@@ -480,7 +488,7 @@ namespace detail
     }
 
     template<typename F, typename... Ts>
-    constexpr void for_each_tuple(const std::tuple<Ts...>& tuple, F&& func)
+    RPC_HPP_INLINE constexpr void for_each_tuple(const std::tuple<Ts...>& tuple, F&& func)
     {
         for_each_tuple(tuple, std::forward<F>(func), std::make_index_sequence<sizeof...(Ts)>());
     }
@@ -516,7 +524,7 @@ namespace detail
     }
 
     template<typename... Args>
-    constexpr void tuple_bind(
+    RPC_HPP_INLINE constexpr void tuple_bind(
         const std::tuple<remove_cvref_t<decay_str_t<Args>>...>& src, Args&&... dest)
     {
         tuple_bind(src, std::make_index_sequence<sizeof...(Args)>(), std::forward<Args>(dest)...);
@@ -965,8 +973,82 @@ namespace adapters
         static bool has_bound_args(const serial_t& serial_obj) = delete;
     };
 
+    template<typename Derived>
+    class generic_serializer
+    {
+    public:
+        generic_serializer() noexcept = default;
+        generic_serializer& operator=(const generic_serializer&) = delete;
+        generic_serializer& operator=(generic_serializer&&) = delete;
+
+        template<typename T>
+        RPC_HPP_INLINE void as_bool(const std::string_view key, T& val)
+        {
+            (static_cast<Derived*>(this))->as_bool(key, val);
+        }
+
+        template<typename T>
+        RPC_HPP_INLINE void as_float(const std::string_view key, T& val)
+        {
+            (static_cast<Derived*>(this))->as_float(key, val);
+        }
+
+        template<typename T>
+        RPC_HPP_INLINE void as_int(const std::string_view key, T& val)
+        {
+            (static_cast<Derived*>(this))->as_int(key, val);
+        }
+
+        template<typename T>
+        RPC_HPP_INLINE void as_string(const std::string_view key, T& val)
+        {
+            (static_cast<Derived*>(this))->as_string(key, val);
+        }
+
+        template<typename T>
+        RPC_HPP_INLINE void as_array(const std::string_view key, T& val)
+        {
+            (static_cast<Derived*>(this))->as_array(key, val);
+        }
+
+        template<typename T>
+        RPC_HPP_INLINE void as_map(const std::string_view key, T& val)
+        {
+            (static_cast<Derived*>(this))->as_map(key, val);
+        }
+
+        template<typename T1, typename T2>
+        RPC_HPP_INLINE void as_tuple(const std::string_view key, std::pair<T1, T2>& val)
+        {
+            (static_cast<Derived*>(this))->as_tuple(key, val);
+        }
+
+        template<typename... Args>
+        RPC_HPP_INLINE void as_tuple(const std::string_view key, std::tuple<Args...>& val)
+        {
+            (static_cast<Derived*>(this))->as_tuple(key, val);
+        }
+
+        template<typename T>
+        RPC_HPP_INLINE void as_optional(const std::string_view key, std::optional<T>& val)
+        {
+            (static_cast<Derived*>(this))->as_optional(key, val);
+        }
+
+        template<typename T>
+        RPC_HPP_INLINE void as_object(const std::string_view key, T& val)
+        {
+            (static_cast<Derived*>(this))->as_object(key, val);
+        }
+
+    protected:
+        ~generic_serializer() noexcept = default;
+        generic_serializer(const generic_serializer&) = default;
+        generic_serializer(generic_serializer&&) noexcept = default;
+    };
+
     template<typename Adapter, bool Deserialize>
-    class serializer_base
+    class serializer_base : public generic_serializer<serializer_base<Adapter, Deserialize>>
     {
     public:
         using serializer_t = std::conditional_t<Deserialize, typename Adapter::deserializer_t,
@@ -985,52 +1067,46 @@ namespace adapters
         void deserialize_object(T&& val)
         {
             static_assert(Deserialize, "Cannot call deserialize_object() on a serializer");
-
             serialize(*this, std::forward<T>(val));
         }
 
         template<typename T>
-        void as_bool(const std::string_view key, T& val)
+        RPC_HPP_INLINE void as_bool(const std::string_view key, T& val)
         {
             static_assert(detail::is_boolean_testable_v<T>, "T must be convertible to bool");
-
             (static_cast<serializer_t*>(this))->as_bool(key, val);
         }
 
         template<typename T>
-        void as_float(const std::string_view key, T& val)
+        RPC_HPP_INLINE void as_float(const std::string_view key, T& val)
         {
             static_assert(std::is_floating_point_v<T>, "T must be a floating-point type");
-
             (static_cast<serializer_t*>(this))->as_float(key, val);
         }
 
         template<typename T>
-        void as_int(const std::string_view key, T& val)
+        RPC_HPP_INLINE void as_int(const std::string_view key, T& val)
         {
             static_assert(std::is_integral_v<T> || std::is_enum_v<T>, "T must be an integral type");
-
             (static_cast<serializer_t*>(this))->as_int(key, val);
         }
 
         template<typename T>
-        void as_string(const std::string_view key, T& val)
+        RPC_HPP_INLINE void as_string(const std::string_view key, T& val)
         {
             static_assert(detail::is_stringlike_v<T>, "T must be convertible to std::string_view");
-
             (static_cast<serializer_t*>(this))->as_string(key, val);
         }
 
         template<typename T>
-        void as_array(const std::string_view key, T& val)
+        RPC_HPP_INLINE void as_array(const std::string_view key, T& val)
         {
             static_assert(detail::is_container_v<T>, "T must have begin() and end()");
-
             (static_cast<serializer_t*>(this))->as_array(key, val);
         }
 
         template<typename T>
-        void as_map(const std::string_view key, T& val)
+        RPC_HPP_INLINE void as_map(const std::string_view key, T& val)
         {
             static_assert(detail::is_map_v<T>, "T must be a map type");
 
@@ -1045,74 +1121,29 @@ namespace adapters
         }
 
         template<typename T1, typename T2>
-        void as_tuple(const std::string_view key, std::pair<T1, T2>& val)
+        RPC_HPP_INLINE void as_tuple(const std::string_view key, std::pair<T1, T2>& val)
         {
             (static_cast<serializer_t*>(this))->as_tuple(key, val);
         }
 
         template<typename... Args>
-        void as_tuple(const std::string_view key, std::tuple<Args...>& val)
+        RPC_HPP_INLINE void as_tuple(const std::string_view key, std::tuple<Args...>& val)
         {
             (static_cast<serializer_t*>(this))->as_tuple(key, val);
         }
 
         template<typename T>
-        void as_optional(const std::string_view key, std::optional<T>& val)
+        RPC_HPP_INLINE void as_optional(const std::string_view key, std::optional<T>& val)
         {
             (static_cast<serializer_t*>(this))->as_optional(key, val);
         }
 
         template<typename T>
-        void as_object(const std::string_view key, T& val)
+        RPC_HPP_INLINE void as_object(const std::string_view key, T& val)
         {
             (static_cast<serializer_t*>(this))->as_object(key, val);
         }
     };
-
-    // // TODO: Start dismantling this class and moving behavior into serializer/deserializer
-    // template<typename Adapter>
-    // class serial_adapter_base
-    // {
-    // public:
-    //     using serial_t = typename serial_traits<Adapter>::serial_t;
-    //     using bytes_t = typename serial_traits<Adapter>::bytes_t;
-
-    //     static serial_t from_bytes(bytes_t&& bytes) = delete;
-    //     static bytes_t to_bytes(const serial_t& serial_obj) = delete;
-    //     static bytes_t to_bytes(serial_t&& serial_obj) = delete;
-    //     static std::string get_func_name(const serial_t& serial_obj) = delete;
-    //     static rpc_type get_type(const serial_t& serial_obj) = delete;
-
-    //     template<bool IsCallback, typename R>
-    //     static detail::rpc_result<IsCallback, R> get_result(const serial_t& serial_obj) = delete;
-
-    //     template<bool IsCallback, typename R>
-    //     static serial_t serialize_result(const detail::rpc_result<IsCallback, R>& result) = delete;
-
-    //     template<bool IsCallback, typename R, typename... Args>
-    //     static serial_t serialize_result_w_bind(
-    //         const detail::rpc_result_w_bind<IsCallback, R, Args...>& result) = delete;
-
-    //     template<bool IsCallback, typename... Args>
-    //     static detail::rpc_request<IsCallback, Args...> get_request(
-    //         const serial_t& serial_obj) = delete;
-
-    //     template<bool IsCallback, typename... Args>
-    //     static serial_t serialize_request(
-    //         const detail::rpc_request<IsCallback, Args...>& request) = delete;
-
-    //     template<bool IsCallback>
-    //     static detail::rpc_error<IsCallback> get_error(const serial_t& serial_obj) = delete;
-
-    //     template<bool IsCallback>
-    //     static serial_t serialize_error(const detail::rpc_error<IsCallback>& error) = delete;
-
-    //     static callback_install_request get_callback_install(const serial_t& serial_obj) = delete;
-    //     static serial_t serialize_callback_install(
-    //         const callback_install_request& callback_req) = delete;
-
-    //     static bool has_bound_args(const serial_t& serial_obj) = delete;
-    // };
 
     // Overloads for common types
     template<typename Adapter>

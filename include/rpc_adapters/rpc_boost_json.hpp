@@ -54,10 +54,7 @@ namespace detail_boost_json
         using serial_t = boost::json::object;
         using serializer_t = serializer;
         using deserializer_t = deserializer;
-
-        struct config
-        {
-        };
+        using config = void;
     };
 
     class serial_adapter : public serial_adapter_base<adapter_impl>

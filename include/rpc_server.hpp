@@ -34,19 +34,19 @@ public:
     virtual bytes_t receive() = 0;
 
     template<typename R, typename... Args>
-    void bind(std::string func_name, std::function<R(Args...)> func)
+    RPC_HPP_INLINE void bind(std::string func_name, std::function<R(Args...)> func)
     {
         bind_impl<R, Args...>(std::move(func_name), std::move(func));
     }
 
     template<typename R, typename... Args>
-    void bind(std::string func_name, const detail::fptr_t<R, Args...> func_ptr)
+    RPC_HPP_INLINE void bind(std::string func_name, const detail::fptr_t<R, Args...> func_ptr)
     {
         bind_impl<R, Args...>(std::move(func_name), func_ptr);
     }
 
     template<typename R, typename... Args, typename F>
-    void bind(std::string func_name, F&& func)
+    RPC_HPP_INLINE void bind(std::string func_name, F&& func)
     {
         bind<R, Args...>(std::move(func_name), std::function<R(Args...)>{ std::forward<F>(func) });
     }
@@ -112,7 +112,7 @@ protected:
 
 #if defined(RPC_HPP_ENABLE_CALLBACKS)
     template<typename R, typename... Args>
-    [[nodiscard]] R call_callback(const std::string& func_name, Args&&... args)
+    [[nodiscard]] RPC_HPP_INLINE R call_callback(const std::string& func_name, Args&&... args)
     {
         const auto response =
             call_callback_impl<R, Args...>(func_name, std::forward<Args>(args)...);
@@ -120,10 +120,12 @@ protected:
     }
 
     template<typename R, typename... Args>
-    [[nodiscard]] R call_callback_w_bind(const std::string& func_name, Args&&... args)
+    [[nodiscard]] RPC_HPP_INLINE R call_callback_w_bind(
+        const std::string& func_name, Args&&... args)
     {
         const auto response =
             call_callback_impl<R, Args...>(func_name, std::forward<Args>(args)...);
+
         detail::tuple_bind(response.template get_args<true, detail::decay_str_t<Args>...>(),
             std::forward<Args>(args)...);
 
