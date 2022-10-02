@@ -36,7 +36,10 @@
 
 #pragma once
 
-#include <asio.hpp>
+#include "../sync_queue.hpp"
+#include "../test_server/rpc.server.hpp"
+#include "rpc.hpp"
+
 #include <rpc_client.hpp>
 
 #if defined(RPC_HPP_ENABLE_BITSERY)
@@ -55,7 +58,7 @@
 #  include <rpc_adapters/rpc_rapidjson.hpp>
 #endif
 
-#include <array>
+#include <memory>
 #include <string>
 
 namespace rpc_hpp::tests
@@ -64,80 +67,26 @@ template<typename Serial>
 class TestClient final : public rpc_hpp::client_interface<Serial>
 {
 public:
-    TestClient(const std::string_view host, const std::string_view port)
-        : m_socket(m_io), m_resolver(m_io)
+    using bytes_t = typename Serial::bytes_t;
+
+    explicit TestClient(TestServer<Serial>& server)
+        : m_p_message_queue{ std::make_shared<SyncQueue<bytes_t>>() },
+          m_p_server_queue(server.attach_client(m_p_message_queue))
     {
-        asio::connect(m_socket, m_resolver.resolve(host, port));
     }
 
-    RPC_HPP_NODISCARD("string is being allocated for return")
-    std::string getIP() const { return m_socket.remote_endpoint().address().to_string(); }
-
-    void send(typename Serial::bytes_t&& mesg) override
+    void send(bytes_t&& mesg) override
     {
-        asio::write(m_socket, asio::buffer(std::move(mesg), mesg.size()));
+        m_p_server_queue.lock()->push(std::move(mesg));
     }
 
-    RPC_HPP_NODISCARD("data is lost after receive")
-    typename Serial::bytes_t receive() override
-    {
-        const auto bytes_received = m_socket.read_some(asio::buffer(m_buffer, m_buffer.size()));
-        return typename Serial::bytes_t{ m_buffer.begin(), m_buffer.begin() + bytes_received };
-    }
+    [[nodiscard]] bytes_t receive() override { return m_p_message_queue->pop(); }
 
 private:
-    static constexpr size_t buffer_sz{ 64UL * 1024UL };
-
-    asio::io_context m_io{};
-    asio::ip::tcp::socket m_socket;
-    asio::ip::tcp::resolver m_resolver;
-    std::array<uint8_t, buffer_sz> m_buffer{};
+    std::shared_ptr<SyncQueue<bytes_t>> m_p_message_queue;
+    std::weak_ptr<SyncQueue<bytes_t>> m_p_server_queue;
 };
 
 template<typename Serial>
 static TestClient<Serial>& GetClient();
-
-#if defined(RPC_HPP_ENABLE_NJSON)
-using adapters::njson_adapter;
-
-template<>
-[[nodiscard]] inline TestClient<njson_adapter>& GetClient()
-{
-    static TestClient<njson_adapter> njson_client{ "127.0.0.1", "5000" };
-    return njson_client;
-}
-#endif
-
-#if defined(RPC_HPP_ENABLE_RAPIDJSON)
-using adapters::rapidjson_adapter;
-
-template<>
-[[nodiscard]] inline TestClient<rapidjson_adapter>& GetClient()
-{
-    static TestClient<rapidjson_adapter> rapidjson_client{ "127.0.0.1", "5001" };
-    return rapidjson_client;
-}
-#endif
-
-#if defined(RPC_HPP_ENABLE_BOOST_JSON)
-using adapters::boost_json_adapter;
-
-template<>
-[[nodiscard]] inline TestClient<boost_json_adapter>& GetClient()
-{
-    static TestClient<boost_json_adapter> boost_json_client{ "127.0.0.1", "5002" };
-    return boost_json_client;
-}
-#endif
-
-#if defined(RPC_HPP_ENABLE_BITSERY)
-using adapters::bitsery_adapter;
-
-template<>
-[[nodiscard]] inline TestClient<bitsery_adapter>& GetClient()
-{
-    static TestClient<bitsery_adapter> bitsery_client{ "127.0.0.1", "5003" };
-    return bitsery_client;
-}
-#endif
 } //namespace rpc_hpp::tests

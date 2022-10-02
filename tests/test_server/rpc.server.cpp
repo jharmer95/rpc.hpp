@@ -39,32 +39,10 @@
 #include "rpc.server.hpp"
 #include "../static_funcs.hpp"
 
-#if defined(RPC_HPP_ENABLE_NJSON)
-#  include <rpc_adapters/rpc_njson.hpp>
-
-using rpc_hpp::adapters::njson_adapter;
-#endif
-
-#if defined(RPC_HPP_ENABLE_RAPIDJSON)
-#  include <rpc_adapters/rpc_rapidjson.hpp>
-
-using rpc_hpp::adapters::rapidjson_adapter;
-#endif
-
-#if defined(RPC_HPP_ENABLE_BOOST_JSON)
-#  include <rpc_adapters/rpc_boost_json.hpp>
-
-using rpc_hpp::adapters::boost_json_adapter;
-#endif
-
 #if defined(RPC_HPP_ENABLE_BITSERY)
-#  include <rpc_adapters/rpc_bitsery.hpp>
-
-using rpc_hpp::adapters::bitsery_adapter;
-
-constexpr size_t bitsery_adapter::config::max_func_name_size = 30;
-constexpr size_t bitsery_adapter::config::max_string_size = 2'048;
-constexpr size_t bitsery_adapter::config::max_container_size = 1'000;
+constexpr size_t rpc_hpp::adapters::bitsery_adapter::config::max_func_name_size = 30;
+constexpr size_t rpc_hpp::adapters::bitsery_adapter::config::max_string_size = 2'048;
+constexpr size_t rpc_hpp::adapters::bitsery_adapter::config::max_container_size = 1'000;
 #endif
 
 #include <algorithm>
@@ -93,18 +71,11 @@ void AddOne(size_t& n) noexcept
     n += 1;
 }
 
-namespace test_server
+namespace rpc_hpp::tests
 {
 [[noreturn]] void ThrowError() noexcept(false)
 {
     throw std::domain_error{ "THIS IS A TEST ERROR!" };
-}
-
-// NOTE: This function is only for testing purposes. Obviously you would not want this in a production server!
-void KillServer() noexcept
-{
-    std::puts("\nShutting down from remote KillServer call...");
-    RUNNING = false;
 }
 
 // cached
@@ -387,7 +358,7 @@ static void BindFuncs(TestServer<Serial>& server)
         "GetConnectionInfo", [&server] { return server.GetConnectionInfo(); });
 #endif
 
-    server.bind("KillServer", &KillServer);
+    server.template bind<void>("KillServer", [&server] { return server.Stop(); });
     server.bind("ThrowError", &ThrowError);
     server.bind("AddOneToEachRef", &AddOneToEachRef);
     server.bind("FibonacciRef", &FibonacciRef);
@@ -415,61 +386,33 @@ static void BindFuncs(TestServer<Serial>& server)
     server.bind("SafeDivide", &SafeDivide);
     server.bind("TopTwo", &TopTwo);
 }
-} //namespace test_server
 
-int main(const int argc, const char* argv[])
+template<typename Serial>
+static std::unique_ptr<TestServer<Serial>> CreateServer()
 {
-    if ((argc > 1) && (std::strcmp(argv[1], "--help") == 0))
-    {
-        return 0;
-    }
-
-    try
-    {
-        asio::io_context io_ctx{};
-        test_server::RUNNING = true;
-
-        std::vector<std::thread> threads;
+    auto p_server = std::make_unique<TestServer<Serial>>();
+    BindFuncs(*p_server);
+    std::thread{ &TestServer<Serial>::Run, *p_server }.detach();
+    return p_server;
+}
 
 #if defined(RPC_HPP_ENABLE_NJSON)
-        test_server::TestServer<njson_adapter> njson_server{ io_ctx, 5000U };
-        test_server::BindFuncs(njson_server);
-        threads.emplace_back(&test_server::TestServer<njson_adapter>::Run, &njson_server);
-        std::puts("Running njson server on port 5000...");
+std::unique_ptr<TestServer<adapters::njson_adapter>> njson_server =
+    CreateServer<adapters::njson_adapter>();
 #endif
 
 #if defined(RPC_HPP_ENABLE_RAPIDJSON)
-        test_server::TestServer<rapidjson_adapter> rapidjson_server{ io_ctx, 5001U };
-        test_server::BindFuncs(rapidjson_server);
-        threads.emplace_back(&test_server::TestServer<rapidjson_adapter>::Run, &rapidjson_server);
-        std::puts("Running rapidjson server on port 5001...");
+std::unique_ptr<TestServer<adapters::rapidjson_adapter>> rapidjson_server =
+    CreateServer<adapters::rapidjson_adapters>();
 #endif
 
-#if defined(RPC_HPP_ENABLE_BOOST_JSON)
-        test_server::TestServer<boost_json_adapter> bjson_server{ io_ctx, 5002U };
-        test_server::BindFuncs(bjson_server);
-        threads.emplace_back(&test_server::TestServer<boost_json_adapter>::Run, &bjson_server);
-        std::puts("Running Boost.JSON server on port 5002...");
+#if defined(RPC_HPP_ENABLE_NJSON)
+std::unique_ptr<TestServer<adapters::boost_json_adapter>> boost_json_server =
+    CreateServer<adapters::boost_json>();
 #endif
 
-#if defined(RPC_HPP_ENABLE_BITSERY)
-        test_server::TestServer<bitsery_adapter> bitsery_server{ io_ctx, 5003U };
-        test_server::BindFuncs(bitsery_server);
-        threads.emplace_back(&test_server::TestServer<bitsery_adapter>::Run, &bitsery_server);
-        std::puts("Running Bitsery server on port 5003...");
+#if defined(RPC_HPP_ENABLE_NJSON)
+std::unique_ptr<TestServer<adapters::bitsey_adapter>> bitsery_server =
+    CreateServer<adapters::bitsery_adapter>();
 #endif
-
-        for (auto& thrd : threads)
-        {
-            thrd.join();
-        }
-
-        std::puts("Exited normally");
-        return 0;
-    }
-    catch (const std::exception& ex)
-    {
-        std::fprintf(stderr, "Exception: %s\n", ex.what());
-        return 1;
-    }
-}
+} //namespace rpc_hpp::tests

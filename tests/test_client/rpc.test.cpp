@@ -106,6 +106,50 @@ constexpr size_t rpc_hpp::adapters::bitsery_adapter::config::max_container_size 
 
 namespace rpc_hpp::tests
 {
+#if defined(RPC_HPP_ENABLE_NJSON)
+using adapters::njson_adapter;
+
+template<>
+[[nodiscard]] inline TestClient<njson_adapter>& GetClient()
+{
+    static TestClient<njson_adapter> njson_client{ *njson_server };
+    return njson_client;
+}
+#endif
+
+#if defined(RPC_HPP_ENABLE_RAPIDJSON)
+using adapters::rapidjson_adapter;
+
+template<>
+[[nodiscard]] inline TestClient<rapidjson_adapter>& GetClient()
+{
+    static TestClient<rapidjson_adapter> rapidjson_client{ *rapidjson_server };
+    return rapidjson_client;
+}
+#endif
+
+#if defined(RPC_HPP_ENABLE_BOOST_JSON)
+using adapters::boost_json_adapter;
+
+template<>
+[[nodiscard]] inline TestClient<boost_json_adapter>& GetClient()
+{
+    static TestClient<boost_json_adapter> boost_json_client{ *boost_json_server };
+    return boost_json_client;
+}
+#endif
+
+#if defined(RPC_HPP_ENABLE_BITSERY)
+using adapters::bitsery_adapter;
+
+template<>
+[[nodiscard]] inline TestClient<bitsery_adapter>& GetClient()
+{
+    static TestClient<bitsery_adapter> bitsery_client{ *bitsery_server };
+    return bitsery_client;
+}
+#endif
+
 template<typename Serial>
 static void TestType()
 {

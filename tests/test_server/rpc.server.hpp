@@ -36,66 +36,63 @@
 
 #pragma once
 
+#include "../sync_queue.hpp"
 #include "../test_structs.hpp"
 
-#include <asio.hpp>
 #include <rpc_server.hpp>
 
-#include <array>
+#if defined(RPC_HPP_ENABLE_NJSON)
+#  include <rpc_adapters/rpc_njson.hpp>
+#endif
+
+#if defined(RPC_HPP_ENABLE_RAPIDJSON)
+#  include <rpc_adapters/rpc_rapidjson.hpp>
+#endif
+
+#if defined(RPC_HPP_ENABLE_BOOST_JSON)
+#  include <rpc_adapters/rpc_boost_json.hpp>
+#endif
+
+#if defined(RPC_HPP_ENABLE_BITSERY)
+#  include <rpc_adapters/rpc_bitsery.hpp>
+#endif
+
 #include <atomic>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
+#include <memory>
 #include <stdexcept>
 #include <string>
 
-namespace test_server
+namespace rpc_hpp::tests
 {
-inline std::atomic_bool RUNNING{ false };
-
 template<typename Serial>
-class TestServer final : public rpc_hpp::server_interface<Serial>
+class TestServer final : public server_interface<Serial>
 {
 public:
-    using bytes_t = typename rpc_hpp::server_interface<Serial>::bytes_t;
-    using rpc_hpp::server_interface<Serial>::bind;
-    using rpc_hpp::server_interface<Serial>::handle_bytes;
+    using bytes_t = typename server_interface<Serial>::bytes_t;
+    using server_interface<Serial>::bind;
+    using server_interface<Serial>::handle_bytes;
 
-    TestServer() = delete;
-    TestServer(asio::io_context& io_ctx, const uint16_t port)
-        : rpc_hpp::server_interface<Serial>{},
-          m_accept(io_ctx, asio::ip::tcp::endpoint(asio::ip::tcp::v4(), port))
-    {
-    }
-
-    bytes_t receive() override
-    {
-        RPC_HPP_PRECONDITION(m_socket.has_value());
-
-        static constexpr unsigned BUFFER_SZ = 64 * 1024;
-        static std::array<uint8_t, BUFFER_SZ> data{};
-
-        asio::error_code error;
-        const size_t len = m_socket.value().read_some(asio::buffer(data.data(), BUFFER_SZ), error);
-
-        if (error == asio::error::eof)
-        {
-            return {};
-        }
-
-        // other error
-        if (error)
-        {
-            throw asio::system_error{ error };
-        }
-
-        return { data.data(), data.data() + len };
-    }
+    [[nodiscard]] bytes_t receive() override { return m_p_message_queue->pop(); }
 
     void send(bytes_t&& bytes) override
     {
-        RPC_HPP_PRECONDITION(m_socket.has_value());
-        write(m_socket.value(), asio::buffer(std::move(bytes), bytes.size()));
+        if (!m_p_client_queue || m_p_client_queue.expired())
+        {
+            throw server_receive_error{ "No clients have been attached to the server" };
+        }
+
+        m_p_client_queue.lock()->push(std::move(bytes));
+    }
+
+    [[nodiscard]] std::weak_ptr<SyncQueue<bytes_t>> attach_client(
+        std::weak_ptr<SyncQueue<bytes_t>> p_client_queue)
+    {
+        assert(!m_p_client_queue && "Only one client can be attached (for now)");
+        m_p_client_queue = p_client_queue;
+        return m_p_message_queue;
     }
 
 #if defined(RPC_HPP_ENABLE_CALLBACKS)
@@ -110,15 +107,16 @@ public:
     }
 #endif
 
+
     void Run()
     {
-        while (RUNNING)
-        {
-            m_socket = m_accept.accept();
+        m_running = true;
 
+        while (m_running)
+        {
             try
             {
-                while (RUNNING)
+                while (m_running)
                 {
                     auto recv_data = receive();
 
@@ -135,13 +133,33 @@ public:
             {
                 std::fprintf(stderr, "Exception in thread: %s\n", ex.what());
             }
-
-            m_socket.reset();
         }
     }
 
+    void Stop()
+    {
+        m_running = false;
+    }
+
 private:
-    asio::ip::tcp::acceptor m_accept;
-    std::optional<asio::ip::tcp::socket> m_socket{};
+    std::atomic<bool> m_running{ false };
+    std::shared_ptr<SyncQueue<bytes_t>> m_p_message_queue{ std::make_shared<SyncQueue<bytes_t>>() };
+    std::weak_ptr<SyncQueue<bytes_t>> m_p_client_queue{};
 };
-} //namespace test_server
+
+#if defined(RPC_HPP_ENABLE_NJSON)
+extern std::unique_ptr<TestServer<adapters::njson_adapter>> njson_server;
+#endif
+
+#if defined(RPC_HPP_ENABLE_RAPIDJSON)
+extern std::unique_ptr<TestServer<adapters::rapidjson_adapter>> rapidjson_server;
+#endif
+
+#if defined(RPC_HPP_ENABLE_BOOST_JSON)
+extern std::unique_ptr<TestServer<adapters::boost_json_adapter>> boost_json_server;
+#endif
+
+#if defined(RPC_HPP_ENABLE_BITSERY)
+extern std::unique_ptr<TestServer<adapters::bitsery_adapter>> bitsery_server;
+#endif
+} //namespace rpc_hpp::tests
