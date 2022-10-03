@@ -46,18 +46,27 @@ constexpr size_t rpc_hpp::adapters::bitsery_adapter::config::max_container_size 
 #endif
 
 #include <algorithm>
+#include <array>
+#include <cctype>
 #include <chrono>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <forward_list>
+#include <iomanip>
 #include <limits>
 #include <map>
+#include <memory>
 #include <numeric>
 #include <optional>
 #include <random>
 #include <sstream>
+#include <stdexcept>
+#include <string>
+#include <string_view>
 #include <thread>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 int CountChars(const std::string& str, char chr)

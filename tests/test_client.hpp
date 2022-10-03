@@ -58,7 +58,7 @@
 #endif
 
 #include <memory>
-#include <string>
+#include <utility>
 
 namespace rpc_hpp::tests
 {

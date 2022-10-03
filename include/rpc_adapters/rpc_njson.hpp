@@ -41,6 +41,16 @@
 
 #include <nlohmann/json.hpp>
 
+#include <array>
+#include <cstddef>
+#include <optional>
+#include <stdexcept>
+#include <string>
+#include <string_view>
+#include <tuple>
+#include <type_traits>
+#include <utility>
+
 #ifndef RPC_HPP_NO_RTTI
 #  include <typeinfo>
 #endif

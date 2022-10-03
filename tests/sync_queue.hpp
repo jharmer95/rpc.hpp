@@ -1,8 +1,11 @@
 #pragma once
 
 #include <atomic>
+#include <cstddef>
 #include <mutex>
+#include <optional>
 #include <queue>
+#include <utility>
 
 namespace rpc_hpp::tests
 {

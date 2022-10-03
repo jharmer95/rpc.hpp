@@ -3,9 +3,16 @@
 
 #include "rpc.hpp"
 
+#include <exception>
 #include <functional>
+#include <string>
+#include <tuple>
 #include <unordered_map>
-#include <unordered_set>
+#include <utility>
+
+#if defined(RPC_HPP_ENABLE_CALLBACKS)
+#  include <unordered_set>
+#endif
 
 #if !defined(RPC_HEADER_FUNC)
 #  define RPC_HEADER_FUNC(RT, FNAME, ...) RT FNAME(__VA_ARGS__)

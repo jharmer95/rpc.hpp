@@ -42,6 +42,11 @@
 #  include <rpc/client.h>
 #endif
 
+#include <array>
+#include <cstdint>
+#include <string>
+#include <type_traits>
+
 struct ComplexObject
 {
     int id{};

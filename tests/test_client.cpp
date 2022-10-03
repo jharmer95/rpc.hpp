@@ -43,9 +43,18 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include <doctest/doctest.h>
 
+#include <array>
+#include <cstddef>
+#include <cstdint>
 #include <forward_list>
+#include <numeric>
 #include <map>
+#include <optional>
+#include <string>
+#include <tuple>
 #include <unordered_set>
+#include <utility>
+#include <vector>
 
 #if defined(RPC_HPP_ENABLE_BITSERY)
 constexpr size_t rpc_hpp::adapters::bitsery_adapter::config::max_func_name_size = 30;
@@ -520,12 +529,12 @@ TEST_CASE_TEMPLATE("Callback already installed", TestType, RPC_TEST_TYPES)
 {
     auto& client = GetClient<TestType>();
 
-    auto callback_request = client.template install_callback<void>(
-        "TestCallback", [] { std::cout << "Hello, callback!\n"; });
+    auto callback_request = client.template install_callback<std::string>(
+        "TestCallback", [] { return "Hello, callback!"; });
 
     REQUIRE(callback_request.func_name == "TestCallback");
-    REQUIRE_THROWS_AS((std::ignore = client.template install_callback<void>(
-                           "TestCallback", [] { std::cout << "Goodbye, callback!\n"; })),
+    REQUIRE_THROWS_AS((std::ignore = client.template install_callback<std::string>(
+                           "TestCallback", [] { return "Goodbye, callback!"; })),
         rpc_hpp::callback_install_error);
 
     client.uninstall_callback(std::move(callback_request));

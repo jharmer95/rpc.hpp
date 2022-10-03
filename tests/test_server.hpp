@@ -58,12 +58,12 @@
 #endif
 
 #include <atomic>
-#include <cstddef>
-#include <cstdint>
 #include <cstdio>
+#include <exception>
 #include <memory>
-#include <stdexcept>
+#include <sstream>
 #include <string>
+#include <utility>
 
 namespace rpc_hpp::tests
 {

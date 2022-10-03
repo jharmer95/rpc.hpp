@@ -53,8 +53,22 @@
 #include <bitsery/traits/string.h>
 #include <bitsery/traits/vector.h>
 
+#include <array>
 #include <cassert>
+#include <cstddef>
+#include <cstdint>
+#include <cstring>
+#include <functional>
+#include <iterator>
+#include <limits>
 #include <numeric>
+#include <optional>
+#include <string>
+#include <string_view>
+#include <tuple>
+#include <type_traits>
+#include <utility>
+#include <vector>
 
 template<>
 struct std::hash<std::vector<uint8_t>>
