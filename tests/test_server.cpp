@@ -1,4 +1,4 @@
-///@file rpc.server.cpp
+///@file test_server.cpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Implementation of an RPC server for testing
 ///
@@ -36,8 +36,8 @@
 
 #define RPC_HPP_ENABLE_CALLBACKS
 
-#include "rpc.server.hpp"
-#include "../static_funcs.hpp"
+#include "test_server.hpp"
+#include "static_funcs.hpp"
 
 #if defined(RPC_HPP_ENABLE_BITSERY)
 constexpr size_t rpc_hpp::adapters::bitsery_adapter::config::max_func_name_size = 30;

@@ -1,4 +1,4 @@
-///@file rpc.server.hpp
+///@file test_server.hpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Declarations and implementations of an RPC server for testing
 ///
@@ -36,8 +36,8 @@
 
 #pragma once
 
-#include "../sync_queue.hpp"
-#include "../test_structs.hpp"
+#include "sync_queue.hpp"
+#include "test_structs.hpp"
 
 #include <rpc_server.hpp>
 

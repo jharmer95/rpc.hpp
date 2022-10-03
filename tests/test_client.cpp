@@ -1,6 +1,6 @@
-///@file rpc.test.cpp
+///@file test_client.cpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
-///@brief Unit test source file for rpc.hpp
+///@brief Test source file for rpc.hpp
 ///
 ///@copyright
 ///BSD 3-Clause License
@@ -36,9 +36,9 @@
 
 #define RPC_HPP_ENABLE_CALLBACKS
 
-#include "rpc.client.hpp"
-#include "../test_structs.hpp"
-#include "../static_funcs.hpp"
+#include "test_client.hpp"
+#include "test_structs.hpp"
+#include "static_funcs.hpp"
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include <doctest/doctest.h>

@@ -1,4 +1,4 @@
-///@file rpc.client.hpp
+///@file test_client.hpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Implementation of an RPC client class for testing
 ///
@@ -36,8 +36,8 @@
 
 #pragma once
 
-#include "../sync_queue.hpp"
-#include "../test_server/rpc.server.hpp"
+#include "sync_queue.hpp"
+#include "test_server.hpp"
 
 #include <rpc_client.hpp>
 

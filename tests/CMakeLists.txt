@@ -54,17 +54,18 @@ target_compile_options(rpc_test PRIVATE -Wno-global-constructors)
 target_link_libraries(rpc_test PRIVATE rpc_hpp doctest_lib Threads::Threads)
 target_sources(
   rpc_test
-  PRIVATE test_client/rpc.test.cpp
-          test_server/rpc.server.cpp
-          test_client/rpc.client.hpp
-          test_server/rpc.server.hpp
+  PRIVATE test_client.cpp
+          test_server.cpp
+          test_client.hpp
+          test_server.hpp
           static_funcs.hpp
           test_structs.hpp
           ../include/rpc.hpp
-          ../include/rpc_client.hpp)
+          ../include/rpc_client.hpp
+          ../include/rpc_server.hpp)
 
 if(${USE_PCH})
-  target_precompile_headers(rpc_test PRIVATE test_client/pch.hpp)
+  target_precompile_headers(rpc_test PRIVATE pch.hpp)
 endif()
 
 if(${BUILD_ADAPTER_BITSERY})
