@@ -38,7 +38,6 @@
 
 #include "../sync_queue.hpp"
 #include "../test_server/rpc.server.hpp"
-#include "rpc.hpp"
 
 #include <rpc_client.hpp>
 
@@ -73,14 +72,26 @@ public:
         : m_p_message_queue{ std::make_shared<SyncQueue<bytes_t>>() },
           m_p_server_queue(server.attach_client(m_p_message_queue))
     {
+        m_p_message_queue->activate();
     }
 
-    void send(bytes_t&& mesg) override
+    void send(bytes_t&& mesg) override { m_p_server_queue.lock()->push(std::move(mesg)); }
+    [[nodiscard]] bytes_t receive() override
     {
-        m_p_server_queue.lock()->push(std::move(mesg));
-    }
+        if (m_p_server_queue.expired() || (!m_p_server_queue.lock()->is_active()))
+        {
+            throw client_receive_error{ "Server is deactivated" };
+        }
 
-    [[nodiscard]] bytes_t receive() override { return m_p_message_queue->pop(); }
+        auto response = m_p_message_queue->pop();
+
+        if (!response.has_value())
+        {
+            throw client_receive_error{ "Server did not provide a response" };
+        }
+
+        return response.value();
+    }
 
 private:
     std::shared_ptr<SyncQueue<bytes_t>> m_p_message_queue;

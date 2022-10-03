@@ -3,13 +3,12 @@
 
 #include "rpc.hpp"
 
-#ifdef RPC_HEADER_FUNC
-#  error <rpc_client.hpp> and <rpc_server.hpp> cannot be included in the same binary, please double check your includes
+#if !defined(RPC_HEADER_FUNC)
+#  define RPC_HEADER_FUNC(RT, FNAME, ...) inline RT (*FNAME)(__VA_ARGS__) = nullptr
+#  define RPC_HEADER_FUNC_EXTC(RT, FNAME, ...) extern "C" inline RT (*FNAME)(__VA_ARGS__) = nullptr
+#  define RPC_HEADER_FUNC_NOEXCEPT(RT, FNAME, ...) \
+    inline RT (*FNAME)(__VA_ARGS__) noexcept = nullptr
 #endif
-
-#define RPC_HEADER_FUNC(RT, FNAME, ...) inline RT (*FNAME)(__VA_ARGS__) = nullptr
-#define RPC_HEADER_FUNC_EXTC(RT, FNAME, ...) extern "C" inline RT (*FNAME)(__VA_ARGS__) = nullptr
-#define RPC_HEADER_FUNC_NOEXCEPT(RT, FNAME, ...) inline RT (*FNAME)(__VA_ARGS__) noexcept = nullptr
 #define call_header_func(FNAME, ...) call_header_func_impl(FNAME, #FNAME, __VA_ARGS__)
 
 namespace rpc_hpp

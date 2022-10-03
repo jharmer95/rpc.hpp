@@ -7,13 +7,11 @@
 #include <unordered_map>
 #include <unordered_set>
 
-#ifdef RPC_HEADER_FUNC
-#  error <rpc_client.hpp> and <rpc_server.hpp> cannot be included in the same binary, please double check your includes
+#if !defined(RPC_HEADER_FUNC)
+#  define RPC_HEADER_FUNC(RT, FNAME, ...) RT FNAME(__VA_ARGS__)
+#  define RPC_HEADER_FUNC_EXTC(RT, FNAME, ...) extern "C" RT FNAME(__VA_ARGS__)
+#  define RPC_HEADER_FUNC_NOEXCEPT(RT, FNAME, ...) RT FNAME(__VA_ARGS__) noexcept
 #endif
-
-#define RPC_HEADER_FUNC(RT, FNAME, ...) extern RT FNAME(__VA_ARGS__)
-#define RPC_HEADER_FUNC_EXTC(RT, FNAME, ...) extern "C" RT FNAME(__VA_ARGS__)
-#define RPC_HEADER_FUNC_NOEXCEPT(RT, FNAME, ...) extern RT FNAME(__VA_ARGS__) noexcept
 
 namespace rpc_hpp
 {

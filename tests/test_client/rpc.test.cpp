@@ -104,6 +104,10 @@ constexpr size_t rpc_hpp::adapters::bitsery_adapter::config::max_container_size 
 
 #define RPC_TEST_TYPES TEST_BITSERY_T TEST_BOOST_JSON_T TEST_NJSON_T TEST_RAPIDJSON_T
 
+#if defined(RPC_HPP_ENABLE_NJSON)
+
+#endif
+
 namespace rpc_hpp::tests
 {
 #if defined(RPC_HPP_ENABLE_NJSON)

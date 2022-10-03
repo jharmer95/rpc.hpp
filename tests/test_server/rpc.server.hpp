@@ -75,13 +75,23 @@ public:
     using server_interface<Serial>::bind;
     using server_interface<Serial>::handle_bytes;
 
-    [[nodiscard]] bytes_t receive() override { return m_p_message_queue->pop(); }
+    [[nodiscard]] bytes_t receive() override
+    {
+        auto response = m_p_message_queue->pop();
+
+        if (!response.has_value())
+        {
+            throw server_receive_error{ "Client did not provide a response" };
+        }
+
+        return response.value();
+    }
 
     void send(bytes_t&& bytes) override
     {
-        if (!m_p_client_queue || m_p_client_queue.expired())
+        if (m_p_client_queue.expired())
         {
-            throw server_receive_error{ "No clients have been attached to the server" };
+            throw server_receive_error{ "No clients are attached to the server" };
         }
 
         m_p_client_queue.lock()->push(std::move(bytes));
@@ -90,7 +100,7 @@ public:
     [[nodiscard]] std::weak_ptr<SyncQueue<bytes_t>> attach_client(
         std::weak_ptr<SyncQueue<bytes_t>> p_client_queue)
     {
-        assert(!m_p_client_queue && "Only one client can be attached (for now)");
+        assert(m_p_client_queue.use_count() == 0 && "Only one client can be attached (for now)");
         m_p_client_queue = p_client_queue;
         return m_p_message_queue;
     }
@@ -107,10 +117,10 @@ public:
     }
 #endif
 
-
     void Run()
     {
         m_running = true;
+        m_p_message_queue->activate();
 
         while (m_running)
         {
@@ -139,6 +149,7 @@ public:
     void Stop()
     {
         m_running = false;
+        m_p_message_queue->deactivate();
     }
 
 private:

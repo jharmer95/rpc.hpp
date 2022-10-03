@@ -41,33 +41,27 @@ include(doctest)
 include(system_link)
 enable_testing()
 
+find_package(Threads REQUIRED)
+
 if(NOT TARGET doctest_lib)
   add_library(doctest_lib INTERFACE)
   find_package(doctest CONFIG REQUIRED)
   target_link_libraries_system(doctest_lib INTERFACE doctest::doctest)
 endif()
 
-if(NOT TARGET asio_lib)
-  find_package(Threads REQUIRED)
-  add_library(asio_lib INTERFACE)
-  target_compile_definitions(asio_lib INTERFACE ASIO_STANDALONE)
-  find_package(asio CONFIG REQUIRED)
-
-  if(CXX_GCC OR CXX_MINGW)
-    # Workaround for GCC 12 detecting null errors
-    target_compile_options(asio_lib INTERFACE -Wno-error=null-dereference)
-  endif()
-
-  target_link_libraries_system(asio_lib INTERFACE asio asio::asio
-                               Threads::Threads)
-endif()
-
 add_executable(rpc_test)
-target_link_libraries(rpc_test PRIVATE rpc_hpp doctest_lib asio_lib)
+target_compile_options(rpc_test PRIVATE -Wno-global-constructors)
+target_link_libraries(rpc_test PRIVATE rpc_hpp doctest_lib Threads::Threads)
 target_sources(
   rpc_test
-  PRIVATE test_client/rpc.test.cpp test_client/rpc.client.hpp static_funcs.hpp
-          test_structs.hpp ../include/rpc.hpp ../include/rpc_client.hpp)
+  PRIVATE test_client/rpc.test.cpp
+          test_server/rpc.server.cpp
+          test_client/rpc.client.hpp
+          test_server/rpc.server.hpp
+          static_funcs.hpp
+          test_structs.hpp
+          ../include/rpc.hpp
+          ../include/rpc_client.hpp)
 
 if(${USE_PCH})
   target_precompile_headers(rpc_test PRIVATE test_client/pch.hpp)
@@ -100,40 +94,3 @@ endif()
 
 target_compile_options(rpc_test PRIVATE ${FULL_WARNING})
 doctest_discover_tests(rpc_test ADD_LABELS 0)
-
-find_package(Threads REQUIRED)
-
-add_executable(test_server)
-target_link_libraries(test_server PRIVATE rpc_hpp asio_lib Threads::Threads)
-target_sources(
-  test_server
-  PRIVATE test_server/rpc.server.cpp test_server/rpc.server.hpp
-          static_funcs.hpp test_structs.hpp ../include/rpc.hpp
-          ../include/rpc_server.hpp)
-
-if(${USE_PCH})
-  target_precompile_headers(test_server PRIVATE test_server/pch.hpp)
-endif()
-
-if(${BUILD_ADAPTER_BITSERY})
-  target_link_libraries(test_server PRIVATE bitsery_adapter)
-  target_compile_definitions(test_server PRIVATE RPC_HPP_BITSERY_EXACT_SZ)
-  target_sources(test_server PRIVATE ../include/rpc_adapters/rpc_bitsery.hpp)
-endif()
-
-if(${BUILD_ADAPTER_BOOST_JSON})
-  target_link_libraries(test_server PRIVATE boost_json_adapter)
-  target_sources(test_server PRIVATE ../include/rpc_adapters/rpc_boost_json.hpp)
-endif()
-
-if(${BUILD_ADAPTER_NJSON})
-  target_link_libraries(test_server PRIVATE njson_adapter)
-  target_sources(test_server PRIVATE ../include/rpc_adapters/rpc_njson.hpp)
-endif()
-
-if(${BUILD_ADAPTER_RAPIDJSON})
-  target_link_libraries(test_server PRIVATE rpdjson_adapter)
-  target_sources(test_server PRIVATE ../include/rpc_adapters/rpc_rapidjson.hpp)
-endif()
-
-target_compile_options(test_server PRIVATE ${FULL_WARNING})

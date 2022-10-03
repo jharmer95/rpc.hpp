@@ -392,7 +392,7 @@ static std::unique_ptr<TestServer<Serial>> CreateServer()
 {
     auto p_server = std::make_unique<TestServer<Serial>>();
     BindFuncs(*p_server);
-    std::thread{ &TestServer<Serial>::Run, *p_server }.detach();
+    std::thread{ &TestServer<Serial>::Run, p_server.get() }.detach();
     return p_server;
 }
 
@@ -403,16 +403,16 @@ std::unique_ptr<TestServer<adapters::njson_adapter>> njson_server =
 
 #if defined(RPC_HPP_ENABLE_RAPIDJSON)
 std::unique_ptr<TestServer<adapters::rapidjson_adapter>> rapidjson_server =
-    CreateServer<adapters::rapidjson_adapters>();
+    CreateServer<adapters::rapidjson_adapter>();
 #endif
 
-#if defined(RPC_HPP_ENABLE_NJSON)
+#if defined(RPC_HPP_ENABLE_BOOST_JSON)
 std::unique_ptr<TestServer<adapters::boost_json_adapter>> boost_json_server =
-    CreateServer<adapters::boost_json>();
+    CreateServer<adapters::boost_json_adapter>();
 #endif
 
-#if defined(RPC_HPP_ENABLE_NJSON)
-std::unique_ptr<TestServer<adapters::bitsey_adapter>> bitsery_server =
+#if defined(RPC_HPP_ENABLE_BITSERY)
+std::unique_ptr<TestServer<adapters::bitsery_adapter>> bitsery_server =
     CreateServer<adapters::bitsery_adapter>();
 #endif
 } //namespace rpc_hpp::tests
