@@ -97,9 +97,19 @@ if(${BENCH_RPCLIB})
   target_link_libraries(rpclib_server PRIVATE rpclib_lib)
 endif()
 
-add_executable(rpc_benchmark benchmark.cpp)
+add_executable(rpc_server rpc_hpp/server.cpp rpc_hpp/server.hpp bench_funcs.hpp
+                          bench_structs.hpp)
+target_compile_options(rpc_server PRIVATE ${FULL_WARNING})
+target_include_directories(rpc_server PRIVATE rpc_hpp)
+target_link_libraries(rpc_server PRIVATE rpc_hpp asio_lib)
+
+if(${USE_PCH})
+  target_precompile_headers(rpc_server PRIVATE rpc_hpp/pch.hpp)
+endif()
+
+add_executable(rpc_benchmark benchmark.cpp rpc_hpp/client.hpp bench_funcs.hpp
+                             bench_structs.hpp)
 target_compile_options(rpc_benchmark PRIVATE ${FULL_WARNING})
-target_include_directories(rpc_benchmark PRIVATE ../tests)
 target_link_libraries(rpc_benchmark PRIVATE rpc_hpp asio_lib doctest_lib
                                             nanobench_lib)
 
@@ -120,16 +130,21 @@ endif()
 if(${BUILD_ADAPTER_BITSERY})
   target_link_libraries(rpc_benchmark PRIVATE bitsery_adapter)
   target_compile_definitions(rpc_benchmark PRIVATE RPC_HPP_BITSERY_EXACT_SZ)
+  target_link_libraries(rpc_server PRIVATE bitsery_adapter)
+  target_compile_definitions(rpc_server PRIVATE RPC_HPP_BITSERY_EXACT_SZ)
 endif()
 
 if(${BUILD_ADAPTER_BOOST_JSON})
   target_link_libraries(rpc_benchmark PRIVATE boost_json_adapter)
+  target_link_libraries(rpc_server PRIVATE boost_json_adapter)
 endif()
 
 if(${BUILD_ADAPTER_NJSON})
   target_link_libraries(rpc_benchmark PRIVATE njson_adapter)
+  target_link_libraries(rpc_server PRIVATE njson_adapter)
 endif()
 
 if(${BUILD_ADAPTER_RAPIDJSON})
   target_link_libraries(rpc_benchmark PRIVATE rpdjson_adapter)
+  target_link_libraries(rpc_server PRIVATE rpdjson_adapter)
 endif()
