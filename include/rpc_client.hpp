@@ -3,13 +3,24 @@
 
 #include "rpc.hpp"
 
-#ifdef RPC_HEADER_FUNC
-#  error <rpc_client.hpp> and <rpc_server.hpp> cannot be included in the same binary, please double check your includes
+#include <exception>
+#include <string>
+#include <string_view>
+#include <tuple>
+#include <utility>
+
+#if defined(RPC_HPP_ENABLE_CALLBACKS)
+#  include <functional>
+#  include <unordered_map>
 #endif
 
-#define RPC_HEADER_FUNC(RT, FNAME, ...) inline RT (*FNAME)(__VA_ARGS__) = nullptr
-#define RPC_HEADER_FUNC_EXTC(RT, FNAME, ...) extern "C" inline RT (*FNAME)(__VA_ARGS__) = nullptr
-#define RPC_HEADER_FUNC_NOEXCEPT(RT, FNAME, ...) inline RT (*FNAME)(__VA_ARGS__) noexcept = nullptr
+#if !defined(RPC_HEADER_FUNC)
+#  define RPC_HEADER_FUNC(RT, FNAME, ...) inline RT (*FNAME)(__VA_ARGS__) = nullptr
+#  define RPC_HEADER_FUNC_EXTC(RT, FNAME, ...) extern "C" inline RT (*FNAME)(__VA_ARGS__) = nullptr
+#  define RPC_HEADER_FUNC_NOEXCEPT(RT, FNAME, ...) \
+    inline RT (*FNAME)(__VA_ARGS__) noexcept = nullptr
+#endif
+
 #define call_header_func(FNAME, ...) call_header_func_impl(FNAME, #FNAME, __VA_ARGS__)
 
 namespace rpc_hpp
@@ -189,7 +200,7 @@ private:
         }
 
         rpc_obj = object_t{ detail::callback_error{ func_name,
-            function_not_found("RPC error: Called function: \"" + func_name + "\" not found") } };
+            function_not_found{ "RPC error: Called function: \"" + func_name + "\" not found" } } };
     }
 #endif
 

@@ -46,6 +46,8 @@ if(${CMAKE_VERSION} VERSION_LESS "3.16.0")
 endif()
 
 option(WERROR "Treat all warnings as errors" ON)
+option(SPLIT_DEBUG
+       "Split debug information from the binary (has no effect for MSVC)" ON)
 option(CODE_COVERAGE "Enable coverage reporting" OFF)
 option(GENERATE_DOXYGEN "Generate Doxygen documentation from comments" OFF)
 
@@ -105,6 +107,12 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+set(IS_DEBUG_BUILD (CMAKE_BUILD_TYPE STREQUAL "Debug"
+                    OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo"))
+set(IS_RELEASE_BUILD
+    (CMAKE_BUILD_TYPE STREQUAL "Release"
+     OR CMAKE_BUILD_TYPE STREQUAL "MinSizeRel"
+     OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo"))
 
 # ==== Machine/Compiler Configs ====
 
@@ -199,7 +207,6 @@ elseif(CXX_GCC OR CXX_MINGW)
       -Wduplicated-cond
       -Wmisleading-indentation
       -Wmissing-field-initializers)
-
   set(MIN_WARNING -Wall)
   if(CXX_MINGW)
     list(APPEND FULL_WARNING -Wa,-mbig-obj)
@@ -271,10 +278,18 @@ add_library(rpc_hpp INTERFACE)
 add_library(RpcHpp::rpc_hpp ALIAS rpc_hpp)
 
 include(GNUInstallDirs)
+target_compile_features(rpc_hpp INTERFACE cxx_std_17)
+if(NOT CXX_MSVC)
+  if(SPLIT_DEBUG AND IS_DEBUG_BUILD)
+    target_compile_options(rpc_hpp INTERFACE -gsplit-dwarf)
+    #target_link_options(rpc_hpp INTERFACE "LINKER:--gdb-index")
+  elseif(IS_RELEASE_BUILD)
+    target_link_options(rpc_hpp INTERFACE "LINKER:--as-needed,--no-undefined")
+  endif()
+endif()
 target_include_directories(
   rpc_hpp INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
                     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
-target_compile_features(rpc_hpp INTERFACE cxx_std_17)
 
 # ==== Target Installation ====
 
@@ -326,12 +341,8 @@ else()
 endif()
 
 if(BUILD_BENCHMARK)
-  if(NOT BUILD_TESTING)
-    message(FATAL_ERROR "Tests must be enabled for benchmarking!")
-  else()
     message("Building benchmarks...")
     add_subdirectory(benchmarks)
-  endif()
 else()
   message("Skipping benchmarks...")
 endif()

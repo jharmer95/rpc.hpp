@@ -18,8 +18,8 @@ static rpc::client& GetRpclibClient()
 }
 #endif
 
-#include "test_client/rpc.client.hpp"
-#include "test_structs.hpp"
+#include "rpc_hpp/client.hpp"
+#include "bench_funcs.hpp"
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include <doctest/doctest.h>
@@ -218,7 +218,7 @@ TEST_CASE("With Container")
         125.12, 553.3333333333, 2266.1 };
 
     nanobench::Bench b;
-    b.title("With Container").warmup(1).relative(true).minEpochIterations(3'000);
+    b.title("With Container").warmup(1).relative(true).minEpochIterations(20'000);
     bench_rpc<double>(b, expected, "AverageContainer<double>", input);
 
 #if defined(RPC_HPP_BENCH_GRPC)
@@ -231,16 +231,15 @@ TEST_CASE("Sequential")
     static constexpr uint64_t min_num = 5;
     static constexpr uint64_t max_num = 30;
     static constexpr size_t num_rands = 1'000;
-    static constexpr ValueRange<uint64_t> val_range{ min_num, max_num };
 
     nanobench::Bench b;
-    b.title("Sequential").warmup(1).relative(true).minEpochIterations(5);
+    b.title("Sequential").warmup(1).relative(true).minEpochIterations(20);
 
     b.run("rpc.hpp (asio::tcp, njson)",
         [&]
         {
             auto vec = GetClient<njson_adapter>()
-                           .call_func("GenRandInts", val_range, num_rands)
+                           .call_func("GenRandInts", min_num, max_num, num_rands)
                            .template get_result<std::vector<uint64_t>>();
 
             for (auto& val : vec)
@@ -260,7 +259,7 @@ TEST_CASE("Sequential")
         [&]
         {
             auto vec = GetClient<rapidjson_adapter>()
-                           .call_func("GenRandInts", val_range, num_rands)
+                           .call_func("GenRandInts", min_num, max_num, num_rands)
                            .template get_result<std::vector<uint64_t>>();
 
             for (auto& val : vec)
@@ -281,7 +280,7 @@ TEST_CASE("Sequential")
         [&]
         {
             auto vec = GetClient<boost_json_adapter>()
-                           .call_func("GenRandInts", val_range, num_rands)
+                           .call_func("GenRandInts", min_num, max_num, num_rands)
                            .template get_result<std::vector<uint64_t>>();
 
             for (auto& val : vec)
@@ -302,7 +301,7 @@ TEST_CASE("Sequential")
         [&]
         {
             auto vec = GetClient<bitsery_adapter>()
-                           .call_func("GenRandInts", val_range, num_rands)
+                           .call_func("GenRandInts", min_num, max_num, num_rands)
                            .template get_result<std::vector<uint64_t>>();
 
             for (auto& val : vec)
@@ -323,7 +322,7 @@ TEST_CASE("Sequential")
         [&]
         {
             auto vec = ::GetRpclibClient()
-                           .call("GenRandInts", val_range.min, val_range.max, num_rands)
+                           .call("GenRandInts", min_num, max_num, num_rands)
                            .as<std::vector<uint64_t>>();
 
             for (auto& val : vec)
@@ -340,7 +339,7 @@ TEST_CASE("Sequential")
     b.run("gRPC",
         [&]
         {
-            auto vec = ::GetGrpcClient().GenRandInts(val_range.min, val_range.max, num_rands);
+            auto vec = ::GetGrpcClient().GenRandInts(min_num, max_num, num_rands);
 
             for (auto& val : vec)
             {

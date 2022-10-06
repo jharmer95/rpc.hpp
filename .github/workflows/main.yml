@@ -46,4 +46,4 @@ jobs:
       - name: Run unit tests
         run: |
           cd build/tests
-          ./test_server & ctest
+          ctest

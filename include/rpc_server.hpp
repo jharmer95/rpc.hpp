@@ -3,17 +3,22 @@
 
 #include "rpc.hpp"
 
+#include <exception>
 #include <functional>
+#include <string>
+#include <tuple>
 #include <unordered_map>
-#include <unordered_set>
+#include <utility>
 
-#ifdef RPC_HEADER_FUNC
-#  error <rpc_client.hpp> and <rpc_server.hpp> cannot be included in the same binary, please double check your includes
+#if defined(RPC_HPP_ENABLE_CALLBACKS)
+#  include <unordered_set>
 #endif
 
-#define RPC_HEADER_FUNC(RT, FNAME, ...) extern RT FNAME(__VA_ARGS__)
-#define RPC_HEADER_FUNC_EXTC(RT, FNAME, ...) extern "C" RT FNAME(__VA_ARGS__)
-#define RPC_HEADER_FUNC_NOEXCEPT(RT, FNAME, ...) extern RT FNAME(__VA_ARGS__) noexcept
+#if !defined(RPC_HEADER_FUNC)
+#  define RPC_HEADER_FUNC(RT, FNAME, ...) RT FNAME(__VA_ARGS__)
+#  define RPC_HEADER_FUNC_EXTC(RT, FNAME, ...) extern "C" RT FNAME(__VA_ARGS__)
+#  define RPC_HEADER_FUNC_NOEXCEPT(RT, FNAME, ...) RT FNAME(__VA_ARGS__) noexcept
+#endif
 
 namespace rpc_hpp
 {
