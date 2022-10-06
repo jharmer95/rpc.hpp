@@ -36,17 +36,6 @@
 #  define RPC_HPP_INLINE
 #endif
 
-#if defined(RPC_HPP_SERVER_IMPL)
-#  define RPC_HEADER_FUNC(RT, FNAME, ...) RT FNAME(__VA_ARGS__)
-#  define RPC_HEADER_FUNC_EXTC(RT, FNAME, ...) extern "C" RT FNAME(__VA_ARGS__)
-#  define RPC_HEADER_FUNC_NOEXCEPT(RT, FNAME, ...) RT FNAME(__VA_ARGS__) noexcept
-#elif defined(RPC_HPP_CLIENT_IMPL)
-#  define RPC_HEADER_FUNC(RT, FNAME, ...) inline RT (*FNAME)(__VA_ARGS__) = nullptr
-#  define RPC_HEADER_FUNC_EXTC(RT, FNAME, ...) extern "C" inline RT (*FNAME)(__VA_ARGS__) = nullptr
-#  define RPC_HEADER_FUNC_NOEXCEPT(RT, FNAME, ...) \
-    inline RT (*FNAME)(__VA_ARGS__) noexcept = nullptr
-#endif
-
 namespace rpc_hpp
 {
 enum class exception_type : int
