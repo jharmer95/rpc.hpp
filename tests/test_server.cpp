@@ -39,12 +39,6 @@
 #include "test_server.hpp"
 #include "static_funcs.hpp"
 
-#if defined(RPC_HPP_ENABLE_BITSERY)
-constexpr size_t rpc_hpp::adapters::bitsery_adapter::config::max_func_name_size = 30;
-constexpr size_t rpc_hpp::adapters::bitsery_adapter::config::max_string_size = 2'048;
-constexpr size_t rpc_hpp::adapters::bitsery_adapter::config::max_container_size = 1'000;
-#endif
-
 #include <algorithm>
 #include <array>
 #include <cctype>

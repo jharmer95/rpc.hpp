@@ -130,17 +130,18 @@ and should be tested.
 
 The libraries needed to build the current adapters are:
 
+- [bitsery](https://github.com/fraillt/bitsery) >= 5.2.0
+- [Boost.JSON](https://www.boost.org/doc/libs/1_77_0/libs/json/doc/html/index.html) >= 1.75.0
 - [nlohmann/json](https://github.com/nlohmann/json) >= 3.9.0
 - [rapidjson](https://github.com/tencent/rapidjson) >= 1.1.0
-- [Boost.JSON](https://www.boost.org/doc/libs/1_77_0/libs/json/doc/html/index.html) >= 1.75.0
 
-For building the unit tests, there are additional libraries required:
+For building the unit tests, there is one library required:
 
-- [asio](http://think-async.com/Asio) >= 1.14
 - [doctest](https://github.com/onqtam/doctest) >= 2.4
 
-Building the benchmarks also requires one library:
+Building the benchmarks also requires additional libraries:
 
+- [asio](http://think-async.com/Asio) >= 1.14
 - [nanobench](https://github.com/martinus/nanobench) >= 4.3.0
 
 These dependencies are installed via vcpkg (a submodule of this project)
@@ -208,6 +209,8 @@ $ cmake --build build
 | `BUILD_TESTING` | Build the testing tree (`ON` by default) |
 | `CODE_COVERAGE` | Enable coverage reporting |
 | `GENERATE_DOXYGEN` | Generate Doxygen documentation from comments |
+| `SPLIT_DEBUG` | Separate symbols for faster debug builds (not used by MSVC) (`ON` by default) |
+| `USE_PCH` | Use pre-compiled headers for faster incremental builds (`ON` by default) |
 | `WERROR` | Treat all warnings as errors (`ON` by default) |
 
 > **NOTE:**
@@ -221,10 +224,6 @@ $ cmake --build build
 
 To build the tests, make sure your build environment is set up. Also make sure that the
 `BUILD_TESTING` option is set in your `CMakeCache.txt`.
-
-> **NOTE:** The test server will have to be running for the tests to succeed. You could run it in a
-> separate terminal session, or add `tests/test_server & ` at the beginning of the `ctest` command
-> below. The tests will successfully kill the server on completion.
 
 From the project _build_ directory run:
 

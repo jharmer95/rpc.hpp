@@ -37,7 +37,9 @@
 #ifndef RPC_ADAPTERS_BITSERY_HPP
 #define RPC_ADAPTERS_BITSERY_HPP
 
-#include "../rpc.hpp"
+#include "../impl/adapters/adapter_base.hpp"
+#include "../impl/adapters/serializer.hpp"
+#include "../impl/rpc_object.hpp"
 
 #include <bitsery/bitsery.h>
 #include <bitsery/adapter/buffer.h>
@@ -301,7 +303,7 @@ namespace detail_bitsery
         }
 
     private:
-        using config = typename serial_adapter::config;
+        using config = serial_adapter::config;
         using output_adapter = bitsery::OutputBufferAdapter<std::vector<uint8_t>>;
 
         void flush()
@@ -428,7 +430,7 @@ namespace detail_bitsery
         }
 
     private:
-        using config = typename serial_adapter::config;
+        using config = serial_adapter::config;
         using input_adapter = bitsery::InputBufferAdapter<std::vector<uint8_t>>;
 
         const std::vector<uint8_t>& m_bytes;

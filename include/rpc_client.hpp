@@ -1,7 +1,13 @@
 #ifndef RPC_CLIENT_HPP
 #define RPC_CLIENT_HPP
 
-#include "rpc.hpp"
+#include "impl/detail/exec_func.hpp"
+#include "impl/detail/for_each.hpp"
+#include "impl/detail/macros.hpp"
+#include "impl/detail/rpc_types.hpp"
+#include "impl/detail/traits.hpp"
+#include "impl/rpc_exceptions.hpp"
+#include "impl/rpc_object.hpp"
 
 #include <exception>
 #include <string>

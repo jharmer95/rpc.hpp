@@ -50,7 +50,6 @@ if(NOT TARGET doctest_lib)
 endif()
 
 add_executable(rpc_test)
-target_compile_options(rpc_test PRIVATE -Wno-global-constructors)
 target_link_libraries(rpc_test PRIVATE rpc_hpp doctest_lib Threads::Threads)
 target_sources(
   rpc_test
