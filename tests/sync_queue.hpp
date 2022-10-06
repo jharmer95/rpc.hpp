@@ -1,10 +1,12 @@
 #pragma once
 
 #include <atomic>
+#include <chrono>
 #include <cstddef>
 #include <mutex>
 #include <optional>
 #include <queue>
+#include <thread>
 #include <utility>
 
 namespace rpc_hpp::tests
@@ -19,7 +21,7 @@ public:
 
     void push(const T& val)
     {
-        if (!m_active)
+        if (!m_active.load())
         {
             return;
         }
@@ -30,7 +32,7 @@ public:
 
     void push(T&& val)
     {
-        if (!m_active)
+        if (!m_active.load())
         {
             return;
         }
@@ -49,6 +51,7 @@ public:
         while (wait && m_mesg_queue.empty())
         {
             // TODO: Use condition variable
+            std::this_thread::sleep_for(std::chrono::milliseconds{ 3 });
         }
 
         auto lck = std::scoped_lock<std::mutex>{ m_mtx };
