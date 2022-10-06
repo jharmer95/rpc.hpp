@@ -148,8 +148,9 @@ public:
 
     void Stop()
     {
-        m_running = false;
+        m_running.store(false);
         m_p_message_queue->deactivate();
+        m_p_client_queue.lock()->deactivate();
     }
 
 private:

@@ -3,7 +3,6 @@
 #include <atomic>
 #include <chrono>
 #include <cstddef>
-#include <mutex>
 #include <optional>
 #include <queue>
 #include <thread>
@@ -26,8 +25,8 @@ public:
             return;
         }
 
-        auto lck = std::scoped_lock<std::mutex>{ m_mtx };
         m_mesg_queue.push(val);
+        m_in_use.store(true);
     }
 
     void push(T&& val)
@@ -37,26 +36,31 @@ public:
             return;
         }
 
-        auto lck = std::scoped_lock<std::mutex>{ m_mtx };
         m_mesg_queue.push(std::move(val));
+        m_in_use.store(true);
     }
 
-    std::optional<T> pop(const bool wait = true)
+    std::optional<T> pop()
     {
-        if ((!m_active) || ((!wait) && m_mesg_queue.empty()))
+        while (m_active.load() && !m_in_use.load())
+        {
+            // TODO: Use condition variable
+            std::this_thread::sleep_for(std::chrono::milliseconds{ 1 });
+        }
+
+        if (!m_active.load())
         {
             return std::nullopt;
         }
 
-        while (wait && m_mesg_queue.empty())
-        {
-            // TODO: Use condition variable
-            std::this_thread::sleep_for(std::chrono::milliseconds{ 3 });
-        }
-
-        auto lck = std::scoped_lock<std::mutex>{ m_mtx };
         T val = m_mesg_queue.front();
         m_mesg_queue.pop();
+
+        if (empty())
+        {
+            m_in_use.store(false);
+        }
+
         return val;
     }
 
@@ -65,7 +69,7 @@ public:
 
 private:
     std::atomic<bool> m_active{ false };
-    mutable std::mutex m_mtx{};
+    std::atomic<bool> m_in_use{ false };
     std::queue<T> m_mesg_queue{};
 };
 } //namespace rpc_hpp::tests

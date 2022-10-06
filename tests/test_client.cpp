@@ -650,7 +650,7 @@ TEST_CASE("KillServer")
         std::ignore = client.call_func("KillServer");
     };
 
-    WARN_NOTHROW(kill_server());
+    REQUIRE_THROWS_AS(kill_server(), rpc_hpp::client_receive_error);
     REQUIRE_THROWS_AS(bad_call(), rpc_hpp::client_receive_error);
 }
 } //namespace rpc_hpp::tests

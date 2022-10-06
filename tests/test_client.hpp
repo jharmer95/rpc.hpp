@@ -78,7 +78,7 @@ public:
     void send(bytes_t&& mesg) override { m_p_server_queue.lock()->push(std::move(mesg)); }
     [[nodiscard]] bytes_t receive() override
     {
-        if (m_p_server_queue.expired() || (!m_p_server_queue.lock()->is_active()))
+        if (m_p_server_queue.expired())
         {
             throw client_receive_error{ "Server is deactivated" };
         }
