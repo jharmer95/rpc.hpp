@@ -39,12 +39,6 @@
 #include "test_server.hpp"
 #include "static_funcs.hpp"
 
-#if defined(RPC_HPP_ENABLE_BITSERY)
-constexpr size_t rpc_hpp::adapters::bitsery_adapter::config::max_func_name_size = 30;
-constexpr size_t rpc_hpp::adapters::bitsery_adapter::config::max_string_size = 2'048;
-constexpr size_t rpc_hpp::adapters::bitsery_adapter::config::max_container_size = 1'000;
-#endif
-
 #include <algorithm>
 #include <array>
 #include <cctype>
@@ -397,31 +391,37 @@ static void BindFuncs(TestServer<Serial>& server)
 }
 
 template<typename Serial>
-static std::unique_ptr<TestServer<Serial>> CreateServer()
+std::shared_ptr<TestServer<Serial>> GetServer()
 {
-    auto p_server = std::make_unique<TestServer<Serial>>();
-    BindFuncs(*p_server);
-    std::thread{ &TestServer<Serial>::Run, p_server.get() }.detach();
+    static std::shared_ptr<TestServer<Serial>> p_server{};
+
+    if (!p_server)
+    {
+        p_server = std::make_shared<TestServer<Serial>>();
+        BindFuncs(*p_server);
+        std::thread{ &TestServer<Serial>::Run, p_server.get() }.detach();
+        std::this_thread::sleep_for(std::chrono::milliseconds{ 1 });
+    }
+
     return p_server;
 }
 
 #if defined(RPC_HPP_ENABLE_NJSON)
-std::unique_ptr<TestServer<adapters::njson_adapter>> njson_server =
-    CreateServer<adapters::njson_adapter>();
+template std::shared_ptr<TestServer<adapters::njson_adapter>> GetServer<adapters::njson_adapter>();
 #endif
 
 #if defined(RPC_HPP_ENABLE_RAPIDJSON)
-std::unique_ptr<TestServer<adapters::rapidjson_adapter>> rapidjson_server =
-    CreateServer<adapters::rapidjson_adapter>();
+template std::shared_ptr<TestServer<adapters::rapidjson_adapter>> GetServer<
+    adapters::rapidjson_adapter>();
 #endif
 
 #if defined(RPC_HPP_ENABLE_BOOST_JSON)
-std::unique_ptr<TestServer<adapters::boost_json_adapter>> boost_json_server =
-    CreateServer<adapters::boost_json_adapter>();
+template std::shared_ptr<TestServer<adapters::boost_json_adapter>> GetServer<
+    adapters::boost_json_adapter>();
 #endif
 
 #if defined(RPC_HPP_ENABLE_BITSERY)
-std::unique_ptr<TestServer<adapters::bitsery_adapter>> bitsery_server =
-    CreateServer<adapters::bitsery_adapter>();
+template std::shared_ptr<TestServer<adapters::bitsery_adapter>> GetServer<
+    adapters::bitsery_adapter>();
 #endif
 } //namespace rpc_hpp::tests

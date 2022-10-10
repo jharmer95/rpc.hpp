@@ -68,9 +68,9 @@ class TestClient final : public rpc_hpp::client_interface<Serial>
 public:
     using bytes_t = typename Serial::bytes_t;
 
-    explicit TestClient(TestServer<Serial>& server)
+    explicit TestClient(std::shared_ptr<TestServer<Serial>> server)
         : m_p_message_queue{ std::make_shared<SyncQueue<bytes_t>>() },
-          m_p_server_queue(server.attach_client(m_p_message_queue))
+          m_p_server_queue(server->attach_client(m_p_message_queue))
     {
         m_p_message_queue->activate();
     }
@@ -99,5 +99,15 @@ private:
 };
 
 template<typename Serial>
-static TestClient<Serial>& GetClient();
+std::shared_ptr<TestClient<Serial>> GetClient()
+{
+    static std::shared_ptr<TestClient<Serial>> p_client{};
+
+    if (!p_client)
+    {
+        p_client = std::make_shared<TestClient<Serial>>(GetServer<Serial>());
+    }
+
+    return p_client;
+}
 } //namespace rpc_hpp::tests

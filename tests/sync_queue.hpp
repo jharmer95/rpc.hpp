@@ -2,7 +2,9 @@
 
 #include <atomic>
 #include <chrono>
+#include <condition_variable>
 #include <cstddef>
+#include <mutex>
 #include <optional>
 #include <queue>
 #include <thread>
@@ -15,61 +17,72 @@ class SyncQueue
 {
 public:
     void activate() { m_active.store(true); }
-    void deactivate() { m_active.store(false); }
+
+    void deactivate()
+    {
+        m_active.store(false);
+        m_cv.notify_all();
+    }
+
     [[nodiscard]] bool is_active() const { return m_active.load(); }
 
     void push(const T& val)
     {
-        if (!m_active.load())
+        if (!is_active())
         {
             return;
         }
 
-        m_mesg_queue.push(val);
-        m_in_use.store(true);
+        {
+            auto lock = std::unique_lock{ m_mtx };
+            m_mesg_queue.push(val);
+        }
+
+        m_cv.notify_one();
     }
 
     void push(T&& val)
     {
-        if (!m_active.load())
+        if (!is_active())
         {
             return;
         }
 
-        m_mesg_queue.push(std::move(val));
-        m_in_use.store(true);
+        {
+            auto lock = std::unique_lock{ m_mtx };
+            m_mesg_queue.push(std::move(val));
+        }
+
+        m_cv.notify_one();
     }
 
     std::optional<T> pop()
     {
-        while (m_active.load() && !m_in_use.load())
+        if (is_active())
         {
-            // TODO: Use condition variable
-            std::this_thread::sleep_for(std::chrono::milliseconds{ 1 });
+            auto lock = std::unique_lock{ m_mtx };
+            m_cv.wait(lock, [this] { return !is_active() || !m_mesg_queue.empty(); });
+
+            if (is_active())
+            {
+                T val = m_mesg_queue.front();
+                m_mesg_queue.pop();
+                lock.unlock();
+                m_cv.notify_one();
+                return val;
+            }
         }
 
-        if (!m_active.load())
-        {
-            return std::nullopt;
-        }
-
-        T val = m_mesg_queue.front();
-        m_mesg_queue.pop();
-
-        if (empty())
-        {
-            m_in_use.store(false);
-        }
-
-        return val;
+        return std::nullopt;
     }
 
     size_t size() const { return m_mesg_queue.size(); }
     [[nodiscard]] bool empty() const { return m_mesg_queue.empty(); }
 
 private:
-    std::atomic<bool> m_active{ false };
-    std::atomic<bool> m_in_use{ false };
+    mutable std::atomic<bool> m_active{ false };
+    mutable std::mutex m_mtx{};
+    mutable std::condition_variable m_cv{};
     std::queue<T> m_mesg_queue{};
 };
 } //namespace rpc_hpp::tests

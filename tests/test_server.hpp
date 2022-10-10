@@ -159,19 +159,6 @@ private:
     std::weak_ptr<SyncQueue<bytes_t>> m_p_client_queue{};
 };
 
-#if defined(RPC_HPP_ENABLE_NJSON)
-extern std::unique_ptr<TestServer<adapters::njson_adapter>> njson_server;
-#endif
-
-#if defined(RPC_HPP_ENABLE_RAPIDJSON)
-extern std::unique_ptr<TestServer<adapters::rapidjson_adapter>> rapidjson_server;
-#endif
-
-#if defined(RPC_HPP_ENABLE_BOOST_JSON)
-extern std::unique_ptr<TestServer<adapters::boost_json_adapter>> boost_json_server;
-#endif
-
-#if defined(RPC_HPP_ENABLE_BITSERY)
-extern std::unique_ptr<TestServer<adapters::bitsery_adapter>> bitsery_server;
-#endif
+template<typename Serial>
+std::shared_ptr<TestServer<Serial>> GetServer();
 } //namespace rpc_hpp::tests
