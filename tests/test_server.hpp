@@ -161,4 +161,24 @@ private:
 
 template<typename Serial>
 std::shared_ptr<TestServer<Serial>> GetServer();
+
+#if defined(RPC_HPP_ENABLE_NJSON)
+extern template std::shared_ptr<TestServer<adapters::njson_adapter>> GetServer<
+    adapters::njson_adapter>();
+#endif
+
+#if defined(RPC_HPP_ENABLE_RAPIDJSON)
+extern template std::shared_ptr<TestServer<adapters::rapidjson_adapter>> GetServer<
+    adapters::rapidjson_adapter>();
+#endif
+
+#if defined(RPC_HPP_ENABLE_BOOST_JSON)
+extern template std::shared_ptr<TestServer<adapters::boost_json_adapter>> GetServer<
+    adapters::boost_json_adapter>();
+#endif
+
+#if defined(RPC_HPP_ENABLE_BITSERY)
+extern template std::shared_ptr<TestServer<adapters::bitsery_adapter>> GetServer<
+    adapters::bitsery_adapter>();
+#endif
 } //namespace rpc_hpp::tests

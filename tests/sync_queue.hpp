@@ -34,7 +34,7 @@ public:
         }
 
         {
-            auto lock = std::unique_lock{ m_mtx };
+            auto lock = std::unique_lock<std::mutex>{ m_mtx };
             m_mesg_queue.push(val);
         }
 
@@ -49,7 +49,7 @@ public:
         }
 
         {
-            auto lock = std::unique_lock{ m_mtx };
+            auto lock = std::unique_lock<std::mutex>{ m_mtx };
             m_mesg_queue.push(std::move(val));
         }
 
@@ -60,7 +60,7 @@ public:
     {
         if (is_active())
         {
-            auto lock = std::unique_lock{ m_mtx };
+            auto lock = std::unique_lock<std::mutex>{ m_mtx };
             m_cv.wait(lock, [this] { return !is_active() || !m_mesg_queue.empty(); });
 
             if (is_active())
