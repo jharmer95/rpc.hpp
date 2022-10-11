@@ -48,8 +48,64 @@ endif()
 option(WERROR "Treat all warnings as errors" ON)
 option(SPLIT_DEBUG
        "Split debug information from the binary (has no effect for MSVC)" ON)
-option(CODE_COVERAGE "Enable coverage reporting" OFF)
 option(GENERATE_DOXYGEN "Generate Doxygen documentation from comments" OFF)
+
+
+if(NOT WIN32)
+  find_program(LD_GOLD_EXECUTABLE ld.gold)
+  find_program(LD_LLD_EXECUTABLE ld.lld)
+  find_program(LD_MOLD_EXECUTABLE ld.mold)
+
+  if(LD_GOLD_EXECUTABLE)
+    set(DEFAULT_LINKER "gold" CACHE STRING "Preferred linker to use in builds")
+  else()
+    set(DEFAULT_LINKER "bfd" CACHE STRING "Preferred linker to use in builds")
+  endif()
+
+  list(APPEND FOUND_LINKERS "bfd")
+  if(LD_GOLD_EXECUTABLE)
+    list(APPEND FOUND_LINKERS "gold")
+  endif()
+  if(LD_LLD_EXECUTABLE)
+    list(APPEND FOUND_LINKERS "lld")
+  endif()
+  if(LD_MOLD_EXECUTABLE)
+    list(APPEND FOUND_LINKERS "mold")
+  endif()
+
+  set_property(CACHE DEFAULT_LINKER PROPERTY STRINGS ${FOUND_LINKERS})
+endif()
+
+find_program(CCACHE_EXECUTABLE ccache)
+find_program(SCCACHE_EXECUTABLE sccache)
+
+if(SCCACHE_EXECUTABLE)
+  option(USE_SCCACHE "Utilize sccache for faster builds" ON)
+  
+  if(USE_SCCACHE)
+    set(CMAKE_CXX_COMPILER_LAUNCHER ${SCCACHE_EXECUTABLE})
+  endif()
+endif()
+
+if(CCACHE_EXECUTABLE)
+  if(SCCACHE_EXECUTABLE)  
+    option(USE_CCACHE "Utilize ccache for faster builds" OFF)
+  else()
+    option(USE_CCACHE "Utilize ccache for faster builds" ON)
+  endif()
+  
+  if(USE_CCACHE)
+    if(USE_SCCACHE)
+      message(FATAL_ERROR "USE_SCCACHE and USE_CCACHE are not compatible, choose at most one")
+    endif()
+    if(USE_PCH)
+      set(CCACHE_ENV CCACHE_SLOPPINESS=pch_defines,time_macros)
+    else()
+      set(CCACHE_ENV "")
+    endif()
+    set(CMAKE_CXX_COMPILER_LAUNCHER ${CMAKE_COMMAND} -E env ${CCACHE_ENV} ${CCACHE_EXECUTABLE})
+  endif()
+endif()
 
 option(BUILD_ADAPTER_BITSERY "Build the adapter for Bitsery" OFF)
 if(BUILD_ADAPTER_BITSERY)
@@ -107,12 +163,66 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-set(IS_DEBUG_BUILD (CMAKE_BUILD_TYPE STREQUAL "Debug"
-                    OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo"))
-set(IS_RELEASE_BUILD
-    (CMAKE_BUILD_TYPE STREQUAL "Release"
-     OR CMAKE_BUILD_TYPE STREQUAL "MinSizeRel"
-     OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo"))
+
+if(NOT WIN32)
+  add_link_options(-fuse-ld=${DEFAULT_LINKER})
+endif()
+
+# ==== Build Types ====
+
+get_property(IS_MULTI_CONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
+
+if(IS_MULTI_CONFIG)
+  if(NOT "Coverage" IN_LIST CMAKE_CONFIGURATION_TYPES)
+    list(APPEND CMAKE_CONFIGURATION_TYPES Coverage)
+  endif()
+  if(NOT "ASAN" IN_LIST CMAKE_CONFIGURATION_TYPES)
+    list(APPEND CMAKE_CONFIGURATION_TYPES ASAN)
+  endif()
+  if(NOT "TSAN" IN_LIST CMAKE_CONFIGURATION_TYPES)
+    list(APPEND CMAKE_CONFIGURATION_TYPES TSAN)
+  endif()
+else()
+  set(ALLOWED_BUILD_TYPES Debug Release MinSizeRel RelWithDebInfo Coverage ASAN TSAN)
+  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "${ALLOWED_BUILD_TYPES}")
+  if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Debug)
+  elseif(NOT CMAKE_BUILD_TYPE IN_LIST ALLOWED_BUILD_TYPES)
+    message(FATAL_ERROR "Unknown BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
+  endif()
+endif()
+
+if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+  set(GCC_COVERAGE_FLAGS "${CMAKE_CXX_FLAGS_DEBUG} --coverage")
+  set(GCC_ASAN_FLAGS "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -fsanitize=address,leak,undefined -fno-omit-frame-pointer")
+  set(GCC_TSAN_FLAGS "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -fsanitize=thread,undefined")
+
+  set(CMAKE_CXX_FLAGS_COVERAGE ${GCC_COVERAGE_FLAGS} CACHE STRING "")
+  set(CMAKE_EXE_LINKER_FLAGS_COVERAGE ${GCC_COVERAGE_FLAGS} CACHE STRING "")
+  set(CMAKE_SHARED_LINKER_FLAGS_COVERAGE ${GCC_COVERAGE_FLAGS} CACHE STRING "")
+  set(CMAKE_STATIC_LINKER_FLAGS_COVERAGE "" CACHE STRING "")
+  set(CMAKE_MODULE_LINKER_FLAGS_COVERAGE ${GCC_COVERAGE_FLAGS} CACHE STRING "")
+
+  set(CMAKE_CXX_FLAGS_ASAN ${GCC_ASAN_FLAGS} CACHE STRING "")
+  set(CMAKE_EXE_LINKER_FLAGS_ASAN ${GCC_ASAN_FLAGS} CACHE STRING "")
+  set(CMAKE_SHARED_LINKER_FLAGS_ASAN ${GCC_ASAN_FLAGS} CACHE STRING "")
+  set(CMAKE_STATIC_LINKER_FLAGS_ASAN "" CACHE STRING "")
+  set(CMAKE_MODULE_LINKER_FLAGS_ASAN ${GCC_ASAN_FLAGS} CACHE STRING "")
+
+  set(CMAKE_CXX_FLAGS_TSAN ${GCC_TSAN_FLAGS} CACHE STRING "")
+  set(CMAKE_EXE_LINKER_FLAGS_TSAN ${GCC_TSAN_FLAGS} CACHE STRING "")
+  set(CMAKE_SHARED_LINKER_FLAGS_TSAN ${GCC_TSAN_FLAGS} CACHE STRING "")
+  set(CMAKE_STATIC_LINKER_FLAGS_TSAN "" CACHE STRING "")
+  set(CMAKE_MODULE_LINKER_FLAGS_TSAN ${GCC_TSAN_FLAGS} CACHE STRING "")
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+  set(MSVC_ASAN_FLAGS "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} /fsanitize=address")
+
+  set(CMAKE_CXX_FLAGS_ASAN ${MSVC_ASAN_FLAGS} CACHE STRING "")
+  set(CMAKE_EXE_LINKER_FLAGS_ASAN ${MSVC_ASAN_FLAGS} CACHE STRING "")
+  set(CMAKE_SHARED_LINKER_FLAGS_ASAN ${MSVC_ASAN_FLAGS} CACHE STRING "")
+  set(CMAKE_STATIC_LINKER_FLAGS_ASAN "" CACHE STRING "")
+  set(CMAKE_MODULE_LINKER_FLAGS_ASAN ${MSVC_ASAN_FLAGS} CACHE STRING "")
+endif()
 
 # ==== Machine/Compiler Configs ====
 
@@ -261,19 +371,6 @@ if(${GENERATE_DOXYGEN})
   endif()
 endif()
 
-# ==== Code Coverage ====
-
-add_library(coverage_config INTERFACE)
-
-if(CODE_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-  target_compile_options(coverage_config INTERFACE -O0 -g --coverage)
-  if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.13)
-    target_link_options(coverage_config INTERFACE --coverage)
-  else()
-    target_link_libraries(coverage_config INTERFACE --coverage)
-  endif()
-endif()
-
 # ==== Target(s) ====
 
 add_library(rpc_hpp INTERFACE)
@@ -282,10 +379,12 @@ add_library(RpcHpp::rpc_hpp ALIAS rpc_hpp)
 include(GNUInstallDirs)
 target_compile_features(rpc_hpp INTERFACE cxx_std_17)
 if(NOT CXX_MSVC)
-  if(SPLIT_DEBUG AND IS_DEBUG_BUILD)
+  if(SPLIT_DEBUG AND NOT CMAKE_BUILD_TYPE MATCHES "MinSizeRel|Release")
     target_compile_options(rpc_hpp INTERFACE -gsplit-dwarf)
-    #target_link_options(rpc_hpp INTERFACE "LINKER:--gdb-index")
-  elseif(IS_RELEASE_BUILD)
+    if(NOT DEFAULT_LINKER STREQUAL "bfd")
+      target_link_options(rpc_hpp INTERFACE "LINKER:--gdb-index")
+    endif()
+  else()
     target_link_options(rpc_hpp INTERFACE "LINKER:--as-needed,--no-undefined")
   endif()
 endif()

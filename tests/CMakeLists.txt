@@ -88,10 +88,6 @@ if(${BUILD_ADAPTER_RAPIDJSON})
   target_sources(rpc_test PRIVATE ../include/rpc_adapters/rpc_rapidjson.hpp)
 endif()
 
-if(CODE_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-  target_link_libraries(rpc_test PRIVATE coverage_config)
-endif()
-
 target_compile_options(rpc_test PRIVATE ${FULL_WARNING})
 doctest_discover_tests(rpc_test ADD_LABELS 0)
 
