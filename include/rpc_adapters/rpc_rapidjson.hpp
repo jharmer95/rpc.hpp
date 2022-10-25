@@ -56,10 +56,6 @@
 #include <type_traits>
 #include <utility>
 
-#ifdef _MSC_VER
-#  undef GetObject
-#endif
-
 namespace rpc_hpp::adapters
 {
 namespace detail_rapidjson
@@ -79,57 +75,63 @@ namespace detail_rapidjson
     class serial_adapter : public serial_adapter_base<adapter_impl>
     {
     public:
-        [[nodiscard]] static serial_t from_bytes(bytes_t&& bytes);
-        [[nodiscard]] static bytes_t to_bytes(const serial_t& serial_obj);
-        [[nodiscard]] static bytes_t to_bytes(serial_t&& serial_obj);
-        [[nodiscard]] static std::string get_func_name(const serial_t& serial_obj);
-        [[nodiscard]] static rpc_type get_type(const serial_t& serial_obj);
+        [[nodiscard]] static auto from_bytes(bytes_t&& bytes) -> serial_t;
+        [[nodiscard]] static auto to_bytes(const serial_t& serial_obj) -> bytes_t;
+        [[nodiscard]] static auto to_bytes(serial_t&& serial_obj) -> bytes_t;
+        [[nodiscard]] static auto get_func_name(const serial_t& serial_obj) -> std::string;
+        [[nodiscard]] static auto get_type(const serial_t& serial_obj) -> rpc_type;
 
         template<bool IsCallback, typename R>
-        [[nodiscard]] static detail::rpc_result<IsCallback, R> get_result(
-            const serial_t& serial_obj);
+        [[nodiscard]] static auto get_result(const serial_t& serial_obj)
+            -> detail::rpc_result<IsCallback, R>;
 
         template<bool IsCallback, typename R>
-        [[nodiscard]] static serial_t serialize_result(
-            const detail::rpc_result<IsCallback, R>& result);
+        [[nodiscard]] static auto serialize_result(const detail::rpc_result<IsCallback, R>& result)
+            -> serial_t;
 
         template<bool IsCallback, typename R, typename... Args>
-        [[nodiscard]] static detail::rpc_result_w_bind<IsCallback, R, Args...> get_result_w_bind(
-            const serial_t& serial_obj);
+        [[nodiscard]] static auto get_result_w_bind(const serial_t& serial_obj)
+            -> detail::rpc_result_w_bind<IsCallback, R, Args...>;
 
         template<bool IsCallback, typename R, typename... Args>
-        [[nodiscard]] static serial_t serialize_result_w_bind(
-            const detail::rpc_result_w_bind<IsCallback, R, Args...>& result);
+        [[nodiscard]] static auto serialize_result_w_bind(
+            const detail::rpc_result_w_bind<IsCallback, R, Args...>& result) -> serial_t;
 
         template<bool IsCallback, typename... Args>
-        [[nodiscard]] static detail::rpc_request<IsCallback, Args...> get_request(
-            const serial_t& serial_obj);
+        [[nodiscard]] static auto get_request(const serial_t& serial_obj)
+            -> detail::rpc_request<IsCallback, Args...>;
 
         template<bool IsCallback, typename... Args>
-        [[nodiscard]] static serial_t serialize_request(
-            const detail::rpc_request<IsCallback, Args...>& request);
+        [[nodiscard]] static auto serialize_request(
+            const detail::rpc_request<IsCallback, Args...>& request) -> serial_t;
 
         template<bool IsCallback>
-        [[nodiscard]] static detail::rpc_error<IsCallback> get_error(const serial_t& serial_obj);
+        [[nodiscard]] static auto get_error(const serial_t& serial_obj)
+            -> detail::rpc_error<IsCallback>;
 
         template<bool IsCallback>
-        [[nodiscard]] static serial_t serialize_error(const detail::rpc_error<IsCallback>& error);
+        [[nodiscard]] static auto serialize_error(const detail::rpc_error<IsCallback>& error)
+            -> serial_t;
 
-        [[nodiscard]] static callback_install_request get_callback_install(
-            const serial_t& serial_obj);
+        [[nodiscard]] static auto get_callback_install(const serial_t& serial_obj)
+            -> callback_install_request;
 
-        [[nodiscard]] static serial_t serialize_callback_install(
-            const callback_install_request& callback_req);
+        [[nodiscard]] static auto serialize_callback_install(
+            const callback_install_request& callback_req) -> serial_t;
 
-        [[nodiscard]] static bool has_bound_args(const serial_t& serial_obj);
+        [[nodiscard]] static auto has_bound_args(const serial_t& serial_obj) -> bool;
     };
 
     class serializer : public serializer_base<serial_adapter, false>
     {
     public:
         serializer() noexcept = default;
-        [[nodiscard]] const rapidjson::Document& object() const& noexcept { return m_json; }
-        [[nodiscard]] rapidjson::Document&& object() && noexcept { return std::move(m_json); }
+
+        [[nodiscard]] auto object() const& noexcept -> const rapidjson::Document& { return m_json; }
+        [[nodiscard]] auto object() && noexcept -> rapidjson::Document&&
+        {
+            return std::move(m_json);
+        }
 
         template<typename T>
         void as_bool(const std::string_view key, const T& val)
@@ -239,11 +241,12 @@ namespace detail_rapidjson
         void as_tuple(const std::string_view key, const std::pair<T1, T2>& val)
         {
             auto& obj = subobject(key).SetObject();
-            serializer ser{};
-            ser.serialize_object(val.first);
-            obj.AddMember("first", std::move(ser).object(), allocator());
-            ser.serialize_object(val.second);
-            obj.AddMember("second", std::move(ser).object(), allocator());
+            serializer ser1{};
+            ser1.serialize_object(val.first);
+            obj.AddMember("first", std::move(ser1).object(), allocator());
+            serializer ser2{};
+            ser2.serialize_object(val.second);
+            obj.AddMember("second", std::move(ser2).object(), allocator());
         }
 
         template<typename... Args>
@@ -276,7 +279,7 @@ namespace detail_rapidjson
         }
 
     private:
-        [[nodiscard]] rapidjson::Value& subobject(const std::string_view key)
+        [[nodiscard]] auto subobject(const std::string_view key) -> rapidjson::Value&
         {
             if (key.empty())
             {
@@ -296,7 +299,7 @@ namespace detail_rapidjson
         }
 
         template<typename K>
-        [[nodiscard]] std::string key_string(const K& key_val)
+        [[nodiscard]] auto key_string(const K& key_val) -> std::string
         {
             serializer ser{};
             ser.serialize_object(key_val);
@@ -324,7 +327,7 @@ namespace detail_rapidjson
             obj_arr.PushBack(std::move(tmp), alloc);
         }
 
-        [[nodiscard]] rapidjson::MemoryPoolAllocator<>& allocator()
+        [[nodiscard]] auto allocator() -> rapidjson::MemoryPoolAllocator<>&
         {
             return m_json.GetAllocator();
         }
@@ -421,7 +424,7 @@ namespace detail_rapidjson
         template<typename T>
         void as_map(const std::string_view key, T& val) const
         {
-            const auto& obj = subobject(key).GetObject();
+            const auto& obj = subobject(key).GetObj();
             const auto mem_end = obj.MemberEnd();
 
             for (auto it = obj.MemberBegin(); it != mem_end; ++it)
@@ -436,7 +439,7 @@ namespace detail_rapidjson
         template<typename T>
         void as_multimap(const std::string_view key, T& val) const
         {
-            const auto& obj = subobject(key).GetObject();
+            const auto& obj = subobject(key).GetObj();
             const auto mem_end = obj.MemberEnd();
 
             for (auto it = obj.MemberBegin(); it != mem_end; ++it)
@@ -456,7 +459,7 @@ namespace detail_rapidjson
         template<typename T1, typename T2>
         void as_tuple(const std::string_view key, std::pair<T1, T2>& val) const
         {
-            const auto& obj = subobject(key).GetObject();
+            const auto& obj = subobject(key).GetObj();
             val.first = parse_arg<T1>(obj["first"]);
             val.second = parse_arg<T2>(obj["second"]);
         }
@@ -488,7 +491,7 @@ namespace detail_rapidjson
         }
 
     private:
-        [[nodiscard]] const rapidjson::Value& subobject(const std::string_view key) const
+        [[nodiscard]] auto subobject(const std::string_view key) const -> const rapidjson::Value&
         {
             if (key.empty())
             {
@@ -500,7 +503,7 @@ namespace detail_rapidjson
 
         template<typename T>
         RPC_HPP_NODISCARD("this function is pointless without checking the bool")
-        static constexpr bool validate_arg(const rapidjson::Value& arg) noexcept
+        static constexpr auto validate_arg(const rapidjson::Value& arg) noexcept -> bool
         {
             if constexpr (detail::is_optional_v<T>)
             {
@@ -562,8 +565,8 @@ namespace detail_rapidjson
         }
 
         // nodiscard because expect_type is consumed by the function
-        [[nodiscard]] static std::string mismatch_message(
-            std::string&& expect_type, const rapidjson::Value& obj)
+        [[nodiscard]] static auto mismatch_message(
+            std::string&& expect_type, const rapidjson::Value& obj) -> std::string
         {
             const auto get_type_str = [&obj]() noexcept
             {
@@ -632,7 +635,8 @@ namespace detail_rapidjson
         template<typename T>
         RPC_HPP_NODISCARD(
             "parsing can be expensive, and it makes no sense to not use the parsed result")
-        static detail::remove_cvref_t<detail::decay_str_t<T>> parse_arg(const rapidjson::Value& arg)
+        static auto parse_arg(const rapidjson::Value& arg)
+            -> detail::remove_cvref_t<detail::decay_str_t<T>>
         {
             using no_ref_t = detail::remove_cvref_t<detail::decay_str_t<T>>;
 
@@ -650,8 +654,8 @@ namespace detail_rapidjson
         template<typename T>
         RPC_HPP_NODISCARD(
             "parsing can be expensive, and it makes no sense to not use the parsed result")
-        static detail::remove_cvref_t<detail::decay_str_t<T>> parse_args(
-            const rapidjson::Value& arg_arr, rapidjson::SizeType& index)
+        static auto parse_args(const rapidjson::Value& arg_arr, rapidjson::SizeType& index)
+            -> detail::remove_cvref_t<detail::decay_str_t<T>>
         {
             if (!arg_arr.IsArray())
             {
@@ -671,7 +675,7 @@ namespace detail_rapidjson
         }
 
         template<typename T>
-        static T yield_value(const rapidjson::Value& val)
+        static auto yield_value(const rapidjson::Value& val) -> T
         {
             if constexpr (std::is_floating_point_v<T>)
             {
@@ -711,7 +715,7 @@ namespace detail_rapidjson
         const rapidjson::Value& m_json;
     };
 
-    inline rapidjson::Document serial_adapter::from_bytes(std::string&& bytes)
+    inline auto serial_adapter::from_bytes(std::string&& bytes) -> rapidjson::Document
     {
         rapidjson::Document doc{};
         doc.SetObject();
@@ -731,7 +735,7 @@ namespace detail_rapidjson
         return doc;
     }
 
-    inline std::string serial_adapter::to_bytes(const rapidjson::Document& serial_obj)
+    inline auto serial_adapter::to_bytes(const rapidjson::Document& serial_obj) -> std::string
     {
         rapidjson::StringBuffer buffer{};
         rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
@@ -739,7 +743,7 @@ namespace detail_rapidjson
         return buffer.GetString();
     }
 
-    inline std::string serial_adapter::to_bytes(rapidjson::Document&& serial_obj)
+    inline auto serial_adapter::to_bytes(rapidjson::Document&& serial_obj) -> std::string
     {
         rapidjson::StringBuffer buffer{};
         rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
@@ -747,19 +751,19 @@ namespace detail_rapidjson
         return buffer.GetString();
     }
 
-    inline std::string serial_adapter::get_func_name(const rapidjson::Document& serial_obj)
+    inline auto serial_adapter::get_func_name(const rapidjson::Document& serial_obj) -> std::string
     {
         return serial_obj["func_name"].GetString();
     }
 
-    inline rpc_type serial_adapter::get_type(const rapidjson::Document& serial_obj)
+    inline auto serial_adapter::get_type(const rapidjson::Document& serial_obj) -> rpc_type
     {
         return static_cast<rpc_type>(serial_obj["type"].GetInt());
     }
 
     template<bool IsCallback, typename R>
-    detail::rpc_result<IsCallback, R> serial_adapter::get_result(
-        const rapidjson::Document& serial_obj)
+    auto serial_adapter::get_result(const rapidjson::Document& serial_obj)
+        -> detail::rpc_result<IsCallback, R>
     {
         RPC_HPP_PRECONDITION(
             (IsCallback
@@ -774,8 +778,8 @@ namespace detail_rapidjson
     }
 
     template<bool IsCallback, typename R>
-    rapidjson::Document serial_adapter::serialize_result(
-        const detail::rpc_result<IsCallback, R>& result)
+    auto serial_adapter::serialize_result(const detail::rpc_result<IsCallback, R>& result)
+        -> rapidjson::Document
     {
         serializer ser{};
         ser.serialize_object(result);
@@ -783,8 +787,8 @@ namespace detail_rapidjson
     }
 
     template<bool IsCallback, typename R, typename... Args>
-    detail::rpc_result_w_bind<IsCallback, R, Args...> serial_adapter::get_result_w_bind(
-        const rapidjson::Document& serial_obj)
+    auto serial_adapter::get_result_w_bind(const rapidjson::Document& serial_obj)
+        -> detail::rpc_result_w_bind<IsCallback, R, Args...>
     {
         RPC_HPP_PRECONDITION((IsCallback
                                  && static_cast<rpc_type>(serial_obj["type"].GetInt())
@@ -800,8 +804,8 @@ namespace detail_rapidjson
     }
 
     template<bool IsCallback, typename R, typename... Args>
-    rapidjson::Document serial_adapter::serialize_result_w_bind(
-        const detail::rpc_result_w_bind<IsCallback, R, Args...>& result)
+    auto serial_adapter::serialize_result_w_bind(
+        const detail::rpc_result_w_bind<IsCallback, R, Args...>& result) -> rapidjson::Document
     {
         serializer ser{};
         ser.serialize_object(result);
@@ -809,8 +813,8 @@ namespace detail_rapidjson
     }
 
     template<bool IsCallback, typename... Args>
-    detail::rpc_request<IsCallback, Args...> serial_adapter::get_request(
-        const rapidjson::Document& serial_obj)
+    auto serial_adapter::get_request(const rapidjson::Document& serial_obj)
+        -> detail::rpc_request<IsCallback, Args...>
     {
         RPC_HPP_PRECONDITION(
             (IsCallback
@@ -829,8 +833,8 @@ namespace detail_rapidjson
     }
 
     template<bool IsCallback, typename... Args>
-    rapidjson::Document serial_adapter::serialize_request(
-        const detail::rpc_request<IsCallback, Args...>& request)
+    auto serial_adapter::serialize_request(const detail::rpc_request<IsCallback, Args...>& request)
+        -> rapidjson::Document
     {
         serializer ser{};
         ser.serialize_object(request);
@@ -838,7 +842,8 @@ namespace detail_rapidjson
     }
 
     template<bool IsCallback>
-    detail::rpc_error<IsCallback> serial_adapter::get_error(const rapidjson::Document& serial_obj)
+    auto serial_adapter::get_error(const rapidjson::Document& serial_obj)
+        -> detail::rpc_error<IsCallback>
     {
         RPC_HPP_PRECONDITION(
             (IsCallback
@@ -853,15 +858,16 @@ namespace detail_rapidjson
     }
 
     template<bool IsCallback>
-    rapidjson::Document serial_adapter::serialize_error(const detail::rpc_error<IsCallback>& error)
+    auto serial_adapter::serialize_error(const detail::rpc_error<IsCallback>& error)
+        -> rapidjson::Document
     {
         serializer ser{};
         ser.serialize_object(error);
         return std::move(ser).object();
     }
 
-    inline callback_install_request serial_adapter::get_callback_install(
-        const rapidjson::Document& serial_obj)
+    inline auto serial_adapter::get_callback_install(const rapidjson::Document& serial_obj)
+        -> callback_install_request
     {
         RPC_HPP_PRECONDITION(static_cast<rpc_type>(serial_obj["type"].GetInt())
             == rpc_type::callback_install_request);
@@ -872,15 +878,15 @@ namespace detail_rapidjson
         return cbk_req;
     }
 
-    inline rapidjson::Document serial_adapter::serialize_callback_install(
-        const callback_install_request& callback_req)
+    inline auto serial_adapter::serialize_callback_install(
+        const callback_install_request& callback_req) -> rapidjson::Document
     {
         serializer ser{};
         ser.serialize_object(callback_req);
         return std::move(ser).object();
     }
 
-    inline bool serial_adapter::has_bound_args(const rapidjson::Document& serial_obj)
+    inline auto serial_adapter::has_bound_args(const rapidjson::Document& serial_obj) -> bool
     {
         return serial_obj["bind_args"].GetBool();
     }

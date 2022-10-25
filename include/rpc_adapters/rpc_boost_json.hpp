@@ -72,49 +72,51 @@ namespace detail_boost_json
     class serial_adapter : public serial_adapter_base<adapter_impl>
     {
     public:
-        [[nodiscard]] static serial_t from_bytes(bytes_t&& bytes);
-        [[nodiscard]] static bytes_t to_bytes(const serial_t& serial_obj);
-        [[nodiscard]] static bytes_t to_bytes(serial_t&& serial_obj);
-        [[nodiscard]] static std::string get_func_name(const serial_t& serial_obj);
-        [[nodiscard]] static rpc_type get_type(const serial_t& serial_obj);
+        [[nodiscard]] static auto from_bytes(bytes_t&& bytes) -> serial_t;
+        [[nodiscard]] static auto to_bytes(const serial_t& serial_obj) -> bytes_t;
+        [[nodiscard]] static auto to_bytes(serial_t&& serial_obj) -> bytes_t;
+        [[nodiscard]] static auto get_func_name(const serial_t& serial_obj) -> std::string;
+        [[nodiscard]] static auto get_type(const serial_t& serial_obj) -> rpc_type;
 
         template<bool IsCallback, typename R>
-        [[nodiscard]] static detail::rpc_result<IsCallback, R> get_result(
-            const serial_t& serial_obj);
+        [[nodiscard]] static auto get_result(const serial_t& serial_obj)
+            -> detail::rpc_result<IsCallback, R>;
 
         template<bool IsCallback, typename R>
-        [[nodiscard]] static serial_t serialize_result(
-            const detail::rpc_result<IsCallback, R>& result);
+        [[nodiscard]] static auto serialize_result(const detail::rpc_result<IsCallback, R>& result)
+            -> serial_t;
 
         template<bool IsCallback, typename R, typename... Args>
-        [[nodiscard]] static detail::rpc_result_w_bind<IsCallback, R, Args...> get_result_w_bind(
-            const serial_t& serial_obj);
+        [[nodiscard]] static auto get_result_w_bind(const serial_t& serial_obj)
+            -> detail::rpc_result_w_bind<IsCallback, R, Args...>;
 
         template<bool IsCallback, typename R, typename... Args>
-        [[nodiscard]] static serial_t serialize_result_w_bind(
-            const detail::rpc_result_w_bind<IsCallback, R, Args...>& result);
+        [[nodiscard]] static auto serialize_result_w_bind(
+            const detail::rpc_result_w_bind<IsCallback, R, Args...>& result) -> serial_t;
 
         template<bool IsCallback, typename... Args>
-        [[nodiscard]] static detail::rpc_request<IsCallback, Args...> get_request(
-            const serial_t& serial_obj);
+        [[nodiscard]] static auto get_request(const serial_t& serial_obj)
+            -> detail::rpc_request<IsCallback, Args...>;
 
         template<bool IsCallback, typename... Args>
-        [[nodiscard]] static serial_t serialize_request(
-            const detail::rpc_request<IsCallback, Args...>& request);
+        [[nodiscard]] static auto serialize_request(
+            const detail::rpc_request<IsCallback, Args...>& request) -> serial_t;
 
         template<bool IsCallback>
-        [[nodiscard]] static detail::rpc_error<IsCallback> get_error(const serial_t& serial_obj);
+        [[nodiscard]] static auto get_error(const serial_t& serial_obj)
+            -> detail::rpc_error<IsCallback>;
 
         template<bool IsCallback>
-        [[nodiscard]] static serial_t serialize_error(const detail::rpc_error<IsCallback>& error);
+        [[nodiscard]] static auto serialize_error(const detail::rpc_error<IsCallback>& error)
+            -> serial_t;
 
-        [[nodiscard]] static callback_install_request get_callback_install(
-            const serial_t& serial_obj);
+        [[nodiscard]] static auto get_callback_install(const serial_t& serial_obj)
+            -> callback_install_request;
 
-        [[nodiscard]] static serial_t serialize_callback_install(
-            const callback_install_request& callback_req);
+        [[nodiscard]] static auto serialize_callback_install(
+            const callback_install_request& callback_req) -> serial_t;
 
-        [[nodiscard]] static bool has_bound_args(const serial_t& serial_obj);
+        [[nodiscard]] static auto has_bound_args(const serial_t& serial_obj) -> bool;
     };
 
     class serializer : public serializer_base<serial_adapter, false>
@@ -122,8 +124,11 @@ namespace detail_boost_json
     public:
         serializer() noexcept { m_json.emplace_object(); }
 
-        [[nodiscard]] const boost::json::value& object() const& noexcept { return m_json; }
-        [[nodiscard]] boost::json::value&& object() && noexcept { return std::move(m_json); }
+        [[nodiscard]] auto object() const& noexcept -> const boost::json::value& { return m_json; }
+        [[nodiscard]] auto object() && noexcept -> boost::json::value&&
+        {
+            return std::move(m_json);
+        }
 
         template<typename T>
         void as_bool(const std::string_view key, const T& val)
@@ -266,7 +271,7 @@ namespace detail_boost_json
         }
 
     private:
-        [[nodiscard]] boost::json::value& subobject(const std::string_view key)
+        [[nodiscard]] auto subobject(const std::string_view key) -> boost::json::value&
         {
             return key.empty() ? m_json : m_json.get_object()[key];
         }
@@ -427,13 +432,14 @@ namespace detail_boost_json
         }
 
     private:
-        [[nodiscard]] const boost::json::value& subobject(std::string_view key) const
+        [[nodiscard]] auto subobject(std::string_view key) const -> const boost::json::value&
         {
             return key.empty() ? m_json : m_json.at(key);
         }
 
         template<typename T>
-        [[nodiscard]] static constexpr bool validate_arg(const boost::json::value& arg) noexcept
+        [[nodiscard]] static constexpr auto validate_arg(const boost::json::value& arg) noexcept
+            -> bool
         {
             if constexpr (detail::is_optional_v<T>)
             {
@@ -469,8 +475,8 @@ namespace detail_boost_json
             }
         }
 
-        [[nodiscard]] static std::string mismatch_string(
-            std::string&& expect_type, const boost::json::value& obj)
+        [[nodiscard]] static auto mismatch_string(
+            std::string&& expect_type, const boost::json::value& obj) -> std::string
         {
             const auto get_type_str = [&obj]() noexcept
             {
@@ -508,8 +514,8 @@ namespace detail_boost_json
         }
 
         template<typename T>
-        [[nodiscard]] static detail::remove_cvref_t<detail::decay_str_t<T>> parse_arg(
-            const boost::json::value& arg)
+        [[nodiscard]] static auto parse_arg(const boost::json::value& arg)
+            -> detail::remove_cvref_t<detail::decay_str_t<T>>
         {
             using no_ref_t = detail::remove_cvref_t<detail::decay_str_t<T>>;
 
@@ -525,8 +531,8 @@ namespace detail_boost_json
         }
 
         template<typename T>
-        [[nodiscard]] static detail::remove_cvref_t<detail::decay_str_t<T>> parse_args(
-            const boost::json::value& arg_arr, size_t& index)
+        [[nodiscard]] static auto parse_args(const boost::json::value& arg_arr, size_t& index)
+            -> detail::remove_cvref_t<detail::decay_str_t<T>>
         {
             if (!arg_arr.is_array())
             {
@@ -546,7 +552,7 @@ namespace detail_boost_json
         }
 
         template<typename T>
-        static T yield_value(const boost::json::value& val)
+        static auto yield_value(const boost::json::value& val) -> T
         {
             if constexpr (std::is_arithmetic_v<T>)
             {
@@ -568,7 +574,7 @@ namespace detail_boost_json
         boost::json::value m_json;
     };
 
-    inline boost::json::object serial_adapter::from_bytes(std::string&& bytes)
+    inline auto serial_adapter::from_bytes(std::string&& bytes) -> boost::json::object
     {
         boost::system::error_code err_code{};
         boost::json::value val = boost::json::parse(bytes, err_code);
@@ -594,29 +600,29 @@ namespace detail_boost_json
         return obj;
     }
 
-    inline std::string serial_adapter::to_bytes(const boost::json::object& serial_obj)
+    inline auto serial_adapter::to_bytes(const boost::json::object& serial_obj) -> std::string
     {
         return boost::json::serialize(serial_obj);
     }
 
-    inline std::string serial_adapter::to_bytes(boost::json::object&& serial_obj)
+    inline auto serial_adapter::to_bytes(boost::json::object&& serial_obj) -> std::string
     {
         return boost::json::serialize(serial_obj);
     }
 
-    inline std::string serial_adapter::get_func_name(const boost::json::object& serial_obj)
+    inline auto serial_adapter::get_func_name(const boost::json::object& serial_obj) -> std::string
     {
         return serial_obj.at("func_name").get_string().c_str();
     }
 
-    inline rpc_type serial_adapter::get_type(const boost::json::object& serial_obj)
+    inline auto serial_adapter::get_type(const boost::json::object& serial_obj) -> rpc_type
     {
         return static_cast<rpc_type>(serial_obj.at("type").get_int64());
     }
 
     template<bool IsCallback, typename R>
-    detail::rpc_result<IsCallback, R> serial_adapter::get_result(
-        const boost::json::object& serial_obj)
+    auto serial_adapter::get_result(const boost::json::object& serial_obj)
+        -> detail::rpc_result<IsCallback, R>
     {
         RPC_HPP_PRECONDITION((IsCallback
                                  && static_cast<rpc_type>(serial_obj.at("type").as_int64())
@@ -632,8 +638,8 @@ namespace detail_boost_json
     }
 
     template<bool IsCallback, typename R>
-    boost::json::object serial_adapter::serialize_result(
-        const detail::rpc_result<IsCallback, R>& result)
+    auto serial_adapter::serialize_result(const detail::rpc_result<IsCallback, R>& result)
+        -> boost::json::object
     {
         serializer ser{};
         ser.serialize_object(result);
@@ -641,8 +647,8 @@ namespace detail_boost_json
     }
 
     template<bool IsCallback, typename R, typename... Args>
-    detail::rpc_result_w_bind<IsCallback, R, Args...> serial_adapter::get_result_w_bind(
-        const boost::json::object& serial_obj)
+    auto serial_adapter::get_result_w_bind(const boost::json::object& serial_obj)
+        -> detail::rpc_result_w_bind<IsCallback, R, Args...>
     {
         RPC_HPP_PRECONDITION((IsCallback
                                  && static_cast<rpc_type>(serial_obj.at("type").as_int64())
@@ -658,8 +664,8 @@ namespace detail_boost_json
     }
 
     template<bool IsCallback, typename R, typename... Args>
-    boost::json::object serial_adapter::serialize_result_w_bind(
-        const detail::rpc_result_w_bind<IsCallback, R, Args...>& result)
+    auto serial_adapter::serialize_result_w_bind(
+        const detail::rpc_result_w_bind<IsCallback, R, Args...>& result) -> boost::json::object
     {
         serializer ser{};
         ser.serialize_object(result);
@@ -667,8 +673,8 @@ namespace detail_boost_json
     }
 
     template<bool IsCallback, typename... Args>
-    detail::rpc_request<IsCallback, Args...> serial_adapter::get_request(
-        const boost::json::object& serial_obj)
+    auto serial_adapter::get_request(const boost::json::object& serial_obj)
+        -> detail::rpc_request<IsCallback, Args...>
     {
         RPC_HPP_PRECONDITION((IsCallback
                                  && (static_cast<rpc_type>(serial_obj.at("type").as_int64())
@@ -688,8 +694,8 @@ namespace detail_boost_json
     }
 
     template<bool IsCallback, typename... Args>
-    boost::json::object serial_adapter::serialize_request(
-        const detail::rpc_request<IsCallback, Args...>& request)
+    auto serial_adapter::serialize_request(const detail::rpc_request<IsCallback, Args...>& request)
+        -> boost::json::object
     {
         serializer ser{};
         ser.serialize_object(request);
@@ -697,7 +703,8 @@ namespace detail_boost_json
     }
 
     template<bool IsCallback>
-    detail::rpc_error<IsCallback> serial_adapter::get_error(const boost::json::object& serial_obj)
+    auto serial_adapter::get_error(const boost::json::object& serial_obj)
+        -> detail::rpc_error<IsCallback>
     {
         RPC_HPP_PRECONDITION((IsCallback
                                  && static_cast<rpc_type>(serial_obj.at("type").as_int64())
@@ -713,15 +720,16 @@ namespace detail_boost_json
     }
 
     template<bool IsCallback>
-    boost::json::object serial_adapter::serialize_error(const detail::rpc_error<IsCallback>& error)
+    auto serial_adapter::serialize_error(const detail::rpc_error<IsCallback>& error)
+        -> boost::json::object
     {
         serializer ser{};
         ser.serialize_object(error);
         return std::move(ser).object().get_object();
     }
 
-    inline callback_install_request serial_adapter::get_callback_install(
-        const boost::json::object& serial_obj)
+    inline auto serial_adapter::get_callback_install(const boost::json::object& serial_obj)
+        -> callback_install_request
     {
         RPC_HPP_PRECONDITION(static_cast<rpc_type>(serial_obj.at("type").as_int64())
             == rpc_type::callback_install_request);
@@ -732,15 +740,15 @@ namespace detail_boost_json
         return cbk_req;
     }
 
-    inline boost::json::object serial_adapter::serialize_callback_install(
-        const callback_install_request& callback_req)
+    inline auto serial_adapter::serialize_callback_install(
+        const callback_install_request& callback_req) -> boost::json::object
     {
         serializer ser{};
         ser.serialize_object(callback_req);
         return std::move(ser).object().get_object();
     }
 
-    inline bool serial_adapter::has_bound_args(const boost::json::object& serial_obj)
+    inline auto serial_adapter::has_bound_args(const boost::json::object& serial_obj) -> bool
     {
         return serial_obj.at("bind_args").as_bool();
     }

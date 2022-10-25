@@ -76,11 +76,7 @@
     "tests": {
       "description": "Unit tests for rpc.hpp",
       "dependencies": [
-        "doctest",
-        {
-          "name": "nlohmann-json",
-          "version>=": "3.9.0"
-        }
+        "doctest"
       ]
     }
   }

@@ -36,7 +36,7 @@ public:
     server_interface& operator=(server_interface&&) noexcept = delete;
 
     virtual void send(bytes_t&& bytes) = 0;
-    virtual bytes_t receive() = 0;
+    virtual auto receive() -> bytes_t = 0;
 
     template<typename R, typename... Args>
     RPC_HPP_INLINE void bind(std::string func_name, std::function<R(Args...)> func)
@@ -117,7 +117,8 @@ protected:
 
 #if defined(RPC_HPP_ENABLE_CALLBACKS)
     template<typename R, typename... Args>
-    [[nodiscard]] RPC_HPP_INLINE R call_callback(const std::string& func_name, Args&&... args)
+    [[nodiscard]] RPC_HPP_INLINE auto call_callback(const std::string& func_name, Args&&... args)
+        -> R
     {
         const auto response =
             call_callback_impl<R, Args...>(func_name, std::forward<Args>(args)...);
@@ -125,8 +126,8 @@ protected:
     }
 
     template<typename R, typename... Args>
-    [[nodiscard]] RPC_HPP_INLINE R call_callback_w_bind(
-        const std::string& func_name, Args&&... args)
+    [[nodiscard]] RPC_HPP_INLINE auto call_callback_w_bind(
+        const std::string& func_name, Args&&... args) -> R
     {
         const auto response =
             call_callback_impl<R, Args...>(func_name, std::forward<Args>(args)...);
@@ -173,7 +174,7 @@ private:
 
 #if defined(RPC_HPP_ENABLE_CALLBACKS)
     template<typename R, typename... Args>
-    [[nodiscard]] object_t call_callback_impl(const std::string& func_name, Args&&... args)
+    [[nodiscard]] auto call_callback_impl(const std::string& func_name, Args&&... args) -> object_t
     {
         if (m_installed_callbacks.find(func_name) == m_installed_callbacks.cend())
         {
@@ -196,7 +197,7 @@ private:
         return recv_impl();
     }
 
-    [[nodiscard]] object_t recv_impl()
+    [[nodiscard]] auto recv_impl() -> object_t
     {
         bytes_t bytes = [this]
         {

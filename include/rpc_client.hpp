@@ -40,7 +40,7 @@ public:
 
     template<typename... Args>
     RPC_HPP_NODISCARD("the rpc_object should be checked for its type")
-    object_t call_func(std::string func_name, Args&&... args)
+    auto call_func(std::string func_name, Args&&... args) -> object_t
     {
         auto response = object_t{ detail::func_request<detail::decay_str_t<Args>...>{
             std::move(func_name), std::forward_as_tuple(args...) } };
@@ -60,7 +60,7 @@ public:
 
     template<typename... Args>
     RPC_HPP_NODISCARD("the rpc_object should be checked for its type")
-    object_t call_func_w_bind(std::string func_name, Args&&... args)
+    auto call_func_w_bind(std::string func_name, Args&&... args) -> object_t
     {
         auto response = object_t{ detail::func_request<detail::decay_str_t<Args>...>{
             std::move(func_name), std::forward_as_tuple(args...), true } };
@@ -83,8 +83,8 @@ public:
 
     template<typename R, typename... Args>
     RPC_HPP_NODISCARD("the rpc_object should be checked for its type")
-    object_t call_header_func_impl(
-        RPC_HPP_UNUSED const detail::fptr_t<R, Args...> func, std::string func_name, Args&&... args)
+    auto call_header_func_impl(RPC_HPP_UNUSED const detail::fptr_t<R, Args...> func,
+        std::string func_name, Args&&... args) -> object_t
     {
         // If any parameters are non-const lvalue references...
         if constexpr (detail::has_ref_args<Args...>())
@@ -98,30 +98,32 @@ public:
     }
 
 #if defined(RPC_HPP_ENABLE_CALLBACKS)
-    bool has_callback(std::string_view func_name)
+    auto has_callback(std::string_view func_name) -> bool
     {
         return m_callback_map.find(func_name) != m_callback_map.end();
     }
 
     template<typename R, typename... Args>
     RPC_HPP_NODISCARD("the returned callback_install_request is an input to uninstall_callback")
-    RPC_HPP_INLINE callback_install_request
-        install_callback(std::string func_name, std::function<R(Args...)> func)
+    RPC_HPP_INLINE auto install_callback(std::string func_name, std::function<R(Args...)> func)
+        -> callback_install_request
     {
         return install_callback_impl<R, Args...>(std::move(func_name), std::move(func));
     }
 
     template<typename R, typename... Args>
     RPC_HPP_NODISCARD("the returned callback_install_request is an input to uninstall_callback")
-    RPC_HPP_INLINE callback_install_request
-        install_callback(std::string func_name, const detail::fptr_t<R, Args...> func_ptr)
+    RPC_HPP_INLINE
+        auto install_callback(std::string func_name, const detail::fptr_t<R, Args...> func_ptr)
+            -> callback_install_request
     {
         return install_callback_impl<R, Args...>(std::move(func_name), func_ptr);
     }
 
     template<typename R, typename... Args, typename F>
     RPC_HPP_NODISCARD("the returned callback_install_request is an input to uninstall_callback")
-    RPC_HPP_INLINE callback_install_request install_callback(std::string func_name, F&& func)
+    RPC_HPP_INLINE auto install_callback(std::string func_name, F&& func)
+        -> callback_install_request
     {
         return install_callback_impl<R, Args...>(
             std::move(func_name), std::function<R(Args...)>{ std::forward<F>(func) });
@@ -146,13 +148,13 @@ protected:
     client_interface(client_interface&&) noexcept = default;
 
     virtual void send(bytes_t&& bytes) = 0;
-    virtual bytes_t receive() = 0;
+    virtual auto receive() -> bytes_t = 0;
 
 private:
 #if defined(RPC_HPP_ENABLE_CALLBACKS)
     template<typename R, typename... Args, typename F>
     RPC_HPP_NODISCARD("the returned callback_install_request is an input to uninstall_callback")
-    callback_install_request install_callback_impl(std::string func_name, F&& func)
+    auto install_callback_impl(std::string func_name, F&& func) -> callback_install_request
     {
         callback_install_request cb{ std::move(func_name) };
 

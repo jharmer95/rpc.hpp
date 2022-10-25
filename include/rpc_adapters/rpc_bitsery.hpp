@@ -73,7 +73,7 @@
 template<>
 struct std::hash<std::vector<uint8_t>>
 {
-    [[nodiscard]] size_t operator()(const std::vector<uint8_t>& vec) const noexcept
+    [[nodiscard]] auto operator()(const std::vector<uint8_t>& vec) const noexcept -> size_t
     {
         return std::accumulate(vec.begin(), vec.end(), vec.size(),
             [](size_t seed, size_t val) noexcept
@@ -115,49 +115,51 @@ namespace detail_bitsery
     class serial_adapter : public serial_adapter_base<adapter_impl>
     {
     public:
-        [[nodiscard]] static serial_t from_bytes(bytes_t&& bytes);
-        [[nodiscard]] static bytes_t to_bytes(const serial_t& serial_obj);
-        [[nodiscard]] static bytes_t to_bytes(serial_t&& serial_obj);
-        [[nodiscard]] static std::string get_func_name(const serial_t& serial_obj);
-        [[nodiscard]] static rpc_type get_type(const serial_t& serial_obj);
+        [[nodiscard]] static auto from_bytes(bytes_t&& bytes) -> serial_t;
+        [[nodiscard]] static auto to_bytes(const serial_t& serial_obj) -> bytes_t;
+        [[nodiscard]] static auto to_bytes(serial_t&& serial_obj) -> bytes_t;
+        [[nodiscard]] static auto get_func_name(const serial_t& serial_obj) -> std::string;
+        [[nodiscard]] static auto get_type(const serial_t& serial_obj) -> rpc_type;
 
         template<bool IsCallback, typename R>
-        [[nodiscard]] static detail::rpc_result<IsCallback, R> get_result(
-            const serial_t& serial_obj);
+        [[nodiscard]] static auto get_result(const serial_t& serial_obj)
+            -> detail::rpc_result<IsCallback, R>;
 
         template<bool IsCallback, typename R>
-        [[nodiscard]] static serial_t serialize_result(
-            const detail::rpc_result<IsCallback, R>& result);
+        [[nodiscard]] static auto serialize_result(const detail::rpc_result<IsCallback, R>& result)
+            -> serial_t;
 
         template<bool IsCallback, typename R, typename... Args>
-        [[nodiscard]] static detail::rpc_result_w_bind<IsCallback, R, Args...> get_result_w_bind(
-            const serial_t& serial_obj);
+        [[nodiscard]] static auto get_result_w_bind(const serial_t& serial_obj)
+            -> detail::rpc_result_w_bind<IsCallback, R, Args...>;
 
         template<bool IsCallback, typename R, typename... Args>
-        [[nodiscard]] static serial_t serialize_result_w_bind(
-            const detail::rpc_result_w_bind<IsCallback, R, Args...>& result);
+        [[nodiscard]] static auto serialize_result_w_bind(
+            const detail::rpc_result_w_bind<IsCallback, R, Args...>& result) -> serial_t;
 
         template<bool IsCallback, typename... Args>
-        [[nodiscard]] static detail::rpc_request<IsCallback, Args...> get_request(
-            const serial_t& serial_obj);
+        [[nodiscard]] static auto get_request(const serial_t& serial_obj)
+            -> detail::rpc_request<IsCallback, Args...>;
 
         template<bool IsCallback, typename... Args>
-        [[nodiscard]] static serial_t serialize_request(
-            const detail::rpc_request<IsCallback, Args...>& request);
+        [[nodiscard]] static auto serialize_request(
+            const detail::rpc_request<IsCallback, Args...>& request) -> serial_t;
 
         template<bool IsCallback>
-        [[nodiscard]] static detail::rpc_error<IsCallback> get_error(const serial_t& serial_obj);
+        [[nodiscard]] static auto get_error(const serial_t& serial_obj)
+            -> detail::rpc_error<IsCallback>;
 
         template<bool IsCallback>
-        [[nodiscard]] static serial_t serialize_error(const detail::rpc_error<IsCallback>& error);
+        [[nodiscard]] static auto serialize_error(const detail::rpc_error<IsCallback>& error)
+            -> serial_t;
 
-        [[nodiscard]] static callback_install_request get_callback_install(
-            const serial_t& serial_obj);
+        [[nodiscard]] static auto get_callback_install(const serial_t& serial_obj)
+            -> callback_install_request;
 
-        [[nodiscard]] static serial_t serialize_callback_install(
-            const callback_install_request& callback_req);
+        [[nodiscard]] static auto serialize_callback_install(
+            const callback_install_request& callback_req) -> serial_t;
 
-        [[nodiscard]] static bool has_bound_args(const serial_t& serial_obj);
+        [[nodiscard]] static auto has_bound_args(const serial_t& serial_obj) -> bool;
 
         template<typename S, typename T, typename Adapter, bool Deserialize>
         static void parse_obj(S& ser, serializer_base<Adapter, Deserialize>& fallback, T& val);
@@ -167,13 +169,15 @@ namespace detail_bitsery
         using input_adapter = bitsery::InputBufferAdapter<std::vector<uint8_t>>;
 
         template<typename T>
-        static T deserialize_rpc_object(const std::vector<uint8_t>& buffer);
+        static auto deserialize_rpc_object(const std::vector<uint8_t>& buffer) -> T;
 
         template<typename T>
-        static std::vector<uint8_t> serialize_rpc_object(const T& rpc_obj);
+        static auto serialize_rpc_object(const T& rpc_obj) -> std::vector<uint8_t>;
 
-        static unsigned extract_length(const std::vector<uint8_t>& bytes, size_t& index) noexcept;
-        static bool verify_type(const std::vector<uint8_t>& bytes, rpc_type type) noexcept;
+        static auto extract_length(const std::vector<uint8_t>& bytes, size_t& index) noexcept
+            -> unsigned;
+
+        static auto verify_type(const std::vector<uint8_t>& bytes, rpc_type type) noexcept -> bool;
     };
 
     class serializer : public serializer_base<serial_adapter, false>
@@ -181,13 +185,13 @@ namespace detail_bitsery
     public:
         serializer() : m_ser(m_bytes) { m_bytes.reserve(64UL); }
 
-        [[nodiscard]] const std::vector<uint8_t>& object() &
+        [[nodiscard]] auto object() & -> const std::vector<uint8_t>&
         {
             flush();
             return m_bytes;
         }
 
-        [[nodiscard]] std::vector<uint8_t>&& object() &&
+        [[nodiscard]] auto object() && -> std::vector<uint8_t>&&
         {
             flush();
             return std::move(m_bytes);
@@ -435,7 +439,7 @@ namespace detail_bitsery
         bitsery::Deserializer<input_adapter> m_ser;
     };
 
-    inline std::vector<uint8_t> serial_adapter::from_bytes(std::vector<uint8_t>&& bytes)
+    inline auto serial_adapter::from_bytes(std::vector<uint8_t>&& bytes) -> std::vector<uint8_t>
     {
         RPC_HPP_PRECONDITION(bytes.size() >= sizeof(int));
 
@@ -450,17 +454,18 @@ namespace detail_bitsery
         return bytes;
     }
 
-    inline std::vector<uint8_t> serial_adapter::to_bytes(const std::vector<uint8_t>& serial_obj)
+    inline auto serial_adapter::to_bytes(const std::vector<uint8_t>& serial_obj)
+        -> std::vector<uint8_t>
     {
         return serial_obj;
     }
 
-    inline std::vector<uint8_t> serial_adapter::to_bytes(std::vector<uint8_t>&& serial_obj)
+    inline auto serial_adapter::to_bytes(std::vector<uint8_t>&& serial_obj) -> std::vector<uint8_t>
     {
         return serial_obj;
     }
 
-    inline std::string serial_adapter::get_func_name(const std::vector<uint8_t>& serial_obj)
+    inline auto serial_adapter::get_func_name(const std::vector<uint8_t>& serial_obj) -> std::string
     {
         RPC_HPP_PRECONDITION(serial_obj.size() > sizeof(int));
 
@@ -475,7 +480,7 @@ namespace detail_bitsery
             std::next(serial_obj.begin(), static_cast<ptrdiff_t>(index + len)) };
     }
 
-    inline rpc_type serial_adapter::get_type(const std::vector<uint8_t>& serial_obj)
+    inline auto serial_adapter::get_type(const std::vector<uint8_t>& serial_obj) -> rpc_type
     {
         RPC_HPP_PRECONDITION(serial_obj.size() >= sizeof(int));
 
@@ -493,8 +498,8 @@ namespace detail_bitsery
     }
 
     template<bool IsCallback, typename R>
-    detail::rpc_result<IsCallback, R> serial_adapter::get_result(
-        const std::vector<uint8_t>& serial_obj)
+    auto serial_adapter::get_result(const std::vector<uint8_t>& serial_obj)
+        -> detail::rpc_result<IsCallback, R>
     {
         RPC_HPP_PRECONDITION(verify_type(
             serial_obj, IsCallback ? rpc_type::callback_result : rpc_type::func_result));
@@ -503,15 +508,15 @@ namespace detail_bitsery
     }
 
     template<bool IsCallback, typename R>
-    std::vector<uint8_t> serial_adapter::serialize_result(
-        const detail::rpc_result<IsCallback, R>& result)
+    auto serial_adapter::serialize_result(const detail::rpc_result<IsCallback, R>& result)
+        -> std::vector<uint8_t>
     {
         return serialize_rpc_object<detail::rpc_result<IsCallback, R>>(result);
     }
 
     template<bool IsCallback, typename R, typename... Args>
-    detail::rpc_result_w_bind<IsCallback, R, Args...> serial_adapter::get_result_w_bind(
-        const std::vector<uint8_t>& serial_obj)
+    auto serial_adapter::get_result_w_bind(const std::vector<uint8_t>& serial_obj)
+        -> detail::rpc_result_w_bind<IsCallback, R, Args...>
     {
         RPC_HPP_PRECONDITION(verify_type(serial_obj,
             IsCallback ? rpc_type::callback_result_w_bind : rpc_type::func_result_w_bind));
@@ -521,15 +526,15 @@ namespace detail_bitsery
     }
 
     template<bool IsCallback, typename R, typename... Args>
-    std::vector<uint8_t> serial_adapter::serialize_result_w_bind(
-        const detail::rpc_result_w_bind<IsCallback, R, Args...>& result)
+    auto serial_adapter::serialize_result_w_bind(
+        const detail::rpc_result_w_bind<IsCallback, R, Args...>& result) -> std::vector<uint8_t>
     {
         return serialize_rpc_object<detail::rpc_result_w_bind<IsCallback, R, Args...>>(result);
     }
 
     template<bool IsCallback, typename... Args>
-    detail::rpc_request<IsCallback, Args...> serial_adapter::get_request(
-        const std::vector<uint8_t>& serial_obj)
+    auto serial_adapter::get_request(const std::vector<uint8_t>& serial_obj)
+        -> detail::rpc_request<IsCallback, Args...>
     {
         RPC_HPP_PRECONDITION(verify_type(serial_obj,
                                  IsCallback ? rpc_type::callback_request : rpc_type::func_request)
@@ -540,14 +545,15 @@ namespace detail_bitsery
     }
 
     template<bool IsCallback, typename... Args>
-    std::vector<uint8_t> serial_adapter::serialize_request(
-        const detail::rpc_request<IsCallback, Args...>& request)
+    auto serial_adapter::serialize_request(const detail::rpc_request<IsCallback, Args...>& request)
+        -> std::vector<uint8_t>
     {
         return serialize_rpc_object<detail::rpc_request<IsCallback, Args...>>(request);
     }
 
     template<bool IsCallback>
-    detail::rpc_error<IsCallback> serial_adapter::get_error(const std::vector<uint8_t>& serial_obj)
+    auto serial_adapter::get_error(const std::vector<uint8_t>& serial_obj)
+        -> detail::rpc_error<IsCallback>
     {
         RPC_HPP_PRECONDITION(
             verify_type(serial_obj, IsCallback ? rpc_type::callback_error : rpc_type::func_error));
@@ -556,26 +562,27 @@ namespace detail_bitsery
     }
 
     template<bool IsCallback>
-    std::vector<uint8_t> serial_adapter::serialize_error(const detail::rpc_error<IsCallback>& error)
+    auto serial_adapter::serialize_error(const detail::rpc_error<IsCallback>& error)
+        -> std::vector<uint8_t>
     {
         return serialize_rpc_object<detail::rpc_error<IsCallback>>(error);
     }
 
-    inline callback_install_request serial_adapter::get_callback_install(
-        const std::vector<uint8_t>& serial_obj)
+    inline auto serial_adapter::get_callback_install(const std::vector<uint8_t>& serial_obj)
+        -> callback_install_request
     {
         RPC_HPP_PRECONDITION(verify_type(serial_obj, rpc_type::callback_install_request));
 
         return deserialize_rpc_object<callback_install_request>(serial_obj);
     }
 
-    inline std::vector<uint8_t> serial_adapter::serialize_callback_install(
-        const callback_install_request& callback_req)
+    inline auto serial_adapter::serialize_callback_install(
+        const callback_install_request& callback_req) -> std::vector<uint8_t>
     {
         return serialize_rpc_object<callback_install_request>(callback_req);
     }
 
-    inline bool serial_adapter::has_bound_args(const std::vector<uint8_t>& serial_obj)
+    inline auto serial_adapter::has_bound_args(const std::vector<uint8_t>& serial_obj) -> bool
     {
         const auto type = get_type(serial_obj);
         return ((type == rpc_type::callback_request) || (type == rpc_type::func_request))
@@ -585,7 +592,7 @@ namespace detail_bitsery
     }
 
     template<typename T>
-    T serial_adapter::deserialize_rpc_object(const std::vector<uint8_t>& buffer)
+    auto serial_adapter::deserialize_rpc_object(const std::vector<uint8_t>& buffer) -> T
     {
         T ret_obj;
         deserializer ser{ buffer };
@@ -594,7 +601,7 @@ namespace detail_bitsery
     }
 
     template<typename T>
-    std::vector<uint8_t> serial_adapter::serialize_rpc_object(const T& rpc_obj)
+    auto serial_adapter::serialize_rpc_object(const T& rpc_obj) -> std::vector<uint8_t>
     {
         serializer ser{};
         ser.serialize_object(rpc_obj);
@@ -602,8 +609,8 @@ namespace detail_bitsery
     }
 
     // Borrowed from Bitsery library for compatibility
-    inline unsigned serial_adapter::extract_length(
-        const std::vector<uint8_t>& bytes, size_t& index) noexcept
+    inline auto serial_adapter::extract_length(
+        const std::vector<uint8_t>& bytes, size_t& index) noexcept -> unsigned
     {
         RPC_HPP_PRECONDITION(index < bytes.size());
 
@@ -630,8 +637,8 @@ namespace detail_bitsery
         return ((high_byte & 0x7FU) << 8U) | low_byte;
     }
 
-    inline bool serial_adapter::verify_type(
-        const std::vector<uint8_t>& bytes, rpc_type type) noexcept
+    inline auto serial_adapter::verify_type(
+        const std::vector<uint8_t>& bytes, rpc_type type) noexcept -> bool
     {
         RPC_HPP_PRECONDITION(bytes.size() >= sizeof(int));
 

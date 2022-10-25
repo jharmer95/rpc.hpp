@@ -328,7 +328,7 @@ namespace detail
             std::is_same_v<decltype(std::declval<T>().begin()), typename T::iterator>>;
 
         template<typename>
-        static constexpr std::false_type check(...) noexcept;
+        static constexpr auto check(...) noexcept -> std::false_type;
 
         using type = decltype(check<C>(nullptr));
 
@@ -345,7 +345,7 @@ namespace detail
             std::is_same_v<decltype(std::declval<T>().end()), typename T::iterator>>;
 
         template<typename>
-        static constexpr std::false_type check(...) noexcept;
+        static constexpr auto check(...) noexcept -> std::false_type;
 
         using type = decltype(check<C>(nullptr));
 
@@ -362,7 +362,7 @@ namespace detail
             -> std::bool_constant<std::is_same_v<decltype(std::declval<T>().size()), size_t>>;
 
         template<typename>
-        static constexpr std::false_type check(...) noexcept;
+        static constexpr auto check(...) noexcept -> std::false_type;
 
         using type = decltype(check<C>(nullptr));
 
@@ -388,7 +388,7 @@ namespace detail
                 decltype(std::declval<typename T::iterator>()->second), typename T::mapped_type>>;
 
         template<typename>
-        static constexpr std::false_type check(...) noexcept;
+        static constexpr auto check(...) noexcept -> std::false_type;
 
         using type = decltype(check<C>(nullptr));
 
@@ -406,7 +406,7 @@ namespace detail
                 decltype(std::declval<T>().at(typename T::key_type{})), typename T::mapped_type&>>;
 
         template<typename>
-        static constexpr std::false_type check(...) noexcept;
+        static constexpr auto check(...) noexcept -> std::false_type;
 
         using type = decltype(check<C>(nullptr));
 
@@ -439,7 +439,7 @@ namespace detail
             -> std::bool_constant<std::is_same_v<typename T::value_type, typename T::key_type>>;
 
         template<typename>
-        static constexpr std::false_type check(...) noexcept;
+        static constexpr auto check(...) noexcept -> std::false_type;
 
         using type = decltype(check<C>(nullptr));
 
@@ -496,14 +496,14 @@ namespace detail
     }
 
     template<typename T>
-    constexpr bool is_ref_arg()
+    constexpr auto is_ref_arg() -> bool
     {
         return std::is_reference_v<
                    T> && (!std::is_const_v<std::remove_reference_t<T>>)&&(!std::is_pointer_v<std::remove_reference_t<T>>);
     }
 
     template<typename... Args>
-    constexpr bool has_ref_args()
+    constexpr auto has_ref_args() -> bool
     {
         return (... || is_ref_arg<Args>());
     }
@@ -548,7 +548,6 @@ namespace detail
         using args_t = std::tuple<remove_cvref_t<decay_str_t<Args>>...>;
 
         rpc_request() noexcept = default;
-
         rpc_request(std::string t_func_name, args_t t_args, bool t_bind_args = false)
             : rpc_base<IsCallback>{ std::move(t_func_name) },
               bind_args(t_bind_args),
@@ -716,7 +715,7 @@ public:
     using bytes_t = typename Serial::bytes_t;
 
     RPC_HPP_NODISCARD("parsing consumes the original input")
-    static std::optional<rpc_object> parse_bytes(bytes_t&& bytes)
+    static auto parse_bytes(bytes_t&& bytes) -> std::optional<rpc_object>
     {
         try
         {
@@ -758,17 +757,17 @@ public:
     }
 
     RPC_HPP_NODISCARD("converting to bytes may be expensive")
-    bytes_t to_bytes() const& { return Serial::to_bytes(m_obj); }
+    auto to_bytes() const& -> bytes_t { return Serial::to_bytes(m_obj); }
 
     RPC_HPP_NODISCARD("converting to bytes consumes object")
-    bytes_t to_bytes() && { return Serial::to_bytes(std::move(m_obj)); }
+    auto to_bytes() && -> bytes_t { return Serial::to_bytes(std::move(m_obj)); }
 
     RPC_HPP_NODISCARD("extracting data from serial object may be expensive")
-    std::string get_func_name() const { return Serial::get_func_name(m_obj); }
+    auto get_func_name() const -> std::string { return Serial::get_func_name(m_obj); }
 
     template<typename R>
     RPC_HPP_NODISCARD("extracting data from serial object may be expensive")
-    R get_result() const
+    auto get_result() const -> R
     {
         switch (type())
         {
@@ -833,7 +832,7 @@ public:
     }
 
     RPC_HPP_NODISCARD("extracting data from serial object may be expensive")
-    bool is_callback_uninstall() const
+    auto is_callback_uninstall() const -> bool
     {
         return type() == rpc_type::callback_install_request
             ? Serial::get_callback_install(m_obj).is_uninstall
@@ -841,7 +840,7 @@ public:
     }
 
     RPC_HPP_NODISCARD("extracting data from serial object may be expensive")
-    exception_type get_error_type() const
+    auto get_error_type() const -> exception_type
     {
         switch (type())
         {
@@ -865,7 +864,7 @@ public:
 
     template<bool IsCallback = false>
     RPC_HPP_NODISCARD("extracting data from serial object may be expensive")
-    std::string get_error_mesg() const
+    auto get_error_mesg() const -> std::string
     {
         switch (type())
         {
@@ -888,7 +887,7 @@ public:
     }
 
     RPC_HPP_NODISCARD("extracting data from serial object may be expensive")
-    bool has_bound_args() const
+    auto has_bound_args() const -> bool
     {
         switch (type())
         {
@@ -911,7 +910,7 @@ public:
     }
 
     RPC_HPP_NODISCARD("extracting data from serial object may be expensive")
-    bool is_error() const
+    auto is_error() const -> bool
     {
         const auto rtype = type();
         return (rtype == rpc_type::func_error) || (rtype == rpc_type::callback_error);
@@ -938,41 +937,46 @@ namespace adapters
         using deserializer_t = typename Adapter::deserializer_t;
         using config = typename Adapter::config;
 
-        static serial_t from_bytes(bytes_t&& bytes) = delete;
-        static bytes_t to_bytes(const serial_t& serial_obj) = delete;
-        static bytes_t to_bytes(serial_t&& serial_obj) = delete;
-        static std::string get_func_name(const serial_t& serial_obj) = delete;
-        static rpc_type get_type(const serial_t& serial_obj) = delete;
+        static auto from_bytes(bytes_t&& bytes) -> serial_t = delete;
+        static auto to_bytes(const serial_t& serial_obj) -> bytes_t = delete;
+        static auto to_bytes(serial_t&& serial_obj) -> bytes_t = delete;
+        static auto get_func_name(const serial_t& serial_obj) -> std::string = delete;
+        static auto get_type(const serial_t& serial_obj) -> rpc_type = delete;
 
         template<bool IsCallback, typename R>
-        static detail::rpc_result<IsCallback, R> get_result(const serial_t& serial_obj) = delete;
+        static auto get_result(const serial_t& serial_obj)
+            -> detail::rpc_result<IsCallback, R> = delete;
 
         template<bool IsCallback, typename R>
-        static serial_t serialize_result(const detail::rpc_result<IsCallback, R>& result) = delete;
+        static auto serialize_result(const detail::rpc_result<IsCallback, R>& result)
+            -> serial_t = delete;
 
         template<bool IsCallback, typename R, typename... Args>
-        static serial_t serialize_result_w_bind(
-            const detail::rpc_result_w_bind<IsCallback, R, Args...>& result) = delete;
+        static auto serialize_result_w_bind(
+            const detail::rpc_result_w_bind<IsCallback, R, Args...>& result) -> serial_t = delete;
 
         template<bool IsCallback, typename... Args>
-        static detail::rpc_request<IsCallback, Args...> get_request(
-            const serial_t& serial_obj) = delete;
+        static auto get_request(const serial_t& serial_obj)
+            -> detail::rpc_request<IsCallback, Args...> = delete;
 
         template<bool IsCallback, typename... Args>
-        static serial_t serialize_request(
-            const detail::rpc_request<IsCallback, Args...>& request) = delete;
+        static auto serialize_request(const detail::rpc_request<IsCallback, Args...>& request)
+            -> serial_t = delete;
 
         template<bool IsCallback>
-        static detail::rpc_error<IsCallback> get_error(const serial_t& serial_obj) = delete;
+        static auto get_error(const serial_t& serial_obj) -> detail::rpc_error<IsCallback> = delete;
 
         template<bool IsCallback>
-        static serial_t serialize_error(const detail::rpc_error<IsCallback>& error) = delete;
+        static auto serialize_error(const detail::rpc_error<IsCallback>& error)
+            -> serial_t = delete;
 
-        static callback_install_request get_callback_install(const serial_t& serial_obj) = delete;
-        static serial_t serialize_callback_install(
-            const callback_install_request& callback_req) = delete;
+        static auto get_callback_install(const serial_t& serial_obj)
+            -> callback_install_request = delete;
 
-        static bool has_bound_args(const serial_t& serial_obj) = delete;
+        static auto serialize_callback_install(const callback_install_request& callback_req)
+            -> serial_t = delete;
+
+        static auto has_bound_args(const serial_t& serial_obj) -> bool = delete;
     };
 
     template<typename Derived>
