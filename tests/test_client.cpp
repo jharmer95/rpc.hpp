@@ -154,10 +154,10 @@ TEST_CASE("BITSERY")
 
 TEST_CASE_TEMPLATE("CountChars (static)", TestType, RPC_TEST_TYPES)
 {
+    static constexpr char counted = 'p';
+    static constexpr auto test_str = "peter piper picked a pack of pickled peppers";
     auto p_client = GetClient<TestType>();
-    const std::string test_str = "peter piper picked a pack of pickled peppers";
-    const auto response = p_client->call_header_func(CountChars, test_str, 'p');
-
+    const auto response = p_client->call_header_func(CountChars, test_str, counted);
     REQUIRE(!response.is_error());
     REQUIRE(response.template get_result<int>() == 9);
 }

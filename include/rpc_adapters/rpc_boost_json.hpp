@@ -475,8 +475,8 @@ namespace detail_boost_json
             }
         }
 
-        [[nodiscard]] static auto mismatch_string(
-            std::string&& expect_type, const boost::json::value& obj) -> std::string
+        static auto mismatch_string(
+            const std::string_view expect_type, const boost::json::value& obj) -> std::string
         {
             const auto get_type_str = [&obj]() noexcept
             {
@@ -509,8 +509,10 @@ namespace detail_boost_json
                 }
             };
 
-            return { "Boost.JSON expected type: " + std::move(expect_type)
-                + ", got type: " + get_type_str() };
+            return std::string{ "Boost.JSON expected type: " }
+                .append(expect_type)
+                .append(", got type: ")
+                .append(get_type_str());
         }
 
         template<typename T>
@@ -577,7 +579,7 @@ namespace detail_boost_json
     inline auto serial_adapter::from_bytes(std::string&& bytes) -> boost::json::object
     {
         boost::system::error_code err_code{};
-        boost::json::value val = boost::json::parse(bytes, err_code);
+        boost::json::value val = boost::json::parse(std::move(bytes), err_code);
 
         if (err_code)
         {

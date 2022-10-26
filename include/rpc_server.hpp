@@ -38,22 +38,29 @@ public:
     virtual void send(bytes_t&& bytes) = 0;
     virtual auto receive() -> bytes_t = 0;
 
-    template<typename R, typename... Args>
-    RPC_HPP_INLINE void bind(std::string func_name, std::function<R(Args...)> func)
+    template<typename R, typename... Args, typename S>
+    RPC_HPP_INLINE void bind(S&& func_name, std::function<R(Args...)> func)
     {
-        bind_impl<R, Args...>(std::move(func_name), std::move(func));
+        static_assert(detail::is_stringlike_v<S>, "func_name must be a string-like type");
+
+        bind_impl<R, Args...>(std::forward<S>(func_name), std::move(func));
     }
 
-    template<typename R, typename... Args>
-    RPC_HPP_INLINE void bind(std::string func_name, const detail::fptr_t<R, Args...> func_ptr)
+    template<typename R, typename... Args, typename S>
+    RPC_HPP_INLINE void bind(S&& func_name, const detail::fptr_t<R, Args...> func_ptr)
     {
-        bind_impl<R, Args...>(std::move(func_name), func_ptr);
+        static_assert(detail::is_stringlike_v<S>, "func_name must be a string-like type");
+
+        bind_impl<R, Args...>(std::forward<S>(func_name), func_ptr);
     }
 
-    template<typename R, typename... Args, typename F>
-    RPC_HPP_INLINE void bind(std::string func_name, F&& func)
+    template<typename R, typename... Args, typename S, typename F>
+    RPC_HPP_INLINE void bind(S&& func_name, F&& func)
     {
-        bind<R, Args...>(std::move(func_name), std::function<R(Args...)>{ std::forward<F>(func) });
+        static_assert(detail::is_stringlike_v<S>, "func_name must be a string-like type");
+
+        bind<R, Args...>(
+            std::forward<S>(func_name), std::function<R(Args...)>{ std::forward<F>(func) });
     }
 
     void handle_bytes(bytes_t& bytes)
@@ -116,6 +123,8 @@ protected:
     server_interface(server_interface&&) noexcept = default;
 
 #if defined(RPC_HPP_ENABLE_CALLBACKS)
+    // TODO: Make callbacks virtual? (impl up to user)
+
     template<typename R, typename... Args>
     [[nodiscard]] RPC_HPP_INLINE auto call_callback(const std::string& func_name, Args&&... args)
         -> R
@@ -140,10 +149,10 @@ protected:
 #endif
 
 private:
-    template<typename R, typename... Args, typename F>
-    void bind_impl(std::string func_name, F&& func)
+    template<typename R, typename... Args, typename S, typename F>
+    void bind_impl(S&& func_name, F&& func)
     {
-        m_dispatch_table.try_emplace(std::move(func_name),
+        m_dispatch_table.try_emplace(std::forward<S>(func_name),
             [func = std::forward<F>(func)](object_t& rpc_obj)
             {
                 try
@@ -169,7 +178,9 @@ private:
         }
 
         rpc_obj = object_t{ detail::func_error{ func_name,
-            function_not_found("RPC error: Called function: \"" + func_name + "\" not found") } };
+            function_not_found(
+                std::string{ "RPC error: Called function: \"" }.append(func_name).append(
+                    "\" not found")) } };
     }
 
 #if defined(RPC_HPP_ENABLE_CALLBACKS)
@@ -178,8 +189,8 @@ private:
     {
         if (m_installed_callbacks.find(func_name) == m_installed_callbacks.cend())
         {
-            throw callback_missing_error{ "Callback \"" + func_name
-                + "\" was called but not installed" };
+            throw callback_missing_error{ std::string{ "Callback \"" }.append(func_name).append(
+                "\" was called but not installed") };
         }
 
         object_t response = object_t{ detail::callback_request<detail::decay_str_t<Args>...>{
@@ -244,7 +255,8 @@ private:
         if (!inserted)
         {
             rpc_obj = object_t{ detail::callback_error{ func_name,
-                callback_install_error("Callback: \"" + func_name + "\" is already installed") } };
+                callback_install_error(std::string{ "Callback: \"" }.append(func_name).append(
+                    "\" is already installed")) } };
         }
     }
 

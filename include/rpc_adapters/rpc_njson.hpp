@@ -418,14 +418,6 @@ namespace detail_njson
             }
         }
 
-        RPC_HPP_NODISCARD("expect_type is consumed by the function")
-        static auto mismatch_string(std::string&& expect_type, const nlohmann::json& arg)
-            -> std::string
-        {
-            return { "njson expected type: " + std::move(expect_type)
-                + ", got type: " + arg.type_name() };
-        }
-
         template<typename T>
         RPC_HPP_NODISCARD(
             "parsing can be expensive and it makes no sense to not use the parsed result")
@@ -437,9 +429,15 @@ namespace detail_njson
             if (!validate_arg<T>(arg))
             {
 #ifdef RPC_HPP_NO_RTTI
-                throw function_mismatch{ mismatch_string("{NO-RTTI}", arg) };
+                throw function_mismatch{
+                    std::string{ "njson expected type: {NO-RTTI}, got type: " }.append(
+                        arg.type_name())
+                };
 #else
-                throw function_mismatch{ mismatch_string(typeid(T).name(), arg) };
+                throw function_mismatch{ std::string{ "njson expected type: " }
+                                             .append(typeid(T).name())
+                                             .append(", got type: ")
+                                             .append(arg.type_name()) };
 #endif
             }
 

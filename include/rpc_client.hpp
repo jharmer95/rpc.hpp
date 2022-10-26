@@ -38,12 +38,14 @@ public:
     client_interface& operator=(const client_interface&) = delete;
     client_interface& operator=(client_interface&&) = delete;
 
-    template<typename... Args>
+    template<typename... Args, typename S>
     RPC_HPP_NODISCARD("the rpc_object should be checked for its type")
-    auto call_func(std::string func_name, Args&&... args) -> object_t
+    auto call_func(S&& func_name, Args&&... args) -> object_t
     {
+        static_assert(detail::is_stringlike_v<S>, "func_name must be a string-like type");
+
         auto response = object_t{ detail::func_request<detail::decay_str_t<Args>...>{
-            std::move(func_name), std::forward_as_tuple(args...) } };
+            std::forward<S>(func_name), std::forward_as_tuple(args...) } };
 
         try
         {
@@ -58,12 +60,14 @@ public:
         return response;
     }
 
-    template<typename... Args>
+    template<typename... Args, typename S>
     RPC_HPP_NODISCARD("the rpc_object should be checked for its type")
-    auto call_func_w_bind(std::string func_name, Args&&... args) -> object_t
+    auto call_func_w_bind(S&& func_name, Args&&... args) -> object_t
     {
+        static_assert(detail::is_stringlike_v<S>, "func_name must be a string-like type");
+
         auto response = object_t{ detail::func_request<detail::decay_str_t<Args>...>{
-            std::move(func_name), std::forward_as_tuple(args...), true } };
+            std::forward<S>(func_name), std::forward_as_tuple(args...), true } };
 
         try
         {
@@ -81,19 +85,30 @@ public:
         return response;
     }
 
-    template<typename R, typename... Args>
+    template<typename R, typename... Args, typename... Args2, typename S>
     RPC_HPP_NODISCARD("the rpc_object should be checked for its type")
-    auto call_header_func_impl(RPC_HPP_UNUSED const detail::fptr_t<R, Args...> func,
-        std::string func_name, Args&&... args) -> object_t
+    auto call_header_func_impl(RPC_HPP_UNUSED const detail::fptr_t<R, Args...> func, S&& func_name,
+        Args2&&... args) -> object_t
     {
+        static_assert(detail::is_stringlike_v<S>, "func_name must be a string-like type");
+
+#ifdef __cpp_lib_is_nothrow_convertible
+        static_assert(std::conjunction_v<std::is_nothrow_convertible<Args2, Args>...>,
+            "Static function call parameters must match type exactly");
+#else
+        static_assert(std::conjunction_v<std::is_convertible<Args2, Args>...>,
+            "Static function call parameters must match type exactly");
+#endif
+
         // If any parameters are non-const lvalue references...
         if constexpr (detail::has_ref_args<Args...>())
         {
-            return call_func_w_bind<Args...>(std::move(func_name), std::forward<Args>(args)...);
+            return call_func_w_bind<Args2...>(
+                std::forward<S>(func_name), std::forward<Args2>(args)...);
         }
         else
         {
-            return call_func<Args...>(std::move(func_name), std::forward<Args>(args)...);
+            return call_func<Args2...>(std::forward<S>(func_name), std::forward<Args2>(args)...);
         }
     }
 
@@ -103,30 +118,34 @@ public:
         return m_callback_map.find(func_name) != m_callback_map.end();
     }
 
-    template<typename R, typename... Args>
+    template<typename R, typename... Args, typename S>
     RPC_HPP_NODISCARD("the returned callback_install_request is an input to uninstall_callback")
-    RPC_HPP_INLINE auto install_callback(std::string func_name, std::function<R(Args...)> func)
+    RPC_HPP_INLINE auto install_callback(S&& func_name, std::function<R(Args...)> func)
         -> callback_install_request
     {
-        return install_callback_impl<R, Args...>(std::move(func_name), std::move(func));
+        static_assert(detail::is_stringlike_v<S>, "func_name must be a string-like type");
+
+        return install_callback_impl<R, Args...>(std::forward<S>(func_name), std::move(func));
     }
 
-    template<typename R, typename... Args>
+    template<typename R, typename... Args, typename S>
     RPC_HPP_NODISCARD("the returned callback_install_request is an input to uninstall_callback")
-    RPC_HPP_INLINE
-        auto install_callback(std::string func_name, const detail::fptr_t<R, Args...> func_ptr)
-            -> callback_install_request
-    {
-        return install_callback_impl<R, Args...>(std::move(func_name), func_ptr);
-    }
-
-    template<typename R, typename... Args, typename F>
-    RPC_HPP_NODISCARD("the returned callback_install_request is an input to uninstall_callback")
-    RPC_HPP_INLINE auto install_callback(std::string func_name, F&& func)
+    RPC_HPP_INLINE auto install_callback(S&& func_name, const detail::fptr_t<R, Args...> func_ptr)
         -> callback_install_request
     {
+        static_assert(detail::is_stringlike_v<S>, "func_name must be a string-like type");
+
+        return install_callback_impl<R, Args...>(std::forward<S>(func_name), func_ptr);
+    }
+
+    template<typename R, typename... Args, typename S, typename F>
+    RPC_HPP_NODISCARD("the returned callback_install_request is an input to uninstall_callback")
+    RPC_HPP_INLINE auto install_callback(S&& func_name, F&& func) -> callback_install_request
+    {
+        static_assert(detail::is_stringlike_v<S>, "func_name must be a string-like type");
+
         return install_callback_impl<R, Args...>(
-            std::move(func_name), std::function<R(Args...)>{ std::forward<F>(func) });
+            std::forward<S>(func_name), std::function<R(Args...)>{ std::forward<F>(func) });
     }
 
     void uninstall_callback(callback_install_request&& callback)
@@ -152,11 +171,13 @@ protected:
 
 private:
 #if defined(RPC_HPP_ENABLE_CALLBACKS)
-    template<typename R, typename... Args, typename F>
+    template<typename R, typename... Args, typename S, typename F>
     RPC_HPP_NODISCARD("the returned callback_install_request is an input to uninstall_callback")
-    auto install_callback_impl(std::string func_name, F&& func) -> callback_install_request
+    auto install_callback_impl(S&& func_name, F&& func) -> callback_install_request
     {
-        callback_install_request cb{ std::move(func_name) };
+        static_assert(detail::is_stringlike_v<S>, "func_name must be a string-like type");
+
+        callback_install_request cb{ std::forward<S>(func_name) };
 
         m_callback_map.try_emplace(cb.func_name,
             [func = std::forward<F>(func)](object_t& rpc_obj)
@@ -202,7 +223,9 @@ private:
         }
 
         rpc_obj = object_t{ detail::callback_error{ func_name,
-            function_not_found{ "RPC error: Called function: \"" + func_name + "\" not found" } } };
+            function_not_found{
+                std::string{ "RPC error: Called function: \"" }.append(func_name).append(
+                    "\" not found") } } };
     }
 #endif
 

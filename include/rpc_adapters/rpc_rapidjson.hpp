@@ -564,9 +564,8 @@ namespace detail_rapidjson
             }
         }
 
-        // nodiscard because expect_type is consumed by the function
-        [[nodiscard]] static auto mismatch_message(
-            std::string&& expect_type, const rapidjson::Value& obj) -> std::string
+        static auto mismatch_message(
+            const std::string_view expect_type, const rapidjson::Value& obj) -> std::string
         {
             const auto get_type_str = [&obj]() noexcept
             {
@@ -628,8 +627,10 @@ namespace detail_rapidjson
                 return "unknown";
             };
 
-            return { "rapidjson expected type: " + std::move(expect_type)
-                + ", got type: " + get_type_str() };
+            return std::string{ "rapidjson expected type: " }
+                .append(expect_type)
+                .append(", got type: ")
+                .append(get_type_str());
         }
 
         template<typename T>
