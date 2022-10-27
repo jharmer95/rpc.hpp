@@ -173,6 +173,9 @@ public:                                                           \
     RPC_HPP_CONJ_TYPE_TRAIT(is_map, is_container<C>, has_map_iterator<std::remove_cv_t<C>>);
     RPC_HPP_CONJ_TYPE_TRAIT(is_multimap, is_map<C>, std::negation<has_map_at<C>>);
     RPC_HPP_CONJ_TYPE_TRAIT(is_set, is_container<C>, has_set_key<std::remove_cv_t<C>>);
+    RPC_HPP_CONJ_TYPE_TRAIT(is_ref_arg, std::is_reference<C>,
+        std::negation<std::is_const<std::remove_reference_t<C>>>,
+        std::negation<std::is_pointer<std::remove_reference_t<C>>>);
 #undef RPC_HPP_TYPE_TRAIT
 #undef RPC_HPP_CONJ_TYPE_TRAIT
 #undef RPC_HPP_DISJ_TYPE_TRAIT
@@ -264,6 +267,9 @@ public:                                                           \
     constexpr void for_each_tuple(const std::tuple<Ts...>& tuple, F&& func,
         RPC_HPP_UNUSED const std::index_sequence<Is...> iseq)
     {
+        static_assert(std::conjunction_v<std::is_invocable<F, Ts>...>,
+            "applied function must be able to take given args");
+
         using expander = int[];
         std::ignore = expander{ 0, ((void)std::forward<F>(func)(std::get<Is>(tuple)), 0)... };
     }
@@ -271,26 +277,19 @@ public:                                                           \
     template<typename F, typename... Ts>
     RPC_HPP_INLINE constexpr void for_each_tuple(const std::tuple<Ts...>& tuple, F&& func)
     {
+        static_assert(std::conjunction_v<std::is_invocable<F, Ts>...>,
+            "applied function must be able to take given args");
+
         for_each_tuple(tuple, std::forward<F>(func), std::make_index_sequence<sizeof...(Ts)>());
-    }
-
-    template<typename T>
-    constexpr auto is_ref_arg() -> bool
-    {
-        return std::is_reference_v<
-                   T> && (!std::is_const_v<std::remove_reference_t<T>>)&&(!std::is_pointer_v<std::remove_reference_t<T>>);
-    }
-
-    template<typename... Args>
-    constexpr auto has_ref_args() -> bool
-    {
-        return (... || is_ref_arg<Args>());
     }
 
     template<typename... Args, size_t... Is>
     constexpr void tuple_bind(const std::tuple<remove_cvref_t<decay_str_t<Args>>...>& src,
         RPC_HPP_UNUSED const std::index_sequence<Is...> iseq, Args&&... dest)
     {
+        static_assert(sizeof...(Args) == sizeof...(Is),
+            "index sequence length must be the same as the number of arguments");
+
         using expander = int[];
         std::ignore = expander{ 0,
             (
@@ -496,19 +495,6 @@ public:
     using serial_t = typename Serial::serial_t;
     using bytes_t = typename Serial::bytes_t;
 
-    RPC_HPP_NODISCARD("parsing consumes the original input")
-    static auto parse_bytes(bytes_t&& bytes) -> std::optional<rpc_object>
-    {
-        try
-        {
-            return rpc_object{ Serial::from_bytes(std::move(bytes)) };
-        }
-        catch (const std::exception&)
-        {
-            return std::nullopt;
-        }
-    }
-
     template<bool IsCallback, typename R>
     explicit rpc_object(detail::rpc_result<IsCallback, R> result)
         : m_obj(Serial::serialize_result(std::move(result)))
@@ -538,6 +524,20 @@ public:
     {
     }
 
+    RPC_HPP_NODISCARD("parsing consumes the original input")
+    static auto parse_bytes(bytes_t&& bytes) noexcept -> std::optional<rpc_object>
+    try
+    {
+        return rpc_object{ Serial::from_bytes(std::move(bytes)) };
+    }
+    catch (const std::exception&)
+    {
+        return std::nullopt;
+    }
+
+    RPC_HPP_NODISCARD("result is useless if discarded")
+    RPC_HPP_INLINE bool is_empty() const& noexcept { return Serial::is_empty(m_obj); }
+
     RPC_HPP_NODISCARD("converting to bytes may be expensive")
     auto to_bytes() const& -> bytes_t { return Serial::to_bytes(m_obj); }
 
@@ -545,12 +545,18 @@ public:
     auto to_bytes() && -> bytes_t { return Serial::to_bytes(std::move(m_obj)); }
 
     RPC_HPP_NODISCARD("extracting data from serial object may be expensive")
-    auto get_func_name() const -> std::string { return Serial::get_func_name(m_obj); }
+    auto get_func_name() const -> std::string
+    {
+        RPC_HPP_PRECONDITION(!this->is_empty());
+        return Serial::get_func_name(m_obj);
+    }
 
     template<typename R>
     RPC_HPP_NODISCARD("extracting data from serial object may be expensive")
     auto get_result() const -> R
     {
+        RPC_HPP_PRECONDITION(!this->is_empty());
+
         switch (type())
         {
             case rpc_type::func_result:
@@ -593,6 +599,8 @@ public:
     RPC_HPP_NODISCARD("extracting data from serial object may be expensive")
     auto get_args() const
     {
+        RPC_HPP_PRECONDITION(!this->is_empty());
+
         switch (type())
         {
             case rpc_type::func_request:
@@ -616,6 +624,8 @@ public:
     RPC_HPP_NODISCARD("extracting data from serial object may be expensive")
     auto is_callback_uninstall() const -> bool
     {
+        RPC_HPP_PRECONDITION(!this->is_empty());
+
         return type() == rpc_type::callback_install_request
             ? Serial::get_callback_install(m_obj).is_uninstall
             : false;
@@ -624,6 +634,8 @@ public:
     RPC_HPP_NODISCARD("extracting data from serial object may be expensive")
     auto get_error_type() const -> exception_type
     {
+        RPC_HPP_PRECONDITION(!this->is_empty());
+
         switch (type())
         {
             case rpc_type::callback_error:
@@ -648,6 +660,8 @@ public:
     RPC_HPP_NODISCARD("extracting data from serial object may be expensive")
     auto get_error_mesg() const -> std::string
     {
+        RPC_HPP_PRECONDITION(!this->is_empty());
+
         switch (type())
         {
             case rpc_type::callback_error:
@@ -671,6 +685,8 @@ public:
     RPC_HPP_NODISCARD("extracting data from serial object may be expensive")
     auto has_bound_args() const -> bool
     {
+        RPC_HPP_PRECONDITION(!this->is_empty());
+
         switch (type())
         {
             case rpc_type::func_request:
@@ -694,12 +710,18 @@ public:
     RPC_HPP_NODISCARD("extracting data from serial object may be expensive")
     auto is_error() const -> bool
     {
+        RPC_HPP_PRECONDITION(!this->is_empty());
+
         const auto rtype = type();
         return (rtype == rpc_type::func_error) || (rtype == rpc_type::callback_error);
     }
 
     RPC_HPP_NODISCARD("extracting data from serial object may be expensive")
-    rpc_type type() const { return Serial::get_type(m_obj); }
+    auto type() const -> rpc_type
+    {
+        RPC_HPP_PRECONDITION(!this->is_empty());
+        return Serial::get_type(m_obj);
+    }
 
 private:
     explicit rpc_object(const serial_t& serial) : m_obj(serial) {}
@@ -719,6 +741,7 @@ namespace adapters
         using deserializer_t = typename Adapter::deserializer_t;
         using config = typename Adapter::config;
 
+        static auto is_empty(const serial_t& serial_obj) noexcept -> bool = delete;
         static auto from_bytes(bytes_t&& bytes) -> serial_t = delete;
         static auto to_bytes(const serial_t& serial_obj) -> bytes_t = delete;
         static auto to_bytes(serial_t&& serial_obj) -> bytes_t = delete;
@@ -1027,6 +1050,12 @@ namespace detail
     template<bool IsCallback, typename Serial, typename R, typename... Args, typename F>
     void exec_func(F&& func, rpc_object<Serial>& rpc_obj)
     {
+        static_assert(std::is_invocable_v<F, Args...>, "F must be invocable with Args...");
+        static_assert(
+            std::is_convertible_v<std::invoke_result_t<F, Args...>, R>, "F must yield an R");
+
+        RPC_HPP_PRECONDITION(!rpc_obj.is_empty());
+
         auto args = rpc_obj.template get_args<Args...>();
         auto func_name = rpc_obj.get_func_name();
         const auto has_bound_args = rpc_obj.has_bound_args();
@@ -1069,6 +1098,8 @@ namespace detail
         {
             throw remote_exec_error{ ex.what() };
         }
+
+        RPC_HPP_POSTCONDITION(!rpc_obj.is_empty());
     }
 
     // serialize functions for library types

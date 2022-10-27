@@ -75,6 +75,7 @@ namespace detail_rapidjson
     class serial_adapter : public serial_adapter_base<adapter_impl>
     {
     public:
+        [[nodiscard]] static auto is_empty(const serial_t& serial_obj) noexcept -> bool;
         [[nodiscard]] static auto from_bytes(bytes_t&& bytes) -> serial_t;
         [[nodiscard]] static auto to_bytes(const serial_t& serial_obj) -> bytes_t;
         [[nodiscard]] static auto to_bytes(serial_t&& serial_obj) -> bytes_t;
@@ -715,6 +716,11 @@ namespace detail_rapidjson
 
         const rapidjson::Value& m_json;
     };
+
+    inline auto serial_adapter::is_empty(const rapidjson::Document& serial_obj) noexcept -> bool
+    {
+        return (!serial_obj.IsObject()) || serial_obj.ObjectEmpty();
+    }
 
     inline auto serial_adapter::from_bytes(std::string&& bytes) -> rapidjson::Document
     {

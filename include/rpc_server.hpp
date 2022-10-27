@@ -35,6 +35,7 @@ public:
     RPC_HPP_INLINE void bind(S&& func_name, std::function<R(Args...)> func)
     {
         static_assert(detail::is_stringlike_v<S>, "func_name must be a string-like type");
+        RPC_HPP_PRECONDITION(!std::string_view{ func_name }.empty());
 
         bind_impl<R, Args...>(std::forward<S>(func_name), std::move(func));
     }
@@ -43,6 +44,8 @@ public:
     RPC_HPP_INLINE void bind(S&& func_name, const detail::fptr_t<R, Args...> func_ptr)
     {
         static_assert(detail::is_stringlike_v<S>, "func_name must be a string-like type");
+        RPC_HPP_PRECONDITION(!std::string_view{ func_name }.empty());
+        RPC_HPP_PRECONDITION(func_ptr != nullptr);
 
         bind_impl<R, Args...>(std::forward<S>(func_name), func_ptr);
     }
@@ -51,6 +54,11 @@ public:
     RPC_HPP_INLINE void bind(S&& func_name, F&& func)
     {
         static_assert(detail::is_stringlike_v<S>, "func_name must be a string-like type");
+        static_assert(std::is_invocable_v<F, Args...>, "F must be invocable with Args...");
+        static_assert(
+            std::is_convertible_v<std::invoke_result_t<F, Args...>, R>, "F must yield an R");
+
+        RPC_HPP_PRECONDITION(!std::string_view{ func_name }.empty());
 
         bind_impl<R, Args...>(
             std::forward<S>(func_name), std::function<R(Args...)>{ std::forward<F>(func) });
@@ -98,18 +106,28 @@ public:
 
 protected:
     server_interface(server_interface&&) noexcept = default;
+
     virtual void handle_callback_object(object_t& rpc_obj)
     {
         rpc_obj = object_t{ detail::func_error{ "",
-            object_mismatch_error(
+            object_mismatch_error{
                 "RPC error: Invalid rpc_object type detected (NOTE: callbacks are not "
-                "enabled on this server)") } };
+                "enabled on this server)" } } };
+
+        RPC_HPP_POSTCONDITION(!rpc_obj.is_empty());
     }
 
 private:
     template<typename R, typename... Args, typename S, typename F>
     void bind_impl(S&& func_name, F&& func)
     {
+        static_assert(detail::is_stringlike_v<S>, "func_name must be a string-like type");
+        static_assert(std::is_invocable_v<F, Args...>, "F must be invocable with Args...");
+        static_assert(
+            std::is_convertible_v<std::invoke_result_t<F, Args...>, R>, "F must yield an R");
+
+        RPC_HPP_PRECONDITION(!std::string_view{ func_name }.empty());
+
         auto [_, status] = m_dispatch_table.try_emplace(std::forward<S>(func_name),
             [func = std::forward<F>(func)](object_t& rpc_obj)
             {
@@ -134,19 +152,24 @@ private:
 
     void dispatch(object_t& rpc_obj) const
     {
+        RPC_HPP_PRECONDITION(!rpc_obj.is_empty());
+
         const auto func_name = rpc_obj.get_func_name();
 
         if (const auto find_it = m_dispatch_table.find(func_name);
             find_it != m_dispatch_table.cend())
         {
             find_it->second(rpc_obj);
-            return;
+        }
+        else
+        {
+            rpc_obj = object_t{ detail::func_error{ func_name,
+                function_missing_error{
+                    std::string{ "RPC error: Called function: " }.append(func_name).append(
+                        "() not found") } } };
         }
 
-        rpc_obj = object_t{ detail::func_error{ func_name,
-            function_missing_error{
-                std::string{ "RPC error: Called function: " }.append(func_name).append(
-                    "() not found") } } };
+        RPC_HPP_POSTCONDITION(!rpc_obj.is_empty());
     }
 
     std::unordered_map<std::string, std::function<void(object_t&)>> m_dispatch_table{};
@@ -165,6 +188,7 @@ protected:
     [[nodiscard]] auto call_callback(S&& func_name, Args&&... args) -> R
     {
         static_assert(detail::is_stringlike_v<S>, "func_name must be a string-like type");
+        RPC_HPP_PRECONDITION(!std::string_view{ func_name }.empty());
 
         const auto response =
             call_callback_impl(object_t{ detail::callback_request<detail::decay_str_t<Args>...>{
@@ -178,6 +202,7 @@ protected:
     [[nodiscard]] auto call_callback_w_bind(S&& func_name, Args&&... args) -> R
     {
         static_assert(detail::is_stringlike_v<S>, "func_name must be a string-like type");
+        RPC_HPP_PRECONDITION(!std::string_view{ func_name }.empty());
 
         const auto response =
             call_callback_impl(object_t{ detail::callback_request<detail::decay_str_t<Args>...>{
@@ -197,6 +222,8 @@ private:
 
     void handle_callback_object(object_t& rpc_obj) final
     {
+        RPC_HPP_PRECONDITION(!rpc_obj.is_empty());
+
         if (rpc_obj.type() == rpc_type::callback_install_request)
         {
             rpc_obj.is_callback_uninstall() ? uninstall_callback(rpc_obj)
@@ -206,6 +233,8 @@ private:
         {
             server_interface<Serial>::handle_callback_object(rpc_obj);
         }
+
+        RPC_HPP_POSTCONDITION(!rpc_obj.is_empty());
     }
 };
 } //namespace rpc_hpp

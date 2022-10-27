@@ -40,6 +40,7 @@ public:
     auto call_func(S&& func_name, Args&&... args) -> object_t
     {
         static_assert(detail::is_stringlike_v<S>, "func_name must be a string-like type");
+        RPC_HPP_PRECONDITION(!std::string_view{ func_name }.empty());
 
         auto response = object_t{ detail::func_request<detail::decay_str_t<Args>...>{
             std::forward<S>(func_name), std::forward_as_tuple(args...) } };
@@ -54,6 +55,7 @@ public:
         }
 
         recv_loop(response);
+        RPC_HPP_POSTCONDITION(!response.is_empty());
         return response;
     }
 
@@ -62,6 +64,7 @@ public:
     auto call_func_w_bind(S&& func_name, Args&&... args) -> object_t
     {
         static_assert(detail::is_stringlike_v<S>, "func_name must be a string-like type");
+        RPC_HPP_PRECONDITION(!std::string_view{ func_name }.empty());
 
         auto response = object_t{ detail::func_request<detail::decay_str_t<Args>...>{
             std::forward<S>(func_name), std::forward_as_tuple(args...), true } };
@@ -79,20 +82,24 @@ public:
         detail::tuple_bind(response.template get_args<detail::decay_str_t<Args>...>(),
             std::forward<Args>(args)...);
 
+        RPC_HPP_POSTCONDITION(!response.is_empty());
         return response;
     }
 
     template<typename R, typename... Args, typename... Args2, typename S>
     RPC_HPP_NODISCARD("the rpc_object should be checked for its type")
-    auto call_header_func_impl(RPC_HPP_UNUSED const detail::fptr_t<R, Args...> func, S&& func_name,
-        Args2&&... args) -> object_t
+    auto call_header_func_impl(RPC_HPP_UNUSED const detail::fptr_t<R, Args...> func_ptr,
+        S&& func_name, Args2&&... args) -> object_t
     {
         static_assert(detail::is_stringlike_v<S>, "func_name must be a string-like type");
         static_assert(std::conjunction_v<std::is_convertible<Args2, Args>...>,
             "Static function call parameters must match type exactly");
 
+        RPC_HPP_PRECONDITION(func_ptr != nullptr);
+        RPC_HPP_PRECONDITION(!std::string_view{ func_name }.empty());
+
         // If any parameters are non-const lvalue references...
-        if constexpr (detail::has_ref_args<Args...>())
+        if constexpr (std::disjunction_v<detail::is_ref_arg<Args>...>)
         {
             return call_func_w_bind<Args2...>(
                 std::forward<S>(func_name), std::forward<Args2>(args)...);
@@ -215,6 +222,8 @@ private:
 
     void handle_callback_object(object_t& request) final
     {
+        RPC_HPP_PRECONDITION(!request.is_empty());
+
         if (const auto type = request.type();
             type == rpc_type::callback_request || type == rpc_type::func_request)
         {
@@ -235,12 +244,19 @@ private:
         {
             client_interface<Serial>::handle_callback_object(request);
         }
+
+        RPC_HPP_POSTCONDITION(!request.is_empty());
     }
 
     template<typename R, typename... Args, typename S, typename F>
     void bind_callback(S&& func_name, F&& func)
     {
         static_assert(detail::is_stringlike_v<S>, "func_name must be a string-like type");
+        static_assert(std::is_invocable_v<F, Args...>, "F must be invocable with Args...");
+        static_assert(
+            std::is_convertible_v<std::invoke_result_t<F, Args...>, R>, "F must yield an R");
+
+        RPC_HPP_PRECONDITION(!std::string_view{ func_name }.empty());
 
         auto [_, status] = m_callback_map.try_emplace(std::forward<S>(func_name),
             [func = std::forward<F>(func)](object_t& rpc_obj)
@@ -267,18 +283,23 @@ private:
 
     void dispatch_callback(object_t& rpc_obj)
     {
+        RPC_HPP_PRECONDITION(!rpc_obj.is_empty());
+
         const auto func_name = rpc_obj.get_func_name();
 
         if (const auto it = m_callback_map.find(func_name); it != m_callback_map.cend())
         {
             it->second(rpc_obj);
-            return;
+        }
+        else
+        {
+            rpc_obj = object_t{ detail::callback_error{ func_name,
+                function_missing_error{
+                    std::string{ "RPC error: Called function: " }.append(func_name).append(
+                        "() not found") } } };
         }
 
-        rpc_obj = object_t{ detail::callback_error{ func_name,
-            function_missing_error{
-                std::string{ "RPC error: Called function: " }.append(func_name).append(
-                    "() not found") } } };
+        RPC_HPP_POSTCONDITION(!rpc_obj.is_empty());
     }
 
     std::unordered_map<std::string, std::function<void(object_t&)>> m_callback_map{};

@@ -74,6 +74,7 @@ namespace detail_njson
     class serial_adapter : public serial_adapter_base<adapter_impl>
     {
     public:
+        [[nodiscard]] static auto is_empty(const serial_t& serial_obj) noexcept -> bool;
         [[nodiscard]] static auto from_bytes(bytes_t&& bytes) -> serial_t;
         [[nodiscard]] static auto to_bytes(const serial_t& serial_obj) -> bytes_t;
         [[nodiscard]] static auto to_bytes(serial_t&& serial_obj) -> bytes_t;
@@ -471,7 +472,12 @@ namespace detail_njson
         const nlohmann::json& m_json;
     };
 
-    [[nodiscard]] inline auto serial_adapter::from_bytes(std::string&& bytes) -> nlohmann::json
+    inline auto serial_adapter::is_empty(const nlohmann::json& serial_obj) noexcept -> bool
+    {
+        return serial_obj.empty();
+    }
+
+    inline auto serial_adapter::from_bytes(std::string&& bytes) -> nlohmann::json
     {
         nlohmann::json obj = nlohmann::json::parse(std::move(bytes));
 
@@ -489,30 +495,28 @@ namespace detail_njson
         return obj;
     }
 
-    [[nodiscard]] inline auto serial_adapter::to_bytes(const nlohmann::json& serial_obj)
-        -> std::string
+    inline auto serial_adapter::to_bytes(const nlohmann::json& serial_obj) -> std::string
     {
         return serial_obj.dump();
     }
 
-    [[nodiscard]] inline auto serial_adapter::to_bytes(nlohmann::json&& serial_obj) -> std::string
+    inline auto serial_adapter::to_bytes(nlohmann::json&& serial_obj) -> std::string
     {
         return std::move(serial_obj).dump();
     }
 
-    [[nodiscard]] inline auto serial_adapter::get_func_name(const nlohmann::json& serial_obj)
-        -> std::string
+    inline auto serial_adapter::get_func_name(const nlohmann::json& serial_obj) -> std::string
     {
         return serial_obj["func_name"];
     }
 
-    [[nodiscard]] inline rpc_type serial_adapter::get_type(const nlohmann::json& serial_obj)
+    inline rpc_type serial_adapter::get_type(const nlohmann::json& serial_obj)
     {
         return static_cast<rpc_type>(serial_obj["type"].get<int>());
     }
 
     template<bool IsCallback, typename R>
-    [[nodiscard]] auto serial_adapter::get_result(const nlohmann::json& serial_obj)
+    auto serial_adapter::get_result(const nlohmann::json& serial_obj)
         -> detail::rpc_result<IsCallback, R>
     {
         RPC_HPP_PRECONDITION((IsCallback && serial_obj["type"] == rpc_type::callback_result)
@@ -525,8 +529,8 @@ namespace detail_njson
     }
 
     template<bool IsCallback, typename R>
-    [[nodiscard]] auto serial_adapter::serialize_result(
-        const detail::rpc_result<IsCallback, R>& result) -> nlohmann::json
+    auto serial_adapter::serialize_result(const detail::rpc_result<IsCallback, R>& result)
+        -> nlohmann::json
     {
         serializer ser{};
         ser.serialize_object(result);
@@ -534,7 +538,7 @@ namespace detail_njson
     }
 
     template<bool IsCallback, typename R, typename... Args>
-    [[nodiscard]] auto serial_adapter::get_result_w_bind(const nlohmann::json& serial_obj)
+    auto serial_adapter::get_result_w_bind(const nlohmann::json& serial_obj)
         -> detail::rpc_result_w_bind<IsCallback, R, Args...>
     {
         RPC_HPP_PRECONDITION((IsCallback && serial_obj["type"] == rpc_type::callback_result_w_bind)
@@ -547,7 +551,7 @@ namespace detail_njson
     }
 
     template<bool IsCallback, typename R, typename... Args>
-    [[nodiscard]] auto serial_adapter::serialize_result_w_bind(
+    auto serial_adapter::serialize_result_w_bind(
         const detail::rpc_result_w_bind<IsCallback, R, Args...>& result) -> nlohmann::json
     {
         serializer ser{};
@@ -556,7 +560,7 @@ namespace detail_njson
     }
 
     template<bool IsCallback, typename... Args>
-    [[nodiscard]] auto serial_adapter::get_request(const nlohmann::json& serial_obj)
+    auto serial_adapter::get_request(const nlohmann::json& serial_obj)
         -> detail::rpc_request<IsCallback, Args...>
     {
         RPC_HPP_PRECONDITION((IsCallback
@@ -573,8 +577,8 @@ namespace detail_njson
     }
 
     template<bool IsCallback, typename... Args>
-    [[nodiscard]] auto serial_adapter::serialize_request(
-        const detail::rpc_request<IsCallback, Args...>& request) -> nlohmann::json
+    auto serial_adapter::serialize_request(const detail::rpc_request<IsCallback, Args...>& request)
+        -> nlohmann::json
     {
         serializer ser{};
         ser.serialize_object(request);
@@ -582,7 +586,7 @@ namespace detail_njson
     }
 
     template<bool IsCallback>
-    [[nodiscard]] auto serial_adapter::get_error(const nlohmann::json& serial_obj)
+    auto serial_adapter::get_error(const nlohmann::json& serial_obj)
         -> detail::rpc_error<IsCallback>
     {
         RPC_HPP_PRECONDITION((IsCallback && serial_obj["type"] == rpc_type::callback_error)
@@ -595,7 +599,7 @@ namespace detail_njson
     }
 
     template<bool IsCallback>
-    [[nodiscard]] auto serial_adapter::serialize_error(const detail::rpc_error<IsCallback>& error)
+    auto serial_adapter::serialize_error(const detail::rpc_error<IsCallback>& error)
         -> nlohmann::json
     {
         serializer ser{};
@@ -603,7 +607,7 @@ namespace detail_njson
         return std::move(ser).object();
     }
 
-    [[nodiscard]] inline auto serial_adapter::get_callback_install(const nlohmann::json& serial_obj)
+    inline auto serial_adapter::get_callback_install(const nlohmann::json& serial_obj)
         -> callback_install_request
     {
         RPC_HPP_PRECONDITION(serial_obj["type"] == rpc_type::callback_install_request);
@@ -614,7 +618,7 @@ namespace detail_njson
         return cbk_req;
     }
 
-    [[nodiscard]] inline auto serial_adapter::serialize_callback_install(
+    inline auto serial_adapter::serialize_callback_install(
         const callback_install_request& callback_req) -> nlohmann::json
     {
         serializer ser{};
@@ -622,8 +626,7 @@ namespace detail_njson
         return std::move(ser).object();
     }
 
-    [[nodiscard]] inline auto serial_adapter::has_bound_args(const nlohmann::json& serial_obj)
-        -> bool
+    inline auto serial_adapter::has_bound_args(const nlohmann::json& serial_obj) -> bool
     {
         return serial_obj["bind_args"];
     }

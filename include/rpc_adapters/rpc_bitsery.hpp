@@ -114,6 +114,7 @@ namespace detail_bitsery
     class serial_adapter : public serial_adapter_base<adapter_impl>
     {
     public:
+        [[nodiscard]] static auto is_empty(const serial_t& serial_obj) noexcept -> bool;
         [[nodiscard]] static auto from_bytes(bytes_t&& bytes) -> serial_t;
         [[nodiscard]] static auto to_bytes(const serial_t& serial_obj) -> bytes_t;
         [[nodiscard]] static auto to_bytes(serial_t&& serial_obj) -> bytes_t;
@@ -437,6 +438,11 @@ namespace detail_bitsery
         const std::vector<uint8_t>& m_bytes;
         bitsery::Deserializer<input_adapter> m_ser;
     };
+
+    inline auto serial_adapter::is_empty(const std::vector<uint8_t>& serial_obj) noexcept -> bool
+    {
+        return serial_obj.size() < sizeof(int);
+    }
 
     inline auto serial_adapter::from_bytes(std::vector<uint8_t>&& bytes) -> std::vector<uint8_t>
     {
