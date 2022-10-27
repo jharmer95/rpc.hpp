@@ -347,7 +347,7 @@ namespace detail_boost_json
 
             if (arr.size() != N)
             {
-                throw std::out_of_range{ "JSON array out of bounds" };
+                throw std::out_of_range{ "Boost.JSON error: array out of bounds" };
             }
 
             std::transform(
@@ -410,7 +410,7 @@ namespace detail_boost_json
 
             if (arg_arr.as_array().size() != sizeof...(Args))
             {
-                throw function_mismatch_error{ "Boost.JSON: invalid number of args" };
+                throw function_mismatch_error{ "Boost.JSON error: invalid number of args" };
             }
 
             [[maybe_unused]] size_t arg_counter = 0;
@@ -509,7 +509,7 @@ namespace detail_boost_json
                 }
             };
 
-            return std::string{ "Boost.JSON expected type: " }
+            return std::string{ "Boost.JSON error: expected type: " }
                 .append(expect_type)
                 .append(", got type: ")
                 .append(get_type_str());
@@ -545,7 +545,7 @@ namespace detail_boost_json
 
             if (index >= arr.size())
             {
-                throw function_mismatch_error{ "Argument count mismatch" };
+                throw function_mismatch_error{ "Boost.JSON error: argument count mismatch" };
             }
 
             const auto old_idx = index;
@@ -588,7 +588,7 @@ namespace detail_boost_json
 
         if (!val.is_object())
         {
-            throw deserialization_error{ "Boost::JSON: not an object" };
+            throw deserialization_error{ "Boost.JSON error: not an object" };
         }
 
         const auto& obj = val.get_object();
@@ -596,7 +596,7 @@ namespace detail_boost_json
         if (const auto fname_it = obj.find("func_name");
             (fname_it == obj.cend()) || (!fname_it->value().is_string()))
         {
-            throw deserialization_error{ "Boost::JSON: field \"func_name\" not found" };
+            throw deserialization_error{ R"(Boost.JSON error: field "func_name" not found)" };
         }
 
         return obj;

@@ -447,7 +447,9 @@ namespace detail_bitsery
 
         if (get_func_name(bytes).empty())
         {
-            throw deserialization_error{ "Bitsery: func_name could not be extracted from bytes" };
+            throw deserialization_error{
+                "Bitsery error: func_name could not be extracted from bytes"
+            };
         }
 
         return bytes;
@@ -490,7 +492,7 @@ namespace detail_bitsery
         if ((n_type < static_cast<int>(rpc_type::callback_install_request))
             || (n_type > static_cast<int>(rpc_type::func_result_w_bind)))
         {
-            throw deserialization_error{ "Bitsery: invalid type field detected" };
+            throw deserialization_error{ "Bitsery error: invalid type field detected" };
         }
 
         return static_cast<rpc_type>(n_type);

@@ -65,14 +65,14 @@ public:
     {
         if (m_p_server_queue.expired())
         {
-            throw client_receive_error{ "Server is deactivated" };
+            throw client_receive_error{ "Test client error: server is deactivated" };
         }
 
         auto response = m_p_message_queue->pop();
 
         if (!response.has_value())
         {
-            throw client_receive_error{ "Server did not provide a response" };
+            throw client_receive_error{ "Test client error: server did not provide a response" };
         }
 
         return response.value();
@@ -87,7 +87,7 @@ public:
             !response.has_value() || response.value().type() != rpc_type::callback_install_request)
         {
             throw callback_install_error{
-                "server did not respond to callback_install_request (uninstall)"
+                "Test client error: server did not respond to callback_install_request (uninstall)"
             };
         }
     }
@@ -111,7 +111,9 @@ private:
         if (auto response = object_t::parse_bytes(receive());
             !response.has_value() || response.value().type() != rpc_type::callback_install_request)
         {
-            throw callback_install_error{ "server did not respond to callback_install_request" };
+            throw callback_install_error{
+                "Test client error: server did not respond to callback_install_request"
+            };
         }
 
         return cb;

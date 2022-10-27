@@ -398,7 +398,7 @@ namespace detail_rapidjson
 
             if (arr.Size() != N)
             {
-                throw std::out_of_range{ "JSON array out of bounds" };
+                throw std::out_of_range{ "rapidjson error: array out of bounds" };
             }
 
             std::transform(
@@ -469,7 +469,7 @@ namespace detail_rapidjson
         {
             if (subobject(key).GetArray().Size() != sizeof...(Args))
             {
-                throw function_mismatch_error{ "rapidjson: invalid number of args" };
+                throw function_mismatch_error{ "rapidjson error: invalid number of args" };
             }
 
             [[maybe_unused]] rapidjson::SizeType arg_counter = 0;
@@ -627,7 +627,7 @@ namespace detail_rapidjson
                 return "unknown";
             };
 
-            return std::string{ "rapidjson expected type: " }
+            return std::string{ "rapidjson error: expected type: " }
                 .append(expect_type)
                 .append(", got type: ")
                 .append(get_type_str());
@@ -667,7 +667,7 @@ namespace detail_rapidjson
 
             if (index >= arr.Size())
             {
-                throw function_mismatch_error("Argument count mismatch");
+                throw function_mismatch_error("rapidjson error: argument count mismatch");
             }
 
             const auto old_idx = index;
@@ -724,13 +724,13 @@ namespace detail_rapidjson
 
         if (doc.HasParseError())
         {
-            throw deserialization_error{ "rapidjson: parsing error occurred" };
+            throw deserialization_error{ "rapidjson error: parsing error occurred" };
         }
 
         if (const auto fname_it = doc.FindMember("func_name");
             (fname_it == doc.MemberEnd()) || (!fname_it->value.IsString()))
         {
-            throw deserialization_error{ "rapidjson: field \"func_name\" not found" };
+            throw deserialization_error{ R"(rapidjson error: field "func_name" not found)" };
         }
 
         return doc;

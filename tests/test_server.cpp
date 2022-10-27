@@ -34,6 +34,8 @@
 ///OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ///
 
+#define RPC_HPP_ASSERT_THROW
+
 #include "test_server.hpp"
 #include "static_funcs.hpp"
 
@@ -307,7 +309,6 @@ std::vector<uint64_t> GenRandInts(const ValueRange<uint64_t> num_range, const si
 // cached
 std::string HashComplex(const ComplexObject& cx_obj)
 {
-    std::stringstream hash;
     auto rev_vals = cx_obj.vals;
 
     if (cx_obj.flag1)
@@ -316,6 +317,7 @@ std::string HashComplex(const ComplexObject& cx_obj)
     }
 
     const auto name_sz = cx_obj.name.size();
+    std::stringstream hash;
 
     for (size_t i = 0; i < name_sz; ++i)
     {
@@ -331,14 +333,13 @@ std::string HashComplex(const ComplexObject& cx_obj)
 
 void HashComplexRef(ComplexObject& cx_obj, std::string& hashStr)
 {
-    std::stringstream hash;
-
     if (cx_obj.flag1)
     {
         std::reverse(cx_obj.vals.begin(), cx_obj.vals.end());
     }
 
     const auto name_sz = cx_obj.name.size();
+    std::stringstream hash;
 
     for (size_t i = 0; i < name_sz; ++i)
     {

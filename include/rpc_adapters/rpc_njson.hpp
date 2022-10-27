@@ -307,7 +307,7 @@ namespace detail_njson
 
             if (arr.size() != N)
             {
-                throw std::out_of_range{ "JSON array out of bounds" };
+                throw std::out_of_range{ "nlohmann::json error: array out of bounds" };
             }
 
             std::copy(cbegin(arr), cend(arr), begin(val));
@@ -353,7 +353,7 @@ namespace detail_njson
         {
             if (subobject(key).size() != sizeof...(Args))
             {
-                throw function_mismatch_error{ "NJSON: invalid number of args" };
+                throw function_mismatch_error{ "nlohmann::json error: invalid number of args" };
             }
 
             [[maybe_unused]] size_t arg_counter = 0;
@@ -429,15 +429,15 @@ namespace detail_njson
             if (!validate_arg<T>(arg))
             {
 #ifdef RPC_HPP_NO_RTTI
-                throw function_mismatch_error{
-                    std::string{ "njson expected type: {NO-RTTI}, got type: " }.append(
-                        arg.type_name())
-                };
+                throw function_mismatch_error{ std::string{
+                    "nlohmann::json error: expected type: {NO-RTTI}, got type: " }
+                                                   .append(arg.type_name()) };
 #else
-                throw function_mismatch_error{ std::string{ "njson expected type: " }
-                                             .append(typeid(T).name())
-                                             .append(", got type: ")
-                                             .append(arg.type_name()) };
+                throw function_mismatch_error{ std::string{
+                    "nlohmann::json error: expected type: " }
+                                                   .append(typeid(T).name())
+                                                   .append(", got type: ")
+                                                   .append(arg.type_name()) };
 #endif
             }
 
@@ -455,7 +455,7 @@ namespace detail_njson
         {
             if (index >= arg_arr.size())
             {
-                throw function_mismatch_error{ "Argument count mismatch" };
+                throw function_mismatch_error{ "nlohmann::json error: argument count mismatch" };
             }
 
             if (arg_arr.is_array())
@@ -477,13 +477,13 @@ namespace detail_njson
 
         if (!obj.is_object())
         {
-            throw deserialization_error{ "NJSON: not an object" };
+            throw deserialization_error{ "nlohmann::json error: not an object" };
         }
 
         if (const auto fname_it = obj.find("func_name");
             (fname_it == obj.end()) || (!fname_it->is_string()) || (fname_it->empty()))
         {
-            throw deserialization_error{ "NJSON: field \"func_name\" not found" };
+            throw deserialization_error{ R"(nlohmann::json error: field "func_name" not found)" };
         }
 
         return obj;

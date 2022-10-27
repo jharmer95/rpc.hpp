@@ -115,9 +115,9 @@ protected:
     virtual void send(bytes_t&& bytes) = 0;
     virtual auto receive() -> bytes_t = 0;
 
-    virtual void handle_callback_object(object_t& request)
+    virtual void handle_callback_object([[maybe_unused]] object_t& request)
     {
-        throw object_mismatch_error{ "Invalid rpc_object type detected" };
+        throw object_mismatch_error{ "RPC error: invalid rpc_object type detected" };
     }
 
     void recv_loop(object_t& response)
@@ -152,11 +152,11 @@ protected:
                 case rpc_type::callback_result:
                 case rpc_type::callback_result_w_bind:
                 default:
-                    throw object_mismatch_error{ "Invalid rpc_object type detected" };
+                    throw object_mismatch_error{ "RPC error: invalid rpc_object type detected" };
             }
         }
 
-        throw client_receive_error{ "Invalid RPC object received" };
+        throw client_receive_error{ "RPC error: invalid RPC object received" };
     }
 };
 
@@ -183,6 +183,7 @@ public:
     auto install_callback(S&& func_name, std::function<R(Args...)> func) -> callback_install_request
     {
         static_assert(detail::is_stringlike_v<S>, "func_name must be a string-like type");
+        RPC_HPP_PRECONDITION(!std::string_view{ func_name }.empty());
 
         auto result = install_callback_impl(std::forward<S>(func_name));
         bind_callback<R, Args...>(result.func_name, std::move(func));
@@ -195,6 +196,7 @@ public:
         -> callback_install_request
     {
         static_assert(detail::is_stringlike_v<S>, "func_name must be a string-like type");
+        RPC_HPP_PRECONDITION(!std::string_view{ func_name }.empty());
 
         auto result = install_callback_impl(std::forward<S>(func_name));
         bind_callback<R, Args...>(std::forward<S>(func_name), func_ptr);
@@ -206,6 +208,7 @@ public:
     auto install_callback(S&& func_name, F&& func) -> callback_install_request
     {
         static_assert(detail::is_stringlike_v<S>, "func_name must be a string-like type");
+        RPC_HPP_PRECONDITION(!std::string_view{ func_name }.empty());
 
         auto result = install_callback_impl(std::forward<S>(func_name));
         bind_callback<R, Args...>(std::forward<S>(func_name), std::forward<F>(func));
@@ -262,7 +265,7 @@ private:
         {
             // NOTE: `try_emplace` does not move func_name unless successful, so the use of it here is safe
             throw callback_install_error{ std::string{
-                "RPC error: Client could not install callback: " }
+                "RPC error: client could not install callback: " }
                                               .append(std::forward<S>(func_name))
                                               .append("() successfully") };
         }

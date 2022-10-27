@@ -75,6 +75,7 @@ public:
     using callback_server_interface<Serial>::bytes_t;
     using callback_server_interface<Serial>::object_t;
     using callback_server_interface<Serial>::bind;
+    using callback_server_interface<Serial>::call_callback;
     using callback_server_interface<Serial>::handle_bytes;
 
     [[nodiscard]] bytes_t receive()
@@ -83,7 +84,7 @@ public:
 
         if (!response.has_value())
         {
-            throw server_receive_error{ "Client did not provide a response" };
+            throw server_receive_error{ "Test server error: client did not provide a response" };
         }
 
         return response.value();
@@ -93,7 +94,9 @@ public:
     {
         if (m_p_client_queue.expired())
         {
-            throw server_receive_error{ "No clients are attached to the server" };
+            throw server_receive_error{
+                "Test server error: no clients are attached to the server"
+            };
         }
 
         m_p_client_queue.lock()->push(std::move(bytes));
@@ -109,12 +112,8 @@ public:
 
     std::string GetConnectionInfo()
     {
-        std::stringstream ss;
-
-        ss << "Server name: MyServer\n";
-        ss << "Client name: " << this->template call_callback<std::string>("GetClientName") << '\n';
-
-        return ss.str();
+        return std::string{ "Server name: MyServer\nClient name: " }.append(
+            call_callback<std::string>("GetClientName"));
     }
 
     void Run()
@@ -172,7 +171,7 @@ private:
 
         if (!o_response.has_value())
         {
-            throw server_receive_error{ "Invalid RPC object received" };
+            throw server_receive_error{ "Test server error: invalid RPC object received" };
         }
 
         switch (auto& response = o_response.value(); response.type())
@@ -189,7 +188,9 @@ private:
             case rpc_type::func_result:
             case rpc_type::func_result_w_bind:
             default:
-                throw object_mismatch_error{ "Invalid rpc_object type detected" };
+                throw object_mismatch_error{
+                    "Test server error: invalid rpc_object type detected"
+                };
         }
     }
 
@@ -200,8 +201,10 @@ private:
         if (const auto func_name = request.get_func_name();
             m_installed_callbacks.find(func_name) == m_installed_callbacks.cend())
         {
-            throw callback_missing_error{ std::string{ "Callback \"" }.append(func_name).append(
-                "\" was called but not installed") };
+            throw callback_missing_error{
+                std::string{ "Test server error: callback " }.append(func_name).append(
+                    "() was called but not installed")
+            };
         }
 
         try
@@ -224,8 +227,9 @@ private:
         if (!inserted)
         {
             rpc_obj = object_t{ detail::callback_error{ func_name,
-                callback_install_error(std::string{ "Callback: \"" }.append(func_name).append(
-                    "\" is already installed")) } };
+                callback_install_error(
+                    std::string{ "Test server error: callback " }.append(func_name).append(
+                        "() is already installed")) } };
         }
     }
 

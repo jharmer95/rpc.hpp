@@ -11,8 +11,30 @@
 #include <type_traits>
 #include <utility>
 
-#define RPC_HPP_POSTCONDITION(EXPR) assert(EXPR)
-#define RPC_HPP_PRECONDITION(EXPR) assert(EXPR)
+#if defined(RPC_HPP_ASSERT_NONE)
+#  define RPC_HPP_ASSERTION(EXPR) ((void)0)
+#elif defined(RPC_HPP_ASSERT_DEBUG)
+#  define RPC_HPP_ASSERTION(EXPR) assert(EXPR)
+#elif defined(RPC_HPP_ASSERT_STDERR)
+#  define RPC_HPP_ASSERTION(EXPR)                                                           \
+    if (!(EXPR))                                                                            \
+    std::fprintf(stderr,                                                                    \
+        "RPC_HPP_ASSERTION: \"%s\" failed!\n  func: %s,\n  file: %s,\n  line: %d\n\n", #EXPR, \
+        __FUNCTION__, __FILE__, __LINE__)
+#elif defined(RPC_HPP_ASSERT_THROW)
+#  define RPC_HPP_ASSERTION(EXPR) \
+    if (!(EXPR))                  \
+    throw std::runtime_error("RPC_HPP_ASSERTION: \"" #EXPR "\" failed!")
+#elif defined(RPC_HPP_ASSERT_ABORT)
+#  define RPC_HPP_ASSERTION(EXPR) \
+    if (!(EXPR))                  \
+    std::abort()
+#else
+#  define RPC_HPP_ASSERTION(EXPR) assert(EXPR)
+#endif
+
+#define RPC_HPP_POSTCONDITION(EXPR) RPC_HPP_ASSERTION(EXPR)
+#define RPC_HPP_PRECONDITION(EXPR) RPC_HPP_ASSERTION(EXPR)
 
 #if defined(__GNUC__) && !defined(__clang__) \
     && (__GNUC__ < 9 || (__GNUC__ == 9 && __GNUC_MINOR__ < 3))
@@ -821,7 +843,7 @@ public:
             case rpc_type::callback_request:
             case rpc_type::func_request:
             default:
-                throw object_mismatch_error{ "Invalid rpc_object type detected" };
+                throw object_mismatch_error{ "RPC error: invalid rpc_object type detected" };
         }
     }
 
@@ -845,7 +867,7 @@ public:
             case rpc_type::func_error:
             case rpc_type::func_result:
             default:
-                throw object_mismatch_error{ "Invalid rpc_object type detected" };
+                throw object_mismatch_error{ "RPC error: invalid rpc_object type detected" };
         }
     }
 
@@ -876,7 +898,7 @@ public:
             case rpc_type::func_result:
             case rpc_type::func_result_w_bind:
             default:
-                throw object_mismatch_error{ "Invalid rpc_object type detected" };
+                throw object_mismatch_error{ "RPC error: invalid rpc_object type detected" };
         }
     }
 
@@ -900,7 +922,7 @@ public:
             case rpc_type::func_result:
             case rpc_type::func_result_w_bind:
             default:
-                throw object_mismatch_error{ "Invalid rpc_object type detected" };
+                throw object_mismatch_error{ "RPC error: invalid rpc_object type detected" };
         }
     }
 
@@ -923,7 +945,7 @@ public:
             case rpc_type::func_error:
             case rpc_type::func_result:
             default:
-                throw object_mismatch_error{ "Invalid rpc_object type detected" };
+                throw object_mismatch_error{ "RPC error: invalid rpc_object type detected" };
         }
     }
 

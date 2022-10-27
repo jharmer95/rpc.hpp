@@ -162,7 +162,7 @@ public:
 
 protected:
     template<typename R, typename... Args, typename S>
-    [[nodiscard]] RPC_HPP_INLINE auto call_callback(S&& func_name, Args&&... args) -> R
+    [[nodiscard]] auto call_callback(S&& func_name, Args&&... args) -> R
     {
         static_assert(detail::is_stringlike_v<S>, "func_name must be a string-like type");
 
@@ -170,11 +170,12 @@ protected:
             call_callback_impl(object_t{ detail::callback_request<detail::decay_str_t<Args>...>{
                 std::forward<S>(func_name), std::forward_as_tuple(args...) } });
 
+        RPC_HPP_POSTCONDITION(response.type() == rpc_type::callback_result);
         return response.template get_result<R>();
     }
 
     template<typename R, typename... Args, typename S>
-    [[nodiscard]] RPC_HPP_INLINE auto call_callback_w_bind(S&& func_name, Args&&... args) -> R
+    [[nodiscard]] auto call_callback_w_bind(S&& func_name, Args&&... args) -> R
     {
         static_assert(detail::is_stringlike_v<S>, "func_name must be a string-like type");
 
@@ -185,6 +186,7 @@ protected:
         detail::tuple_bind(response.template get_args<true, detail::decay_str_t<Args>...>(),
             std::forward<Args>(args)...);
 
+        RPC_HPP_POSTCONDITION(response.type() == rpc_type::callback_result_w_bind);
         return response.template get_result<R>();
     }
 

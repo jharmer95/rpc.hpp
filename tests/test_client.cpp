@@ -1,4 +1,4 @@
-///@file test_p_client->cpp
+///@file test_client.cpp
 ///@author Jackson Harmer (jharmer95@gmail.com)
 ///@brief Test source file for rpc.hpp
 ///
@@ -33,6 +33,8 @@
 ///OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 ///OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ///
+
+#define RPC_HPP_ASSERT_THROW
 
 #include "test_client.hpp"
 #include "test_structs.hpp"
@@ -516,8 +518,8 @@ TEST_CASE_TEMPLATE("FunctionMismatch", TestType, RPC_TEST_TYPES)
 
         obj = p_client->call_func("SimpleSum", 1, 2);
         REQUIRE(obj.type() == rpc_hpp::rpc_type::func_result);
-        REQUIRE_THROWS_AS(
-            (std::ignore = obj.template get_result<std::string>()), rpc_hpp::function_mismatch_error);
+        REQUIRE_THROWS_AS((std::ignore = obj.template get_result<std::string>()),
+            rpc_hpp::function_mismatch_error);
 
         obj = p_client->call_func("SimpleSum", 2.4, 1.2);
         REQUIRE(obj.is_error());
