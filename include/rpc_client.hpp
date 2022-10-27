@@ -158,8 +158,8 @@ template<typename Serial>
 class callback_client_interface : public client_interface<Serial>
 {
 public:
-    using client_interface<Serial>::bytes_t;
-    using client_interface<Serial>::object_t;
+    using typename client_interface<Serial>::bytes_t;
+    using typename client_interface<Serial>::object_t;
     using client_interface<Serial>::client_interface;
     using client_interface<Serial>::receive;
     using client_interface<Serial>::send;

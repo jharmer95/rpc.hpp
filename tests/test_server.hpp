@@ -72,8 +72,8 @@ template<typename Serial>
 class TestServer final : public callback_server_interface<Serial>
 {
 public:
-    using callback_server_interface<Serial>::bytes_t;
-    using callback_server_interface<Serial>::object_t;
+    using typename callback_server_interface<Serial>::bytes_t;
+    using typename callback_server_interface<Serial>::object_t;
     using callback_server_interface<Serial>::bind;
     using callback_server_interface<Serial>::call_callback;
     using callback_server_interface<Serial>::handle_bytes;
@@ -113,7 +113,7 @@ public:
     std::string GetConnectionInfo()
     {
         return std::string{ "Server name: MyServer\nClient name: " }.append(
-            call_callback<std::string>("GetClientName"));
+            this->template call_callback<std::string>("GetClientName"));
     }
 
     void Run()

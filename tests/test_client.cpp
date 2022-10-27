@@ -34,7 +34,7 @@
 ///OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ///
 
-#define RPC_HPP_ASSERT_THROW
+#define RPC_HPP_ASSERT_ABORT
 
 #include "test_client.hpp"
 #include "test_structs.hpp"

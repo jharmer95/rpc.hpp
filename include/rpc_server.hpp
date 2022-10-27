@@ -156,8 +156,8 @@ template<typename Serial>
 class callback_server_interface : public server_interface<Serial>
 {
 public:
-    using server_interface<Serial>::bytes_t;
-    using server_interface<Serial>::object_t;
+    using typename server_interface<Serial>::bytes_t;
+    using typename server_interface<Serial>::object_t;
     using server_interface<Serial>::server_interface;
 
 protected:

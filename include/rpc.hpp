@@ -98,7 +98,7 @@ private:
 };
 
 #define RPC_HPP_DECLARE_EXCEPTION(ENAME, ETYPE)                             \
-  class ENAME## : public rpc_exception                                      \
+  class ENAME : public rpc_exception                                        \
   {                                                                         \
 public:                                                                     \
     explicit ENAME(const std::string& mesg) : rpc_exception(mesg, ETYPE) {} \
@@ -155,7 +155,7 @@ public:                                                           \
   {                                        \
   };                                       \
   template<typename C>                     \
-  inline constexpr bool NAME##_v = NAME##<C>::value
+  inline constexpr bool NAME##_v = NAME<C>::value
 
 #define RPC_HPP_CONJ_TYPE_TRAIT(NAME, ...) \
   RPC_HPP_TYPE_TRAIT(NAME, std::conjunction<RPC_HPP_NOPAREN(__VA_ARGS__)>::value)

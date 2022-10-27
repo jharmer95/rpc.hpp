@@ -50,8 +50,8 @@ template<typename Serial>
 class TestClient final : public callback_client_interface<Serial>
 {
 public:
-    using callback_client_interface<Serial>::bytes_t;
-    using callback_client_interface<Serial>::object_t;
+    using typename callback_client_interface<Serial>::bytes_t;
+    using typename callback_client_interface<Serial>::object_t;
 
     explicit TestClient(std::shared_ptr<TestServer<Serial>> server)
         : m_p_message_queue{ std::make_shared<SyncQueue<bytes_t>>() },
