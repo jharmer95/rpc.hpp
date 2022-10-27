@@ -88,14 +88,8 @@ public:
         Args2&&... args) -> object_t
     {
         static_assert(detail::is_stringlike_v<S>, "func_name must be a string-like type");
-
-#ifdef __cpp_lib_is_nothrow_convertible
-        static_assert(std::conjunction_v<std::is_nothrow_convertible<Args2, Args>...>,
-            "Static function call parameters must match type exactly");
-#else
         static_assert(std::conjunction_v<std::is_convertible<Args2, Args>...>,
             "Static function call parameters must match type exactly");
-#endif
 
         // If any parameters are non-const lvalue references...
         if constexpr (detail::has_ref_args<Args...>())

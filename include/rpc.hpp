@@ -16,9 +16,9 @@
 #elif defined(RPC_HPP_ASSERT_DEBUG)
 #  define RPC_HPP_ASSERTION(EXPR) assert(EXPR)
 #elif defined(RPC_HPP_ASSERT_STDERR)
-#  define RPC_HPP_ASSERTION(EXPR)                                                           \
-    if (!(EXPR))                                                                            \
-    std::fprintf(stderr,                                                                    \
+#  define RPC_HPP_ASSERTION(EXPR)                                                             \
+    if (!(EXPR))                                                                              \
+    std::fprintf(stderr,                                                                      \
         "RPC_HPP_ASSERTION: \"%s\" failed!\n  func: %s,\n  file: %s,\n  line: %d\n\n", #EXPR, \
         __FUNCTION__, __FILE__, __LINE__)
 #elif defined(RPC_HPP_ASSERT_THROW)
@@ -97,191 +97,87 @@ private:
     exception_type m_type;
 };
 
-class function_missing_error : public rpc_exception
-{
-public:
-    explicit function_missing_error(const std::string& mesg)
-        : rpc_exception(mesg, exception_type::function_missing)
-    {
-    }
+#define RPC_HPP_DECLARE_EXCEPTION(ENAME, ETYPE)                             \
+  class ENAME## : public rpc_exception                                      \
+  {                                                                         \
+public:                                                                     \
+    explicit ENAME(const std::string& mesg) : rpc_exception(mesg, ETYPE) {} \
+    explicit ENAME(const char* const mesg) : rpc_exception(mesg, ETYPE) {}  \
+  }
 
-    explicit function_missing_error(const char* const mesg)
-        : rpc_exception(mesg, exception_type::function_missing)
-    {
-    }
-};
-
-class remote_exec_error : public rpc_exception
-{
-public:
-    explicit remote_exec_error(const std::string& mesg)
-        : rpc_exception(mesg, exception_type::remote_exec)
-    {
-    }
-
-    explicit remote_exec_error(const char* const mesg)
-        : rpc_exception(mesg, exception_type::remote_exec)
-    {
-    }
-};
-
-class serialization_error : public rpc_exception
-{
-public:
-    explicit serialization_error(const std::string& mesg)
-        : rpc_exception(mesg, exception_type::serialization)
-    {
-    }
-
-    explicit serialization_error(const char* const mesg)
-        : rpc_exception(mesg, exception_type::serialization)
-    {
-    }
-};
-
-class deserialization_error : public rpc_exception
-{
-public:
-    explicit deserialization_error(const std::string& mesg)
-        : rpc_exception(mesg, exception_type::deserialization)
-    {
-    }
-
-    explicit deserialization_error(const char* const mesg)
-        : rpc_exception(mesg, exception_type::deserialization)
-    {
-    }
-};
-
-class function_bind_error : public rpc_exception
-{
-public:
-    explicit function_bind_error(const std::string& mesg)
-        : rpc_exception(mesg, exception_type::function_bind)
-    {
-    }
-
-    explicit function_bind_error(const char* const mesg)
-        : rpc_exception(mesg, exception_type::function_bind)
-    {
-    }
-};
-
-class function_mismatch_error : public rpc_exception
-{
-public:
-    explicit function_mismatch_error(const std::string& mesg)
-        : rpc_exception(mesg, exception_type::func_signature_mismatch)
-    {
-    }
-
-    explicit function_mismatch_error(const char* const mesg)
-        : rpc_exception(mesg, exception_type::func_signature_mismatch)
-    {
-    }
-};
-
-class client_send_error : public rpc_exception
-{
-public:
-    explicit client_send_error(const std::string& mesg)
-        : rpc_exception(mesg, exception_type::client_send)
-    {
-    }
-
-    explicit client_send_error(const char* const mesg)
-        : rpc_exception(mesg, exception_type::client_send)
-    {
-    }
-};
-
-class client_receive_error : public rpc_exception
-{
-public:
-    explicit client_receive_error(const std::string& mesg)
-        : rpc_exception(mesg, exception_type::client_receive)
-    {
-    }
-
-    explicit client_receive_error(const char* const mesg)
-        : rpc_exception(mesg, exception_type::client_receive)
-    {
-    }
-};
-
-class server_send_error : public rpc_exception
-{
-public:
-    explicit server_send_error(const std::string& mesg)
-        : rpc_exception(mesg, exception_type::server_send)
-    {
-    }
-
-    explicit server_send_error(const char* const mesg)
-        : rpc_exception(mesg, exception_type::server_send)
-    {
-    }
-};
-
-class server_receive_error : public rpc_exception
-{
-public:
-    explicit server_receive_error(const std::string& mesg)
-        : rpc_exception(mesg, exception_type::server_receive)
-    {
-    }
-
-    explicit server_receive_error(const char* const mesg)
-        : rpc_exception(mesg, exception_type::server_receive)
-    {
-    }
-};
-
-class object_mismatch_error : public rpc_exception
-{
-public:
-    explicit object_mismatch_error(const std::string& mesg)
-        : rpc_exception(mesg, exception_type::rpc_object_mismatch)
-    {
-    }
-
-    explicit object_mismatch_error(const char* const mesg)
-        : rpc_exception(mesg, exception_type::rpc_object_mismatch)
-    {
-    }
-};
-
-class callback_install_error : public rpc_exception
-{
-public:
-    explicit callback_install_error(const std::string& mesg)
-        : rpc_exception(mesg, exception_type::callback_install)
-    {
-    }
-
-    explicit callback_install_error(const char* const mesg)
-        : rpc_exception(mesg, exception_type::callback_install)
-    {
-    }
-};
-
-class callback_missing_error : public rpc_exception
-{
-public:
-    explicit callback_missing_error(const std::string& mesg)
-        : rpc_exception(mesg, exception_type::callback_missing)
-    {
-    }
-
-    explicit callback_missing_error(const char* const mesg)
-        : rpc_exception(mesg, exception_type::callback_missing)
-    {
-    }
-};
+RPC_HPP_DECLARE_EXCEPTION(function_missing_error, exception_type::function_missing);
+RPC_HPP_DECLARE_EXCEPTION(remote_exec_error, exception_type::remote_exec);
+RPC_HPP_DECLARE_EXCEPTION(serialization_error, exception_type::serialization);
+RPC_HPP_DECLARE_EXCEPTION(deserialization_error, exception_type::deserialization);
+RPC_HPP_DECLARE_EXCEPTION(function_bind_error, exception_type::function_bind);
+RPC_HPP_DECLARE_EXCEPTION(function_mismatch_error, exception_type::func_signature_mismatch);
+RPC_HPP_DECLARE_EXCEPTION(client_send_error, exception_type::client_send);
+RPC_HPP_DECLARE_EXCEPTION(client_receive_error, exception_type::client_receive);
+RPC_HPP_DECLARE_EXCEPTION(server_send_error, exception_type::server_send);
+RPC_HPP_DECLARE_EXCEPTION(server_receive_error, exception_type::server_receive);
+RPC_HPP_DECLARE_EXCEPTION(object_mismatch_error, exception_type::rpc_object_mismatch);
+RPC_HPP_DECLARE_EXCEPTION(callback_install_error, exception_type::callback_install);
+RPC_HPP_DECLARE_EXCEPTION(callback_missing_error, exception_type::callback_missing);
+#undef RPC_HPP_DECLARE_EXCEPTION
 
 namespace detail
 {
-#if __has_cpp_attribute(__cpp_lib_remove_cvref)
+#define RPC_HPP_NOPAREN(...) __VA_ARGS__
+#define RPC_HPP_CHECKER(NAME, EXPR1, EXPR2)                       \
+  template<typename C>                                            \
+  struct NAME                                                     \
+  {                                                               \
+private:                                                          \
+    template<typename T>                                          \
+    static constexpr auto check(RPC_HPP_UNUSED T* ptr) noexcept   \
+        -> std::is_same<decltype(EXPR1), EXPR2>;                  \
+    template<typename>                                            \
+    static constexpr auto check(...) noexcept -> std::false_type; \
+    using type = decltype(check<C>(nullptr));                     \
+                                                                  \
+public:                                                           \
+    static constexpr bool value = type::value;                    \
+  }
+
+    RPC_HPP_CHECKER(has_begin, std::declval<T>().begin(), typename T::iterator);
+    RPC_HPP_CHECKER(has_end, std::declval<T>().end(), typename T::iterator);
+    RPC_HPP_CHECKER(has_size, std::declval<T>().size(), typename T::iterator);
+    RPC_HPP_CHECKER(has_set_key, typename T::value_type{}, typename T::key_type);
+    RPC_HPP_CHECKER(
+        has_map_iterator, std::declval<typename T::iterator>()->second, typename T::mapped_type);
+    RPC_HPP_CHECKER(
+        has_map_at, std::declval<T>().at(typename T::key_type{}), typename T::mapped_type);
+#undef RPC_HPP_CHECKER
+
+#define RPC_HPP_TYPE_TRAIT(NAME, COND)     \
+  template<typename C>                     \
+  struct NAME : std::bool_constant<(COND)> \
+  {                                        \
+  };                                       \
+  template<typename C>                     \
+  inline constexpr bool NAME##_v = NAME##<C>::value
+
+#define RPC_HPP_CONJ_TYPE_TRAIT(NAME, ...) \
+  RPC_HPP_TYPE_TRAIT(NAME, std::conjunction<RPC_HPP_NOPAREN(__VA_ARGS__)>::value)
+
+#define RPC_HPP_DISJ_TYPE_TRAIT(NAME, ...) \
+  RPC_HPP_TYPE_TRAIT(NAME, std::disjunction<RPC_HPP_NOPAREN(__VA_ARGS__)>::value)
+
+    RPC_HPP_TYPE_TRAIT(is_boolean_testable, (std::is_convertible_v<C, bool>));
+    RPC_HPP_DISJ_TYPE_TRAIT(is_stringlike, std::is_convertible<C, std::string>,
+        std::is_convertible<C, std::string_view>);
+
+    RPC_HPP_CONJ_TYPE_TRAIT(
+        is_container, has_begin<std::remove_cv_t<C>>, has_end<std::remove_cv_t<C>>);
+
+    RPC_HPP_CONJ_TYPE_TRAIT(is_map, is_container<C>, has_map_iterator<std::remove_cv_t<C>>);
+    RPC_HPP_CONJ_TYPE_TRAIT(is_multimap, is_map<C>, std::negation<has_map_at<C>>);
+    RPC_HPP_CONJ_TYPE_TRAIT(is_set, is_container<C>, has_set_key<std::remove_cv_t<C>>);
+#undef RPC_HPP_TYPE_TRAIT
+#undef RPC_HPP_CONJ_TYPE_TRAIT
+#undef RPC_HPP_DISJ_TYPE_TRAIT
+
+#if defined(__cpp_lib_remove_cvref)
     using std::remove_cvref;
     using std::remove_cvref_t;
 #else
@@ -295,24 +191,6 @@ namespace detail
     template<typename T>
     using remove_cvref_t = typename remove_cvref<T>::type;
 #endif
-
-    template<typename T>
-    struct is_boolean_testable : std::bool_constant<std::is_convertible_v<T, bool>>
-    {
-    };
-
-    template<typename T>
-    inline constexpr bool is_boolean_testable_v = is_boolean_testable<T>::value;
-
-    template<typename T>
-    struct is_stringlike :
-        std::bool_constant<(
-            std::is_convertible_v<T, std::string> || std::is_convertible_v<T, std::string_view>)>
-    {
-    };
-
-    template<typename T>
-    inline constexpr bool is_stringlike_v = is_stringlike<T>::value;
 
     template<typename T>
     struct decay_str
@@ -355,142 +233,6 @@ namespace detail
 
     template<typename T>
     using decay_str_t = typename decay_str<T>::type;
-
-    template<typename C>
-    struct has_begin
-    {
-    private:
-        template<typename T>
-        static constexpr auto check(RPC_HPP_UNUSED T* ptr) noexcept -> std::bool_constant<
-            std::is_same_v<decltype(std::declval<T>().begin()), typename T::iterator>>;
-
-        template<typename>
-        static constexpr auto check(...) noexcept -> std::false_type;
-
-        using type = decltype(check<C>(nullptr));
-
-    public:
-        static constexpr bool value = type::value;
-    };
-
-    template<typename C>
-    struct has_end
-    {
-    private:
-        template<typename T>
-        static constexpr auto check(RPC_HPP_UNUSED T* ptr) noexcept -> std::bool_constant<
-            std::is_same_v<decltype(std::declval<T>().end()), typename T::iterator>>;
-
-        template<typename>
-        static constexpr auto check(...) noexcept -> std::false_type;
-
-        using type = decltype(check<C>(nullptr));
-
-    public:
-        static constexpr bool value = type::value;
-    };
-
-    template<typename C>
-    struct has_size
-    {
-    private:
-        template<typename T>
-        static constexpr auto check(RPC_HPP_UNUSED T* ptr) noexcept
-            -> std::bool_constant<std::is_same_v<decltype(std::declval<T>().size()), size_t>>;
-
-        template<typename>
-        static constexpr auto check(...) noexcept -> std::false_type;
-
-        using type = decltype(check<C>(nullptr));
-
-    public:
-        static constexpr bool value = type::value;
-    };
-
-    template<typename C>
-    struct is_container : std::bool_constant<has_begin<C>::value && has_end<C>::value>
-    {
-    };
-
-    template<typename C>
-    inline constexpr bool is_container_v = is_container<std::remove_cv_t<C>>::value;
-
-    template<typename C>
-    struct has_map_iterator
-    {
-    private:
-        template<typename T>
-        static constexpr auto check(RPC_HPP_UNUSED T* ptr) noexcept
-            -> std::bool_constant<std::is_same_v<
-                decltype(std::declval<typename T::iterator>()->second), typename T::mapped_type>>;
-
-        template<typename>
-        static constexpr auto check(...) noexcept -> std::false_type;
-
-        using type = decltype(check<C>(nullptr));
-
-    public:
-        static constexpr bool value = type::value;
-    };
-
-    template<typename C>
-    struct has_map_at
-    {
-    private:
-        template<typename T>
-        static constexpr auto check(RPC_HPP_UNUSED T* ptr) noexcept
-            -> std::bool_constant<std::is_same_v<
-                decltype(std::declval<T>().at(typename T::key_type{})), typename T::mapped_type&>>;
-
-        template<typename>
-        static constexpr auto check(...) noexcept -> std::false_type;
-
-        using type = decltype(check<C>(nullptr));
-
-    public:
-        static constexpr bool value = type::value;
-    };
-
-    template<typename C>
-    struct is_map : std::bool_constant<is_container_v<C> && has_map_iterator<C>::value>
-    {
-    };
-
-    template<typename C>
-    inline constexpr bool is_map_v = is_map<std::remove_cv_t<C>>::value;
-
-    template<typename C>
-    struct is_multimap : std::bool_constant<is_map_v<C> && (!has_map_at<C>::value)>
-    {
-    };
-
-    template<typename C>
-    inline constexpr bool is_multimap_v = is_multimap<std::remove_cv_t<C>>::value;
-
-    template<typename C>
-    struct has_set_key
-    {
-    private:
-        template<typename T>
-        static constexpr auto check(RPC_HPP_UNUSED T* ptr) noexcept
-            -> std::bool_constant<std::is_same_v<typename T::value_type, typename T::key_type>>;
-
-        template<typename>
-        static constexpr auto check(...) noexcept -> std::false_type;
-
-        using type = decltype(check<C>(nullptr));
-
-    public:
-        static constexpr bool value = type::value;
-    };
-
-    template<typename C>
-    struct is_set : std::bool_constant<is_container_v<C> && has_set_key<C>::value>
-    {
-    };
-
-    template<typename C>
-    inline constexpr bool is_set_v = is_set<std::remove_cv_t<C>>::value;
 
     template<typename C>
     struct is_optional : std::false_type
