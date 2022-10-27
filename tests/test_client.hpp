@@ -41,32 +41,17 @@
 
 #include <rpc_client.hpp>
 
-#if defined(RPC_HPP_ENABLE_BITSERY)
-#  include <rpc_adapters/rpc_bitsery.hpp>
-#endif
-
-#if defined(RPC_HPP_ENABLE_BOOST_JSON)
-#  include <rpc_adapters/rpc_boost_json.hpp>
-#endif
-
-#if defined(RPC_HPP_ENABLE_NJSON)
-#  include <rpc_adapters/rpc_njson.hpp>
-#endif
-
-#if defined(RPC_HPP_ENABLE_RAPIDJSON)
-#  include <rpc_adapters/rpc_rapidjson.hpp>
-#endif
-
 #include <memory>
 #include <utility>
 
 namespace rpc_hpp::tests
 {
 template<typename Serial>
-class TestClient final : public rpc_hpp::client_interface<Serial>
+class TestClient final : public callback_client_interface<Serial>
 {
 public:
-    using bytes_t = typename Serial::bytes_t;
+    using callback_client_interface<Serial>::bytes_t;
+    using callback_client_interface<Serial>::object_t;
 
     explicit TestClient(std::shared_ptr<TestServer<Serial>> server)
         : m_p_message_queue{ std::make_shared<SyncQueue<bytes_t>>() },
@@ -93,7 +78,45 @@ public:
         return response.value();
     }
 
+    void uninstall_callback(callback_install_request&& callback) override
+    {
+        callback.is_uninstall = true;
+        send(object_t{ std::move(callback) }.to_bytes());
+
+        if (const auto response = object_t::parse_bytes(receive());
+            !response.has_value() || response.value().type() != rpc_type::callback_install_request)
+        {
+            throw callback_install_error{
+                "server did not respond to callback_install_request (uninstall)"
+            };
+        }
+    }
+
 private:
+    [[nodiscard]] auto install_callback_impl(std::string func_name_sink)
+        -> callback_install_request override
+    {
+        callback_install_request cb{ std::move(func_name_sink) };
+        object_t request{ cb };
+
+        try
+        {
+            send(request.to_bytes());
+        }
+        catch (const std::exception& ex)
+        {
+            throw client_send_error{ ex.what() };
+        }
+
+        if (auto response = object_t::parse_bytes(receive());
+            !response.has_value() || response.value().type() != rpc_type::callback_install_request)
+        {
+            throw callback_install_error{ "server did not respond to callback_install_request" };
+        }
+
+        return cb;
+    }
+
     std::shared_ptr<SyncQueue<bytes_t>> m_p_message_queue;
     std::weak_ptr<SyncQueue<bytes_t>> m_p_server_queue;
 };

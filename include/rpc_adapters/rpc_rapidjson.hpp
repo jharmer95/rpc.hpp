@@ -469,7 +469,7 @@ namespace detail_rapidjson
         {
             if (subobject(key).GetArray().Size() != sizeof...(Args))
             {
-                throw function_mismatch{ "rapidjson: invalid number of args" };
+                throw function_mismatch_error{ "rapidjson: invalid number of args" };
             }
 
             [[maybe_unused]] rapidjson::SizeType arg_counter = 0;
@@ -643,7 +643,7 @@ namespace detail_rapidjson
 
             if (!validate_arg<no_ref_t>(arg))
             {
-                throw function_mismatch{ mismatch_message(typeid(no_ref_t).name(), arg) };
+                throw function_mismatch_error{ mismatch_message(typeid(no_ref_t).name(), arg) };
             }
 
             no_ref_t out_val;
@@ -667,7 +667,7 @@ namespace detail_rapidjson
 
             if (index >= arr.Size())
             {
-                throw function_mismatch("Argument count mismatch");
+                throw function_mismatch_error("Argument count mismatch");
             }
 
             const auto old_idx = index;

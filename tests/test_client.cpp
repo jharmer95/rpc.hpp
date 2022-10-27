@@ -34,8 +34,6 @@
 ///OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ///
 
-#define RPC_HPP_ENABLE_CALLBACKS
-
 #include "test_client.hpp"
 #include "test_structs.hpp"
 #include "static_funcs.hpp"
@@ -459,7 +457,6 @@ TEST_CASE_TEMPLATE("HashComplexRef", TestType, RPC_TEST_TYPES)
     REQUIRE(expected == test);
 }
 
-#if defined(RPC_HPP_ENABLE_CALLBACKS)
 TEST_CASE_TEMPLATE("GetConnectionInfo", TestType, RPC_TEST_TYPES)
 {
     auto p_client = GetClient<TestType>();
@@ -491,7 +488,6 @@ TEST_CASE_TEMPLATE("Callback already installed", TestType, RPC_TEST_TYPES)
 
     p_client->uninstall_callback(std::move(callback_request));
 }
-#endif
 
 TEST_CASE_TEMPLATE("Function not found", TestType, RPC_TEST_TYPES)
 {
@@ -500,7 +496,7 @@ TEST_CASE_TEMPLATE("Function not found", TestType, RPC_TEST_TYPES)
     const auto response = p_client->call_func("FUNC_WHICH_DOES_NOT_EXIST");
 
     REQUIRE(response.is_error());
-    REQUIRE(response.get_error_type() == rpc_hpp::exception_type::func_not_found);
+    REQUIRE(response.get_error_type() == rpc_hpp::exception_type::function_missing);
 }
 
 TEST_CASE_TEMPLATE("FunctionMismatch", TestType, RPC_TEST_TYPES)
@@ -516,31 +512,31 @@ TEST_CASE_TEMPLATE("FunctionMismatch", TestType, RPC_TEST_TYPES)
             p_client->call_func("SimpleSum", 2, std::string{ "Hello, world" });
 
         REQUIRE(obj.is_error());
-        REQUIRE(obj.get_error_type() == rpc_hpp::exception_type::signature_mismatch);
+        REQUIRE(obj.get_error_type() == rpc_hpp::exception_type::func_signature_mismatch);
 
         obj = p_client->call_func("SimpleSum", 1, 2);
         REQUIRE(obj.type() == rpc_hpp::rpc_type::func_result);
         REQUIRE_THROWS_AS(
-            (std::ignore = obj.template get_result<std::string>()), rpc_hpp::function_mismatch);
+            (std::ignore = obj.template get_result<std::string>()), rpc_hpp::function_mismatch_error);
 
         obj = p_client->call_func("SimpleSum", 2.4, 1.2);
         REQUIRE(obj.is_error());
-        REQUIRE(obj.get_error_type() == rpc_hpp::exception_type::signature_mismatch);
+        REQUIRE(obj.get_error_type() == rpc_hpp::exception_type::func_signature_mismatch);
 
         obj = p_client->call_func("StdDev", -4.2, 125.325, 552.125, 55.123, 2599.6, 1245.125663,
             9783.49, 125.12, 553.3333333333, 2266.1, 111.222, 1234.56789);
 
         REQUIRE(obj.is_error());
-        REQUIRE(obj.get_error_type() == rpc_hpp::exception_type::signature_mismatch);
+        REQUIRE(obj.get_error_type() == rpc_hpp::exception_type::func_signature_mismatch);
 
         obj = p_client->call_func("StdDev", -4, 125.325, 552.125, 55, 2599.6, 1245.125663, 9783.49,
             125.12, 553.3333333333, 2266.1);
         REQUIRE(obj.is_error());
-        REQUIRE(obj.get_error_type() == rpc_hpp::exception_type::signature_mismatch);
+        REQUIRE(obj.get_error_type() == rpc_hpp::exception_type::func_signature_mismatch);
 
         obj = p_client->call_func("StdDev", -4.2, 125.325);
         REQUIRE(obj.is_error());
-        REQUIRE(obj.get_error_type() == rpc_hpp::exception_type::signature_mismatch);
+        REQUIRE(obj.get_error_type() == rpc_hpp::exception_type::func_signature_mismatch);
 #if defined(RPC_HPP_ENABLE_BITSERY)
     }
 #endif

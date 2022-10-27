@@ -410,7 +410,7 @@ namespace detail_boost_json
 
             if (arg_arr.as_array().size() != sizeof...(Args))
             {
-                throw function_mismatch{ "Boost.JSON: invalid number of args" };
+                throw function_mismatch_error{ "Boost.JSON: invalid number of args" };
             }
 
             [[maybe_unused]] size_t arg_counter = 0;
@@ -523,7 +523,7 @@ namespace detail_boost_json
 
             if (!validate_arg<no_ref_t>(arg))
             {
-                throw function_mismatch{ mismatch_string(typeid(no_ref_t).name(), arg) };
+                throw function_mismatch_error{ mismatch_string(typeid(no_ref_t).name(), arg) };
             }
 
             no_ref_t out_val;
@@ -545,7 +545,7 @@ namespace detail_boost_json
 
             if (index >= arr.size())
             {
-                throw function_mismatch{ "Argument count mismatch" };
+                throw function_mismatch_error{ "Argument count mismatch" };
             }
 
             const auto old_idx = index;

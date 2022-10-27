@@ -41,11 +41,12 @@ namespace rpc_hpp
 enum class exception_type : int
 {
     none,
-    func_not_found,
+    function_missing,
     remote_exec,
     serialization,
     deserialization,
-    signature_mismatch,
+    function_bind,
+    func_signature_mismatch,
     client_send,
     client_receive,
     server_send,
@@ -74,16 +75,16 @@ private:
     exception_type m_type;
 };
 
-class function_not_found : public rpc_exception
+class function_missing_error : public rpc_exception
 {
 public:
-    explicit function_not_found(const std::string& mesg)
-        : rpc_exception(mesg, exception_type::func_not_found)
+    explicit function_missing_error(const std::string& mesg)
+        : rpc_exception(mesg, exception_type::function_missing)
     {
     }
 
-    explicit function_not_found(const char* const mesg)
-        : rpc_exception(mesg, exception_type::func_not_found)
+    explicit function_missing_error(const char* const mesg)
+        : rpc_exception(mesg, exception_type::function_missing)
     {
     }
 };
@@ -130,16 +131,30 @@ public:
     }
 };
 
-class function_mismatch : public rpc_exception
+class function_bind_error : public rpc_exception
 {
 public:
-    explicit function_mismatch(const std::string& mesg)
-        : rpc_exception(mesg, exception_type::signature_mismatch)
+    explicit function_bind_error(const std::string& mesg)
+        : rpc_exception(mesg, exception_type::function_bind)
     {
     }
 
-    explicit function_mismatch(const char* const mesg)
-        : rpc_exception(mesg, exception_type::signature_mismatch)
+    explicit function_bind_error(const char* const mesg)
+        : rpc_exception(mesg, exception_type::function_bind)
+    {
+    }
+};
+
+class function_mismatch_error : public rpc_exception
+{
+public:
+    explicit function_mismatch_error(const std::string& mesg)
+        : rpc_exception(mesg, exception_type::func_signature_mismatch)
+    {
+    }
+
+    explicit function_mismatch_error(const char* const mesg)
+        : rpc_exception(mesg, exception_type::func_signature_mismatch)
     {
     }
 };
@@ -200,15 +215,15 @@ public:
     }
 };
 
-class rpc_object_mismatch : public rpc_exception
+class object_mismatch_error : public rpc_exception
 {
 public:
-    explicit rpc_object_mismatch(const std::string& mesg)
+    explicit object_mismatch_error(const std::string& mesg)
         : rpc_exception(mesg, exception_type::rpc_object_mismatch)
     {
     }
 
-    explicit rpc_object_mismatch(const char* const mesg)
+    explicit object_mismatch_error(const char* const mesg)
         : rpc_exception(mesg, exception_type::rpc_object_mismatch)
     {
     }
@@ -637,8 +652,8 @@ namespace detail
     {
         switch (err.except_type)
         {
-            case exception_type::func_not_found:
-                throw function_not_found{ err.err_mesg };
+            case exception_type::function_missing:
+                throw function_missing_error{ err.err_mesg };
 
             case exception_type::remote_exec:
                 throw remote_exec_error{ err.err_mesg };
@@ -649,8 +664,11 @@ namespace detail
             case exception_type::deserialization:
                 throw deserialization_error{ err.err_mesg };
 
-            case exception_type::signature_mismatch:
-                throw function_mismatch{ err.err_mesg };
+            case exception_type::function_bind:
+                throw function_bind_error{ err.err_mesg };
+
+            case exception_type::func_signature_mismatch:
+                throw function_mismatch_error{ err.err_mesg };
 
             case exception_type::client_send:
                 throw client_send_error{ err.err_mesg };
@@ -665,7 +683,7 @@ namespace detail
                 throw server_receive_error{ err.err_mesg };
 
             case exception_type::rpc_object_mismatch:
-                throw rpc_object_mismatch{ err.err_mesg };
+                throw object_mismatch_error{ err.err_mesg };
 
             case exception_type::callback_install:
                 throw callback_install_error{ err.err_mesg };
@@ -803,7 +821,7 @@ public:
             case rpc_type::callback_request:
             case rpc_type::func_request:
             default:
-                throw rpc_object_mismatch{ "Invalid rpc_object type detected" };
+                throw object_mismatch_error{ "Invalid rpc_object type detected" };
         }
     }
 
@@ -827,7 +845,7 @@ public:
             case rpc_type::func_error:
             case rpc_type::func_result:
             default:
-                throw rpc_object_mismatch{ "Invalid rpc_object type detected" };
+                throw object_mismatch_error{ "Invalid rpc_object type detected" };
         }
     }
 
@@ -858,7 +876,7 @@ public:
             case rpc_type::func_result:
             case rpc_type::func_result_w_bind:
             default:
-                throw rpc_object_mismatch{ "Invalid rpc_object type detected" };
+                throw object_mismatch_error{ "Invalid rpc_object type detected" };
         }
     }
 
@@ -882,7 +900,7 @@ public:
             case rpc_type::func_result:
             case rpc_type::func_result_w_bind:
             default:
-                throw rpc_object_mismatch{ "Invalid rpc_object type detected" };
+                throw object_mismatch_error{ "Invalid rpc_object type detected" };
         }
     }
 
@@ -905,7 +923,7 @@ public:
             case rpc_type::func_error:
             case rpc_type::func_result:
             default:
-                throw rpc_object_mismatch{ "Invalid rpc_object type detected" };
+                throw object_mismatch_error{ "Invalid rpc_object type detected" };
         }
     }
 

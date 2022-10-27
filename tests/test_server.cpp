@@ -34,8 +34,6 @@
 ///OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ///
 
-#define RPC_HPP_ENABLE_CALLBACKS
-
 #include "test_server.hpp"
 #include "static_funcs.hpp"
 
@@ -356,10 +354,8 @@ void HashComplexRef(ComplexObject& cx_obj, std::string& hashStr)
 template<typename Serial>
 static void BindFuncs(TestServer<Serial>& server)
 {
-#if defined(RPC_HPP_ENABLE_CALLBACKS)
     server.template bind<std::string>(
         "GetConnectionInfo", [&server] { return server.GetConnectionInfo(); });
-#endif
 
     server.template bind<void>("KillServer", [&server] { return server.Stop(); });
     server.bind("ThrowError", &ThrowError);

@@ -353,7 +353,7 @@ namespace detail_njson
         {
             if (subobject(key).size() != sizeof...(Args))
             {
-                throw function_mismatch{ "NJSON: invalid number of args" };
+                throw function_mismatch_error{ "NJSON: invalid number of args" };
             }
 
             [[maybe_unused]] size_t arg_counter = 0;
@@ -429,12 +429,12 @@ namespace detail_njson
             if (!validate_arg<T>(arg))
             {
 #ifdef RPC_HPP_NO_RTTI
-                throw function_mismatch{
+                throw function_mismatch_error{
                     std::string{ "njson expected type: {NO-RTTI}, got type: " }.append(
                         arg.type_name())
                 };
 #else
-                throw function_mismatch{ std::string{ "njson expected type: " }
+                throw function_mismatch_error{ std::string{ "njson expected type: " }
                                              .append(typeid(T).name())
                                              .append(", got type: ")
                                              .append(arg.type_name()) };
@@ -455,7 +455,7 @@ namespace detail_njson
         {
             if (index >= arg_arr.size())
             {
-                throw function_mismatch{ "Argument count mismatch" };
+                throw function_mismatch_error{ "Argument count mismatch" };
             }
 
             if (arg_arr.is_array())

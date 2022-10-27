@@ -4,15 +4,12 @@
 #include "rpc.hpp"
 
 #include <exception>
+#include <functional>
 #include <string>
 #include <string_view>
 #include <tuple>
+#include <unordered_map>
 #include <utility>
-
-#if defined(RPC_HPP_ENABLE_CALLBACKS)
-#  include <functional>
-#  include <unordered_map>
-#endif
 
 #if !defined(RPC_HEADER_FUNC)
 #  define RPC_HEADER_FUNC(RT, FNAME, ...) inline RT (*FNAME)(__VA_ARGS__) = nullptr
@@ -112,122 +109,16 @@ public:
         }
     }
 
-#if defined(RPC_HPP_ENABLE_CALLBACKS)
-    auto has_callback(std::string_view func_name) -> bool
-    {
-        return m_callback_map.find(func_name) != m_callback_map.end();
-    }
-
-    template<typename R, typename... Args, typename S>
-    RPC_HPP_NODISCARD("the returned callback_install_request is an input to uninstall_callback")
-    RPC_HPP_INLINE auto install_callback(S&& func_name, std::function<R(Args...)> func)
-        -> callback_install_request
-    {
-        static_assert(detail::is_stringlike_v<S>, "func_name must be a string-like type");
-
-        return install_callback_impl<R, Args...>(std::forward<S>(func_name), std::move(func));
-    }
-
-    template<typename R, typename... Args, typename S>
-    RPC_HPP_NODISCARD("the returned callback_install_request is an input to uninstall_callback")
-    RPC_HPP_INLINE auto install_callback(S&& func_name, const detail::fptr_t<R, Args...> func_ptr)
-        -> callback_install_request
-    {
-        static_assert(detail::is_stringlike_v<S>, "func_name must be a string-like type");
-
-        return install_callback_impl<R, Args...>(std::forward<S>(func_name), func_ptr);
-    }
-
-    template<typename R, typename... Args, typename S, typename F>
-    RPC_HPP_NODISCARD("the returned callback_install_request is an input to uninstall_callback")
-    RPC_HPP_INLINE auto install_callback(S&& func_name, F&& func) -> callback_install_request
-    {
-        static_assert(detail::is_stringlike_v<S>, "func_name must be a string-like type");
-
-        return install_callback_impl<R, Args...>(
-            std::forward<S>(func_name), std::function<R(Args...)>{ std::forward<F>(func) });
-    }
-
-    void uninstall_callback(callback_install_request&& callback)
-    {
-        callback.is_uninstall = true;
-        send(object_t{ std::move(callback) }.to_bytes());
-
-        if (const auto response = object_t::parse_bytes(receive());
-            !response.has_value() || response.value().type() != rpc_type::callback_install_request)
-        {
-            throw callback_install_error{
-                "server did not respond to callback_install_request (uninstall)"
-            };
-        }
-    }
-#endif
-
 protected:
     client_interface(client_interface&&) noexcept = default;
 
     virtual void send(bytes_t&& bytes) = 0;
     virtual auto receive() -> bytes_t = 0;
 
-private:
-#if defined(RPC_HPP_ENABLE_CALLBACKS)
-    template<typename R, typename... Args, typename S, typename F>
-    RPC_HPP_NODISCARD("the returned callback_install_request is an input to uninstall_callback")
-    auto install_callback_impl(S&& func_name, F&& func) -> callback_install_request
+    virtual void handle_callback_object(object_t& request)
     {
-        static_assert(detail::is_stringlike_v<S>, "func_name must be a string-like type");
-
-        callback_install_request cb{ std::forward<S>(func_name) };
-
-        m_callback_map.try_emplace(cb.func_name,
-            [func = std::forward<F>(func)](object_t& rpc_obj)
-            {
-                try
-                {
-                    detail::exec_func<true, Serial, R, Args...>(func, rpc_obj);
-                }
-                catch (const rpc_exception& ex)
-                {
-                    rpc_obj = object_t{ detail::callback_error{ rpc_obj.get_func_name(), ex } };
-                }
-            });
-
-        object_t request{ cb };
-
-        try
-        {
-            send(request.to_bytes());
-        }
-        catch (const std::exception& ex)
-        {
-            throw client_send_error{ ex.what() };
-        }
-
-        if (auto response = object_t::parse_bytes(receive());
-            !response.has_value() || response.value().type() != rpc_type::callback_install_request)
-        {
-            throw callback_install_error{ "server did not respond to callback_install_request" };
-        }
-
-        return cb;
+        throw object_mismatch_error{ "Invalid rpc_object type detected" };
     }
-
-    void dispatch_callback(object_t& rpc_obj)
-    {
-        const auto func_name = rpc_obj.get_func_name();
-
-        if (const auto it = m_callback_map.find(func_name); it != m_callback_map.cend())
-        {
-            it->second(rpc_obj);
-            return;
-        }
-
-        rpc_obj = object_t{ detail::callback_error{ func_name,
-            function_not_found{
-                std::string{ "RPC error: Called function: \"" }.append(func_name).append(
-                    "\" not found") } } };
-    }
-#endif
 
     void recv_loop(object_t& response)
     {
@@ -254,40 +145,146 @@ private:
 
                 case rpc_type::callback_request:
                 case rpc_type::func_request:
-#if defined(RPC_HPP_ENABLE_CALLBACKS)
-                {
-                    dispatch_callback(response);
-
-                    try
-                    {
-                        send(response.to_bytes());
-                    }
-                    catch (const std::exception& ex)
-                    {
-                        throw client_send_error{ ex.what() };
-                    }
-
-                    return recv_loop(response);
-                }
-#else
-                    [[fallthrough]];
-#endif
+                    return handle_callback_object(response);
 
                 case rpc_type::callback_install_request:
                 case rpc_type::callback_error:
                 case rpc_type::callback_result:
                 case rpc_type::callback_result_w_bind:
                 default:
-                    throw rpc_object_mismatch{ "Invalid rpc_object type detected" };
+                    throw object_mismatch_error{ "Invalid rpc_object type detected" };
             }
         }
 
         throw client_receive_error{ "Invalid RPC object received" };
     }
+};
 
-#if defined(RPC_HPP_ENABLE_CALLBACKS)
+template<typename Serial>
+class callback_client_interface : public client_interface<Serial>
+{
+public:
+    using client_interface<Serial>::bytes_t;
+    using client_interface<Serial>::object_t;
+    using client_interface<Serial>::client_interface;
+    using client_interface<Serial>::receive;
+    using client_interface<Serial>::send;
+    using client_interface<Serial>::recv_loop;
+
+    virtual void uninstall_callback(callback_install_request&& callback) = 0;
+
+    [[nodiscard]] auto has_callback(std::string_view func_name) const -> bool
+    {
+        return m_callback_map.find(func_name) != m_callback_map.cend();
+    }
+
+    template<typename R, typename... Args, typename S>
+    RPC_HPP_NODISCARD("the returned callback_install_request is an input to uninstall_callback")
+    auto install_callback(S&& func_name, std::function<R(Args...)> func) -> callback_install_request
+    {
+        static_assert(detail::is_stringlike_v<S>, "func_name must be a string-like type");
+
+        auto result = install_callback_impl(std::forward<S>(func_name));
+        bind_callback<R, Args...>(result.func_name, std::move(func));
+        return result;
+    }
+
+    template<typename R, typename... Args, typename S>
+    RPC_HPP_NODISCARD("the returned callback_install_request is an input to uninstall_callback")
+    auto install_callback(S&& func_name, const detail::fptr_t<R, Args...> func_ptr)
+        -> callback_install_request
+    {
+        static_assert(detail::is_stringlike_v<S>, "func_name must be a string-like type");
+
+        auto result = install_callback_impl(std::forward<S>(func_name));
+        bind_callback<R, Args...>(std::forward<S>(func_name), func_ptr);
+        return result;
+    }
+
+    template<typename R, typename... Args, typename S, typename F>
+    RPC_HPP_NODISCARD("the returned callback_install_request is an input to uninstall_callback")
+    auto install_callback(S&& func_name, F&& func) -> callback_install_request
+    {
+        static_assert(detail::is_stringlike_v<S>, "func_name must be a string-like type");
+
+        auto result = install_callback_impl(std::forward<S>(func_name));
+        bind_callback<R, Args...>(std::forward<S>(func_name), std::forward<F>(func));
+        return result;
+    }
+
+private:
+    RPC_HPP_NODISCARD("the returned callback_install_request is an input to uninstall_callback")
+    virtual auto install_callback_impl(std::string func_name_sink) -> callback_install_request = 0;
+
+    void handle_callback_object(object_t& request) final
+    {
+        if (const auto type = request.type();
+            type == rpc_type::callback_request || type == rpc_type::func_request)
+        {
+            dispatch_callback(request);
+
+            try
+            {
+                send(request.to_bytes());
+            }
+            catch (const std::exception& ex)
+            {
+                throw client_send_error{ ex.what() };
+            }
+
+            recv_loop(request);
+        }
+        else
+        {
+            client_interface<Serial>::handle_callback_object(request);
+        }
+    }
+
+    template<typename R, typename... Args, typename S, typename F>
+    void bind_callback(S&& func_name, F&& func)
+    {
+        static_assert(detail::is_stringlike_v<S>, "func_name must be a string-like type");
+
+        auto [_, status] = m_callback_map.try_emplace(std::forward<S>(func_name),
+            [func = std::forward<F>(func)](object_t& rpc_obj)
+            {
+                try
+                {
+                    detail::exec_func<true, Serial, R, Args...>(func, rpc_obj);
+                }
+                catch (const rpc_exception& ex)
+                {
+                    rpc_obj = object_t{ detail::callback_error{ rpc_obj.get_func_name(), ex } };
+                }
+            });
+
+        if (!status)
+        {
+            // NOTE: `try_emplace` does not move func_name unless successful, so the use of it here is safe
+            throw callback_install_error{ std::string{
+                "RPC error: Client could not install callback: " }
+                                              .append(std::forward<S>(func_name))
+                                              .append("() successfully") };
+        }
+    }
+
+    void dispatch_callback(object_t& rpc_obj)
+    {
+        const auto func_name = rpc_obj.get_func_name();
+
+        if (const auto it = m_callback_map.find(func_name); it != m_callback_map.cend())
+        {
+            it->second(rpc_obj);
+            return;
+        }
+
+        rpc_obj = object_t{ detail::callback_error{ func_name,
+            function_missing_error{
+                std::string{ "RPC error: Called function: " }.append(func_name).append(
+                    "() not found") } } };
+    }
+
     std::unordered_map<std::string, std::function<void(object_t&)>> m_callback_map{};
-#endif
 };
 } //namespace rpc_hpp
 #endif

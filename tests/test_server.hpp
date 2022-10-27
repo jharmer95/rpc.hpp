@@ -63,19 +63,21 @@
 #include <memory>
 #include <sstream>
 #include <string>
+#include <unordered_set>
 #include <utility>
 
 namespace rpc_hpp::tests
 {
 template<typename Serial>
-class TestServer final : public server_interface<Serial>
+class TestServer final : public callback_server_interface<Serial>
 {
 public:
-    using bytes_t = typename server_interface<Serial>::bytes_t;
-    using server_interface<Serial>::bind;
-    using server_interface<Serial>::handle_bytes;
+    using callback_server_interface<Serial>::bytes_t;
+    using callback_server_interface<Serial>::object_t;
+    using callback_server_interface<Serial>::bind;
+    using callback_server_interface<Serial>::handle_bytes;
 
-    [[nodiscard]] bytes_t receive() override
+    [[nodiscard]] bytes_t receive()
     {
         auto response = m_p_message_queue->pop();
 
@@ -87,7 +89,7 @@ public:
         return response.value();
     }
 
-    void send(bytes_t&& bytes) override
+    void send(bytes_t&& bytes)
     {
         if (m_p_client_queue.expired())
         {
@@ -105,7 +107,6 @@ public:
         return m_p_message_queue;
     }
 
-#if defined(RPC_HPP_ENABLE_CALLBACKS)
     std::string GetConnectionInfo()
     {
         std::stringstream ss;
@@ -115,7 +116,6 @@ public:
 
         return ss.str();
     }
-#endif
 
     void Run()
     {
@@ -154,9 +154,90 @@ public:
     }
 
 private:
+    [[nodiscard]] auto recv_impl() -> object_t
+    {
+        bytes_t bytes = [this]
+        {
+            try
+            {
+                return receive();
+            }
+            catch (const std::exception& ex)
+            {
+                throw server_receive_error{ ex.what() };
+            }
+        }();
+
+        auto o_response = object_t::parse_bytes(std::move(bytes));
+
+        if (!o_response.has_value())
+        {
+            throw server_receive_error{ "Invalid RPC object received" };
+        }
+
+        switch (auto& response = o_response.value(); response.type())
+        {
+            case rpc_type::callback_result:
+            case rpc_type::callback_result_w_bind:
+            case rpc_type::callback_error:
+                return std::move(response);
+
+            case rpc_type::callback_install_request:
+            case rpc_type::callback_request:
+            case rpc_type::func_error:
+            case rpc_type::func_request:
+            case rpc_type::func_result:
+            case rpc_type::func_result_w_bind:
+            default:
+                throw object_mismatch_error{ "Invalid rpc_object type detected" };
+        }
+    }
+
+    auto call_callback_impl(object_t&& request) -> object_t override
+    {
+        RPC_HPP_PRECONDITION(request.type() == rpc_type::callback_request);
+
+        if (const auto func_name = request.get_func_name();
+            m_installed_callbacks.find(func_name) == m_installed_callbacks.cend())
+        {
+            throw callback_missing_error{ std::string{ "Callback \"" }.append(func_name).append(
+                "\" was called but not installed") };
+        }
+
+        try
+        {
+            send(std::move(request).to_bytes());
+        }
+        catch (const std::exception& ex)
+        {
+            throw server_send_error{ ex.what() };
+        }
+
+        return recv_impl();
+    }
+
+    void install_callback(object_t& rpc_obj) override
+    {
+        const auto func_name = rpc_obj.get_func_name();
+        const auto [_, inserted] = m_installed_callbacks.insert(func_name);
+
+        if (!inserted)
+        {
+            rpc_obj = object_t{ detail::callback_error{ func_name,
+                callback_install_error(std::string{ "Callback: \"" }.append(func_name).append(
+                    "\" is already installed")) } };
+        }
+    }
+
+    void uninstall_callback(const object_t& rpc_obj) override
+    {
+        m_installed_callbacks.erase(rpc_obj.get_func_name());
+    }
+
     std::atomic<bool> m_running{ false };
     std::shared_ptr<SyncQueue<bytes_t>> m_p_message_queue{ std::make_shared<SyncQueue<bytes_t>>() };
     std::weak_ptr<SyncQueue<bytes_t>> m_p_client_queue{};
+    std::unordered_set<std::string> m_installed_callbacks{};
 };
 
 template<typename Serial>
