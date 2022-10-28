@@ -69,6 +69,7 @@ public:
     }
 
     void handle_bytes(bytes_t& bytes)
+    try
     {
         if (auto rpc_opt = object_t::parse_bytes(std::move(bytes)); rpc_opt.has_value())
         {
@@ -106,6 +107,14 @@ public:
         bytes = object_t{
             detail::func_error{ "", server_receive_error("RPC error: Invalid RPC object received") }
         }.to_bytes();
+    }
+    catch (const rpc_exception& ex)
+    {
+        bytes = object_t{ detail::func_error{ "", ex } }.to_bytes();
+    }
+    catch (const std::exception& ex)
+    {
+        bytes = object_t{ detail::func_error{ "", exception_type::none, ex.what() } }.to_bytes();
     }
 
 protected:
@@ -163,6 +172,7 @@ private:
     }
 
     void dispatch(object_t& rpc_obj) const
+    try
     {
         RPC_HPP_PRECONDITION(!rpc_obj.is_empty());
         RPC_HPP_PRECONDITION(rpc_obj.type() == rpc_type::func_request);
@@ -183,6 +193,14 @@ private:
         }
 
         RPC_HPP_POSTCONDITION(!rpc_obj.is_empty());
+    }
+    catch (const rpc_exception& ex)
+    {
+        rpc_obj = object_t{ detail::func_error{ "", ex } };
+    }
+    catch (const std::exception& ex)
+    {
+        rpc_obj = object_t{ detail::func_error{ "", exception_type::none, ex.what() } };
     }
 
     std::unordered_map<std::string, std::function<void(object_t&)>> m_dispatch_table{};
@@ -237,6 +255,7 @@ private:
     virtual void uninstall_callback(const object_t& rpc_obj) = 0;
 
     void handle_callback_object(object_t& rpc_obj) final
+    try
     {
         RPC_HPP_PRECONDITION(!rpc_obj.is_empty());
 
@@ -251,6 +270,14 @@ private:
         }
 
         RPC_HPP_POSTCONDITION(!rpc_obj.is_empty());
+    }
+    catch (const rpc_exception& ex)
+    {
+        rpc_obj = object_t{ detail::callback_error{ "", ex } };
+    }
+    catch (const std::exception& ex)
+    {
+        rpc_obj = object_t{ detail::callback_error{ "", exception_type::none, ex.what() } };
     }
 };
 } //namespace rpc_hpp

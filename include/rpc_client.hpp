@@ -325,6 +325,7 @@ private:
     }
 
     void dispatch_callback(object_t& rpc_obj)
+    try
     {
         RPC_HPP_PRECONDITION(!rpc_obj.is_empty());
 
@@ -343,6 +344,14 @@ private:
         }
 
         RPC_HPP_POSTCONDITION(!rpc_obj.is_empty());
+    }
+    catch (const rpc_exception& ex)
+    {
+        rpc_obj = object_t{ detail::callback_error{ "", ex } };
+    }
+    catch (const std::exception& ex)
+    {
+        rpc_obj = object_t{ detail::callback_error{ "", exception_type::none, ex.what() } };
     }
 
     std::unordered_map<std::string, std::function<void(object_t&)>> m_callback_map{};
