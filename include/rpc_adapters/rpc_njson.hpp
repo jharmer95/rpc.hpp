@@ -120,6 +120,9 @@ namespace detail_njson
             const callback_install_request& callback_req) -> serial_t;
 
         [[nodiscard]] static auto has_bound_args(const serial_t& serial_obj) -> bool;
+
+    private:
+        [[nodiscard]] static auto verify_type(const serial_t& serial_obj, rpc_type type) -> bool;
     };
 
     class serializer : public serializer_base<serial_adapter, false>
@@ -317,6 +320,8 @@ namespace detail_njson
         template<typename T>
         void as_map(const std::string_view key, T& val) const
         {
+            RPC_HPP_PRECONDITION(std::size(val) == 0);
+
             const auto& obj = subobject(key);
 
             for (const auto& [k, v] : obj.items())
@@ -329,6 +334,8 @@ namespace detail_njson
         template<typename T>
         void as_multimap(const std::string_view key, T& val) const
         {
+            RPC_HPP_PRECONDITION(std::size(val) == 0);
+
             const auto& obj = subobject(key);
 
             for (const auto& [k, v] : obj.items())
@@ -378,7 +385,8 @@ namespace detail_njson
     private:
         [[nodiscard]] auto subobject(const std::string_view key) const -> const nlohmann::json&
         {
-            return key.empty() ? m_json : m_json[key];
+            RPC_HPP_PRECONDITION(key.empty() || m_json.is_object());
+            return key.empty() ? m_json : m_json.at(key);
         }
 
         template<typename T>
@@ -492,6 +500,7 @@ namespace detail_njson
             throw deserialization_error{ R"(nlohmann::json error: field "func_name" not found)" };
         }
 
+        RPC_HPP_POSTCONDITION(!is_empty(obj));
         return obj;
     }
 
@@ -507,11 +516,13 @@ namespace detail_njson
 
     inline auto serial_adapter::get_func_name(const nlohmann::json& serial_obj) -> std::string
     {
+        RPC_HPP_PRECONDITION(!is_empty(serial_obj));
         return serial_obj["func_name"];
     }
 
     inline rpc_type serial_adapter::get_type(const nlohmann::json& serial_obj)
     {
+        RPC_HPP_PRECONDITION(!is_empty(serial_obj));
         return static_cast<rpc_type>(serial_obj["type"].get<int>());
     }
 
@@ -519,8 +530,8 @@ namespace detail_njson
     auto serial_adapter::get_result(const nlohmann::json& serial_obj)
         -> detail::rpc_result<IsCallback, R>
     {
-        RPC_HPP_PRECONDITION((IsCallback && serial_obj["type"] == rpc_type::callback_result)
-            || (!IsCallback && serial_obj["type"] == rpc_type::func_result));
+        RPC_HPP_PRECONDITION(verify_type(
+            serial_obj, IsCallback ? rpc_type::callback_result : rpc_type::func_result));
 
         detail::rpc_result<IsCallback, R> result;
         deserializer ser{ serial_obj };
@@ -541,8 +552,8 @@ namespace detail_njson
     auto serial_adapter::get_result_w_bind(const nlohmann::json& serial_obj)
         -> detail::rpc_result_w_bind<IsCallback, R, Args...>
     {
-        RPC_HPP_PRECONDITION((IsCallback && serial_obj["type"] == rpc_type::callback_result_w_bind)
-            || (!IsCallback && serial_obj["type"] == rpc_type::func_result_w_bind));
+        RPC_HPP_PRECONDITION(verify_type(serial_obj,
+            IsCallback ? rpc_type::callback_result_w_bind : rpc_type::func_result_w_bind));
 
         detail::rpc_result_w_bind<IsCallback, R, Args...> result;
         deserializer ser{ serial_obj };
@@ -563,12 +574,10 @@ namespace detail_njson
     auto serial_adapter::get_request(const nlohmann::json& serial_obj)
         -> detail::rpc_request<IsCallback, Args...>
     {
-        RPC_HPP_PRECONDITION((IsCallback
-                                 && (serial_obj["type"] == rpc_type::callback_request
-                                     || serial_obj["type"] == rpc_type::callback_result_w_bind))
-            || (!IsCallback
-                && (serial_obj["type"] == rpc_type::func_request
-                    || serial_obj["type"] == rpc_type::func_result_w_bind)));
+        RPC_HPP_PRECONDITION(verify_type(serial_obj,
+                                 IsCallback ? rpc_type::callback_request : rpc_type::func_request)
+            || verify_type(serial_obj,
+                IsCallback ? rpc_type::callback_result_w_bind : rpc_type::func_result_w_bind));
 
         detail::rpc_request<IsCallback, Args...> request;
         deserializer ser{ serial_obj };
@@ -589,8 +598,8 @@ namespace detail_njson
     auto serial_adapter::get_error(const nlohmann::json& serial_obj)
         -> detail::rpc_error<IsCallback>
     {
-        RPC_HPP_PRECONDITION((IsCallback && serial_obj["type"] == rpc_type::callback_error)
-            || (!IsCallback && serial_obj["type"] == rpc_type::func_error));
+        RPC_HPP_PRECONDITION(
+            verify_type(serial_obj, IsCallback ? rpc_type::callback_error : rpc_type::func_error));
 
         detail::rpc_error<IsCallback> error;
         deserializer ser{ serial_obj };
@@ -610,7 +619,7 @@ namespace detail_njson
     inline auto serial_adapter::get_callback_install(const nlohmann::json& serial_obj)
         -> callback_install_request
     {
-        RPC_HPP_PRECONDITION(serial_obj["type"] == rpc_type::callback_install_request);
+        RPC_HPP_PRECONDITION(verify_type(serial_obj, rpc_type::callback_install_request));
 
         callback_install_request cbk_req;
         deserializer ser{ serial_obj };
@@ -628,7 +637,15 @@ namespace detail_njson
 
     inline auto serial_adapter::has_bound_args(const nlohmann::json& serial_obj) -> bool
     {
+        RPC_HPP_PRECONDITION(!is_empty(serial_obj));
         return serial_obj["bind_args"];
+    }
+
+    inline auto serial_adapter::verify_type(const nlohmann::json& serial_obj, const rpc_type type)
+        -> bool
+    {
+        RPC_HPP_PRECONDITION(!is_empty(serial_obj));
+        return get_type(serial_obj) == type;
     }
 } //namespace detail_njson
 

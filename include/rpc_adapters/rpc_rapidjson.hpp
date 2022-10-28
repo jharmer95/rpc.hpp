@@ -121,6 +121,9 @@ namespace detail_rapidjson
             const callback_install_request& callback_req) -> serial_t;
 
         [[nodiscard]] static auto has_bound_args(const serial_t& serial_obj) -> bool;
+
+    private:
+        [[nodiscard]] static auto verify_type(const serial_t& serial_obj, rpc_type type) -> bool;
     };
 
     class serializer : public serializer_base<serial_adapter, false>
@@ -350,6 +353,7 @@ namespace detail_rapidjson
         template<typename T>
         void as_float(const std::string_view key, T& val) const
         {
+            static_assert(sizeof(T) <= sizeof(double), "long double not supported");
             val = subobject(key).Get<T>();
         }
 
@@ -387,6 +391,8 @@ namespace detail_rapidjson
         template<typename T>
         void as_array(const std::string_view key, T& val) const
         {
+            RPC_HPP_PRECONDITION(std::size(val) == 0);
+
             const auto& arr = subobject(key).GetArray();
             std::transform(arr.begin(), arr.end(), std::inserter(val, val.end()),
                 yield_value<detail::remove_cvref_t<typename T::value_type>>);
@@ -409,6 +415,8 @@ namespace detail_rapidjson
         template<typename T, typename Alloc>
         void as_array(const std::string_view key, std::forward_list<T, Alloc>& val) const
         {
+            RPC_HPP_PRECONDITION(val.empty());
+
             using rev_iter_t = std::reverse_iterator<
                 rapidjson::GenericArray<true, rapidjson::Value>::ValueIterator>;
 
@@ -425,6 +433,8 @@ namespace detail_rapidjson
         template<typename T>
         void as_map(const std::string_view key, T& val) const
         {
+            RPC_HPP_PRECONDITION(std::size(val) == 0);
+
             const auto& obj = subobject(key).GetObj();
             const auto mem_end = obj.MemberEnd();
 
@@ -440,6 +450,8 @@ namespace detail_rapidjson
         template<typename T>
         void as_multimap(const std::string_view key, T& val) const
         {
+            RPC_HPP_PRECONDITION(std::size(val) == 0);
+
             const auto& obj = subobject(key).GetObj();
             const auto mem_end = obj.MemberEnd();
 
@@ -494,6 +506,8 @@ namespace detail_rapidjson
     private:
         [[nodiscard]] auto subobject(const std::string_view key) const -> const rapidjson::Value&
         {
+            RPC_HPP_PRECONDITION(key.empty() || m_json.IsObject());
+
             if (key.empty())
             {
                 return m_json;
@@ -739,6 +753,7 @@ namespace detail_rapidjson
             throw deserialization_error{ R"(rapidjson error: field "func_name" not found)" };
         }
 
+        RPC_HPP_POSTCONDITION(!is_empty(doc));
         return doc;
     }
 
@@ -760,11 +775,13 @@ namespace detail_rapidjson
 
     inline auto serial_adapter::get_func_name(const rapidjson::Document& serial_obj) -> std::string
     {
+        RPC_HPP_PRECONDITION(!is_empty(serial_obj));
         return serial_obj["func_name"].GetString();
     }
 
     inline auto serial_adapter::get_type(const rapidjson::Document& serial_obj) -> rpc_type
     {
+        RPC_HPP_PRECONDITION(!is_empty(serial_obj));
         return static_cast<rpc_type>(serial_obj["type"].GetInt());
     }
 
@@ -772,11 +789,8 @@ namespace detail_rapidjson
     auto serial_adapter::get_result(const rapidjson::Document& serial_obj)
         -> detail::rpc_result<IsCallback, R>
     {
-        RPC_HPP_PRECONDITION(
-            (IsCallback
-                && static_cast<rpc_type>(serial_obj["type"].GetInt()) == rpc_type::callback_result)
-            || (!IsCallback
-                && static_cast<rpc_type>(serial_obj["type"].GetInt()) == rpc_type::func_result));
+        RPC_HPP_PRECONDITION(verify_type(
+            serial_obj, IsCallback ? rpc_type::callback_result : rpc_type::func_result));
 
         detail::rpc_result<IsCallback, R> result;
         deserializer ser{ serial_obj };
@@ -797,12 +811,8 @@ namespace detail_rapidjson
     auto serial_adapter::get_result_w_bind(const rapidjson::Document& serial_obj)
         -> detail::rpc_result_w_bind<IsCallback, R, Args...>
     {
-        RPC_HPP_PRECONDITION((IsCallback
-                                 && static_cast<rpc_type>(serial_obj["type"].GetInt())
-                                     == rpc_type::callback_result_w_bind)
-            || (!IsCallback
-                && static_cast<rpc_type>(serial_obj["type"].GetInt())
-                    == rpc_type::func_result_w_bind));
+        RPC_HPP_PRECONDITION(verify_type(serial_obj,
+            IsCallback ? rpc_type::callback_result_w_bind : rpc_type::func_result_w_bind));
 
         detail::rpc_result_w_bind<IsCallback, R, Args...> result;
         deserializer ser{ serial_obj };
@@ -823,15 +833,10 @@ namespace detail_rapidjson
     auto serial_adapter::get_request(const rapidjson::Document& serial_obj)
         -> detail::rpc_request<IsCallback, Args...>
     {
-        RPC_HPP_PRECONDITION(
-            (IsCallback
-                && (static_cast<rpc_type>(serial_obj["type"].GetInt()) == rpc_type::callback_request
-                    || static_cast<rpc_type>(serial_obj["type"].GetInt())
-                        == rpc_type::callback_result_w_bind))
-            || (!IsCallback
-                && (static_cast<rpc_type>(serial_obj["type"].GetInt()) == rpc_type::func_request
-                    || static_cast<rpc_type>(serial_obj["type"].GetInt())
-                        == rpc_type::func_result_w_bind)));
+        RPC_HPP_PRECONDITION(verify_type(serial_obj,
+                                 IsCallback ? rpc_type::callback_request : rpc_type::func_request)
+            || verify_type(serial_obj,
+                IsCallback ? rpc_type::callback_result_w_bind : rpc_type::func_result_w_bind));
 
         detail::rpc_request<IsCallback, Args...> request;
         deserializer ser{ serial_obj };
@@ -853,10 +858,7 @@ namespace detail_rapidjson
         -> detail::rpc_error<IsCallback>
     {
         RPC_HPP_PRECONDITION(
-            (IsCallback
-                && static_cast<rpc_type>(serial_obj["type"].GetInt()) == rpc_type::callback_error)
-            || (!IsCallback
-                && static_cast<rpc_type>(serial_obj["type"].GetInt()) == rpc_type::func_error));
+            verify_type(serial_obj, IsCallback ? rpc_type::callback_error : rpc_type::func_error));
 
         detail::rpc_error<IsCallback> error;
         deserializer ser{ serial_obj };
@@ -876,8 +878,7 @@ namespace detail_rapidjson
     inline auto serial_adapter::get_callback_install(const rapidjson::Document& serial_obj)
         -> callback_install_request
     {
-        RPC_HPP_PRECONDITION(static_cast<rpc_type>(serial_obj["type"].GetInt())
-            == rpc_type::callback_install_request);
+        RPC_HPP_PRECONDITION(verify_type(serial_obj, rpc_type::callback_install_request));
 
         callback_install_request cbk_req;
         deserializer ser{ serial_obj };
@@ -895,7 +896,13 @@ namespace detail_rapidjson
 
     inline auto serial_adapter::has_bound_args(const rapidjson::Document& serial_obj) -> bool
     {
+        RPC_HPP_PRECONDITION(!is_empty(serial_obj));
         return serial_obj["bind_args"].GetBool();
+    }
+
+    inline auto serial_adapter::verify_type(const serial_t& serial_obj, const rpc_type type) -> bool
+    {
+        return get_type(serial_obj) == type;
     }
 } //namespace detail_rapidjson
 

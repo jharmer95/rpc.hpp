@@ -118,6 +118,9 @@ namespace detail_boost_json
             const callback_install_request& callback_req) -> serial_t;
 
         [[nodiscard]] static auto has_bound_args(const serial_t& serial_obj) -> bool;
+
+    private:
+        [[nodiscard]] static auto verify_type(const serial_t& serial_obj, rpc_type type) -> bool;
     };
 
     class serializer : public serializer_base<serial_adapter, false>
@@ -274,6 +277,7 @@ namespace detail_boost_json
     private:
         [[nodiscard]] auto subobject(const std::string_view key) -> boost::json::value&
         {
+            RPC_HPP_PRECONDITION(key.empty() || m_json.is_object());
             return key.empty() ? m_json : m_json.get_object()[key];
         }
 
@@ -336,6 +340,8 @@ namespace detail_boost_json
         template<typename T>
         void as_array(const std::string_view key, T& val) const
         {
+            RPC_HPP_PRECONDITION(std::size(val) == 0);
+
             const auto& arr = subobject(key).as_array();
             std::transform(arr.cbegin(), arr.cend(), std::inserter(val, val.end()),
                 yield_value<detail::remove_cvref_t<typename T::value_type>>);
@@ -358,6 +364,8 @@ namespace detail_boost_json
         template<typename T, typename Alloc>
         void as_array(const std::string_view key, std::forward_list<T, Alloc>& val) const
         {
+            RPC_HPP_PRECONDITION(val.empty());
+
             const auto& arr = subobject(key).as_array();
             const auto arr_rend = arr.crend();
 
@@ -370,6 +378,8 @@ namespace detail_boost_json
         template<typename T>
         void as_map(const std::string_view key, T& val) const
         {
+            RPC_HPP_PRECONDITION(std::size(val) == 0);
+
             const auto& obj = subobject(key).as_object();
 
             for (const auto& [k, v] : obj)
@@ -383,6 +393,8 @@ namespace detail_boost_json
         template<typename T>
         void as_multimap(const std::string_view key, T& val) const
         {
+            RPC_HPP_PRECONDITION(std::size(val) == 0);
+
             const auto& obj = subobject(key).as_object();
 
             for (const auto& [k, v] : obj)
@@ -433,8 +445,9 @@ namespace detail_boost_json
         }
 
     private:
-        [[nodiscard]] auto subobject(std::string_view key) const -> const boost::json::value&
+        [[nodiscard]] auto subobject(const std::string_view key) const -> const boost::json::value&
         {
+            RPC_HPP_PRECONDITION(key.empty() || m_json.is_object());
             return key.empty() ? m_json : m_json.at(key);
         }
 
@@ -605,6 +618,7 @@ namespace detail_boost_json
             throw deserialization_error{ R"(Boost.JSON error: field "func_name" not found)" };
         }
 
+        RPC_HPP_POSTCONDITION(!is_empty(obj));
         return obj;
     }
 
@@ -620,24 +634,27 @@ namespace detail_boost_json
 
     inline auto serial_adapter::get_func_name(const boost::json::object& serial_obj) -> std::string
     {
+        RPC_HPP_PRECONDITION(!is_empty(serial_obj));
         return serial_obj.at("func_name").get_string().c_str();
     }
 
     inline auto serial_adapter::get_type(const boost::json::object& serial_obj) -> rpc_type
     {
-        return static_cast<rpc_type>(serial_obj.at("type").get_int64());
+        RPC_HPP_PRECONDITION(!is_empty(serial_obj));
+
+        const auto val = serial_obj.at("type").get_int64();
+
+        RPC_HPP_POSTCONDITION(val >= static_cast<int64_t>(rpc_type::callback_install_request)
+            && val <= static_cast<int64_t>(rpc_type::func_result_w_bind));
+        return static_cast<rpc_type>(val);
     }
 
     template<bool IsCallback, typename R>
     auto serial_adapter::get_result(const boost::json::object& serial_obj)
         -> detail::rpc_result<IsCallback, R>
     {
-        RPC_HPP_PRECONDITION((IsCallback
-                                 && static_cast<rpc_type>(serial_obj.at("type").as_int64())
-                                     == rpc_type::callback_result)
-            || (!IsCallback
-                && static_cast<rpc_type>(serial_obj.at("type").as_int64())
-                    == rpc_type::func_result));
+        RPC_HPP_PRECONDITION(verify_type(
+            serial_obj, IsCallback ? rpc_type::callback_result : rpc_type::func_result));
 
         detail::rpc_result<IsCallback, R> result;
         deserializer ser{ serial_obj };
@@ -658,12 +675,8 @@ namespace detail_boost_json
     auto serial_adapter::get_result_w_bind(const boost::json::object& serial_obj)
         -> detail::rpc_result_w_bind<IsCallback, R, Args...>
     {
-        RPC_HPP_PRECONDITION((IsCallback
-                                 && static_cast<rpc_type>(serial_obj.at("type").as_int64())
-                                     == rpc_type::callback_result_w_bind)
-            || (!IsCallback
-                && static_cast<rpc_type>(serial_obj.at("type").as_int64())
-                    == rpc_type::func_result_w_bind));
+        RPC_HPP_PRECONDITION(verify_type(serial_obj,
+            IsCallback ? rpc_type::callback_result_w_bind : rpc_type::func_result_w_bind));
 
         detail::rpc_result_w_bind<IsCallback, R> result;
         deserializer ser{ serial_obj };
@@ -684,16 +697,10 @@ namespace detail_boost_json
     auto serial_adapter::get_request(const boost::json::object& serial_obj)
         -> detail::rpc_request<IsCallback, Args...>
     {
-        RPC_HPP_PRECONDITION((IsCallback
-                                 && (static_cast<rpc_type>(serial_obj.at("type").as_int64())
-                                         == rpc_type::callback_request
-                                     || static_cast<rpc_type>(serial_obj.at("type").as_int64())
-                                         == rpc_type::callback_result_w_bind))
-            || (!IsCallback
-                && (static_cast<rpc_type>(serial_obj.at("type").as_int64())
-                        == rpc_type::func_request
-                    || static_cast<rpc_type>(serial_obj.at("type").as_int64())
-                        == rpc_type::func_result_w_bind)));
+        RPC_HPP_PRECONDITION(verify_type(serial_obj,
+                                 IsCallback ? rpc_type::callback_request : rpc_type::func_request)
+            || verify_type(serial_obj,
+                IsCallback ? rpc_type::callback_result_w_bind : rpc_type::func_result_w_bind));
 
         detail::rpc_request<IsCallback, Args...> request;
         deserializer ser{ serial_obj };
@@ -714,12 +721,8 @@ namespace detail_boost_json
     auto serial_adapter::get_error(const boost::json::object& serial_obj)
         -> detail::rpc_error<IsCallback>
     {
-        RPC_HPP_PRECONDITION((IsCallback
-                                 && static_cast<rpc_type>(serial_obj.at("type").as_int64())
-                                     == rpc_type::callback_error)
-            || (!IsCallback
-                && static_cast<rpc_type>(serial_obj.at("type").as_int64())
-                    == rpc_type::func_error));
+        RPC_HPP_PRECONDITION(
+            verify_type(serial_obj, IsCallback ? rpc_type::callback_error : rpc_type::func_error));
 
         detail::rpc_error<IsCallback> error;
         deserializer ser{ serial_obj };
@@ -739,8 +742,7 @@ namespace detail_boost_json
     inline auto serial_adapter::get_callback_install(const boost::json::object& serial_obj)
         -> callback_install_request
     {
-        RPC_HPP_PRECONDITION(static_cast<rpc_type>(serial_obj.at("type").as_int64())
-            == rpc_type::callback_install_request);
+        RPC_HPP_PRECONDITION(verify_type(serial_obj, rpc_type::callback_install_request));
 
         callback_install_request cbk_req;
         deserializer ser{ serial_obj };
@@ -758,7 +760,15 @@ namespace detail_boost_json
 
     inline auto serial_adapter::has_bound_args(const boost::json::object& serial_obj) -> bool
     {
+        RPC_HPP_PRECONDITION(!is_empty(serial_obj));
         return serial_obj.at("bind_args").as_bool();
+    }
+
+    inline auto serial_adapter::verify_type(
+        const boost::json::object& serial_obj, const rpc_type type) -> bool
+    {
+        RPC_HPP_PRECONDITION(!is_empty(serial_obj));
+        return get_type(serial_obj) == type;
     }
 } //namespace detail_boost_json
 

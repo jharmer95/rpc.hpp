@@ -206,6 +206,7 @@ namespace detail_bitsery
         template<typename T>
         void as_float(RPC_HPP_UNUSED const std::string_view key, const T& val)
         {
+            static_assert(sizeof(T) <= sizeof(double), "long double not supported for bitsery");
             m_ser.value<sizeof(T)>(val);
         }
 
@@ -335,6 +336,7 @@ namespace detail_bitsery
         template<typename T>
         void as_float(RPC_HPP_UNUSED const std::string_view key, T& val)
         {
+            static_assert(sizeof(T) <= sizeof(double), "long double not supported for bitsery");
             m_ser.value<sizeof(T)>(val);
         }
 
@@ -446,7 +448,7 @@ namespace detail_bitsery
 
     inline auto serial_adapter::from_bytes(std::vector<uint8_t>&& bytes) -> std::vector<uint8_t>
     {
-        RPC_HPP_PRECONDITION(bytes.size() >= sizeof(int));
+        RPC_HPP_PRECONDITION(!is_empty(bytes));
 
         // Check that getting the type does not throw
         RPC_HPP_UNUSED const auto type = get_type(bytes);
@@ -474,7 +476,7 @@ namespace detail_bitsery
 
     inline auto serial_adapter::get_func_name(const std::vector<uint8_t>& serial_obj) -> std::string
     {
-        RPC_HPP_PRECONDITION(serial_obj.size() > sizeof(int));
+        RPC_HPP_PRECONDITION(!is_empty(serial_obj));
 
         // First 4 bytes represent the type
         size_t index = sizeof(int);
@@ -489,17 +491,14 @@ namespace detail_bitsery
 
     inline auto serial_adapter::get_type(const std::vector<uint8_t>& serial_obj) -> rpc_type
     {
-        RPC_HPP_PRECONDITION(serial_obj.size() >= sizeof(int));
+        RPC_HPP_PRECONDITION(!is_empty(serial_obj));
 
         // First 4 bytes represent the type
         int n_type{};
         std::memcpy(&n_type, serial_obj.data(), sizeof(n_type));
 
-        if ((n_type < static_cast<int>(rpc_type::callback_install_request))
-            || (n_type > static_cast<int>(rpc_type::func_result_w_bind)))
-        {
-            throw deserialization_error{ "Bitsery error: invalid type field detected" };
-        }
+        RPC_HPP_POSTCONDITION(n_type >= static_cast<int>(rpc_type::callback_install_request)
+            && n_type <= static_cast<int>(rpc_type::func_result_w_bind));
 
         return static_cast<rpc_type>(n_type);
     }
@@ -579,7 +578,6 @@ namespace detail_bitsery
         -> callback_install_request
     {
         RPC_HPP_PRECONDITION(verify_type(serial_obj, rpc_type::callback_install_request));
-
         return deserialize_rpc_object<callback_install_request>(serial_obj);
     }
 
@@ -629,13 +627,13 @@ namespace detail_bitsery
             return high_byte;
         }
 
-        assert(index < bytes.size());
+        RPC_HPP_ASSERTION(index < bytes.size());
         const uint8_t low_byte = bytes[index];
         ++index;
 
         if ((high_byte & 0x40U) != 0U)
         {
-            assert(index < bytes.size());
+            RPC_HPP_ASSERTION(index < bytes.size());
             const uint16_t low_word = *reinterpret_cast<const uint16_t*>(&bytes[index]);
             ++index;
             return ((((high_byte & 0x3FU) << 8U) | low_byte) << 16U) | low_word;
@@ -645,10 +643,9 @@ namespace detail_bitsery
     }
 
     inline auto serial_adapter::verify_type(
-        const std::vector<uint8_t>& bytes, rpc_type type) noexcept -> bool
+        const std::vector<uint8_t>& bytes, const rpc_type type) noexcept -> bool
     {
-        RPC_HPP_PRECONDITION(bytes.size() >= sizeof(int));
-
+        RPC_HPP_PRECONDITION(!is_empty(bytes));
         return std::memcmp(&type, bytes.data(), sizeof(int)) == 0;
     }
 
