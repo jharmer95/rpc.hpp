@@ -6,15 +6,13 @@
 
 #include <string>
 
-using asio::ip::tcp;
-using rpc_hpp::adapters::njson_adapter;
-
-class RpcClient : public rpc_hpp::client_interface<njson_adapter>
+class RpcClient : public rpc_hpp::client_interface<rpc_hpp::adapters::njson_adapter>
 {
 public:
     static constexpr auto BUF_SZ = 256;
 
-    RpcClient(const std::string& host, const std::string& port) : m_socket(m_io), m_resolver(m_io)
+    RpcClient(const std::string_view host, const std::string_view port)
+        : m_socket(m_io), m_resolver(m_io)
     {
         asio::connect(m_socket, m_resolver.resolve(host, port));
     }
@@ -22,19 +20,19 @@ public:
     std::string getIP() const { return m_socket.remote_endpoint().address().to_string(); }
 
 private:
-    void send(std::string&& mesg) override
+    void send(std::string&& bytes) override
     {
-        asio::write(m_socket, asio::buffer(std::move(mesg), mesg.size()));
+        asio::write(m_socket, asio::buffer(std::move(bytes), bytes.size()));
     }
 
     std::string receive() override
     {
         const auto numBytes = m_socket.read_some(asio::buffer(m_buffer, BUF_SZ));
-        return std::string{ m_buffer, m_buffer + numBytes };
+        return std::string{ &m_buffer[0], &m_buffer[numBytes] };
     }
 
     asio::io_context m_io{};
-    tcp::socket m_socket;
-    tcp::resolver m_resolver;
+    asio::ip::tcp::socket m_socket;
+    asio::ip::tcp::resolver m_resolver;
     uint8_t m_buffer[BUF_SZ]{};
 };

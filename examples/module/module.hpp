@@ -37,7 +37,4 @@ class RpcModule : public rpc_hpp::server_interface<njson_adapter>
 {
 public:
     RpcModule();
-
-    std::string receive() override { return {}; }
-    void send(std::string&&) override {}
 };

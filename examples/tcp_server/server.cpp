@@ -7,27 +7,16 @@
 #include <string>
 #include <thread>
 
-using asio::ip::tcp;
-using rpc_hpp::adapters::njson_adapter;
-
-static std::unique_ptr<RpcServer> P_SERVER;
-
-// NOTE: This function is only for testing purposes. Obviously you would not want this in a production server!
-inline void KillServer()
+int Sum(int num1, int num2)
 {
-    P_SERVER->Stop();
+    return num1 + num2;
 }
 
-constexpr int Sum(int n1, int n2)
+void AddOneToEach(std::vector<int>& vec)
 {
-    return n1 + n2;
-}
-
-inline void AddOneToEach(std::vector<int>& vec)
-{
-    for (auto& n : vec)
+    for (auto& num : vec)
     {
-        ++n;
+        ++num;
     }
 }
 
@@ -39,17 +28,16 @@ std::string GetTypeName()
 
 std::string RpcServer::receive()
 {
-    RPC_HPP_PRECONDITION(m_socket.has_value());
-
     static constexpr unsigned BUFFER_SZ = 64 * 1024;
     static std::array<uint8_t, BUFFER_SZ> data{};
 
+    assert(m_socket.has_value());
     asio::error_code error;
-    const size_t len = m_socket.value().read_some(asio::buffer(data.data(), BUFFER_SZ), error);
+    const size_t len = m_socket->read_some(asio::buffer(data.data(), BUFFER_SZ), error);
 
     if (error == asio::error::eof)
     {
-        return {};
+        return "";
     }
 
     // other error
@@ -63,8 +51,8 @@ std::string RpcServer::receive()
 
 void RpcServer::send(std::string&& bytes)
 {
-    RPC_HPP_PRECONDITION(m_socket.has_value());
-    write(m_socket.value(), asio::buffer(std::move(bytes), bytes.size()));
+    assert(m_socket.has_value());
+    write(*m_socket, asio::buffer(std::move(bytes), bytes.size()));
 }
 
 void RpcServer::Run()
@@ -108,21 +96,24 @@ int main(int argc, char* argv[])
         return EXIT_FAILURE;
     }
 
-    const auto port_num = static_cast<uint16_t>(strtoul(argv[1], nullptr, 10));
+    const auto port_num = static_cast<uint16_t>(std::strtoul(argv[1], nullptr, 10));
 
     try
     {
         asio::io_context io_context{};
 
-        P_SERVER = std::make_unique<RpcServer>(io_context, port_num);
-        P_SERVER->bind("KillServer", &KillServer);
-        P_SERVER->bind("Sum", &Sum);
-        P_SERVER->bind("AddOneToEach", &AddOneToEach);
-        P_SERVER->bind("GetTypeName<int>", &GetTypeName<int>);
-        P_SERVER->bind("GetTypeName<double>", &GetTypeName<double>);
-        P_SERVER->bind("GetTypeName<std::string>", &GetTypeName<std::string>);
+        const auto p_server = std::make_unique<RpcServer>(io_context, port_num);
 
-        std::thread server_thread{ &RpcServer::Run, P_SERVER.get() };
+        p_server->bind("Sum", &Sum);
+        p_server->bind("AddOneToEach", &AddOneToEach);
+        p_server->bind("GetTypeName<int>", &GetTypeName<int>);
+        p_server->bind("GetTypeName<double>", &GetTypeName<double>);
+        p_server->bind("GetTypeName<std::string>", &GetTypeName<std::string>);
+
+        // NOTE: This function is only for testing purposes. Obviously you would not want this in a production server!
+        p_server->template bind<void>("KillServer", [&p_server] { p_server->Stop(); });
+
+        std::thread server_thread{ &RpcServer::Run, p_server.get() };
         std::cout << "Running server on port: " << port_num << "...\n";
 
         server_thread.join();

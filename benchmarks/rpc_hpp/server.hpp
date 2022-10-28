@@ -31,7 +31,7 @@ public:
     {
     }
 
-    bytes_t receive() override
+    bytes_t receive()
     {
         RPC_HPP_PRECONDITION(m_socket.has_value());
 
@@ -55,7 +55,7 @@ public:
         return { data.begin(), std::next(data.begin(), static_cast<ptrdiff_t>(len)) };
     }
 
-    void send(bytes_t&& bytes) override
+    void send(bytes_t&& bytes)
     {
         RPC_HPP_PRECONDITION(m_socket.has_value());
         write(m_socket.value(), asio::buffer(std::move(bytes), bytes.size()));

@@ -371,7 +371,8 @@ elseif(CXX_CLANG)
       -Wno-missing-braces
       -Wno-covered-switch-default
       -Wno-unused-template
-      -Wno-c++20-attribute-extensions)
+      -Wno-c++20-attribute-extensions
+      -Wno-assume)
   set(MIN_WARNING -Wall)
   if(WERROR)
     list(APPEND FULL_WARNING -Werror)

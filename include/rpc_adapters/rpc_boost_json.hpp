@@ -603,7 +603,7 @@ namespace detail_boost_json
     inline auto serial_adapter::from_bytes(std::string&& bytes) -> boost::json::object
     {
         boost::system::error_code err_code{};
-        boost::json::value val = boost::json::parse(std::move(bytes), err_code);
+        boost::json::value val = boost::json::parse(bytes, err_code);
 
         if (err_code)
         {
@@ -649,8 +649,7 @@ namespace detail_boost_json
 
         const auto val = serial_obj.at("type").get_int64();
 
-        RPC_HPP_POSTCONDITION(val >= static_cast<int64_t>(rpc_type::callback_install_request)
-            && val <= static_cast<int64_t>(rpc_type::func_result_w_bind));
+        RPC_HPP_POSTCONDITION(validate_rpc_type(static_cast<rpc_type>(val)));
         return static_cast<rpc_type>(val);
     }
 

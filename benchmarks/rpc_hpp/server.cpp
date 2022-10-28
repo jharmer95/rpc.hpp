@@ -34,6 +34,8 @@
 ///OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ///
 
+#define RPC_HPP_ASSERT_NONE
+
 #include "server.hpp"
 #include "../bench_funcs.hpp"
 

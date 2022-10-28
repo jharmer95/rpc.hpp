@@ -18,6 +18,8 @@ static rpc::client& GetRpclibClient()
 }
 #endif
 
+#define RPC_HPP_ASSERT_NONE
+
 #include "rpc_hpp/client.hpp"
 #include "bench_funcs.hpp"
 

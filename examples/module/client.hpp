@@ -1,14 +1,18 @@
 #pragma once
 
+#include <rpc_adapters/rpc_njson.hpp>
+#include <rpc_client.hpp>
+
+#include <string>
+
 #if defined(_WIN32)
 #  define WIN32_LEAN_AND_MEAN
 #  define NOMINMAX
-#  include <Windows.h> // for FreeLibrary, GetProcAddress, HMODULE, LoadLibrary
+#  include <Windows.h>
 
 using module_t = HMODULE;
-
 #elif defined(__unix__)
-#  include <dlfcn.h> // for dlclose, dlsym, dlopen
+#  include <dlfcn.h>
 
 // For cleaner syntax, match macros w/ Windows (not recommended for production as behaviors/flags can be different)
 #  define FreeLibrary(X) dlclose(X)
@@ -18,14 +22,7 @@ using module_t = HMODULE;
 using module_t = void*;
 #endif
 
-#include <rpc_adapters/rpc_njson.hpp>
-#include <rpc_client.hpp>
-
-#include <string>
-
-using rpc_hpp::adapters::njson_adapter;
-
-class RpcClient : public rpc_hpp::client_interface<njson_adapter>
+class RpcClient : public rpc_hpp::client_interface<rpc_hpp::adapters::njson_adapter>
 {
 public:
     using remote_func_type = int (*)(char*, size_t);
@@ -39,8 +36,8 @@ public:
         }
     }
 
-    RpcClient(const std::string& module_path);
-    
+    RpcClient(std::string_view module_path);
+
     // Cannot copy a client, module could be unloaded by a copy
     RpcClient(const RpcClient&) = delete;
 
@@ -68,7 +65,7 @@ public:
     }
 
 private:
-    void send(std::string&& mesg) override;
+    void send(std::string&& bytes) override;
 
     [[nodiscard]] std::string receive() override
     {

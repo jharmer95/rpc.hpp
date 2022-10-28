@@ -3,7 +3,6 @@
 #include <cstring>
 
 static constexpr auto MODULE_NAME{ "rpc_module" };
-static RpcModule rpc_mod{};
 
 int Sum(int n1, int n2)
 {
@@ -32,6 +31,8 @@ RpcModule::RpcModule()
 
 int RunRemoteFunc(char* const json_str, const size_t json_buf_len)
 {
+    static RpcModule rpc_mod{};
+
     std::string input{ json_str };
     rpc_mod.handle_bytes(input);
 

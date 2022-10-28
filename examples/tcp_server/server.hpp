@@ -9,10 +9,7 @@
 #include <cstdint>
 #include <optional>
 
-using asio::ip::tcp;
-using rpc_hpp::adapters::njson_adapter;
-
-class RpcServer : public rpc_hpp::server_interface<njson_adapter>
+class RpcServer : public rpc_hpp::server_interface<rpc_hpp::adapters::njson_adapter>
 {
 public:
     RpcServer(asio::io_context& io_ctx, const uint16_t port)
@@ -20,8 +17,8 @@ public:
     {
     }
 
-    std::string receive() override;
-    void send(std::string&&) override;
+    std::string receive();
+    void send(std::string&& bytes);
 
     void Run();
     void Stop() noexcept { m_running = false; }
