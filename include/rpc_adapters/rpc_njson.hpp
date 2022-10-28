@@ -62,6 +62,7 @@ namespace detail_njson
     class serializer;
     class deserializer;
 
+    // invariants: none
     struct adapter_impl
     {
         using bytes_t = std::string;
@@ -71,6 +72,7 @@ namespace detail_njson
         using config = void;
     };
 
+    // invariants: none
     class serial_adapter : public serial_adapter_base<adapter_impl>
     {
     public:
@@ -125,13 +127,24 @@ namespace detail_njson
         [[nodiscard]] static auto verify_type(const serial_t& serial_obj, rpc_type type) -> bool;
     };
 
+    // invariants:
+    //   1.) m_json must not be empty when fetched via 'object()'
     class serializer : public serializer_base<serial_adapter, false>
     {
     public:
         serializer() noexcept = default;
 
-        [[nodiscard]] auto object() const& noexcept -> const nlohmann::json& { return m_json; }
-        [[nodiscard]] auto object() && noexcept -> nlohmann::json&& { return std::move(m_json); }
+        [[nodiscard]] auto object() const& noexcept -> const nlohmann::json&
+        {
+            RPC_HPP_POSTCONDITION(m_json.is_null() || !m_json.empty());
+            return m_json;
+        }
+
+        [[nodiscard]] auto object() && noexcept -> nlohmann::json&&
+        {
+            RPC_HPP_POSTCONDITION(m_json.is_null() || !m_json.empty());
+            return std::move(m_json);
+        }
 
         template<typename T>
         void as_bool(const std::string_view key, const T& val)
@@ -268,10 +281,16 @@ namespace detail_njson
         nlohmann::json m_json{};
     };
 
+    // invariants:
+    //   1.) m_json cannot be empty
+    //   2.) m_json must be an object if a subval is accessed
     class deserializer : public serializer_base<serial_adapter, true>
     {
     public:
-        explicit deserializer(const nlohmann::json& obj) noexcept : m_json(obj) {}
+        explicit deserializer(const nlohmann::json& obj) noexcept : m_json(obj)
+        {
+            RPC_HPP_POSTCONDITION(m_json.is_null() || !m_json.empty());
+        }
 
         template<typename T>
         void as_bool(const std::string_view key, T& val) const
@@ -482,7 +501,7 @@ namespace detail_njson
 
     inline auto serial_adapter::is_empty(const nlohmann::json& serial_obj) noexcept -> bool
     {
-        return serial_obj.empty();
+        return serial_obj.empty() && !serial_obj.is_null();
     }
 
     inline auto serial_adapter::from_bytes(std::string&& bytes) -> nlohmann::json

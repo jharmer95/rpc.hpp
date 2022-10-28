@@ -22,6 +22,7 @@
 
 namespace rpc_hpp
 {
+// invariants: none
 template<typename Serial>
 class client_interface
 {
@@ -64,6 +65,10 @@ public:
     auto call_func_w_bind(S&& func_name, Args&&... args) -> object_t
     {
         static_assert(detail::is_stringlike_v<S>, "func_name must be a string-like type");
+        static_assert(std::disjunction_v<detail::is_ref_arg<Args>...>,
+            "At least one argument must be a (non-const) reference for call_func_w_bind to have an "
+            "effect, use call_func instead");
+
         RPC_HPP_PRECONDITION(!std::string_view{ func_name }.empty());
 
         auto response = object_t{ detail::func_request<detail::decay_str_t<Args>...>{
@@ -161,6 +166,9 @@ protected:
     }
 };
 
+// invariants:
+//   1.) m_callback_map cannot contain an empty key: ""
+//   2.) m_callback_map cannot contain an empty function value
 template<typename Serial>
 class callback_client_interface : public client_interface<Serial>
 {
@@ -185,6 +193,7 @@ public:
     {
         static_assert(detail::is_stringlike_v<S>, "func_name must be a string-like type");
         RPC_HPP_PRECONDITION(!std::string_view{ func_name }.empty());
+        RPC_HPP_PRECONDITION(static_cast<bool>(func));
 
         auto result = install_callback_impl(std::forward<S>(func_name));
         bind_callback<R, Args...>(result.func_name, std::move(func));
@@ -198,6 +207,7 @@ public:
     {
         static_assert(detail::is_stringlike_v<S>, "func_name must be a string-like type");
         RPC_HPP_PRECONDITION(!std::string_view{ func_name }.empty());
+        RPC_HPP_PRECONDITION(func_ptr != nullptr);
 
         auto result = install_callback_impl(std::forward<S>(func_name));
         bind_callback<R, Args...>(std::forward<S>(func_name), func_ptr);
@@ -258,7 +268,7 @@ private:
 
         RPC_HPP_PRECONDITION(!std::string_view{ func_name }.empty());
 
-        auto [_, status] = m_callback_map.try_emplace(std::forward<S>(func_name),
+        auto [iter, status] = m_callback_map.try_emplace(std::forward<S>(func_name),
             [func = std::forward<F>(func)](object_t& rpc_obj)
             {
                 try
@@ -279,6 +289,8 @@ private:
                                               .append(std::forward<S>(func_name))
                                               .append("() successfully") };
         }
+
+        RPC_HPP_POSTCONDITION(static_cast<bool>(iter->second));
     }
 
     void dispatch_callback(object_t& rpc_obj)

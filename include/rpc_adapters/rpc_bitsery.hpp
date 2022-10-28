@@ -47,14 +47,11 @@
 #include <bitsery/ext/std_tuple.h>
 #include <bitsery/traits/array.h>
 #include <bitsery/traits/core/traits.h>
-#include <bitsery/traits/deque.h>
 #include <bitsery/traits/forward_list.h>
-#include <bitsery/traits/list.h>
 #include <bitsery/traits/string.h>
 #include <bitsery/traits/vector.h>
 
 #include <array>
-#include <cassert>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
@@ -75,7 +72,7 @@ struct std::hash<std::vector<uint8_t>>
     [[nodiscard]] auto operator()(const std::vector<uint8_t>& vec) const noexcept -> size_t
     {
         return std::accumulate(vec.begin(), vec.end(), vec.size(),
-            [](size_t seed, size_t val) noexcept
+            [](const size_t seed, const size_t val) noexcept
             {
                 static constexpr size_t magic_hash_val = 0x9E37'79B9UL;
                 return seed ^ (val + magic_hash_val + (seed << 6UL) + (seed >> 2UL));
@@ -90,6 +87,7 @@ namespace detail_bitsery
     class serializer;
     class deserializer;
 
+    // invariants: none
     struct adapter_impl
     {
         using bytes_t = std::vector<uint8_t>;
@@ -111,6 +109,7 @@ namespace detail_bitsery
         };
     };
 
+    // invariants: none
     class serial_adapter : public serial_adapter_base<adapter_impl>
     {
     public:
@@ -180,6 +179,8 @@ namespace detail_bitsery
         static auto verify_type(const std::vector<uint8_t>& bytes, rpc_type type) noexcept -> bool;
     };
 
+    // invariants:
+    //   1.) m_bytes must not be empty when fetched via 'object()'
     class serializer : public serializer_base<serial_adapter, false>
     {
     public:
@@ -188,12 +189,16 @@ namespace detail_bitsery
         [[nodiscard]] auto object() & -> const std::vector<uint8_t>&
         {
             flush();
+
+            RPC_HPP_POSTCONDITION(!m_bytes.empty());
             return m_bytes;
         }
 
         [[nodiscard]] auto object() && -> std::vector<uint8_t>&&
         {
             flush();
+
+            RPC_HPP_POSTCONDITION(!m_bytes.empty());
             return std::move(m_bytes);
         }
 
@@ -206,7 +211,7 @@ namespace detail_bitsery
         template<typename T>
         void as_float(RPC_HPP_UNUSED const std::string_view key, const T& val)
         {
-            static_assert(sizeof(T) <= sizeof(double), "long double not supported for bitsery");
+            static_assert(sizeof(T) <= sizeof(double), "long double not supported");
             m_ser.value<sizeof(T)>(val);
         }
 
@@ -319,12 +324,15 @@ namespace detail_bitsery
         bitsery::Serializer<output_adapter> m_ser;
     };
 
+    // invariants:
+    //   1.) m_bytes cannot be empty
     class deserializer : public serializer_base<serial_adapter, true>
     {
     public:
         explicit deserializer(const std::vector<uint8_t>& bytes)
             : m_bytes(bytes), m_ser(m_bytes.cbegin(), m_bytes.size())
         {
+            RPC_HPP_POSTCONDITION(!m_bytes.empty());
         }
 
         template<typename T>
@@ -336,7 +344,7 @@ namespace detail_bitsery
         template<typename T>
         void as_float(RPC_HPP_UNUSED const std::string_view key, T& val)
         {
-            static_assert(sizeof(T) <= sizeof(double), "long double not supported for bitsery");
+            static_assert(sizeof(T) <= sizeof(double), "long double not supported");
             m_ser.value<sizeof(T)>(val);
         }
 

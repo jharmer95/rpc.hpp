@@ -63,6 +63,7 @@ namespace detail_rapidjson
     class serializer;
     class deserializer;
 
+    // invariants: none
     struct adapter_impl
     {
         using bytes_t = std::string;
@@ -72,6 +73,7 @@ namespace detail_rapidjson
         using config = void;
     };
 
+    // invariants: none
     class serial_adapter : public serial_adapter_base<adapter_impl>
     {
     public:
@@ -126,14 +128,26 @@ namespace detail_rapidjson
         [[nodiscard]] static auto verify_type(const serial_t& serial_obj, rpc_type type) -> bool;
     };
 
+    // invariants:
+    //   1.) m_json must not be empty when fetched via 'object()'
     class serializer : public serializer_base<serial_adapter, false>
     {
     public:
         serializer() noexcept = default;
 
-        [[nodiscard]] auto object() const& noexcept -> const rapidjson::Document& { return m_json; }
+        [[nodiscard]] auto object() const& noexcept -> const rapidjson::Document&
+        {
+            RPC_HPP_PRECONDITION(m_json.IsObject() ? !m_json.ObjectEmpty()
+                                                   : (m_json.IsArray() ? !m_json.Empty() : true));
+
+            return m_json;
+        }
+
         [[nodiscard]] auto object() && noexcept -> rapidjson::Document&&
         {
+            RPC_HPP_PRECONDITION(m_json.IsObject() ? !m_json.ObjectEmpty()
+                                                   : (m_json.IsArray() ? !m_json.Empty() : true));
+
             return std::move(m_json);
         }
 
@@ -339,10 +353,17 @@ namespace detail_rapidjson
         rapidjson::Document m_json{};
     };
 
+    // invariants:
+    //   1.) m_json cannot be empty
+    //   2.) m_json must be an object if a subval is accessed
     class deserializer : public serializer_base<serial_adapter, true>
     {
     public:
-        explicit deserializer(const rapidjson::Value& obj) noexcept : m_json(obj) {}
+        explicit deserializer(const rapidjson::Value& obj) noexcept : m_json(obj)
+        {
+            RPC_HPP_POSTCONDITION(m_json.IsObject() ? !m_json.ObjectEmpty()
+                                                    : (m_json.IsArray() ? !m_json.Empty() : true));
+        }
 
         template<typename T>
         void as_bool(const std::string_view key, T& val) const

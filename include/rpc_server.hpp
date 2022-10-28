@@ -18,6 +18,9 @@
 
 namespace rpc_hpp
 {
+// invariants:
+//   1.) m_dispatch_table cannot contain an empty key: ""
+//   2.) m_dispatch_table cannot contain an empty function value
 template<typename Serial>
 class server_interface
 {
@@ -36,6 +39,7 @@ public:
     {
         static_assert(detail::is_stringlike_v<S>, "func_name must be a string-like type");
         RPC_HPP_PRECONDITION(!std::string_view{ func_name }.empty());
+        RPC_HPP_PRECONDITION(static_cast<bool>(func));
 
         bind_impl<R, Args...>(std::forward<S>(func_name), std::move(func));
     }
@@ -128,9 +132,11 @@ private:
 
         RPC_HPP_PRECONDITION(!std::string_view{ func_name }.empty());
 
-        auto [_, status] = m_dispatch_table.try_emplace(std::forward<S>(func_name),
+        auto [iter, status] = m_dispatch_table.try_emplace(std::forward<S>(func_name),
             [func = std::forward<F>(func)](object_t& rpc_obj)
             {
+                RPC_HPP_PRECONDITION(rpc_obj.type() == rpc_type::func_request);
+
                 try
                 {
                     detail::exec_func<false, Serial, R, Args...>(func, rpc_obj);
@@ -139,6 +145,10 @@ private:
                 {
                     rpc_obj = object_t{ detail::func_error{ rpc_obj.get_func_name(), ex } };
                 }
+
+                RPC_HPP_POSTCONDITION(rpc_obj.type() == rpc_type::func_result
+                    || rpc_obj.type() == rpc_type::func_result_w_bind
+                    || rpc_obj.type() == rpc_type::func_error);
             });
 
         if (!status)
@@ -148,11 +158,14 @@ private:
                                            .append(std::forward<S>(func_name))
                                            .append("() successfully") };
         }
+
+        RPC_HPP_POSTCONDITION(static_cast<bool>(iter->second));
     }
 
     void dispatch(object_t& rpc_obj) const
     {
         RPC_HPP_PRECONDITION(!rpc_obj.is_empty());
+        RPC_HPP_PRECONDITION(rpc_obj.type() == rpc_type::func_request);
 
         const auto func_name = rpc_obj.get_func_name();
 
@@ -175,6 +188,7 @@ private:
     std::unordered_map<std::string, std::function<void(object_t&)>> m_dispatch_table{};
 };
 
+// invariants: (same as server_interface)
 template<typename Serial>
 class callback_server_interface : public server_interface<Serial>
 {
@@ -194,7 +208,8 @@ protected:
             call_callback_impl(object_t{ detail::callback_request<detail::decay_str_t<Args>...>{
                 std::forward<S>(func_name), std::forward_as_tuple(args...) } });
 
-        RPC_HPP_POSTCONDITION(response.type() == rpc_type::callback_result);
+        RPC_HPP_POSTCONDITION(response.type() == rpc_type::callback_result
+            || response.type() == rpc_type::callback_error);
         return response.template get_result<R>();
     }
 
@@ -211,7 +226,8 @@ protected:
         detail::tuple_bind(response.template get_args<true, detail::decay_str_t<Args>...>(),
             std::forward<Args>(args)...);
 
-        RPC_HPP_POSTCONDITION(response.type() == rpc_type::callback_result_w_bind);
+        RPC_HPP_POSTCONDITION(response.type() == rpc_type::callback_result_w_bind
+            || response.type() == rpc_type::callback_error);
         return response.template get_result<R>();
     }
 

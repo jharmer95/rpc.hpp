@@ -60,6 +60,7 @@ namespace detail_boost_json
     class serializer;
     class deserializer;
 
+    // invariants: none
     struct adapter_impl
     {
         using bytes_t = std::string;
@@ -69,6 +70,7 @@ namespace detail_boost_json
         using config = void;
     };
 
+    // invariants: none
     class serial_adapter : public serial_adapter_base<adapter_impl>
     {
     public:
@@ -123,6 +125,7 @@ namespace detail_boost_json
         [[nodiscard]] static auto verify_type(const serial_t& serial_obj, rpc_type type) -> bool;
     };
 
+    // invariants: none
     class serializer : public serializer_base<serial_adapter, false>
     {
     public:
@@ -300,6 +303,8 @@ namespace detail_boost_json
         boost::json::value m_json{};
     };
 
+    // invariants:
+    //   1.) m_json must be an object if a subval is accessed
     class deserializer : public serializer_base<serial_adapter, true>
     {
     public:
