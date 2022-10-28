@@ -31,7 +31,7 @@ public:
     using object_t = rpc_object<Serial>;
 
     virtual ~client_interface() noexcept = default;
-    client_interface() = default;
+    client_interface() noexcept = default;
     client_interface(const client_interface&) = delete;
     client_interface& operator=(const client_interface&) = delete;
     client_interface& operator=(client_interface&&) = delete;
@@ -39,6 +39,7 @@ public:
     template<typename... Args, typename S>
     RPC_HPP_NODISCARD("the rpc_object should be checked for its type")
     auto call_func(S&& func_name, Args&&... args) -> object_t
+    try
     {
         static_assert(detail::is_stringlike_v<S>, "func_name must be a string-like type");
         RPC_HPP_PRECONDITION(!std::string_view{ func_name }.empty());
@@ -56,13 +57,24 @@ public:
         }
 
         recv_loop(response);
+
         RPC_HPP_POSTCONDITION(!response.is_empty());
         return response;
+    }
+    catch (const rpc_exception& ex)
+    {
+        return object_t{ detail::func_error{ std::forward<S>(func_name), ex } };
+    }
+    catch (const std::exception& ex)
+    {
+        return object_t{ detail::func_error{
+            std::forward<S>(func_name), exception_type::none, ex.what() } };
     }
 
     template<typename... Args, typename S>
     RPC_HPP_NODISCARD("the rpc_object should be checked for its type")
     auto call_func_w_bind(S&& func_name, Args&&... args) -> object_t
+    try
     {
         static_assert(detail::is_stringlike_v<S>, "func_name must be a string-like type");
         static_assert(std::disjunction_v<detail::is_ref_arg<Args>...>,
@@ -90,11 +102,21 @@ public:
         RPC_HPP_POSTCONDITION(!response.is_empty());
         return response;
     }
+    catch (const rpc_exception& ex)
+    {
+        return object_t{ detail::func_error{ std::forward<S>(func_name), ex } };
+    }
+    catch (const std::exception& ex)
+    {
+        return object_t{ detail::func_error{
+            std::forward<S>(func_name), exception_type::none, ex.what() } };
+    }
 
     template<typename R, typename... Args, typename... Args2, typename S>
     RPC_HPP_NODISCARD("the rpc_object should be checked for its type")
     auto call_header_func_impl(RPC_HPP_UNUSED const detail::fptr_t<R, Args...> func_ptr,
         S&& func_name, Args2&&... args) -> object_t
+    try
     {
         static_assert(detail::is_stringlike_v<S>, "func_name must be a string-like type");
         static_assert(std::conjunction_v<std::is_convertible<Args2, Args>...>,
@@ -113,6 +135,15 @@ public:
         {
             return call_func<Args2...>(std::forward<S>(func_name), std::forward<Args2>(args)...);
         }
+    }
+    catch (const rpc_exception& ex)
+    {
+        return object_t{ detail::func_error{ std::forward<S>(func_name), ex } };
+    }
+    catch (const std::exception& ex)
+    {
+        return object_t{ detail::func_error{
+            std::forward<S>(func_name), exception_type::none, ex.what() } };
     }
 
 protected:

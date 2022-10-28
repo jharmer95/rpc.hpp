@@ -34,7 +34,7 @@
 ///OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ///
 
-#define RPC_HPP_ASSERT_ABORT
+#define RPC_HPP_ASSERT_THROW
 
 #include "test_client.hpp"
 #include "test_structs.hpp"
@@ -558,15 +558,6 @@ TEST_CASE_TEMPLATE("ThrowError", TestType, RPC_TEST_TYPES)
 
 TEST_CASE_TEMPLATE("InvalidObject", TestType, RPC_TEST_TYPES)
 {
-#if defined(RPC_HPP_ENABLE_BITSERY)
-    if (std::is_same_v<TestType, adapters::bitsery_adapter>)
-    {
-        // Ignoring bitsery
-        // TODO: Verify bitsery data somehow
-        return;
-    }
-#endif
-
     static constexpr size_t test_sz = 8UL;
     typename TestType::bytes_t bytes(test_sz, {});
 
@@ -590,17 +581,17 @@ TEST_CASE_TEMPLATE("KillServer", TestType, RPC_TEST_TYPES)
 {
     auto p_client = GetClient<TestType>();
 
-    const auto bad_call = [&p_client]
+    const auto dead_call = [&p_client]
     {
-        std::ignore = p_client->call_func("SimpleSum", 1, 2);
+        std::ignore = p_client->call_func("SimpleSum", 1, 2).template get_result<int>();
     };
 
     const auto kill_server = [&p_client]
     {
-        std::ignore = p_client->call_func("KillServer");
+        p_client->call_func("KillServer").template get_result<void>();
     };
 
     REQUIRE_THROWS_AS(kill_server(), rpc_hpp::client_receive_error);
-    REQUIRE_THROWS_AS(bad_call(), rpc_hpp::client_receive_error);
+    REQUIRE_THROWS_AS(dead_call(), rpc_hpp::client_receive_error);
 }
 } //namespace rpc_hpp::tests

@@ -458,10 +458,15 @@ namespace detail_bitsery
     {
         RPC_HPP_PRECONDITION(!is_empty(bytes));
 
-        // Check that getting the type does not throw
-        RPC_HPP_UNUSED const auto type = get_type(bytes);
+        const auto type = get_type(bytes);
 
-        if (get_func_name(bytes).empty())
+        if (!validate_rpc_type(type))
+        {
+            throw deserialization_error{ "Bitsery error: invalid RPC type" };
+        }
+
+        if (type != rpc_type::func_error && type != rpc_type::callback_error
+            && get_func_name(bytes).empty())
         {
             throw deserialization_error{
                 "Bitsery error: func_name could not be extracted from bytes"
@@ -502,13 +507,11 @@ namespace detail_bitsery
         RPC_HPP_PRECONDITION(!is_empty(serial_obj));
 
         // First 4 bytes represent the type
-        int n_type{};
-        std::memcpy(&n_type, serial_obj.data(), sizeof(n_type));
+        rpc_type type{};
+        std::memcpy(&type, serial_obj.data(), sizeof(type));
 
-        RPC_HPP_POSTCONDITION(n_type >= static_cast<int>(rpc_type::callback_install_request)
-            && n_type <= static_cast<int>(rpc_type::func_result_w_bind));
-
-        return static_cast<rpc_type>(n_type);
+        RPC_HPP_POSTCONDITION(validate_rpc_type(type));
+        return type;
     }
 
     template<bool IsCallback, typename R>
