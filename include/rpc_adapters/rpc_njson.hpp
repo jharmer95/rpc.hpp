@@ -134,13 +134,13 @@ namespace detail_njson
     public:
         serializer() noexcept = default;
 
-        [[nodiscard]] auto object() const& noexcept -> const nlohmann::json&
+        [[nodiscard]] auto object() const& -> const nlohmann::json&
         {
             RPC_HPP_POSTCONDITION(m_json.is_null() || !m_json.empty());
             return m_json;
         }
 
-        [[nodiscard]] auto object() && noexcept -> nlohmann::json&&
+        [[nodiscard]] auto object() && -> nlohmann::json&&
         {
             RPC_HPP_POSTCONDITION(m_json.is_null() || !m_json.empty());
             return std::move(m_json);
@@ -287,7 +287,7 @@ namespace detail_njson
     class deserializer : public serializer_base<serial_adapter, true>
     {
     public:
-        explicit deserializer(const nlohmann::json& obj) noexcept : m_json(obj)
+        explicit deserializer(const nlohmann::json& obj) : m_json(obj)
         {
             RPC_HPP_POSTCONDITION(m_json.is_null() || !m_json.empty());
         }

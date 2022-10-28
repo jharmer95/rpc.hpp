@@ -173,10 +173,8 @@ namespace detail_bitsery
         template<typename T>
         static auto serialize_rpc_object(const T& rpc_obj) -> std::vector<uint8_t>;
 
-        static auto extract_length(const std::vector<uint8_t>& bytes, size_t& index) noexcept
-            -> unsigned;
-
-        static auto verify_type(const std::vector<uint8_t>& bytes, rpc_type type) noexcept -> bool;
+        static auto extract_length(const std::vector<uint8_t>& bytes, size_t& index) -> unsigned;
+        static auto verify_type(const std::vector<uint8_t>& bytes, rpc_type type) -> bool;
     };
 
     // invariants:
@@ -625,8 +623,8 @@ namespace detail_bitsery
     }
 
     // Borrowed from Bitsery library for compatibility
-    inline auto serial_adapter::extract_length(
-        const std::vector<uint8_t>& bytes, size_t& index) noexcept -> unsigned
+    inline auto serial_adapter::extract_length(const std::vector<uint8_t>& bytes, size_t& index)
+        -> unsigned
     {
         RPC_HPP_PRECONDITION(index < bytes.size());
 
@@ -653,8 +651,8 @@ namespace detail_bitsery
         return ((high_byte & 0x7FU) << 8U) | low_byte;
     }
 
-    inline auto serial_adapter::verify_type(
-        const std::vector<uint8_t>& bytes, const rpc_type type) noexcept -> bool
+    inline auto serial_adapter::verify_type(const std::vector<uint8_t>& bytes, const rpc_type type)
+        -> bool
     {
         RPC_HPP_PRECONDITION(!is_empty(bytes));
         return std::memcmp(&type, bytes.data(), sizeof(int)) == 0;

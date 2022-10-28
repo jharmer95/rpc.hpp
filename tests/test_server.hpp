@@ -186,10 +186,12 @@ private:
             case rpc_type::func_request:
             case rpc_type::func_result:
             case rpc_type::func_result_w_bind:
-            default:
                 throw object_mismatch_error{
                     "Test server error: invalid rpc_object type detected"
                 };
+
+            default:
+                RPC_HPP_ASSUME(0);
         }
     }
 

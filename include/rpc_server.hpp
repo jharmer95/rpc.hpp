@@ -95,12 +95,14 @@ public:
                 case rpc_type::func_error:
                 case rpc_type::func_result:
                 case rpc_type::func_result_w_bind:
-                default:
                     bytes = object_t{
                         detail::func_error{ func_name,
                             object_mismatch_error("RPC error: Invalid rpc_object type detected") }
                     }.to_bytes();
                     return;
+                
+                default:
+                    RPC_HPP_ASSUME(0);
             }
         }
 

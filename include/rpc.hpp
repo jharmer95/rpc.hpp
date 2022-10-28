@@ -512,7 +512,7 @@ public:                                                           \
 struct callback_install_request : detail::rpc_base<true>
 {
     callback_install_request() noexcept = default;
-    explicit callback_install_request(std::string t_func_name) noexcept
+    explicit callback_install_request(std::string t_func_name)
         : rpc_base<true>{ std::move(t_func_name) }
     {
         RPC_HPP_POSTCONDITION(!this->func_name.empty());
@@ -817,11 +817,7 @@ private:
         RPC_HPP_POSTCONDITION(validate_rpc_type(type()));
     }
 
-    explicit rpc_object(serial_t&& serial) noexcept : m_obj(std::move(serial))
-    {
-        RPC_HPP_POSTCONDITION(!is_empty());
-        RPC_HPP_POSTCONDITION(validate_rpc_type(type()));
-    }
+    explicit rpc_object(serial_t&& serial) noexcept : m_obj(std::move(serial)) {}
 
     serial_t m_obj;
 };

@@ -135,7 +135,7 @@ namespace detail_rapidjson
     public:
         serializer() noexcept = default;
 
-        [[nodiscard]] auto object() const& noexcept -> const rapidjson::Document&
+        [[nodiscard]] auto object() const& -> const rapidjson::Document&
         {
             RPC_HPP_PRECONDITION(m_json.IsObject() ? !m_json.ObjectEmpty()
                                                    : (m_json.IsArray() ? !m_json.Empty() : true));
@@ -143,7 +143,7 @@ namespace detail_rapidjson
             return m_json;
         }
 
-        [[nodiscard]] auto object() && noexcept -> rapidjson::Document&&
+        [[nodiscard]] auto object() && -> rapidjson::Document&&
         {
             RPC_HPP_PRECONDITION(m_json.IsObject() ? !m_json.ObjectEmpty()
                                                    : (m_json.IsArray() ? !m_json.Empty() : true));
@@ -359,7 +359,7 @@ namespace detail_rapidjson
     class deserializer : public serializer_base<serial_adapter, true>
     {
     public:
-        explicit deserializer(const rapidjson::Value& obj) noexcept : m_json(obj)
+        explicit deserializer(const rapidjson::Value& obj) : m_json(obj)
         {
             RPC_HPP_POSTCONDITION(m_json.IsObject() ? !m_json.ObjectEmpty()
                                                     : (m_json.IsArray() ? !m_json.Empty() : true));
