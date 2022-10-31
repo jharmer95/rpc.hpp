@@ -774,6 +774,12 @@ namespace detail_rapidjson
             throw deserialization_error{ R"(rapidjson error: field "func_name" not found)" };
         }
 
+        if (const auto type_it = doc.FindMember("type");
+            (type_it == doc.MemberEnd()) || (!type_it->value.IsInt()))
+        {
+            throw deserialization_error{ R"(rapidjson error: field "type" not found)" };
+        }
+
         RPC_HPP_POSTCONDITION(!is_empty(doc));
         return doc;
     }

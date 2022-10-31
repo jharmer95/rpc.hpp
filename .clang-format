@@ -4,7 +4,7 @@ BasedOnStyle: Microsoft
 AccessModifierOffset: -4
 AlignAfterOpenBracket: DontAlign
 AlignConsecutiveAssignments: None
-AlignConsecutiveBitFields: "Consecutive" # 11
+AlignConsecutiveBitFields: Consecutive # 11
 AlignConsecutiveDeclarations: None
 AlignEscapedNewlines: Left
 AlignOperands: DontAlign
@@ -41,7 +41,7 @@ IncludeBlocks: Regroup # 7
 IndentCaseLabels: true
 IndentGotoLabels: false # 10
 IndentPPDirectives: AfterHash
-IndentRequires: true # 14
+#IndentRequiresClause: true # 15
 IndentWidth: 4
 IndentWrappedFunctionNames: false
 #InsertBraces: true # 15
@@ -56,7 +56,7 @@ QualifierAlignment: Custom # 14
 QualifierOrder: ["inline", "static", "constexpr", "const", "volatile", "type"] # 14
 ReflowComments: false
 RemoveBracesLLVM: false # 14
-#RequiresClausePosition # 15
+#RequiresClausePosition: OwnLine # 15
 SeparateDefinitionBlocks: Leave # 14
 SortIncludes: Never
 SortUsingDeclarations: true

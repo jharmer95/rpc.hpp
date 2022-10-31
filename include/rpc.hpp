@@ -96,17 +96,21 @@ enum class exception_type : int
         && static_cast<int>(type) <= static_cast<int>(exception_type::callback_missing);
 }
 
+// invariants:
+//   1. m_type must be a valid exception_type after construction
 class rpc_exception : public std::runtime_error
 {
 public:
     explicit rpc_exception(const std::string& mesg, const exception_type type)
         : std::runtime_error(mesg), m_type(type)
     {
+        RPC_HPP_POSTCONDITION(validate_exception_type(m_type));
     }
 
     explicit rpc_exception(const char* const mesg, const exception_type type)
         : std::runtime_error(mesg), m_type(type)
     {
+        RPC_HPP_POSTCONDITION(validate_exception_type(m_type));
     }
 
     [[nodiscard]] exception_type get_type() const noexcept { return m_type; }
@@ -348,7 +352,7 @@ public:                                                           \
     };
 
     // invariants:
-    //   1.) func_name cannot be empty after construction
+    //   1. func_name cannot be empty after construction
     template<bool IsCallback, typename... Args>
     struct rpc_request : rpc_base<IsCallback>
     {
@@ -374,7 +378,7 @@ public:                                                           \
     using callback_request = rpc_request<true, Args...>;
 
     // invariants:
-    //   1.) func_name cannot be empty after construction
+    //   1. func_name cannot be empty after construction
     template<bool IsCallback, typename R>
     struct rpc_result : rpc_base<IsCallback>
     {
@@ -393,7 +397,7 @@ public:                                                           \
     using callback_result = rpc_result<true, R>;
 
     // invariants:
-    //   1.) func_name cannot be empty after construction
+    //   1. func_name cannot be empty after construction
     template<bool IsCallback, typename R, typename... Args>
     struct rpc_result_w_bind : rpc_result<IsCallback, R>
     {
@@ -424,7 +428,7 @@ public:                                                           \
     using callback_result_w_bind = rpc_result_w_bind<true, R, Args...>;
 
     // invariants:
-    //   1.) except_type must hold a valid exception_type
+    //   1. except_type must hold a valid exception_type
     template<bool IsCallback>
     struct rpc_error : rpc_base<IsCallback>
     {
@@ -508,11 +512,11 @@ public:                                                           \
 } //namespace detail
 
 // invariants:
-//   1.) func_name cannot be empty after construction
+//   1. func_name cannot be empty after construction
 struct callback_install_request : detail::rpc_base<true>
 {
     callback_install_request() noexcept = default;
-    explicit callback_install_request(std::string t_func_name) noexcept
+    explicit callback_install_request(std::string t_func_name)
         : rpc_base<true>{ std::move(t_func_name) }
     {
         RPC_HPP_POSTCONDITION(!this->func_name.empty());
@@ -541,8 +545,8 @@ enum class rpc_type : int
 }
 
 // invariants:
-//   1.) m_obj cannot be empty after construction
-//   2.) m_obj must always hold a valid 'type' field after construction
+//   1. m_obj cannot be empty after construction
+//   2. m_obj must always hold a valid 'type' field after construction
 template<typename Serial>
 class rpc_object
 {
@@ -595,21 +599,20 @@ public:
 
     RPC_HPP_NODISCARD("parsing consumes the original input")
     static auto parse_bytes(bytes_t&& bytes) noexcept -> std::optional<rpc_object>
-    try
     {
-        auto result = rpc_object{ Serial::from_bytes(std::move(bytes)) };
+        try
+        {
+            auto result = rpc_object{ Serial::from_bytes(std::move(bytes)) };
 
-        RPC_HPP_POSTCONDITION(!result.is_empty());
-        RPC_HPP_POSTCONDITION(validate_rpc_type(result.type()));
-        return result;
+            RPC_HPP_POSTCONDITION(!result.is_empty());
+            RPC_HPP_POSTCONDITION(validate_rpc_type(result.type()));
+            return result;
+        }
+        catch (const std::exception&)
+        {
+            return std::nullopt;
+        }
     }
-    catch (const std::exception&)
-    {
-        return std::nullopt;
-    }
-
-    RPC_HPP_NODISCARD("result is useless if discarded")
-    bool is_empty() const& noexcept { return Serial::is_empty(m_obj); }
 
     RPC_HPP_NODISCARD("converting to bytes may be expensive")
     auto to_bytes() const& -> bytes_t { return Serial::to_bytes(m_obj); }
@@ -704,8 +707,7 @@ public:
         RPC_HPP_PRECONDITION(!is_empty());
 
         return type() == rpc_type::callback_install_request
-            ? Serial::get_callback_install(m_obj).is_uninstall
-            : false;
+            && Serial::get_callback_install(m_obj).is_uninstall;
     }
 
     RPC_HPP_NODISCARD("extracting data from serial object may be expensive")
@@ -817,11 +819,9 @@ private:
         RPC_HPP_POSTCONDITION(validate_rpc_type(type()));
     }
 
-    explicit rpc_object(serial_t&& serial) noexcept : m_obj(std::move(serial))
-    {
-        RPC_HPP_POSTCONDITION(!is_empty());
-        RPC_HPP_POSTCONDITION(validate_rpc_type(type()));
-    }
+    explicit rpc_object(serial_t&& serial) noexcept : m_obj(std::move(serial)) {}
+
+    [[nodiscard]] auto is_empty() const& noexcept -> bool { return Serial::is_empty(m_obj); }
 
     serial_t m_obj;
 };
@@ -1153,8 +1153,6 @@ namespace detail
         static_assert(
             std::is_convertible_v<std::invoke_result_t<F, Args...>, R>, "F must yield an R");
 
-        RPC_HPP_PRECONDITION(!rpc_obj.is_empty());
-
         auto args = rpc_obj.template get_args<Args...>();
         auto func_name = rpc_obj.get_func_name();
         const auto has_bound_args = rpc_obj.has_bound_args();
@@ -1197,8 +1195,6 @@ namespace detail
         {
             throw remote_exec_error{ ex.what() };
         }
-
-        RPC_HPP_POSTCONDITION(!rpc_obj.is_empty());
     }
 
     // serialize functions for library types

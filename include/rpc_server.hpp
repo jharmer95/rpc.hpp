@@ -69,52 +69,57 @@ public:
     }
 
     void handle_bytes(bytes_t& bytes)
-    try
     {
-        if (auto rpc_opt = object_t::parse_bytes(std::move(bytes)); rpc_opt.has_value())
+        try
         {
-            auto& rpc_obj = rpc_opt.value();
-            const auto func_name = rpc_obj.get_func_name();
-
-            switch (rpc_obj.type())
+            if (auto rpc_opt = object_t::parse_bytes(std::move(bytes)); rpc_opt.has_value())
             {
-                case rpc_type::func_request:
-                    dispatch(rpc_obj);
-                    bytes = rpc_obj.to_bytes();
-                    return;
+                auto& rpc_obj = rpc_opt.value();
+                const auto func_name = rpc_obj.get_func_name();
 
-                case rpc_type::callback_install_request:
-                case rpc_type::callback_result:
-                case rpc_type::callback_result_w_bind:
-                case rpc_type::callback_error:
-                    handle_callback_object(rpc_obj);
-                    bytes = rpc_obj.to_bytes();
-                    return;
+                switch (rpc_obj.type())
+                {
+                    case rpc_type::func_request:
+                        dispatch(rpc_obj);
+                        bytes = rpc_obj.to_bytes();
+                        return;
 
-                case rpc_type::callback_request:
-                case rpc_type::func_error:
-                case rpc_type::func_result:
-                case rpc_type::func_result_w_bind:
-                default:
-                    bytes = object_t{
-                        detail::func_error{ func_name,
-                            object_mismatch_error("RPC error: Invalid rpc_object type detected") }
-                    }.to_bytes();
-                    return;
+                    case rpc_type::callback_install_request:
+                    case rpc_type::callback_result:
+                    case rpc_type::callback_result_w_bind:
+                    case rpc_type::callback_error:
+                        handle_callback_object(rpc_obj);
+                        bytes = rpc_obj.to_bytes();
+                        return;
+
+                    case rpc_type::callback_request:
+                    case rpc_type::func_error:
+                    case rpc_type::func_result:
+                    case rpc_type::func_result_w_bind:
+                    default:
+                        bytes = object_t{
+                            detail::func_error{ func_name,
+                                object_mismatch_error{
+                                    "RPC error: Invalid rpc_object type detected" } }
+                        }.to_bytes();
+                        return;
+                }
             }
-        }
 
-        bytes = object_t{
-            detail::func_error{ "", server_receive_error("RPC error: Invalid RPC object received") }
-        }.to_bytes();
-    }
-    catch (const rpc_exception& ex)
-    {
-        bytes = object_t{ detail::func_error{ "", ex } }.to_bytes();
-    }
-    catch (const std::exception& ex)
-    {
-        bytes = object_t{ detail::func_error{ "", exception_type::none, ex.what() } }.to_bytes();
+            bytes = object_t{
+                detail::func_error{
+                    "", server_receive_error{ "RPC error: Invalid RPC object received" } }
+            }.to_bytes();
+        }
+        catch (const rpc_exception& ex)
+        {
+            bytes = object_t{ detail::func_error{ "", ex } }.to_bytes();
+        }
+        catch (const std::exception& ex)
+        {
+            bytes =
+                object_t{ detail::func_error{ "", exception_type::none, ex.what() } }.to_bytes();
+        }
     }
 
 protected:
@@ -126,8 +131,6 @@ protected:
             object_mismatch_error{
                 "RPC error: Invalid rpc_object type detected (NOTE: callbacks are not "
                 "enabled on this server)" } } };
-
-        RPC_HPP_POSTCONDITION(!rpc_obj.is_empty());
     }
 
 private:
@@ -172,35 +175,34 @@ private:
     }
 
     void dispatch(object_t& rpc_obj) const
-    try
     {
-        RPC_HPP_PRECONDITION(!rpc_obj.is_empty());
-        RPC_HPP_PRECONDITION(rpc_obj.type() == rpc_type::func_request);
-
-        const auto func_name = rpc_obj.get_func_name();
-
-        if (const auto find_it = m_dispatch_table.find(func_name);
-            find_it != m_dispatch_table.cend())
+        try
         {
-            find_it->second(rpc_obj);
-        }
-        else
-        {
-            rpc_obj = object_t{ detail::func_error{ func_name,
-                function_missing_error{
-                    std::string{ "RPC error: Called function: " }.append(func_name).append(
-                        "() not found") } } };
-        }
+            RPC_HPP_PRECONDITION(rpc_obj.type() == rpc_type::func_request);
 
-        RPC_HPP_POSTCONDITION(!rpc_obj.is_empty());
-    }
-    catch (const rpc_exception& ex)
-    {
-        rpc_obj = object_t{ detail::func_error{ "", ex } };
-    }
-    catch (const std::exception& ex)
-    {
-        rpc_obj = object_t{ detail::func_error{ "", exception_type::none, ex.what() } };
+            const auto func_name = rpc_obj.get_func_name();
+
+            if (const auto find_it = m_dispatch_table.find(func_name);
+                find_it != m_dispatch_table.cend())
+            {
+                find_it->second(rpc_obj);
+            }
+            else
+            {
+                rpc_obj = object_t{ detail::func_error{ func_name,
+                    function_missing_error{
+                        std::string{ "RPC error: Called function: " }.append(func_name).append(
+                            "() not found") } } };
+            }
+        }
+        catch (const rpc_exception& ex)
+        {
+            rpc_obj = object_t{ detail::func_error{ "", ex } };
+        }
+        catch (const std::exception& ex)
+        {
+            rpc_obj = object_t{ detail::func_error{ "", exception_type::none, ex.what() } };
+        }
     }
 
     std::unordered_map<std::string, std::function<void(object_t&)>> m_dispatch_table{};
@@ -257,8 +259,6 @@ private:
     void handle_callback_object(object_t& rpc_obj) final
     try
     {
-        RPC_HPP_PRECONDITION(!rpc_obj.is_empty());
-
         if (rpc_obj.type() == rpc_type::callback_install_request)
         {
             rpc_obj.is_callback_uninstall() ? uninstall_callback(rpc_obj)
@@ -268,8 +268,6 @@ private:
         {
             server_interface<Serial>::handle_callback_object(rpc_obj);
         }
-
-        RPC_HPP_POSTCONDITION(!rpc_obj.is_empty());
     }
     catch (const rpc_exception& ex)
     {

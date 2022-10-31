@@ -35,6 +35,7 @@
 ///
 
 #define RPC_HPP_ASSERT_THROW
+#define RPC_HPP_BITSERY_EXACT_SZ
 
 #include "test_client.hpp"
 #include "test_structs.hpp"

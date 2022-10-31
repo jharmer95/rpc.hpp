@@ -27,7 +27,17 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-add_executable(unit_detail detail/main.cpp detail/traits.test.cpp detail/tuple.test.cpp)
-target_link_libraries(unit_detail PRIVATE rpc_hpp doctest_lib)
-target_compile_options(unit_detail PRIVATE ${FULL_WARNING})
-doctest_discover_tests(unit_detail ADD_LABELS 0)
+add_executable(ut_detail test_main.cpp detail/traits.test.cpp detail/tuple.test.cpp)
+target_link_libraries(ut_detail PRIVATE rpc_hpp doctest_lib)
+target_compile_options(ut_detail PRIVATE ${FULL_WARNING})
+doctest_discover_tests(ut_detail ADD_LABELS 0)
+
+add_executable(ut_exceptions test_main.cpp exceptions.test.cpp)
+target_link_libraries(ut_exceptions PRIVATE rpc_hpp doctest_lib)
+target_compile_options(ut_exceptions PRIVATE ${FULL_WARNING})
+doctest_discover_tests(ut_exceptions ADD_LABELS 0)
+
+add_executable(ut_rpc_obj test_main.cpp rpc_object.test.cpp)
+target_link_libraries(ut_rpc_obj PRIVATE rpc_hpp doctest_lib adapters_iface)
+target_compile_options(ut_rpc_obj PRIVATE ${FULL_WARNING})
+doctest_discover_tests(ut_rpc_obj ADD_LABELS 0)

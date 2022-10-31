@@ -39,111 +39,116 @@ public:
     template<typename... Args, typename S>
     RPC_HPP_NODISCARD("the rpc_object should be checked for its type")
     auto call_func(S&& func_name, Args&&... args) -> object_t
-    try
     {
-        static_assert(detail::is_stringlike_v<S>, "func_name must be a string-like type");
-        RPC_HPP_PRECONDITION(!std::string_view{ func_name }.empty());
-
-        auto response = object_t{ detail::func_request<detail::decay_str_t<Args>...>{
-            std::forward<S>(func_name), std::forward_as_tuple(args...) } };
-
         try
         {
-            send(response.to_bytes());
+            static_assert(detail::is_stringlike_v<S>, "func_name must be a string-like type");
+            RPC_HPP_PRECONDITION(!std::string_view{ func_name }.empty());
+
+            auto response = object_t{ detail::func_request<detail::decay_str_t<Args>...>{
+                std::forward<S>(func_name), std::forward_as_tuple(args...) } };
+
+            try
+            {
+                send(response.to_bytes());
+            }
+            catch (const std::exception& ex)
+            {
+                throw client_send_error{ ex.what() };
+            }
+
+            recv_loop(response);
+            return response;
+        }
+        catch (const rpc_exception& ex)
+        {
+            return object_t{ detail::func_error{ std::forward<S>(func_name), ex } };
         }
         catch (const std::exception& ex)
         {
-            throw client_send_error{ ex.what() };
+            return object_t{ detail::func_error{
+                std::forward<S>(func_name), exception_type::none, ex.what() } };
         }
-
-        recv_loop(response);
-
-        RPC_HPP_POSTCONDITION(!response.is_empty());
-        return response;
-    }
-    catch (const rpc_exception& ex)
-    {
-        return object_t{ detail::func_error{ std::forward<S>(func_name), ex } };
-    }
-    catch (const std::exception& ex)
-    {
-        return object_t{ detail::func_error{
-            std::forward<S>(func_name), exception_type::none, ex.what() } };
     }
 
     template<typename... Args, typename S>
     RPC_HPP_NODISCARD("the rpc_object should be checked for its type")
     auto call_func_w_bind(S&& func_name, Args&&... args) -> object_t
-    try
     {
-        static_assert(detail::is_stringlike_v<S>, "func_name must be a string-like type");
-        static_assert(std::disjunction_v<detail::is_ref_arg<Args>...>,
-            "At least one argument must be a (non-const) reference for call_func_w_bind to have an "
-            "effect, use call_func instead");
-
-        RPC_HPP_PRECONDITION(!std::string_view{ func_name }.empty());
-
-        auto response = object_t{ detail::func_request<detail::decay_str_t<Args>...>{
-            std::forward<S>(func_name), std::forward_as_tuple(args...), true } };
-
         try
         {
-            send(response.to_bytes());
+            static_assert(detail::is_stringlike_v<S>, "func_name must be a string-like type");
+            static_assert(std::disjunction_v<detail::is_ref_arg<Args>...>,
+                "At least one argument must be a (non-const) reference for call_func_w_bind to "
+                "have an "
+                "effect, use call_func instead");
+
+            RPC_HPP_PRECONDITION(!std::string_view{ func_name }.empty());
+
+            auto response = object_t{ detail::func_request<detail::decay_str_t<Args>...>{
+                std::forward<S>(func_name), std::forward_as_tuple(args...), true } };
+
+            try
+            {
+                send(response.to_bytes());
+            }
+            catch (const std::exception& ex)
+            {
+                throw client_send_error{ ex.what() };
+            }
+
+            recv_loop(response);
+            detail::tuple_bind(response.template get_args<detail::decay_str_t<Args>...>(),
+                std::forward<Args>(args)...);
+
+            return response;
+        }
+        catch (const rpc_exception& ex)
+        {
+            return object_t{ detail::func_error{ std::forward<S>(func_name), ex } };
         }
         catch (const std::exception& ex)
         {
-            throw client_send_error{ ex.what() };
+            return object_t{ detail::func_error{
+                std::forward<S>(func_name), exception_type::none, ex.what() } };
         }
-
-        recv_loop(response);
-        detail::tuple_bind(response.template get_args<detail::decay_str_t<Args>...>(),
-            std::forward<Args>(args)...);
-
-        RPC_HPP_POSTCONDITION(!response.is_empty());
-        return response;
-    }
-    catch (const rpc_exception& ex)
-    {
-        return object_t{ detail::func_error{ std::forward<S>(func_name), ex } };
-    }
-    catch (const std::exception& ex)
-    {
-        return object_t{ detail::func_error{
-            std::forward<S>(func_name), exception_type::none, ex.what() } };
     }
 
     template<typename R, typename... Args, typename... Args2, typename S>
     RPC_HPP_NODISCARD("the rpc_object should be checked for its type")
     auto call_header_func_impl(RPC_HPP_UNUSED const detail::fptr_t<R, Args...> func_ptr,
         S&& func_name, Args2&&... args) -> object_t
-    try
     {
-        static_assert(detail::is_stringlike_v<S>, "func_name must be a string-like type");
-        static_assert(std::conjunction_v<std::is_convertible<Args2, Args>...>,
-            "Static function call parameters must match type exactly");
-
-        RPC_HPP_PRECONDITION(func_ptr != nullptr);
-        RPC_HPP_PRECONDITION(!std::string_view{ func_name }.empty());
-
-        // If any parameters are non-const lvalue references...
-        if constexpr (std::disjunction_v<detail::is_ref_arg<Args>...>)
+        try
         {
-            return call_func_w_bind<Args2...>(
-                std::forward<S>(func_name), std::forward<Args2>(args)...);
+            static_assert(detail::is_stringlike_v<S>, "func_name must be a string-like type");
+            static_assert(std::conjunction_v<std::is_convertible<Args2, Args>...>,
+                "Static function call parameters must match type exactly");
+
+            RPC_HPP_PRECONDITION(func_ptr != nullptr);
+            RPC_HPP_PRECONDITION(!std::string_view{ func_name }.empty());
+
+            // If any parameters are non-const lvalue references...
+            if constexpr (std::disjunction_v<detail::is_ref_arg<Args>...>)
+            {
+                return call_func_w_bind<Args2...>(
+                    std::forward<S>(func_name), std::forward<Args2>(args)...);
+            }
+            else
+            {
+                return call_func<Args2...>(
+                    std::forward<S>(func_name), std::forward<Args2>(args)...);
+            }
         }
-        else
+        catch (const rpc_exception& ex)
         {
-            return call_func<Args2...>(std::forward<S>(func_name), std::forward<Args2>(args)...);
+            return object_t{ detail::func_error{ std::forward<S>(func_name), ex } };
         }
-    }
-    catch (const rpc_exception& ex)
-    {
-        return object_t{ detail::func_error{ std::forward<S>(func_name), ex } };
-    }
-    catch (const std::exception& ex)
-    {
-        return object_t{ detail::func_error{
-            std::forward<S>(func_name), exception_type::none, ex.what() } };
+        catch (const std::exception& ex)
+        {
+            return object_t{ detail::func_error{
+                std::forward<S>(func_name), exception_type::none, ex.what() } };
+        }
     }
 
 protected:
@@ -263,8 +268,6 @@ private:
 
     void handle_callback_object(object_t& request) final
     {
-        RPC_HPP_PRECONDITION(!request.is_empty());
-
         if (const auto type = request.type();
             type == rpc_type::callback_request || type == rpc_type::func_request)
         {
@@ -285,8 +288,6 @@ private:
         {
             client_interface<Serial>::handle_callback_object(request);
         }
-
-        RPC_HPP_POSTCONDITION(!request.is_empty());
     }
 
     template<typename R, typename... Args, typename S, typename F>
@@ -325,33 +326,31 @@ private:
     }
 
     void dispatch_callback(object_t& rpc_obj)
-    try
     {
-        RPC_HPP_PRECONDITION(!rpc_obj.is_empty());
-
-        const auto func_name = rpc_obj.get_func_name();
-
-        if (const auto it = m_callback_map.find(func_name); it != m_callback_map.cend())
+        try
         {
-            it->second(rpc_obj);
-        }
-        else
-        {
-            rpc_obj = object_t{ detail::callback_error{ func_name,
-                function_missing_error{
-                    std::string{ "RPC error: Called function: " }.append(func_name).append(
-                        "() not found") } } };
-        }
+            const auto func_name = rpc_obj.get_func_name();
 
-        RPC_HPP_POSTCONDITION(!rpc_obj.is_empty());
-    }
-    catch (const rpc_exception& ex)
-    {
-        rpc_obj = object_t{ detail::callback_error{ "", ex } };
-    }
-    catch (const std::exception& ex)
-    {
-        rpc_obj = object_t{ detail::callback_error{ "", exception_type::none, ex.what() } };
+            if (const auto it = m_callback_map.find(func_name); it != m_callback_map.cend())
+            {
+                it->second(rpc_obj);
+            }
+            else
+            {
+                rpc_obj = object_t{ detail::callback_error{ func_name,
+                    function_missing_error{
+                        std::string{ "RPC error: Called function: " }.append(func_name).append(
+                            "() not found") } } };
+            }
+        }
+        catch (const rpc_exception& ex)
+        {
+            rpc_obj = object_t{ detail::callback_error{ "", ex } };
+        }
+        catch (const std::exception& ex)
+        {
+            rpc_obj = object_t{ detail::callback_error{ "", exception_type::none, ex.what() } };
+        }
     }
 
     std::unordered_map<std::string, std::function<void(object_t&)>> m_callback_map{};

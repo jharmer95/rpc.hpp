@@ -372,7 +372,7 @@ namespace detail_njson
         void as_tuple(const std::string_view key, std::pair<T1, T2>& val) const
         {
             const auto& obj = subobject(key);
-            val = { obj["first"], obj["second"] };
+            val = { obj.at("first"), obj.at("second") };
         }
 
         template<typename... Args>
@@ -519,6 +519,12 @@ namespace detail_njson
             throw deserialization_error{ R"(nlohmann::json error: field "func_name" not found)" };
         }
 
+        if (const auto type_it = obj.find("type");
+            (type_it == obj.end()) || (!type_it->is_number_integer()))
+        {
+            throw deserialization_error{ R"(nlohmann::json error: field "type" not found)" };
+        }
+
         RPC_HPP_POSTCONDITION(!is_empty(obj));
         return obj;
     }
@@ -657,7 +663,7 @@ namespace detail_njson
     inline auto serial_adapter::has_bound_args(const nlohmann::json& serial_obj) -> bool
     {
         RPC_HPP_PRECONDITION(!is_empty(serial_obj));
-        return serial_obj["bind_args"];
+        return serial_obj.at("bind_args");
     }
 
     inline auto serial_adapter::verify_type(const nlohmann::json& serial_obj, const rpc_type type)

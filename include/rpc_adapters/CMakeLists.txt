@@ -36,11 +36,16 @@ endif()
 
 include(system_link)
 
+add_library(adapters_iface INTERFACE)
+
 if(${BUILD_ADAPTER_BITSERY})
   add_library(bitsery_adapter INTERFACE)
   target_compile_definitions(bitsery_adapter INTERFACE RPC_HPP_ENABLE_BITSERY)
   find_package(Bitsery CONFIG REQUIRED)
   target_link_libraries_system(bitsery_adapter INTERFACE Bitsery::bitsery)
+  
+  target_link_libraries(adapters_iface INTERFACE bitsery_adapter)
+  target_sources(adapters_iface INTERFACE ${CMAKE_SOURCE_DIR}/include/rpc_adapters/rpc_bitsery.hpp)
 
   install(FILES "rpc_bitsery.hpp"
           DESTINATION "${CMAKE_INSTALL_PREFIX}/include/rpc_adapters")
@@ -53,6 +58,9 @@ if(${BUILD_ADAPTER_BOOST_JSON})
   find_package(Boost 1.75.0 REQUIRED COMPONENTS json)
   target_link_libraries_system(boost_json_adapter INTERFACE Boost::headers
                                Boost::json)
+
+  target_link_libraries(adapters_iface INTERFACE boost_json_adapter)
+  target_sources(adapters_iface INTERFACE ${CMAKE_SOURCE_DIR}/include/rpc_adapters/rpc_boost_json.hpp)
 
   install(FILES "rpc_boost_json.hpp"
           DESTINATION "${CMAKE_INSTALL_PREFIX}/include/rpc_adapters")
@@ -71,6 +79,9 @@ if(${BUILD_ADAPTER_NJSON})
   target_link_libraries_system(njson_adapter INTERFACE
                                nlohmann_json::nlohmann_json)
 
+  target_link_libraries(adapters_iface INTERFACE njson_adapter)
+  target_sources(adapters_iface INTERFACE ${CMAKE_SOURCE_DIR}/include/rpc_adapters/rpc_njson.hpp)
+
   install(FILES "rpc_njson.hpp"
           DESTINATION "${CMAKE_INSTALL_PREFIX}/include/rpc_adapters")
 endif()
@@ -81,6 +92,9 @@ if(${BUILD_ADAPTER_RAPIDJSON})
   find_package(RapidJSON CONFIG REQUIRED)
   target_include_directories(rpdjson_adapter SYSTEM
                              INTERFACE ${RAPIDJSON_INCLUDE_DIRS})
+
+  target_link_libraries(adapters_iface INTERFACE rpdjson_adapter)
+  target_sources(adapters_iface INTERFACE ${CMAKE_SOURCE_DIR}/include/rpc_adapters/rpc_rapidjson.hpp)
 
   install(FILES "rpc_rapidjson.hpp"
           DESTINATION "${CMAKE_INSTALL_PREFIX}/include/rpc_adapters")
