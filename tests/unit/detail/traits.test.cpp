@@ -1,6 +1,7 @@
 #include <rpc.hpp>
 
 #include <array>
+#include <memory_resource>
 #include <string>
 #include <type_traits>
 #include <vector>

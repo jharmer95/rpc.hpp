@@ -131,8 +131,6 @@ protected:
             object_mismatch_error{
                 "RPC error: Invalid rpc_object type detected (NOTE: callbacks are not "
                 "enabled on this server)" } } };
-
-        RPC_HPP_POSTCONDITION(!rpc_obj.is_empty());
     }
 
 private:
