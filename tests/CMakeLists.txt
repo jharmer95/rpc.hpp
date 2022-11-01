@@ -50,7 +50,7 @@ if(NOT TARGET doctest_lib)
 endif()
 
 add_executable(rpc_test)
-target_link_libraries(rpc_test PRIVATE rpc_hpp doctest_lib Threads::Threads)
+target_link_libraries(rpc_test PRIVATE rpc_hpp doctest_lib adapters_iface Threads::Threads)
 target_sources(
   rpc_test
   PRIVATE test_client.cpp
@@ -65,27 +65,6 @@ target_sources(
 
 if(${USE_PCH})
   target_precompile_headers(rpc_test PRIVATE pch.hpp)
-endif()
-
-if(${BUILD_ADAPTER_BITSERY})
-  target_link_libraries(rpc_test PRIVATE bitsery_adapter)
-  target_compile_definitions(rpc_test PRIVATE RPC_HPP_BITSERY_EXACT_SZ)
-  target_sources(rpc_test PRIVATE ../include/rpc_adapters/rpc_bitsery.hpp)
-endif()
-
-if(${BUILD_ADAPTER_BOOST_JSON})
-  target_link_libraries(rpc_test PRIVATE boost_json_adapter)
-  target_sources(rpc_test PRIVATE ../include/rpc_adapters/rpc_boost_json.hpp)
-endif()
-
-if(${BUILD_ADAPTER_NJSON})
-  target_link_libraries(rpc_test PRIVATE njson_adapter)
-  target_sources(rpc_test PRIVATE ../include/rpc_adapters/rpc_njson.hpp)
-endif()
-
-if(${BUILD_ADAPTER_RAPIDJSON})
-  target_link_libraries(rpc_test PRIVATE rpdjson_adapter)
-  target_sources(rpc_test PRIVATE ../include/rpc_adapters/rpc_rapidjson.hpp)
 endif()
 
 target_compile_options(rpc_test PRIVATE ${FULL_WARNING})

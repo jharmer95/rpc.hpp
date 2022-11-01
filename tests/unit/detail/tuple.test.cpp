@@ -35,8 +35,8 @@ TEST_CASE("for_each_tuple")
         }
     };
 
-    std::tuple<int, std::string, float, std::vector<unsigned>> tup{ 15, "Hello, world!", 1.34f,
-        { 16, 166, 886, 4 } };
+    const std::tuple<int, std::string, float, std::vector<unsigned>> tup{ 15, "Hello, world!",
+        1.34f, { 16, 166, 886, 4 } };
 
     detail::for_each_tuple(tup, process);
 }
@@ -62,9 +62,6 @@ void helper(Args&&... args)
         {
             std::forward<decltype(val)>(val) = "Alabama";
         }
-        else
-        {
-        }
     };
 
     detail::for_each_tuple(tup, process);
@@ -84,7 +81,6 @@ TEST_CASE("tuple_bind")
     REQUIRE(s == "Alabama");
 
     const std::string s2{ "const value" };
-
     helper(x, y, s2);
 
     REQUIRE(x == 2);

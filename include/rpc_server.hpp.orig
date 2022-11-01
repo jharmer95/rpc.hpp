@@ -84,6 +84,20 @@ public:
                         bytes = rpc_obj.to_bytes();
                         return;
 
+<<<<<<< HEAD
+                case rpc_type::callback_request:
+                case rpc_type::func_error:
+                case rpc_type::func_result:
+                case rpc_type::func_result_w_bind:
+                    bytes = object_t{
+                        detail::func_error{ func_name,
+                            object_mismatch_error("RPC error: Invalid rpc_object type detected") }
+                    }.to_bytes();
+                    return;
+                
+                default:
+                    RPC_HPP_ASSUME(0);
+=======
                     case rpc_type::callback_install_request:
                     case rpc_type::callback_result:
                     case rpc_type::callback_result_w_bind:
@@ -104,6 +118,7 @@ public:
                         }.to_bytes();
                         return;
                 }
+>>>>>>> 8370ec0e6bf89b4814a604880ca0f258f4a3a4aa
             }
 
             bytes = object_t{
@@ -131,8 +146,6 @@ protected:
             object_mismatch_error{
                 "RPC error: Invalid rpc_object type detected (NOTE: callbacks are not "
                 "enabled on this server)" } } };
-
-        RPC_HPP_POSTCONDITION(!rpc_obj.is_empty());
     }
 
 private:

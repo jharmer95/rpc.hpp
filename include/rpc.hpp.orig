@@ -820,8 +820,11 @@ private:
     }
 
     explicit rpc_object(serial_t&& serial) noexcept : m_obj(std::move(serial)) {}
+<<<<<<< HEAD
+=======
 
     [[nodiscard]] auto is_empty() const& noexcept -> bool { return Serial::is_empty(m_obj); }
+>>>>>>> 8370ec0e6bf89b4814a604880ca0f258f4a3a4aa
 
     serial_t m_obj;
 };

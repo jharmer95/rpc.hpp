@@ -623,6 +623,12 @@ namespace detail_boost_json
             throw deserialization_error{ R"(Boost.JSON error: field "func_name" not found)" };
         }
 
+        if (const auto type_it = obj.find("type");
+            (type_it == obj.cend()) || (!type_it->value().is_int64()))
+        {
+            throw deserialization_error{ R"(Boost.JSON error: field "type" not found)" };
+        }
+
         RPC_HPP_POSTCONDITION(!is_empty(obj));
         return obj;
     }
