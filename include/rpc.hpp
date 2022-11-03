@@ -10,6 +10,7 @@
 #include <tuple>
 #include <type_traits>
 #include <utility>
+#include <variant>
 
 #if defined(_MSC_VER)
 #  define RPC_HPP_ASSUME(EXPR) __assume(EXPR)
@@ -948,6 +949,12 @@ namespace adapters
             (static_cast<Derived*>(this))->as_optional(key, val);
         }
 
+        template<typename... Args>
+        RPC_HPP_INLINE void as_variant(const std::string_view key, std::variant<Args...>& val)
+        {
+            (static_cast<Derived*>(this))->as_variant(key, val);
+        }
+
         template<typename T>
         RPC_HPP_INLINE void as_object(const std::string_view key, T& val)
         {
@@ -967,6 +974,8 @@ namespace adapters
     public:
         using serializer_t = std::conditional_t<Deserialize, typename Adapter::deserializer_t,
             typename Adapter::serializer_t>;
+
+        static constexpr size_t max_variant_size = 10;
 
         template<typename T>
         void serialize_object(const T& val)
@@ -1050,6 +1059,15 @@ namespace adapters
         RPC_HPP_INLINE void as_optional(const std::string_view key, std::optional<T>& val)
         {
             (static_cast<serializer_t*>(this))->as_optional(key, val);
+        }
+
+        template<typename... Args>
+        RPC_HPP_INLINE void as_variant(const std::string_view key, std::variant<Args...>& val)
+        {
+            static_assert(
+                sizeof...(Args) < max_variant_size, "arg count can't exceed max_variant_size");
+
+            (static_cast<serializer_t*>(this))->as_variant(key, val);
         }
 
         template<typename T>
@@ -1145,6 +1163,26 @@ namespace adapters
     void serialize(serializer_base<Adapter, Deserialize>& ser, std::optional<T>& val)
     {
         ser.as_optional("", val);
+    }
+
+    template<typename Adapter>
+    void serialize(serializer_base<Adapter, false>& ser, const std::monostate val)
+    {
+        // TODO: Add overload of as_optional for std::nullopt_t and/or add an 'as_null' function
+        std::optional<int> tmp{ std::nullopt };
+        ser.as_optional("", tmp);
+    }
+
+    template<typename Adapter>
+    void serialize(serializer_base<Adapter, true>& ser, std::monostate& val)
+    {
+        // nop
+    }
+
+    template<typename Adapter, bool Deserialize, typename... Args>
+    void serialize(serializer_base<Adapter, Deserialize>& ser, std::variant<Args...>& val)
+    {
+        ser.as_variant("", val);
     }
 } //namespace adapters
 

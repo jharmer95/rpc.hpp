@@ -277,6 +277,35 @@ std::optional<int> SafeDivide(int numerator, int denominator) noexcept
     return numerator / denominator;
 }
 
+std::string TypeName(const std::variant<bool, int, float, std::string>& var)
+{
+    struct Visitor
+    {
+        std::string operator()([[maybe_unused]] bool b) const { return "bool"; }
+        std::string operator()([[maybe_unused]] int n) const { return "int"; }
+        std::string operator()([[maybe_unused]] float f) const { return "float"; }
+        std::string operator()([[maybe_unused]] const std::string& s) const { return "string"; }
+    };
+
+    return std::visit(Visitor(), var);
+}
+
+std::variant<std::monostate, int, std::string> VariantResult(std::string_view input)
+{
+    if (input == "GetInt")
+    {
+        return 42;
+    }
+    else if (input == "GetName")
+    {
+        return std::string{ "Georgie Porgie" };
+    }
+    else
+    {
+        return {};
+    }
+}
+
 std::pair<int, int> TopTwo(const std::vector<int>& num_list) noexcept
 {
     // TODO: Replace this naive version with algorithm (transform/reduce?)
@@ -371,6 +400,8 @@ static void BindFuncs(TestServer<Serial>& server)
     server.bind("HashComplexRef", &HashComplexRef);
     server.bind("SquareArray", &SquareArray);
     server.bind("RemoveFromList", &RemoveFromList);
+    server.bind("TypeName", &TypeName);
+    server.bind("VariantResult", &VariantResult);
     server.template bind<void, size_t&>("AddOne", [](size_t& n) noexcept { ::AddOne(n); });
 
     // Cached

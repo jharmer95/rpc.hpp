@@ -250,6 +250,16 @@ namespace detail_njson
             }
         }
 
+        template<typename... Args>
+        void as_variant(const std::string_view key, const std::variant<Args...>& val)
+        {
+            auto& new_arg = subobject(key);
+
+            new_arg["v_idx"] = val.index();
+            auto& var_val = new_arg["v_val"];
+            std::visit([&var_val](const auto& l_val) { push_arg(l_val, var_val); }, val);
+        }
+
         template<typename T>
         void as_object(const std::string_view key, const T& val)
         {
@@ -395,6 +405,135 @@ namespace detail_njson
                                 : std::optional<T>{ std::in_place, obj.template get<T>() };
         }
 
+        template<typename... Args>
+        void as_variant(const std::string_view key, std::variant<Args...>& val) const
+        {
+            const auto& obj = subobject(key);
+            const auto v_idx = obj.at("v_idx").get<size_t>();
+
+            // TODO: Cleanup and move to serial-agnostic code
+            if (v_idx >= sizeof...(Args))
+            {
+                throw deserialization_error{ std::string{
+                    "nlohmann::json error: variant index exceeded variant size: " }
+                                                 .append(std::to_string(sizeof...(Args))) };
+            }
+
+            if constexpr (sizeof...(Args) == 1)
+            {
+                val = parse_arg<decltype(std::get<0>(val))>(obj.at("v_val"));
+            }
+            else if constexpr (sizeof...(Args) == 2)
+            {
+                val = (v_idx == 0 ? parse_arg<decltype(std::get<0>(val))>(obj.at("v_val"))
+                                  : parse_arg<decltype(std::get<1>(val))>(obj.at("v_val")));
+            }
+            else if constexpr (sizeof...(Args) == 3)
+            {
+                switch (v_idx)
+                {
+                    case 0:
+                        val = parse_arg<decltype(std::get<0>(val))>(obj.at("v_val"));
+                        break;
+
+                    case 1:
+                        val = parse_arg<decltype(std::get<1>(val))>(obj.at("v_val"));
+                        break;
+
+                    case 2:
+                        val = parse_arg<decltype(std::get<2>(val))>(obj.at("v_val"));
+                        break;
+
+                    default:
+                        RPC_HPP_ASSUME(0);
+                }
+            }
+            else if constexpr (sizeof...(Args) == 4)
+            {
+                switch (v_idx)
+                {
+                    case 0:
+                        val = parse_arg<decltype(std::get<0>(val))>(obj.at("v_val"));
+                        break;
+
+                    case 1:
+                        val = parse_arg<decltype(std::get<1>(val))>(obj.at("v_val"));
+                        break;
+
+                    case 2:
+                        val = parse_arg<decltype(std::get<2>(val))>(obj.at("v_val"));
+                        break;
+
+                    case 3:
+                        val = parse_arg<decltype(std::get<3>(val))>(obj.at("v_val"));
+                        break;
+
+                    default:
+                        RPC_HPP_ASSUME(0);
+                }
+            }
+            else if constexpr (sizeof...(Args) == 5)
+            {
+                switch (v_idx)
+                {
+                    case 0:
+                        val = parse_arg<decltype(std::get<0>(val))>(obj.at("v_val"));
+                        break;
+
+                    case 1:
+                        val = parse_arg<decltype(std::get<1>(val))>(obj.at("v_val"));
+                        break;
+
+                    case 2:
+                        val = parse_arg<decltype(std::get<2>(val))>(obj.at("v_val"));
+                        break;
+
+                    case 3:
+                        val = parse_arg<decltype(std::get<3>(val))>(obj.at("v_val"));
+                        break;
+
+                    case 4:
+                        val = parse_arg<decltype(std::get<4>(val))>(obj.at("v_val"));
+                        break;
+
+                    default:
+                        RPC_HPP_ASSUME(0);
+                }
+            }
+            else if constexpr (sizeof...(Args) == 6)
+            {
+                switch (v_idx)
+                {
+                    case 0:
+                        val = parse_arg<decltype(std::get<0>(val))>(obj.at("v_val"));
+                        break;
+
+                    case 1:
+                        val = parse_arg<decltype(std::get<1>(val))>(obj.at("v_val"));
+                        break;
+
+                    case 2:
+                        val = parse_arg<decltype(std::get<2>(val))>(obj.at("v_val"));
+                        break;
+
+                    case 3:
+                        val = parse_arg<decltype(std::get<3>(val))>(obj.at("v_val"));
+                        break;
+
+                    case 4:
+                        val = parse_arg<decltype(std::get<4>(val))>(obj.at("v_val"));
+                        break;
+
+                    case 5:
+                        val = parse_arg<decltype(std::get<5>(val))>(obj.at("v_val"));
+                        break;
+
+                    default:
+                        RPC_HPP_ASSUME(0);
+                }
+            }
+        }
+
         template<typename T>
         void as_object(const std::string_view key, T& val) const
         {
@@ -440,6 +579,10 @@ namespace detail_njson
             {
                 return arg.is_array();
             }
+            else if constexpr (std::is_same_v<T, std::monostate>)
+            {
+                return arg.is_null();
+            }
             else
             {
                 return !arg.is_null();
@@ -454,7 +597,7 @@ namespace detail_njson
         {
             using no_ref_t = detail::remove_cvref_t<detail::decay_str_t<T>>;
 
-            if (!validate_arg<T>(arg))
+            if (!validate_arg<no_ref_t>(arg))
             {
 #ifdef RPC_HPP_NO_RTTI
                 throw function_mismatch_error{ std::string{
@@ -463,7 +606,7 @@ namespace detail_njson
 #else
                 throw function_mismatch_error{ std::string{
                     "nlohmann::json error: expected type: " }
-                                                   .append(typeid(T).name())
+                                                   .append(typeid(no_ref_t).name())
                                                    .append(", got type: ")
                                                    .append(arg.type_name()) };
 #endif
