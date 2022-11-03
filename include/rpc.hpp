@@ -119,12 +119,16 @@ private:
     exception_type m_type;
 };
 
-#define RPC_HPP_DECLARE_EXCEPTION(ENAME, ETYPE)                             \
-  class ENAME : public rpc_exception                                        \
-  {                                                                         \
-public:                                                                     \
-    explicit ENAME(const std::string& mesg) : rpc_exception(mesg, ETYPE) {} \
-    explicit ENAME(const char* const mesg) : rpc_exception(mesg, ETYPE) {}  \
+#define RPC_HPP_DECLARE_EXCEPTION(ENAME, ETYPE)                          \
+  class ENAME : public rpc_exception                                     \
+  {                                                                      \
+public:                                                                  \
+    explicit ENAME(const std::string& mesg) : rpc_exception(mesg, ETYPE) \
+    {                                                                    \
+    }                                                                    \
+    explicit ENAME(const char* const mesg) : rpc_exception(mesg, ETYPE)  \
+    {                                                                    \
+    }                                                                    \
   }
 
 RPC_HPP_DECLARE_EXCEPTION(function_missing_error, exception_type::function_missing);
@@ -297,7 +301,7 @@ public:                                                           \
     }
 
     template<typename F, typename... Ts>
-    RPC_HPP_INLINE constexpr void for_each_tuple(const std::tuple<Ts...>& tuple, F&& func)
+    constexpr void for_each_tuple(const std::tuple<Ts...>& tuple, F&& func)
     {
         static_assert(std::conjunction_v<std::is_invocable<F, Ts>...>,
             "applied function must be able to take given args");
@@ -330,7 +334,7 @@ public:                                                           \
     }
 
     template<typename... Args>
-    RPC_HPP_INLINE constexpr void tuple_bind(
+    constexpr void tuple_bind(
         const std::tuple<remove_cvref_t<decay_str_t<Args>>...>& src, Args&&... dest)
     {
         static_assert(std::disjunction_v<is_ref_arg<Args>...>,
@@ -1110,8 +1114,8 @@ namespace adapters
     }
 
     template<typename Adapter, bool Deserialize, typename T,
-        std::enable_if_t<
-            (detail::is_container_v<T> && (!detail::is_stringlike_v<T>)&&(!detail::is_map_v<T>)),
+        std::enable_if_t<(detail::is_container_v<T>
+                             && (!detail::is_stringlike_v<T>)&&(!detail::is_map_v<T>)),
             bool> = true>
     void serialize(serializer_base<Adapter, Deserialize>& ser, T& val)
     {
