@@ -178,7 +178,7 @@ namespace detail_bitsery
     };
 
     // invariants:
-    //   1.) m_bytes must not be empty when fetched via 'object()'
+    //   1. m_bytes must not be empty when fetched via 'object()'
     class serializer : public serializer_base<serial_adapter, false>
     {
     public:
@@ -323,7 +323,7 @@ namespace detail_bitsery
     };
 
     // invariants:
-    //   1.) m_bytes cannot be empty
+    //   1. m_bytes cannot be empty
     class deserializer : public serializer_base<serial_adapter, true>
     {
     public:

@@ -564,7 +564,7 @@ public:
     {
         RPC_HPP_POSTCONDITION(!is_empty());
         RPC_HPP_POSTCONDITION(
-            type() == (IsCallback ? rpc_type::callback_result : rpc_type::func_result));
+            get_type() == (IsCallback ? rpc_type::callback_result : rpc_type::func_result));
     }
 
     template<bool IsCallback, typename... Args>
@@ -573,7 +573,7 @@ public:
     {
         RPC_HPP_POSTCONDITION(!is_empty());
         RPC_HPP_POSTCONDITION(
-            type() == (IsCallback ? rpc_type::callback_request : rpc_type::func_request));
+            get_type() == (IsCallback ? rpc_type::callback_request : rpc_type::func_request));
     }
 
     template<bool IsCallback>
@@ -582,7 +582,7 @@ public:
     {
         RPC_HPP_POSTCONDITION(!is_empty());
         RPC_HPP_POSTCONDITION(
-            type() == (IsCallback ? rpc_type::callback_error : rpc_type::func_error));
+            get_type() == (IsCallback ? rpc_type::callback_error : rpc_type::func_error));
     }
 
     template<bool IsCallback, typename R, typename... Args>
@@ -590,7 +590,7 @@ public:
         : m_obj(Serial::serialize_result_w_bind(std::move(result)))
     {
         RPC_HPP_POSTCONDITION(!is_empty());
-        RPC_HPP_POSTCONDITION(type()
+        RPC_HPP_POSTCONDITION(get_type()
             == (IsCallback ? rpc_type::callback_result_w_bind : rpc_type::func_result_w_bind));
     }
 
@@ -598,7 +598,7 @@ public:
         : m_obj(Serial::serialize_callback_install(std::move(callback_req)))
     {
         RPC_HPP_POSTCONDITION(!is_empty());
-        RPC_HPP_POSTCONDITION(type() == rpc_type::callback_install_request);
+        RPC_HPP_POSTCONDITION(get_type() == rpc_type::callback_install_request);
     }
 
     RPC_HPP_NODISCARD("parsing consumes the original input")
@@ -609,7 +609,7 @@ public:
             auto result = rpc_object{ Serial::from_bytes(std::move(bytes)) };
 
             RPC_HPP_POSTCONDITION(!result.is_empty());
-            RPC_HPP_POSTCONDITION(validate_rpc_type(result.type()));
+            RPC_HPP_POSTCONDITION(validate_rpc_type(result.get_type()));
             return result;
         }
         catch (const std::exception&)
@@ -637,7 +637,7 @@ public:
     {
         RPC_HPP_PRECONDITION(!is_empty());
 
-        switch (type())
+        switch (get_type())
         {
             case rpc_type::func_result:
             case rpc_type::func_result_w_bind:
@@ -683,7 +683,7 @@ public:
     {
         RPC_HPP_PRECONDITION(!is_empty());
 
-        switch (type())
+        switch (get_type())
         {
             case rpc_type::func_request:
             case rpc_type::func_result_w_bind:
@@ -710,7 +710,7 @@ public:
     {
         RPC_HPP_PRECONDITION(!is_empty());
 
-        return type() == rpc_type::callback_install_request
+        return get_type() == rpc_type::callback_install_request
             && Serial::get_callback_install(m_obj).is_uninstall;
     }
 
@@ -719,7 +719,7 @@ public:
     {
         RPC_HPP_PRECONDITION(!is_empty());
 
-        switch (type())
+        switch (get_type())
         {
             case rpc_type::callback_error:
                 return Serial::template get_error<true>(m_obj).except_type;
@@ -747,7 +747,7 @@ public:
     {
         RPC_HPP_PRECONDITION(!is_empty());
 
-        switch (type())
+        switch (get_type())
         {
             case rpc_type::callback_error:
                 return Serial::template get_error<true>(m_obj).err_mesg;
@@ -774,7 +774,7 @@ public:
     {
         RPC_HPP_PRECONDITION(!is_empty());
 
-        switch (type())
+        switch (get_type())
         {
             case rpc_type::func_request:
             case rpc_type::callback_request:
@@ -801,12 +801,12 @@ public:
     {
         RPC_HPP_PRECONDITION(!is_empty());
 
-        const auto rtype = type();
+        const auto rtype = get_type();
         return (rtype == rpc_type::func_error) || (rtype == rpc_type::callback_error);
     }
 
     RPC_HPP_NODISCARD("extracting data from serial object may be expensive")
-    auto type() const -> rpc_type
+    auto get_type() const -> rpc_type
     {
         RPC_HPP_PRECONDITION(!is_empty());
 
@@ -820,7 +820,7 @@ private:
     explicit rpc_object(const serial_t& serial) : m_obj(serial)
     {
         RPC_HPP_POSTCONDITION(!is_empty());
-        RPC_HPP_POSTCONDITION(validate_rpc_type(type()));
+        RPC_HPP_POSTCONDITION(validate_rpc_type(get_type()));
     }
 
     explicit rpc_object(serial_t&& serial) noexcept : m_obj(std::move(serial)) {}

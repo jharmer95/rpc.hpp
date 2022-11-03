@@ -19,8 +19,8 @@
 namespace rpc_hpp
 {
 // invariants:
-//   1.) m_dispatch_table cannot contain an empty key: ""
-//   2.) m_dispatch_table cannot contain an empty function value
+//   1. m_dispatch_table cannot contain an empty key: ""
+//   2. m_dispatch_table cannot contain an empty function value
 template<typename Serial>
 class server_interface
 {
@@ -77,7 +77,7 @@ public:
                 auto& rpc_obj = rpc_opt.value();
                 const auto func_name = rpc_obj.get_func_name();
 
-                switch (rpc_obj.type())
+                switch (rpc_obj.get_type())
                 {
                     case rpc_type::func_request:
                         dispatch(rpc_obj);
@@ -147,7 +147,7 @@ private:
         auto [iter, status] = m_dispatch_table.try_emplace(std::forward<S>(func_name),
             [func = std::forward<F>(func)](object_t& rpc_obj)
             {
-                RPC_HPP_PRECONDITION(rpc_obj.type() == rpc_type::func_request);
+                RPC_HPP_PRECONDITION(rpc_obj.get_type() == rpc_type::func_request);
 
                 try
                 {
@@ -158,9 +158,9 @@ private:
                     rpc_obj = object_t{ detail::func_error{ rpc_obj.get_func_name(), ex } };
                 }
 
-                RPC_HPP_POSTCONDITION(rpc_obj.type() == rpc_type::func_result
-                    || rpc_obj.type() == rpc_type::func_result_w_bind
-                    || rpc_obj.type() == rpc_type::func_error);
+                RPC_HPP_POSTCONDITION(rpc_obj.get_type() == rpc_type::func_result
+                    || rpc_obj.get_type() == rpc_type::func_result_w_bind
+                    || rpc_obj.get_type() == rpc_type::func_error);
             });
 
         if (!status)
@@ -178,7 +178,7 @@ private:
     {
         try
         {
-            RPC_HPP_PRECONDITION(rpc_obj.type() == rpc_type::func_request);
+            RPC_HPP_PRECONDITION(rpc_obj.get_type() == rpc_type::func_request);
 
             const auto func_name = rpc_obj.get_func_name();
 
@@ -228,8 +228,8 @@ protected:
             call_callback_impl(object_t{ detail::callback_request<detail::decay_str_t<Args>...>{
                 std::forward<S>(func_name), std::forward_as_tuple(args...) } });
 
-        RPC_HPP_POSTCONDITION(response.type() == rpc_type::callback_result
-            || response.type() == rpc_type::callback_error);
+        RPC_HPP_POSTCONDITION(response.get_type() == rpc_type::callback_result
+            || response.get_type() == rpc_type::callback_error);
         return response.template get_result<R>();
     }
 
@@ -246,8 +246,8 @@ protected:
         detail::tuple_bind(response.template get_args<true, detail::decay_str_t<Args>...>(),
             std::forward<Args>(args)...);
 
-        RPC_HPP_POSTCONDITION(response.type() == rpc_type::callback_result_w_bind
-            || response.type() == rpc_type::callback_error);
+        RPC_HPP_POSTCONDITION(response.get_type() == rpc_type::callback_result_w_bind
+            || response.get_type() == rpc_type::callback_error);
         return response.template get_result<R>();
     }
 
@@ -259,7 +259,7 @@ private:
     void handle_callback_object(object_t& rpc_obj) final
     try
     {
-        if (rpc_obj.type() == rpc_type::callback_install_request)
+        if (rpc_obj.get_type() == rpc_type::callback_install_request)
         {
             rpc_obj.is_callback_uninstall() ? uninstall_callback(rpc_obj)
                                             : install_callback(rpc_obj);

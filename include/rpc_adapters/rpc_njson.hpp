@@ -128,7 +128,7 @@ namespace detail_njson
     };
 
     // invariants:
-    //   1.) m_json must not be empty when fetched via 'object()'
+    //   1. m_json must not be empty when fetched via 'object()'
     class serializer : public serializer_base<serial_adapter, false>
     {
     public:
@@ -282,8 +282,8 @@ namespace detail_njson
     };
 
     // invariants:
-    //   1.) m_json cannot be empty
-    //   2.) m_json must be an object if a subval is accessed
+    //   1. m_json cannot be empty
+    //   2. m_json must be an object if a subval is accessed
     class deserializer : public serializer_base<serial_adapter, true>
     {
     public:
@@ -513,16 +513,33 @@ namespace detail_njson
             throw deserialization_error{ "nlohmann::json error: not an object" };
         }
 
-        if (const auto fname_it = obj.find("func_name");
-            (fname_it == obj.end()) || (!fname_it->is_string()) || (fname_it->empty()))
+        const auto type_it = obj.find("type");
+
+        if (type_it == obj.end() || (!type_it->is_number_integer()))
+        {
+            throw deserialization_error{ R"(nlohmann::json error: field "type" not found)" };
+        }
+
+        const auto fname_it = obj.find("func_name");
+
+        if (fname_it == obj.end() || (!fname_it->is_string()))
         {
             throw deserialization_error{ R"(nlohmann::json error: field "func_name" not found)" };
         }
 
-        if (const auto type_it = obj.find("type");
-            (type_it == obj.end()) || (!type_it->is_number_integer()))
+        const rpc_type type = static_cast<rpc_type>(type_it->get<int>());
+
+        if (!validate_rpc_type(type))
         {
-            throw deserialization_error{ R"(nlohmann::json error: field "type" not found)" };
+            throw deserialization_error{ "nlohmann::json error: invalid RPC type" };
+        }
+
+        if (type != rpc_type::callback_error && type != rpc_type::func_error
+            && fname_it->get_ref<nlohmann::json::string_t&>().empty())
+        {
+            throw deserialization_error{
+                R"(nlohmann::json error: field "func_name" can't be empty)"
+            };
         }
 
         RPC_HPP_POSTCONDITION(!is_empty(obj));

@@ -83,8 +83,8 @@ public:
         callback.is_uninstall = true;
         send(object_t{ std::move(callback) }.to_bytes());
 
-        if (const auto response = object_t::parse_bytes(receive());
-            !response.has_value() || response.value().type() != rpc_type::callback_install_request)
+        if (const auto response = object_t::parse_bytes(receive()); !response.has_value()
+            || response.value().get_type() != rpc_type::callback_install_request)
         {
             throw callback_install_error{
                 "Test client error: server did not respond to callback_install_request (uninstall)"
@@ -108,8 +108,8 @@ private:
             throw client_send_error{ ex.what() };
         }
 
-        if (auto response = object_t::parse_bytes(receive());
-            !response.has_value() || response.value().type() != rpc_type::callback_install_request)
+        if (auto response = object_t::parse_bytes(receive()); !response.has_value()
+            || response.value().get_type() != rpc_type::callback_install_request)
         {
             throw callback_install_error{
                 "Test client error: server did not respond to callback_install_request"

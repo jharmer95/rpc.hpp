@@ -178,7 +178,7 @@ protected:
 
         if (auto response_opt = object_t::parse_bytes(std::move(bytes)); response_opt.has_value())
         {
-            switch (response = std::move(response_opt).value(); response.type())
+            switch (response = std::move(response_opt).value(); response.get_type())
             {
                 case rpc_type::func_result:
                 case rpc_type::func_result_w_bind:
@@ -203,8 +203,8 @@ protected:
 };
 
 // invariants:
-//   1.) m_callback_map cannot contain an empty key: ""
-//   2.) m_callback_map cannot contain an empty function value
+//   1. m_callback_map cannot contain an empty key: ""
+//   2. m_callback_map cannot contain an empty function value
 template<typename Serial>
 class callback_client_interface : public client_interface<Serial>
 {
@@ -268,7 +268,7 @@ private:
 
     void handle_callback_object(object_t& request) final
     {
-        if (const auto type = request.type();
+        if (const auto type = request.get_type();
             type == rpc_type::callback_request || type == rpc_type::func_request)
         {
             dispatch_callback(request);

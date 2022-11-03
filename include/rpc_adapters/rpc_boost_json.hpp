@@ -304,7 +304,7 @@ namespace detail_boost_json
     };
 
     // invariants:
-    //   1.) m_json must be an object if a subval is accessed
+    //   1. m_json must be an object if a subval is accessed
     class deserializer : public serializer_base<serial_adapter, true>
     {
     public:
@@ -617,16 +617,31 @@ namespace detail_boost_json
 
         const auto& obj = val.get_object();
 
-        if (const auto fname_it = obj.find("func_name");
-            (fname_it == obj.cend()) || (!fname_it->value().is_string()))
+        const auto type_it = obj.find("type");
+
+        if ((type_it == obj.cend()) || (!type_it->value().is_int64()))
+        {
+            throw deserialization_error{ R"(Boost.JSON error: field "type" not found)" };
+        }
+
+        const auto fname_it = obj.find("func_name");
+
+        if ((fname_it == obj.cend()) || (!fname_it->value().is_string()))
         {
             throw deserialization_error{ R"(Boost.JSON error: field "func_name" not found)" };
         }
 
-        if (const auto type_it = obj.find("type");
-            (type_it == obj.cend()) || (!type_it->value().is_int64()))
+        const rpc_type type = static_cast<rpc_type>(type_it->value().get_int64());
+
+        if (!validate_rpc_type(type))
         {
-            throw deserialization_error{ R"(Boost.JSON error: field "type" not found)" };
+            throw deserialization_error{ "Boost.JSON error: invalid RPC type" };
+        }
+
+        if (type != rpc_type::callback_error && type != rpc_type::func_error
+            && fname_it->value().get_string().empty())
+        {
+            throw deserialization_error{ R"(Boost.JSON error: field "func_name" can't be empty)" };
         }
 
         RPC_HPP_POSTCONDITION(!is_empty(obj));

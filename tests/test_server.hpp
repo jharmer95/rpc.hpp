@@ -173,7 +173,7 @@ private:
             throw server_receive_error{ "Test server error: invalid RPC object received" };
         }
 
-        switch (auto& response = o_response.value(); response.type())
+        switch (auto& response = o_response.value(); response.get_type())
         {
             case rpc_type::callback_result:
             case rpc_type::callback_result_w_bind:
@@ -197,7 +197,7 @@ private:
 
     auto call_callback_impl(object_t&& request) -> object_t override
     {
-        RPC_HPP_PRECONDITION(request.type() == rpc_type::callback_request);
+        RPC_HPP_PRECONDITION(request.get_type() == rpc_type::callback_request);
 
         if (const auto func_name = request.get_func_name();
             m_installed_callbacks.find(func_name) == m_installed_callbacks.cend())

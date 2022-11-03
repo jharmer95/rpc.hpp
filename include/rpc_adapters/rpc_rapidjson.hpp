@@ -129,7 +129,7 @@ namespace detail_rapidjson
     };
 
     // invariants:
-    //   1.) m_json must not be empty when fetched via 'object()'
+    //   1. m_json must not be empty when fetched via 'object()'
     class serializer : public serializer_base<serial_adapter, false>
     {
     public:
@@ -137,16 +137,22 @@ namespace detail_rapidjson
 
         [[nodiscard]] auto object() const& -> const rapidjson::Document&
         {
-            RPC_HPP_PRECONDITION(m_json.IsObject() ? !m_json.ObjectEmpty()
-                                                   : (m_json.IsArray() ? !m_json.Empty() : true));
+            RPC_HPP_PRECONDITION(m_json.IsObject()
+                    ? !m_json.ObjectEmpty()
+                    : (m_json.IsArray()
+                            ? !m_json.Empty()
+                            : (m_json.IsString() ? m_json.GetStringLength() != 0 : true)));
 
             return m_json;
         }
 
         [[nodiscard]] auto object() && -> rapidjson::Document&&
         {
-            RPC_HPP_PRECONDITION(m_json.IsObject() ? !m_json.ObjectEmpty()
-                                                   : (m_json.IsArray() ? !m_json.Empty() : true));
+            RPC_HPP_PRECONDITION(m_json.IsObject()
+                    ? !m_json.ObjectEmpty()
+                    : (m_json.IsArray()
+                            ? !m_json.Empty()
+                            : (m_json.IsString() ? m_json.GetStringLength() != 0 : true)));
 
             return std::move(m_json);
         }
@@ -354,15 +360,18 @@ namespace detail_rapidjson
     };
 
     // invariants:
-    //   1.) m_json cannot be empty
-    //   2.) m_json must be an object if a subval is accessed
+    //   1. m_json cannot be empty
+    //   2. m_json must be an object if a subval is accessed
     class deserializer : public serializer_base<serial_adapter, true>
     {
     public:
         explicit deserializer(const rapidjson::Value& obj) : m_json(obj)
         {
-            RPC_HPP_POSTCONDITION(m_json.IsObject() ? !m_json.ObjectEmpty()
-                                                    : (m_json.IsArray() ? !m_json.Empty() : true));
+            RPC_HPP_POSTCONDITION(m_json.IsObject()
+                    ? !m_json.ObjectEmpty()
+                    : (m_json.IsArray()
+                            ? !m_json.Empty()
+                            : (m_json.IsString() ? m_json.GetStringLength() != 0 : true)));
         }
 
         template<typename T>
@@ -768,16 +777,31 @@ namespace detail_rapidjson
             throw deserialization_error{ "rapidjson error: parsing error occurred" };
         }
 
-        if (const auto fname_it = doc.FindMember("func_name");
-            (fname_it == doc.MemberEnd()) || (!fname_it->value.IsString()))
+        const auto type_it = doc.FindMember("type");
+
+        if (type_it == doc.MemberEnd() || (!type_it->value.IsInt()))
+        {
+            throw deserialization_error{ R"(rapidjson error: field "type" not found)" };
+        }
+
+        const auto fname_it = doc.FindMember("func_name");
+
+        if (fname_it == doc.MemberEnd() || (!fname_it->value.IsString()))
         {
             throw deserialization_error{ R"(rapidjson error: field "func_name" not found)" };
         }
 
-        if (const auto type_it = doc.FindMember("type");
-            (type_it == doc.MemberEnd()) || (!type_it->value.IsInt()))
+        const rpc_type type = static_cast<rpc_type>(type_it->value.GetInt());
+
+        if (!validate_rpc_type(type))
         {
-            throw deserialization_error{ R"(rapidjson error: field "type" not found)" };
+            throw deserialization_error{ "rapidjson error: invalid RPC type" };
+        }
+
+        if (type != rpc_type::callback_error && type != rpc_type::func_error
+            && fname_it->value.GetStringLength() == 0)
+        {
+            throw deserialization_error{ R"(rapidjson error: field "func_name" can't be empty)" };
         }
 
         RPC_HPP_POSTCONDITION(!is_empty(doc));
