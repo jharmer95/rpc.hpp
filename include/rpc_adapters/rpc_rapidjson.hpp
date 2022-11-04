@@ -912,7 +912,7 @@ namespace detail_rapidjson
             throw deserialization_error{ R"(rapidjson error: field "func_name" not found)" };
         }
 
-        const rpc_type type = static_cast<rpc_type>(type_it->value.GetInt());
+        const auto type = static_cast<rpc_type>(type_it->value.GetInt());
 
         if (!validate_rpc_type(type))
         {

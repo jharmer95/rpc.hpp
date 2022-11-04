@@ -144,7 +144,7 @@ private:
 
         RPC_HPP_PRECONDITION(!std::string_view{ func_name }.empty());
 
-        auto [iter, status] = m_dispatch_table.try_emplace(std::forward<S>(func_name),
+        const auto [iter, status] = m_dispatch_table.try_emplace(std::forward<S>(func_name),
             [func = std::forward<F>(func)](object_t& rpc_obj)
             {
                 RPC_HPP_PRECONDITION(rpc_obj.get_type() == rpc_type::func_request);

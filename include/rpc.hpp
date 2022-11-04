@@ -837,7 +837,7 @@ public:
     {
         RPC_HPP_PRECONDITION(!is_empty());
 
-        auto type = Serial::get_type(m_obj);
+        const auto type = Serial::get_type(m_obj);
 
         RPC_HPP_POSTCONDITION(validate_rpc_type(type));
         return type;
@@ -1202,19 +1202,19 @@ namespace adapters
     }
 
     template<typename Adapter, bool Deserialize>
-    void serialize(serializer_base<Adapter, Deserialize>& ser, std::nullptr_t& val)
+    void serialize(serializer_base<Adapter, Deserialize>& ser, RPC_HPP_UNUSED std::nullptr_t& val)
     {
         ser.as_null("");
     }
 
     template<typename Adapter, bool Deserialize>
-    void serialize(serializer_base<Adapter, Deserialize>& ser, std::nullopt_t& val)
+    void serialize(serializer_base<Adapter, Deserialize>& ser, RPC_HPP_UNUSED std::nullopt_t& val)
     {
         ser.as_null("");
     }
 
     template<typename Adapter, bool Deserialize>
-    void serialize(serializer_base<Adapter, Deserialize>& ser, std::monostate& val)
+    void serialize(serializer_base<Adapter, Deserialize>& ser, RPC_HPP_UNUSED std::monostate& val)
     {
         ser.as_null("");
     }

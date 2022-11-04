@@ -183,7 +183,7 @@ namespace detail_bitsery
     class serializer : public serializer_base<serial_adapter, false>
     {
     public:
-        serializer() : m_ser(m_bytes) { m_bytes.reserve(64UL); }
+        serializer() noexcept : m_ser(m_bytes) { m_bytes.reserve(64UL); }
 
         [[nodiscard]] auto object() & -> const std::vector<uint8_t>&
         {
@@ -469,7 +469,7 @@ namespace detail_bitsery
             serial_adapter::parse_obj(m_ser, *this, val);
         }
 
-        void as_object(RPC_HPP_UNUSED const std::string_view key)
+        void as_null(RPC_HPP_UNUSED const std::string_view key)
         {
             // nop
         }

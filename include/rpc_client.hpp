@@ -300,7 +300,7 @@ private:
 
         RPC_HPP_PRECONDITION(!std::string_view{ func_name }.empty());
 
-        auto [iter, status] = m_callback_map.try_emplace(std::forward<S>(func_name),
+        const auto [iter, status] = m_callback_map.try_emplace(std::forward<S>(func_name),
             [func = std::forward<F>(func)](object_t& rpc_obj)
             {
                 try

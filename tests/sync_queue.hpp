@@ -52,15 +52,15 @@ template<typename T>
 class SyncQueue
 {
 public:
-    void activate() { m_active.store(true); }
+    void activate() noexcept { m_active.store(true); }
 
-    void deactivate()
+    void deactivate() noexcept
     {
         m_active.store(false);
         m_cv.notify_all();
     }
 
-    [[nodiscard]] bool is_active() const { return m_active.load(); }
+    [[nodiscard]] bool is_active() const noexcept { return m_active.load(); }
 
     void push(const T& val)
     {

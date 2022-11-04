@@ -86,13 +86,13 @@ namespace rpc_hpp::tests
 }
 
 // cached
-size_t StrLen(std::string_view str) noexcept
+constexpr size_t StrLen(std::string_view str) noexcept
 {
     return str.size();
 }
 
 // cached
-constexpr int SimpleSum(const int num1, const int num2)
+constexpr int SimpleSum(const int num1, const int num2) noexcept
 {
     return num1 + num2;
 }
@@ -100,7 +100,7 @@ constexpr int SimpleSum(const int num1, const int num2)
 // cached
 constexpr double Average(const double num1, const double num2, const double num3, const double num4,
     const double num5, const double num6, const double num7, const double num8, const double num9,
-    const double num10)
+    const double num10) noexcept
 {
     return (num1 + num2 + num3 + num4 + num5 + num6 + num7 + num8 + num9 + num10) / 10.00;
 }
@@ -211,7 +211,7 @@ void RemoveFromList(
     std::forward_list<std::string>& list, const std::string& str, bool case_sensitive)
 {
     list.remove_if(
-        [case_sensitive, &str](const std::string& val) noexcept
+        [case_sensitive, &str](const std::string& val)
         {
             if (case_sensitive)
             {
