@@ -86,13 +86,13 @@ namespace rpc_hpp::tests
 }
 
 // cached
-size_t StrLen(std::string_view str) noexcept
+constexpr size_t StrLen(std::string_view str) noexcept
 {
     return str.size();
 }
 
 // cached
-constexpr int SimpleSum(const int num1, const int num2)
+constexpr int SimpleSum(const int num1, const int num2) noexcept
 {
     return num1 + num2;
 }
@@ -100,7 +100,7 @@ constexpr int SimpleSum(const int num1, const int num2)
 // cached
 constexpr double Average(const double num1, const double num2, const double num3, const double num4,
     const double num5, const double num6, const double num7, const double num8, const double num9,
-    const double num10)
+    const double num10) noexcept
 {
     return (num1 + num2 + num3 + num4 + num5 + num6 + num7 + num8 + num9 + num10) / 10.00;
 }
@@ -211,7 +211,7 @@ void RemoveFromList(
     std::forward_list<std::string>& list, const std::string& str, bool case_sensitive)
 {
     list.remove_if(
-        [case_sensitive, &str](const std::string& val) noexcept
+        [case_sensitive, &str](const std::string& val)
         {
             if (case_sensitive)
             {
@@ -275,6 +275,35 @@ std::optional<int> SafeDivide(int numerator, int denominator) noexcept
     }
 
     return numerator / denominator;
+}
+
+std::string TypeName(const std::variant<bool, int, float, std::string>& var)
+{
+    struct Visitor
+    {
+        std::string operator()([[maybe_unused]] bool b) const { return "bool"; }
+        std::string operator()([[maybe_unused]] int n) const { return "int"; }
+        std::string operator()([[maybe_unused]] float f) const { return "float"; }
+        std::string operator()([[maybe_unused]] const std::string& s) const { return "string"; }
+    };
+
+    return std::visit(Visitor(), var);
+}
+
+std::variant<std::monostate, int, std::string> VariantResult(std::string_view input)
+{
+    if (input == "GetInt")
+    {
+        return 42;
+    }
+    else if (input == "GetName")
+    {
+        return std::string{ "Georgie Porgie" };
+    }
+    else
+    {
+        return {};
+    }
 }
 
 std::pair<int, int> TopTwo(const std::vector<int>& num_list) noexcept
@@ -371,6 +400,8 @@ static void BindFuncs(TestServer<Serial>& server)
     server.bind("HashComplexRef", &HashComplexRef);
     server.bind("SquareArray", &SquareArray);
     server.bind("RemoveFromList", &RemoveFromList);
+    server.bind("TypeName", &TypeName);
+    server.bind("VariantResult", &VariantResult);
     server.template bind<void, size_t&>("AddOne", [](size_t& n) noexcept { ::AddOne(n); });
 
     // Cached

@@ -413,6 +413,72 @@ TEST_CASE_TEMPLATE("SafeDivide", TestType, RPC_TEST_TYPES)
     REQUIRE(!result2.has_value());
 }
 
+TEST_CASE_TEMPLATE("TypeName", TestType, RPC_TEST_TYPES)
+{
+    auto p_client = GetClient<TestType>();
+
+    std::variant<bool, int, float, std::string> v = true;
+    const auto response_b = p_client->call_func("TypeName", v);
+
+    CHECK(response_b.get_type() == rpc_type::func_result);
+    REQUIRE(response_b.template get_result<std::string>() == "bool");
+
+    v = 22;
+    const auto response_n = p_client->call_func("TypeName", v);
+
+    CHECK(response_n.get_type() == rpc_type::func_result);
+    REQUIRE(response_n.template get_result<std::string>() == "int");
+
+    v = 6.35f;
+    const auto response_f = p_client->call_func("TypeName", v);
+
+    CHECK(response_f.get_type() == rpc_type::func_result);
+    REQUIRE(response_f.template get_result<std::string>() == "float");
+
+    v = std::string{ "TestString" };
+    const auto response_s = p_client->call_func("TypeName", v);
+
+    CHECK(response_s.get_type() == rpc_type::func_result);
+    REQUIRE(response_s.template get_result<std::string>() == "string");
+}
+
+TEST_CASE_TEMPLATE("VariantResult", TestType, RPC_TEST_TYPES)
+{
+    const auto p_client = GetClient<TestType>();
+
+    using result_t = std::variant<std::monostate, int, std::string>;
+
+    const auto response1 = p_client->call_func("VariantResult", "GetInt");
+
+    CHECK(response1.get_type() == rpc_type::func_result);
+
+    const auto result1 = response1.template get_result<result_t>();
+
+    REQUIRE(std::holds_alternative<int>(result1));
+    REQUIRE(std::get<int>(result1) == 42);
+
+    // TODO: Add functionality to get result from variant directly
+    //const auto test_n = response1.template get_result<int>();
+    //REQUIRE(test_n == 42);
+
+    const auto response2 = p_client->call_func("VariantResult", "GetName");
+
+    CHECK(response2.get_type() == rpc_type::func_result);
+
+    const auto result2 = response2.template get_result<result_t>();
+
+    REQUIRE(std::holds_alternative<std::string>(result2));
+    REQUIRE_FALSE(std::get<std::string>(result2).empty());
+
+    const auto response3 = p_client->call_func("VariantResult", "BadVar");
+
+    CHECK(response3.get_type() == rpc_type::func_result);
+
+    const auto result3 = response3.template get_result<result_t>();
+
+    REQUIRE(std::holds_alternative<std::monostate>(result3));
+}
+
 TEST_CASE_TEMPLATE("TopTwo", TestType, RPC_TEST_TYPES)
 {
     auto p_client = GetClient<TestType>();

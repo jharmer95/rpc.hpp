@@ -53,9 +53,9 @@ public:
     using typename callback_client_interface<Serial>::bytes_t;
     using typename callback_client_interface<Serial>::object_t;
 
-    explicit TestClient(std::shared_ptr<TestServer<Serial>> server)
+    explicit TestClient(TestServer<Serial>& server)
         : m_p_message_queue{ std::make_shared<SyncQueue<bytes_t>>() },
-          m_p_server_queue(server->attach_client(m_p_message_queue))
+          m_p_server_queue(server.attach_client(m_p_message_queue))
     {
         m_p_message_queue->activate();
     }
@@ -130,7 +130,7 @@ std::shared_ptr<TestClient<Serial>> GetClient()
 
     if (!p_client)
     {
-        p_client = std::make_shared<TestClient<Serial>>(GetServer<Serial>());
+        p_client = std::make_shared<TestClient<Serial>>(*GetServer<Serial>());
     }
 
     return p_client;

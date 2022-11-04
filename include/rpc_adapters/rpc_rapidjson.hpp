@@ -137,22 +137,18 @@ namespace detail_rapidjson
 
         [[nodiscard]] auto object() const& -> const rapidjson::Document&
         {
-            RPC_HPP_PRECONDITION(m_json.IsObject()
-                    ? !m_json.ObjectEmpty()
-                    : (m_json.IsArray()
-                            ? !m_json.Empty()
-                            : (m_json.IsString() ? m_json.GetStringLength() != 0 : true)));
+            RPC_HPP_PRECONDITION(m_json.IsNull()
+                || (m_json.IsObject() ? !m_json.ObjectEmpty()
+                                      : (m_json.IsArray() ? !m_json.Empty() : true)));
 
             return m_json;
         }
 
         [[nodiscard]] auto object() && -> rapidjson::Document&&
         {
-            RPC_HPP_PRECONDITION(m_json.IsObject()
-                    ? !m_json.ObjectEmpty()
-                    : (m_json.IsArray()
-                            ? !m_json.Empty()
-                            : (m_json.IsString() ? m_json.GetStringLength() != 0 : true)));
+            RPC_HPP_PRECONDITION(m_json.IsNull()
+                || (m_json.IsObject() ? !m_json.ObjectEmpty()
+                                      : (m_json.IsArray() ? !m_json.Empty() : true)));
 
             return std::move(m_json);
         }
@@ -296,11 +292,28 @@ namespace detail_rapidjson
             }
         }
 
+        template<typename... Args>
+        void as_variant(const std::string_view key, const std::variant<Args...>& val)
+        {
+            auto& obj = subobject(key).SetObject();
+            obj.AddMember("v_idx", val.index(), allocator());
+            std::visit(
+                [this, &obj](const auto& l_val)
+                {
+                    serializer ser{};
+                    ser.serialize_object(l_val);
+                    obj.AddMember("v_val", std::move(ser).object(), allocator());
+                },
+                val);
+        }
+
         template<typename T>
         void as_object(const std::string_view key, const T& val)
         {
             push_arg(val, subobject(key), allocator());
         }
+
+        void as_null(const std::string_view key) { subobject(key).SetNull(); }
 
     private:
         [[nodiscard]] auto subobject(const std::string_view key) -> rapidjson::Value&
@@ -367,11 +380,9 @@ namespace detail_rapidjson
     public:
         explicit deserializer(const rapidjson::Value& obj) : m_json(obj)
         {
-            RPC_HPP_POSTCONDITION(m_json.IsObject()
-                    ? !m_json.ObjectEmpty()
-                    : (m_json.IsArray()
-                            ? !m_json.Empty()
-                            : (m_json.IsString() ? m_json.GetStringLength() != 0 : true)));
+            RPC_HPP_POSTCONDITION(m_json.IsNull()
+                || (m_json.IsObject() ? !m_json.ObjectEmpty()
+                                      : (m_json.IsArray() ? !m_json.Empty() : true)));
         }
 
         template<typename T>
@@ -527,10 +538,115 @@ namespace detail_rapidjson
                                : std::optional<T>{ std::in_place, parse_arg<T>(obj) };
         }
 
+        template<typename... Args>
+        void as_variant(const std::string_view key, std::variant<Args...>& val) const
+        {
+            static constexpr size_t arg_sz = sizeof...(Args);
+
+            const auto& obj = subobject(key);
+            const auto v_idx = obj["v_idx"].GetUint();
+
+            if (v_idx >= arg_sz)
+            {
+                throw deserialization_error{
+                    std::string{ "rapidjson error: variant index exceeded variant size: " }.append(
+                        std::to_string(arg_sz))
+                };
+            }
+
+            // TODO: Cleanup and move to serial-agnostic code
+            switch (v_idx)
+            {
+                case 0:
+                    val = parse_arg<decltype(std::get<0>(val))>(obj["v_val"]);
+                    return;
+
+                case 1:
+                    if constexpr (arg_sz > 1)
+                    {
+                        val = parse_arg<decltype(std::get<1>(val))>(obj["v_val"]);
+                        return;
+                    }
+                    [[fallthrough]];
+
+                case 2:
+                    if constexpr (arg_sz > 2)
+                    {
+                        val = parse_arg<decltype(std::get<2>(val))>(obj["v_val"]);
+                        return;
+                    }
+                    [[fallthrough]];
+
+                case 3:
+                    if constexpr (arg_sz > 3)
+                    {
+                        val = parse_arg<decltype(std::get<3>(val))>(obj["v_val"]);
+                        return;
+                    }
+                    [[fallthrough]];
+
+                case 4:
+                    if constexpr (arg_sz > 4)
+                    {
+                        val = parse_arg<decltype(std::get<4>(val))>(obj["v_val"]);
+                        return;
+                    }
+                    [[fallthrough]];
+
+                case 5:
+                    if constexpr (arg_sz > 5)
+                    {
+                        val = parse_arg<decltype(std::get<5>(val))>(obj["v_val"]);
+                        return;
+                    }
+                    [[fallthrough]];
+
+                case 6:
+                    if constexpr (arg_sz > 6)
+                    {
+                        val = parse_arg<decltype(std::get<6>(val))>(obj["v_val"]);
+                        return;
+                    }
+                    [[fallthrough]];
+
+                case 7:
+                    if constexpr (arg_sz > 7)
+                    {
+                        val = parse_arg<decltype(std::get<7>(val))>(obj["v_val"]);
+                        return;
+                    }
+                    [[fallthrough]];
+
+                case 8:
+                    if constexpr (arg_sz > 8)
+                    {
+                        val = parse_arg<decltype(std::get<8>(val))>(obj["v_val"]);
+                        return;
+                    }
+                    [[fallthrough]];
+
+                case 9:
+                    if constexpr (arg_sz > 9)
+                    {
+                        val = parse_arg<decltype(std::get<9>(val))>(obj["v_val"]);
+                        return;
+                    }
+                    [[fallthrough]];
+
+                default:
+                    RPC_HPP_ASSUME(0);
+            }
+        }
+
         template<typename T>
         void as_object(const std::string_view key, T& val) const
         {
             val = parse_arg<T>(subobject(key));
+        }
+
+        void as_null(RPC_HPP_UNUSED const std::string_view key) const
+        {
+            RPC_HPP_PRECONDITION(subobject(key).IsNull());
         }
 
     private:
@@ -602,6 +718,11 @@ namespace detail_rapidjson
             else if constexpr (rpc_hpp::detail::is_container_v<T>)
             {
                 return arg.IsArray();
+            }
+            else if constexpr (std::is_same_v<T, std::nullptr_t>
+                || std::is_same_v<T, std::monostate> || std::is_same_v<T, std::nullopt_t>)
+            {
+                return arg.IsNull();
             }
             else
             {
@@ -791,7 +912,7 @@ namespace detail_rapidjson
             throw deserialization_error{ R"(rapidjson error: field "func_name" not found)" };
         }
 
-        const rpc_type type = static_cast<rpc_type>(type_it->value.GetInt());
+        const auto type = static_cast<rpc_type>(type_it->value.GetInt());
 
         if (!validate_rpc_type(type))
         {

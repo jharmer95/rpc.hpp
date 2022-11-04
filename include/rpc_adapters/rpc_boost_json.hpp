@@ -146,7 +146,7 @@ namespace detail_boost_json
         template<typename T>
         void as_float(const std::string_view key, const T& val)
         {
-            subobject(key) = val;
+            subobject(key) = static_cast<double>(val);
         }
 
         template<typename T>
@@ -271,11 +271,27 @@ namespace detail_boost_json
             }
         }
 
+        template<typename... Args>
+        void as_variant(const std::string_view key, const std::variant<Args...>& val)
+        {
+            auto obj = boost::json::object{};
+            obj["v_idx"] = val.index();
+            auto var_val = boost::json::value{};
+            std::visit([&var_val](auto&& l_val)
+                { push_arg(std::forward<decltype(l_val)>(l_val), var_val); },
+                val);
+
+            obj["v_val"] = std::move(var_val);
+            subobject(key) = std::move(obj);
+        }
+
         template<typename T>
         void as_object(const std::string_view key, const T& val)
         {
             push_arg(val, subobject(key));
         }
+
+        void as_null(const std::string_view key) { subobject(key).emplace_null(); }
 
     private:
         [[nodiscard]] auto subobject(const std::string_view key) -> boost::json::value&
@@ -297,7 +313,7 @@ namespace detail_boost_json
         {
             boost::json::value tmp{};
             push_arg(std::forward<T>(arg), tmp);
-            obj_arr.push_back(tmp);
+            obj_arr.push_back(std::move(tmp));
         }
 
         boost::json::value m_json{};
@@ -443,10 +459,115 @@ namespace detail_boost_json
                                 : std::optional<T>{ std::in_place, boost::json::value_to<T>(obj) };
         }
 
+        template<typename... Args>
+        void as_variant(const std::string_view key, std::variant<Args...>& val) const
+        {
+            static constexpr size_t arg_sz = sizeof...(Args);
+
+            const auto& obj = subobject(key);
+            const auto v_idx = boost::json::value_to<size_t>(obj.at("v_idx"));
+
+            if (v_idx >= arg_sz)
+            {
+                throw deserialization_error{
+                    std::string{ "Boost.JSON error: variant index exceeded variant size: " }.append(
+                        std::to_string(arg_sz))
+                };
+            }
+
+            // TODO: Cleanup and move to serial-agnostic code
+            switch (v_idx)
+            {
+                case 0:
+                    val = parse_arg<decltype(std::get<0>(val))>(obj.at("v_val"));
+                    return;
+
+                case 1:
+                    if constexpr (arg_sz > 1)
+                    {
+                        val = parse_arg<decltype(std::get<1>(val))>(obj.at("v_val"));
+                        return;
+                    }
+                    [[fallthrough]];
+
+                case 2:
+                    if constexpr (arg_sz > 2)
+                    {
+                        val = parse_arg<decltype(std::get<2>(val))>(obj.at("v_val"));
+                        return;
+                    }
+                    [[fallthrough]];
+
+                case 3:
+                    if constexpr (arg_sz > 3)
+                    {
+                        val = parse_arg<decltype(std::get<3>(val))>(obj.at("v_val"));
+                        return;
+                    }
+                    [[fallthrough]];
+
+                case 4:
+                    if constexpr (arg_sz > 4)
+                    {
+                        val = parse_arg<decltype(std::get<4>(val))>(obj.at("v_val"));
+                        return;
+                    }
+                    [[fallthrough]];
+
+                case 5:
+                    if constexpr (arg_sz > 5)
+                    {
+                        val = parse_arg<decltype(std::get<5>(val))>(obj.at("v_val"));
+                        return;
+                    }
+                    [[fallthrough]];
+
+                case 6:
+                    if constexpr (arg_sz > 6)
+                    {
+                        val = parse_arg<decltype(std::get<6>(val))>(obj.at("v_val"));
+                        return;
+                    }
+                    [[fallthrough]];
+
+                case 7:
+                    if constexpr (arg_sz > 7)
+                    {
+                        val = parse_arg<decltype(std::get<7>(val))>(obj.at("v_val"));
+                        return;
+                    }
+                    [[fallthrough]];
+
+                case 8:
+                    if constexpr (arg_sz > 8)
+                    {
+                        val = parse_arg<decltype(std::get<8>(val))>(obj.at("v_val"));
+                        return;
+                    }
+                    [[fallthrough]];
+
+                case 9:
+                    if constexpr (arg_sz > 9)
+                    {
+                        val = parse_arg<decltype(std::get<9>(val))>(obj.at("v_val"));
+                        return;
+                    }
+                    [[fallthrough]];
+
+                default:
+                    RPC_HPP_ASSUME(0);
+            }
+        }
+
         template<typename T>
         void as_object(const std::string_view key, T& val) const
         {
             val = parse_arg<T>(subobject(key));
+        }
+
+        void as_null(RPC_HPP_UNUSED const std::string_view key) const
+        {
+            RPC_HPP_PRECONDITION(subobject(key).is_null());
         }
 
     private:
@@ -487,6 +608,11 @@ namespace detail_boost_json
             else if constexpr (detail::is_container_v<T>)
             {
                 return arg.is_array();
+            }
+            else if constexpr (std::is_same_v<T, std::nullptr_t>
+                || std::is_same_v<T, std::monostate> || std::is_same_v<T, std::nullopt_t>)
+            {
+                return arg.is_null();
             }
             else
             {

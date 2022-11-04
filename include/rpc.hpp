@@ -10,6 +10,7 @@
 #include <tuple>
 #include <type_traits>
 #include <utility>
+#include <variant>
 
 #if defined(_MSC_VER)
 #  define RPC_HPP_ASSUME(EXPR) __assume(EXPR)
@@ -288,6 +289,32 @@ public:                                                           \
 
     template<typename C>
     inline constexpr bool is_pair_v = is_pair<std::remove_cv_t<C>>::value;
+
+    template<typename C>
+    struct is_tuple : std::false_type
+    {
+    };
+
+    template<typename... Args>
+    struct is_tuple<std::tuple<Args...>> : std::true_type
+    {
+    };
+
+    template<typename C>
+    inline constexpr bool is_tuple_v = is_tuple<std::remove_cv_t<C>>::value;
+
+    template<typename C>
+    struct is_variant : std::false_type
+    {
+    };
+
+    template<typename... Args>
+    struct is_variant<std::variant<Args...>> : std::true_type
+    {
+    };
+
+    template<typename C>
+    inline constexpr bool is_variant_v = is_variant<std::remove_cv_t<C>>::value;
 
     template<typename F, typename... Ts, size_t... Is>
     constexpr void for_each_tuple(const std::tuple<Ts...>& tuple, F&& func,
@@ -810,7 +837,7 @@ public:
     {
         RPC_HPP_PRECONDITION(!is_empty());
 
-        auto type = Serial::get_type(m_obj);
+        const auto type = Serial::get_type(m_obj);
 
         RPC_HPP_POSTCONDITION(validate_rpc_type(type));
         return type;
@@ -948,10 +975,21 @@ namespace adapters
             (static_cast<Derived*>(this))->as_optional(key, val);
         }
 
+        template<typename... Args>
+        RPC_HPP_INLINE void as_variant(const std::string_view key, std::variant<Args...>& val)
+        {
+            (static_cast<Derived*>(this))->as_variant(key, val);
+        }
+
         template<typename T>
         RPC_HPP_INLINE void as_object(const std::string_view key, T& val)
         {
             (static_cast<Derived*>(this))->as_object(key, val);
+        }
+
+        RPC_HPP_INLINE void as_null(const std::string_view key)
+        {
+            (static_cast<Derived*>(this))->as_null(key);
         }
 
     protected:
@@ -967,6 +1005,8 @@ namespace adapters
     public:
         using serializer_t = std::conditional_t<Deserialize, typename Adapter::deserializer_t,
             typename Adapter::serializer_t>;
+
+        static constexpr size_t max_variant_size = 10;
 
         template<typename T>
         void serialize_object(const T& val)
@@ -1052,10 +1092,24 @@ namespace adapters
             (static_cast<serializer_t*>(this))->as_optional(key, val);
         }
 
+        template<typename... Args>
+        RPC_HPP_INLINE void as_variant(const std::string_view key, std::variant<Args...>& val)
+        {
+            static_assert(
+                sizeof...(Args) < max_variant_size, "arg count can't exceed max_variant_size");
+
+            (static_cast<serializer_t*>(this))->as_variant(key, val);
+        }
+
         template<typename T>
         RPC_HPP_INLINE void as_object(const std::string_view key, T& val)
         {
             (static_cast<serializer_t*>(this))->as_object(key, val);
+        }
+
+        RPC_HPP_INLINE void as_null(const std::string_view key)
+        {
+            (static_cast<serializer_t*>(this))->as_null(key);
         }
     };
 
@@ -1145,6 +1199,30 @@ namespace adapters
     void serialize(serializer_base<Adapter, Deserialize>& ser, std::optional<T>& val)
     {
         ser.as_optional("", val);
+    }
+
+    template<typename Adapter, bool Deserialize>
+    void serialize(serializer_base<Adapter, Deserialize>& ser, RPC_HPP_UNUSED std::nullptr_t& val)
+    {
+        ser.as_null("");
+    }
+
+    template<typename Adapter, bool Deserialize>
+    void serialize(serializer_base<Adapter, Deserialize>& ser, RPC_HPP_UNUSED std::nullopt_t& val)
+    {
+        ser.as_null("");
+    }
+
+    template<typename Adapter, bool Deserialize>
+    void serialize(serializer_base<Adapter, Deserialize>& ser, RPC_HPP_UNUSED std::monostate& val)
+    {
+        ser.as_null("");
+    }
+
+    template<typename Adapter, bool Deserialize, typename... Args>
+    void serialize(serializer_base<Adapter, Deserialize>& ser, std::variant<Args...>& val)
+    {
+        ser.as_variant("", val);
     }
 } //namespace adapters
 
