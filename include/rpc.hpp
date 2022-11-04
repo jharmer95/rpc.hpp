@@ -196,9 +196,6 @@ public:                                                           \
     RPC_HPP_CONJ_TYPE_TRAIT(is_map, is_container<C>, has_map_iterator<std::remove_cv_t<C>>);
     RPC_HPP_CONJ_TYPE_TRAIT(is_multimap, is_map<C>, std::negation<has_map_at<C>>);
     RPC_HPP_CONJ_TYPE_TRAIT(is_set, is_container<C>, has_set_key<std::remove_cv_t<C>>);
-    RPC_HPP_CONJ_TYPE_TRAIT(is_ref_arg, std::is_reference<C>,
-        std::negation<std::is_const<std::remove_reference_t<C>>>,
-        std::negation<std::is_pointer<std::remove_reference_t<C>>>);
 #undef RPC_HPP_TYPE_TRAIT
 #undef RPC_HPP_CONJ_TYPE_TRAIT
 #undef RPC_HPP_DISJ_TYPE_TRAIT
@@ -260,6 +257,21 @@ public:                                                           \
     template<typename T>
     using decay_str_t = typename decay_str<T>::type;
 
+    template<typename T>
+    struct unwrap
+    {
+        using type = T;
+    };
+
+    template<typename T>
+    struct unwrap<std::reference_wrapper<T>>
+    {
+        using type = T;
+    };
+
+    template<typename T>
+    using unwrap_t = typename unwrap<T>::type;
+
     template<typename C>
     struct is_optional : std::false_type
     {
@@ -312,6 +324,19 @@ public:                                                           \
     template<typename C>
     inline constexpr bool is_variant_v = is_variant<std::remove_cv_t<C>>::value;
 
+    template<typename C>
+    struct is_reference_wrapper : std::false_type
+    {
+    };
+
+    template<typename T>
+    struct is_reference_wrapper<std::reference_wrapper<T>> : std::negation<std::is_const<T>>
+    {
+    };
+
+    template<typename C>
+    inline constexpr bool is_reference_wrapper_v = is_reference_wrapper<std::remove_cv_t<C>>::value;
+
     template<typename F, typename... Ts, size_t... Is>
     constexpr void for_each_tuple(const std::tuple<Ts...>& tuple, F&& func,
         RPC_HPP_UNUSED const std::index_sequence<Is...> iseq)
@@ -333,23 +358,23 @@ public:                                                           \
     }
 
     template<typename... Args, size_t... Is>
-    constexpr void tuple_bind(const std::tuple<remove_cvref_t<decay_str_t<Args>>...>& src,
+    constexpr void tuple_bind(const std::tuple<remove_cvref_t<decay_str_t<unwrap_t<Args>>>...>& src,
         RPC_HPP_UNUSED const std::index_sequence<Is...> iseq, Args&&... dest)
     {
         static_assert(sizeof...(Args) == sizeof...(Is),
             "index sequence length must be the same as the number of arguments");
 
-        static_assert(std::disjunction_v<is_ref_arg<Args>...>,
-            "At least one argument must be a (non-const) reference for tuple_bind to have an "
+        static_assert(std::disjunction_v<is_reference_wrapper<remove_cvref_t<Args>>...>,
+            "At least one argument must be a reference_wrapper for tuple_bind to have an "
             "effect");
 
         using expander = int[];
         std::ignore = expander{ 0,
             (
                 (void)[](auto&& bound_arg, auto&& ref_arg) {
-                    if constexpr (is_ref_arg<decltype(bound_arg)>())
+                    if constexpr (is_reference_wrapper_v<remove_cvref_t<decltype(bound_arg)>>)
                     {
-                        std::forward<decltype(bound_arg)>(bound_arg) =
+                        std::forward<decltype(bound_arg)>(bound_arg).get() =
                             std::forward<decltype(ref_arg)>(ref_arg);
                     }
                 }(dest, std::get<Is>(src)),
@@ -358,10 +383,10 @@ public:                                                           \
 
     template<typename... Args>
     constexpr void tuple_bind(
-        const std::tuple<remove_cvref_t<decay_str_t<Args>>...>& src, Args&&... dest)
+        const std::tuple<remove_cvref_t<decay_str_t<unwrap_t<Args>>>...>& src, Args&&... dest)
     {
-        static_assert(std::disjunction_v<is_ref_arg<Args>...>,
-            "At least one argument must be a (non-const) reference for tuple_bind to have an "
+        static_assert(std::disjunction_v<is_reference_wrapper<remove_cvref_t<Args>>...>,
+            "At least one argument must be a reference_wrapper for tuple_bind to have an "
             "effect");
 
         tuple_bind(src, std::make_index_sequence<sizeof...(Args)>(), std::forward<Args>(dest)...);
@@ -383,7 +408,7 @@ public:                                                           \
     template<bool IsCallback, typename... Args>
     struct rpc_request : rpc_base<IsCallback>
     {
-        using args_t = std::tuple<remove_cvref_t<decay_str_t<Args>>...>;
+        using args_t = std::tuple<remove_cvref_t<decay_str_t<unwrap_t<Args>>>...>;
 
         rpc_request() noexcept = default;
         rpc_request(std::string t_func_name, args_t t_args, bool t_bind_args = false)
@@ -395,7 +420,7 @@ public:                                                           \
         }
 
         bool bind_args{ false };
-        args_t args{};
+        args_t args;
     };
 
     template<typename... Args>
@@ -428,7 +453,7 @@ public:                                                           \
     template<bool IsCallback, typename R, typename... Args>
     struct rpc_result_w_bind : rpc_result<IsCallback, R>
     {
-        using args_t = std::tuple<remove_cvref_t<decay_str_t<Args>>...>;
+        using args_t = std::tuple<remove_cvref_t<decay_str_t<unwrap_t<Args>>>...>;
 
         rpc_result_w_bind() noexcept = default;
         rpc_result_w_bind(std::string t_func_name, R t_result, args_t t_args)
@@ -444,7 +469,7 @@ public:                                                           \
     template<bool IsCallback, typename... Args>
     struct rpc_result_w_bind<IsCallback, void, Args...> : rpc_request<IsCallback, Args...>
     {
-        using args_t = std::tuple<remove_cvref_t<decay_str_t<Args>>...>;
+        using args_t = std::tuple<remove_cvref_t<decay_str_t<unwrap_t<Args>>>...>;
         using rpc_request<IsCallback, Args...>::rpc_request;
     };
 

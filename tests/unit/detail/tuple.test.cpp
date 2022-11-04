@@ -48,19 +48,19 @@ void helper(Args&&... args)
 
     const auto process = [](auto&& val)
     {
-        using T = std::remove_reference_t<decltype(val)>;
+        using T = detail::unwrap_t<std::remove_reference_t<decltype(val)>>;
 
         if constexpr (std::is_same_v<T, int>)
         {
-            std::forward<decltype(val)>(val) += 1;
+            std::forward<decltype(val)>(val).get() += 1;
         }
         else if constexpr (std::is_same_v<T, float>)
         {
-            std::forward<decltype(val)>(val) = -1.0f;
+            std::forward<decltype(val)>(val).get() = -1.0f;
         }
         else if constexpr (std::is_same_v<T, std::string>)
         {
-            std::forward<decltype(val)>(val) = "Alabama";
+            std::forward<decltype(val)>(val).get() = "Alabama";
         }
     };
 
@@ -74,14 +74,14 @@ TEST_CASE("tuple_bind")
     float y{ -1.0f };
     std::string s{ "Bad value" };
 
-    helper(x, y, s);
+    helper(std::ref(x), std::ref(y), std::ref(s));
 
     REQUIRE(x == 1);
     REQUIRE(y < 0.0f);
     REQUIRE(s == "Alabama");
 
     const std::string s2{ "const value" };
-    helper(x, y, s2);
+    helper(std::ref(x), std::ref(y), s2);
 
     REQUIRE(x == 2);
     REQUIRE(y < 0.0f);

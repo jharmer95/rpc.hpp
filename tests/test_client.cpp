@@ -171,11 +171,11 @@ TEST_CASE_TEMPLATE("AddOne (static)", TestType, RPC_TEST_TYPES)
     auto p_client = GetClient<TestType>();
 
     size_t test_num = 2;
-    auto response = p_client->call_header_func(AddOne, test_num);
+    auto response = p_client->call_header_func(AddOne, std::ref(test_num));
 
     CHECK(!response.is_error());
 
-    response = p_client->call_header_func(AddOne, test_num);
+    response = p_client->call_header_func(AddOne, std::ref(test_num));
 
     CHECK(!response.is_error());
     REQUIRE(test_num == 4);
@@ -224,7 +224,7 @@ TEST_CASE_TEMPLATE("AddOneToEachRef", TestType, RPC_TEST_TYPES)
     auto p_client = GetClient<TestType>();
     const std::vector<int> vec{ 2, 4, 6, 8 };
     std::vector<int> vec2{ 1, 3, 5, 7 };
-    const auto response = p_client->call_func_w_bind("AddOneToEachRef", vec2);
+    const auto response = p_client->call_func("AddOneToEachRef", std::ref(vec2));
 
     CHECK(response.get_type() == rpc_type::func_result_w_bind);
     REQUIRE(vec2.size() == vec.size());
@@ -256,7 +256,7 @@ TEST_CASE_TEMPLATE("FibonacciRef", TestType, RPC_TEST_TYPES)
     auto p_client = GetClient<TestType>();
 
     uint64_t test = test_val;
-    const auto response = p_client->call_func_w_bind("FibonacciRef", test);
+    const auto response = p_client->call_func("FibonacciRef", std::ref(test));
 
     CHECK(response.get_type() == rpc_type::func_result_w_bind);
     REQUIRE(expected == test);
@@ -290,8 +290,9 @@ TEST_CASE_TEMPLATE("SquareRootRef", TestType, RPC_TEST_TYPES)
     double num9 = 553.3333333333;
     double num10 = 2266.1;
 
-    const auto response = p_client->call_func_w_bind(
-        "SquareRootRef", num1, num2, num3, num4, num5, num6, num7, num8, num9, num10);
+    const auto response = p_client->call_func("SquareRootRef", std::ref(num1), std::ref(num2),
+        std::ref(num3), std::ref(num4), std::ref(num5), std::ref(num6), std::ref(num7),
+        std::ref(num8), std::ref(num9), std::ref(num10));
 
     CHECK(response.get_type() == rpc_type::func_result_w_bind);
 
@@ -319,7 +320,7 @@ TEST_CASE_TEMPLATE("SquareArray", TestType, RPC_TEST_TYPES)
 
     std::array<int, 12> arr{ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 };
 
-    const auto response = p_client->call_func_w_bind("SquareArray", arr);
+    const auto response = p_client->call_func("SquareArray", std::ref(arr));
     CHECK(response.get_type() == rpc_type::func_result_w_bind);
     REQUIRE(arr[0] == 1);
     REQUIRE(arr[11] == 144);
@@ -332,11 +333,12 @@ TEST_CASE_TEMPLATE("RemoveFromList", TestType, RPC_TEST_TYPES)
     std::forward_list<std::string> word_list{ "Test", "word", "fox", "test", "sphere", "Word",
         "test", "Test" };
 
-    const auto response1 = p_client->call_func_w_bind("RemoveFromList", word_list, "Word", false);
+    const auto response1 =
+        p_client->call_func("RemoveFromList", std::ref(word_list), "Word", false);
     CHECK(response1.get_type() == rpc_type::func_result_w_bind);
     REQUIRE(std::distance(word_list.begin(), word_list.end()) == 6);
 
-    const auto response2 = p_client->call_func_w_bind("RemoveFromList", word_list, "test", true);
+    const auto response2 = p_client->call_func("RemoveFromList", std::ref(word_list), "test", true);
     CHECK(response2.get_type() == rpc_type::func_result_w_bind);
     REQUIRE(std::distance(word_list.begin(), word_list.end()) == 4);
 }
@@ -516,14 +518,14 @@ TEST_CASE_TEMPLATE("HashComplexRef", TestType, RPC_TEST_TYPES)
     const std::string expected = "467365747274747d315a473a527073796c7e707b85";
     auto p_client = GetClient<TestType>();
 
-    ComplexObject test_obj{ 24, "Franklin D. Roosevelt", false, true,
+    const ComplexObject test_obj{ 24, "Franklin D. Roosevelt", false, true,
         { 0, 1, 4, 6, 7, 8, 11, 15, 17, 22, 25, 26 } };
 
     // initialize empty string to pass
     std::string test{};
 
     // re-assign string to arg<1>
-    const auto response = p_client->call_func_w_bind("HashComplexRef", test_obj, test);
+    const auto response = p_client->call_func("HashComplexRef", test_obj, std::ref(test));
 
     CHECK(response.get_type() == rpc_type::func_result_w_bind);
     REQUIRE(expected == test);

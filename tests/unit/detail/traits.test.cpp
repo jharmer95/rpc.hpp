@@ -32,10 +32,4 @@ static_assert(detail::is_container_v<std::string>, "is_container failed");
 static_assert(detail::is_container_v<std::vector<int>>, "is_container failed");
 static_assert(detail::is_container_v<std::pmr::vector<int*>>, "is_container failed");
 static_assert(detail::is_container_v<std::array<int, 12>>, "is_container failed");
-
-static_assert(detail::is_ref_arg_v<int&>, "is_ref_arg failed");
-static_assert(detail::is_ref_arg_v<int&&>, "is_ref_arg failed");
-static_assert(!detail::is_ref_arg_v<const int&>, "is_ref_arg failed");
-static_assert(!detail::is_ref_arg_v<int>, "is_ref_arg failed");
-static_assert(!detail::is_ref_arg_v<int*&>, "is_ref_arg failed");
 } //namespace rpc_hpp::constexpr_tests

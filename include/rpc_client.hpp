@@ -45,8 +45,10 @@ public:
             static_assert(detail::is_stringlike_v<S>, "func_name must be a string-like type");
             RPC_HPP_PRECONDITION(!std::string_view{ func_name }.empty());
 
-            auto response = object_t{ detail::func_request<detail::decay_str_t<Args>...>{
-                std::forward<S>(func_name), std::forward_as_tuple(args...) } };
+            auto response =
+                object_t{ detail::func_request<detail::decay_str_t<detail::unwrap_t<Args>>...>{
+                    std::forward<S>(func_name), std::forward_as_tuple(args...),
+                    std::disjunction_v<detail::is_reference_wrapper<Args>...> } };
 
             try
             {
@@ -58,48 +60,13 @@ public:
             }
 
             recv_loop(response);
-            return response;
-        }
-        catch (const rpc_exception& ex)
-        {
-            return object_t{ detail::func_error{ std::forward<S>(func_name), ex } };
-        }
-        catch (const std::exception& ex)
-        {
-            return object_t{ detail::func_error{
-                std::forward<S>(func_name), exception_type::none, ex.what() } };
-        }
-    }
 
-    template<typename... Args, typename S>
-    RPC_HPP_NODISCARD("the rpc_object should be checked for its type")
-    auto call_func_w_bind(S&& func_name, Args&&... args) -> object_t
-    {
-        try
-        {
-            static_assert(detail::is_stringlike_v<S>, "func_name must be a string-like type");
-            static_assert(std::disjunction_v<detail::is_ref_arg<Args>...>,
-                "At least one argument must be a (non-const) reference for call_func_w_bind to "
-                "have an "
-                "effect, use call_func instead");
-
-            RPC_HPP_PRECONDITION(!std::string_view{ func_name }.empty());
-
-            auto response = object_t{ detail::func_request<detail::decay_str_t<Args>...>{
-                std::forward<S>(func_name), std::forward_as_tuple(args...), true } };
-
-            try
+            if constexpr (std::disjunction_v<detail::is_reference_wrapper<Args>...>)
             {
-                send(response.to_bytes());
+                detail::tuple_bind(
+                    response.template get_args<detail::decay_str_t<detail::unwrap_t<Args>>...>(),
+                    std::forward<Args>(args)...);
             }
-            catch (const std::exception& ex)
-            {
-                throw client_send_error{ ex.what() };
-            }
-
-            recv_loop(response);
-            detail::tuple_bind(response.template get_args<detail::decay_str_t<Args>...>(),
-                std::forward<Args>(args)...);
 
             return response;
         }
@@ -119,36 +86,14 @@ public:
     auto call_header_func_impl(RPC_HPP_UNUSED const detail::fptr_t<R, Args...> func_ptr,
         S&& func_name, Args2&&... args) -> object_t
     {
-        try
-        {
-            static_assert(detail::is_stringlike_v<S>, "func_name must be a string-like type");
-            static_assert(std::conjunction_v<std::is_convertible<Args2, Args>...>,
-                "Static function call parameters must match type exactly");
+        static_assert(detail::is_stringlike_v<S>, "func_name must be a string-like type");
+        static_assert(std::conjunction_v<std::is_convertible<Args2, Args>...>,
+            "Static function call parameters must match type exactly");
 
-            RPC_HPP_PRECONDITION(func_ptr != nullptr);
-            RPC_HPP_PRECONDITION(!std::string_view{ func_name }.empty());
+        RPC_HPP_PRECONDITION(func_ptr != nullptr);
+        RPC_HPP_PRECONDITION(!std::string_view{ func_name }.empty());
 
-            // If any parameters are non-const lvalue references...
-            if constexpr (std::disjunction_v<detail::is_ref_arg<Args>...>)
-            {
-                return call_func_w_bind<Args2...>(
-                    std::forward<S>(func_name), std::forward<Args2>(args)...);
-            }
-            else
-            {
-                return call_func<Args2...>(
-                    std::forward<S>(func_name), std::forward<Args2>(args)...);
-            }
-        }
-        catch (const rpc_exception& ex)
-        {
-            return object_t{ detail::func_error{ std::forward<S>(func_name), ex } };
-        }
-        catch (const std::exception& ex)
-        {
-            return object_t{ detail::func_error{
-                std::forward<S>(func_name), exception_type::none, ex.what() } };
-        }
+        return call_func<Args2...>(std::forward<S>(func_name), std::forward<Args2>(args)...);
     }
 
 protected:
