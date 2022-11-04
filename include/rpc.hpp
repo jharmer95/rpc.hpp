@@ -290,6 +290,32 @@ public:                                                           \
     template<typename C>
     inline constexpr bool is_pair_v = is_pair<std::remove_cv_t<C>>::value;
 
+    template<typename C>
+    struct is_tuple : std::false_type
+    {
+    };
+
+    template<typename... Args>
+    struct is_tuple<std::tuple<Args...>> : std::true_type
+    {
+    };
+
+    template<typename C>
+    inline constexpr bool is_tuple_v = is_tuple<std::remove_cv_t<C>>::value;
+
+    template<typename C>
+    struct is_variant : std::false_type
+    {
+    };
+
+    template<typename... Args>
+    struct is_variant<std::variant<Args...>> : std::true_type
+    {
+    };
+
+    template<typename C>
+    inline constexpr bool is_variant_v = is_variant<std::remove_cv_t<C>>::value;
+
     template<typename F, typename... Ts, size_t... Is>
     constexpr void for_each_tuple(const std::tuple<Ts...>& tuple, F&& func,
         RPC_HPP_UNUSED const std::index_sequence<Is...> iseq)
@@ -961,6 +987,11 @@ namespace adapters
             (static_cast<Derived*>(this))->as_object(key, val);
         }
 
+        RPC_HPP_INLINE void as_null(const std::string_view key)
+        {
+            (static_cast<Derived*>(this))->as_null(key);
+        }
+
     protected:
         ~generic_serializer() noexcept = default;
         generic_serializer(const generic_serializer&) = default;
@@ -1075,6 +1106,11 @@ namespace adapters
         {
             (static_cast<serializer_t*>(this))->as_object(key, val);
         }
+
+        RPC_HPP_INLINE void as_null(const std::string_view key)
+        {
+            (static_cast<serializer_t*>(this))->as_null(key);
+        }
     };
 
     // Overloads for common types
@@ -1165,18 +1201,22 @@ namespace adapters
         ser.as_optional("", val);
     }
 
-    template<typename Adapter>
-    void serialize(serializer_base<Adapter, false>& ser, const std::monostate val)
+    template<typename Adapter, bool Deserialize>
+    void serialize(serializer_base<Adapter, Deserialize>& ser, std::nullptr_t& val)
     {
-        // TODO: Add overload of as_optional for std::nullopt_t and/or add an 'as_null' function
-        std::optional<int> tmp{ std::nullopt };
-        ser.as_optional("", tmp);
+        ser.as_null("");
     }
 
-    template<typename Adapter>
-    void serialize(serializer_base<Adapter, true>& ser, std::monostate& val)
+    template<typename Adapter, bool Deserialize>
+    void serialize(serializer_base<Adapter, Deserialize>& ser, std::nullopt_t& val)
     {
-        // nop
+        ser.as_null("");
+    }
+
+    template<typename Adapter, bool Deserialize>
+    void serialize(serializer_base<Adapter, Deserialize>& ser, std::monostate& val)
+    {
+        ser.as_null("");
     }
 
     template<typename Adapter, bool Deserialize, typename... Args>

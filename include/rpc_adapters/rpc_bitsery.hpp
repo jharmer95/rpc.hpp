@@ -45,6 +45,7 @@
 #include <bitsery/ext/std_optional.h>
 #include <bitsery/ext/std_set.h>
 #include <bitsery/ext/std_tuple.h>
+#include <bitsery/ext/std_variant.h>
 #include <bitsery/traits/array.h>
 #include <bitsery/traits/core/traits.h>
 #include <bitsery/traits/forward_list.h>
@@ -296,16 +297,33 @@ namespace detail_bitsery
         template<typename T>
         void as_optional(RPC_HPP_UNUSED const std::string_view key, const std::optional<T>& val)
         {
-            using S = bitsery::Deserializer<output_adapter>;
+            using S = bitsery::Serializer<output_adapter>;
 
             m_ser.ext(val, bitsery::ext::StdOptional{},
                 [this](S& ser, T& subval) { serial_adapter::parse_obj(ser, *this, subval); });
+        }
+
+        template<typename... Args>
+        void as_variant(RPC_HPP_UNUSED const std::string_view key, const std::variant<Args...>& val)
+        {
+            using S = bitsery::Serializer<output_adapter>;
+
+            m_ser.ext(val,
+                bitsery::ext::StdVariant{ [this](S& ser, auto& subval)
+                    {
+                        serial_adapter::parse_obj(ser, *this, subval);
+                    } });
         }
 
         template<typename T>
         void as_object(RPC_HPP_UNUSED const std::string_view key, const T& val)
         {
             serial_adapter::parse_obj(m_ser, *this, val);
+        }
+
+        void as_null(RPC_HPP_UNUSED const std::string_view key)
+        {
+            // nop
         }
 
     private:
@@ -433,10 +451,27 @@ namespace detail_bitsery
                 [this](S& ser, T& subval) { serial_adapter::parse_obj(ser, *this, subval); });
         }
 
+        template<typename... Args>
+        void as_variant(RPC_HPP_UNUSED const std::string_view key, std::variant<Args...>& val)
+        {
+            using S = bitsery::Deserializer<input_adapter>;
+
+            m_ser.ext(val,
+                bitsery::ext::StdVariant{ [this](S& ser, auto& subval)
+                    {
+                        serial_adapter::parse_obj(ser, *this, subval);
+                    } });
+        }
+
         template<typename T>
         void as_object(RPC_HPP_UNUSED const std::string_view key, T& val)
         {
             serial_adapter::parse_obj(m_ser, *this, val);
+        }
+
+        void as_object(RPC_HPP_UNUSED const std::string_view key)
+        {
+            // nop
         }
 
     private:
@@ -738,6 +773,27 @@ namespace detail_bitsery
                         { s_ser.text1b(substr, config::max_string_size); });
                 }
             }
+        }
+        else if constexpr (detail::is_tuple_v<T>)
+        {
+            ser.ext(val,
+                bitsery::ext::StdTuple{ [&fallback](S& s_ser, auto& subval)
+                    {
+                        parse_obj(s_ser, fallback, subval);
+                    } });
+        }
+        else if constexpr (detail::is_variant_v<T>)
+        {
+            ser.ext(val,
+                bitsery::ext::StdVariant{ [&fallback](S& s_ser, auto& subval)
+                    {
+                        parse_obj(s_ser, fallback, subval);
+                    } });
+        }
+        else if constexpr (std::is_same_v<T, std::nullptr_t> || std::is_same_v<T, std::monostate>
+            || std::is_same_v<T, std::nullopt_t>)
+        {
+            // nop
         }
         else
         {

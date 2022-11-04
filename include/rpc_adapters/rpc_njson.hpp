@@ -257,7 +257,9 @@ namespace detail_njson
 
             new_arg["v_idx"] = val.index();
             auto& var_val = new_arg["v_val"];
-            std::visit([&var_val](const auto& l_val) { push_arg(l_val, var_val); }, val);
+            std::visit([&var_val](auto&& l_val)
+                { push_arg(std::forward<decltype(l_val)>(l_val), var_val); },
+                val);
         }
 
         template<typename T>
@@ -265,6 +267,8 @@ namespace detail_njson
         {
             push_arg(val, subobject(key));
         }
+
+        void as_null(const std::string_view key) { subobject(key) = nullptr; }
 
     private:
         [[nodiscard]] auto subobject(const std::string_view key) -> nlohmann::json&
@@ -408,129 +412,99 @@ namespace detail_njson
         template<typename... Args>
         void as_variant(const std::string_view key, std::variant<Args...>& val) const
         {
+            static constexpr size_t arg_sz = sizeof...(Args);
+
             const auto& obj = subobject(key);
             const auto v_idx = obj.at("v_idx").get<size_t>();
 
-            // TODO: Cleanup and move to serial-agnostic code
-            if (v_idx >= sizeof...(Args))
+            if (v_idx >= arg_sz)
             {
                 throw deserialization_error{ std::string{
                     "nlohmann::json error: variant index exceeded variant size: " }
-                                                 .append(std::to_string(sizeof...(Args))) };
+                                                 .append(std::to_string(arg_sz)) };
             }
 
-            if constexpr (sizeof...(Args) == 1)
+            // TODO: Cleanup and move to serial-agnostic code
+            switch (v_idx)
             {
-                val = parse_arg<decltype(std::get<0>(val))>(obj.at("v_val"));
-            }
-            else if constexpr (sizeof...(Args) == 2)
-            {
-                val = (v_idx == 0 ? parse_arg<decltype(std::get<0>(val))>(obj.at("v_val"))
-                                  : parse_arg<decltype(std::get<1>(val))>(obj.at("v_val")));
-            }
-            else if constexpr (sizeof...(Args) == 3)
-            {
-                switch (v_idx)
-                {
-                    case 0:
-                        val = parse_arg<decltype(std::get<0>(val))>(obj.at("v_val"));
-                        break;
+                case 0:
+                    val = parse_arg<decltype(std::get<0>(val))>(obj.at("v_val"));
+                    return;
 
-                    case 1:
+                case 1:
+                    if constexpr (arg_sz > 1)
+                    {
                         val = parse_arg<decltype(std::get<1>(val))>(obj.at("v_val"));
-                        break;
+                        return;
+                    }
+                    [[fallthrough]];
 
-                    case 2:
+                case 2:
+                    if constexpr (arg_sz > 2)
+                    {
                         val = parse_arg<decltype(std::get<2>(val))>(obj.at("v_val"));
-                        break;
+                        return;
+                    }
+                    [[fallthrough]];
 
-                    default:
-                        RPC_HPP_ASSUME(0);
-                }
-            }
-            else if constexpr (sizeof...(Args) == 4)
-            {
-                switch (v_idx)
-                {
-                    case 0:
-                        val = parse_arg<decltype(std::get<0>(val))>(obj.at("v_val"));
-                        break;
-
-                    case 1:
-                        val = parse_arg<decltype(std::get<1>(val))>(obj.at("v_val"));
-                        break;
-
-                    case 2:
-                        val = parse_arg<decltype(std::get<2>(val))>(obj.at("v_val"));
-                        break;
-
-                    case 3:
+                case 3:
+                    if constexpr (arg_sz > 3)
+                    {
                         val = parse_arg<decltype(std::get<3>(val))>(obj.at("v_val"));
-                        break;
+                        return;
+                    }
+                    [[fallthrough]];
 
-                    default:
-                        RPC_HPP_ASSUME(0);
-                }
-            }
-            else if constexpr (sizeof...(Args) == 5)
-            {
-                switch (v_idx)
-                {
-                    case 0:
-                        val = parse_arg<decltype(std::get<0>(val))>(obj.at("v_val"));
-                        break;
-
-                    case 1:
-                        val = parse_arg<decltype(std::get<1>(val))>(obj.at("v_val"));
-                        break;
-
-                    case 2:
-                        val = parse_arg<decltype(std::get<2>(val))>(obj.at("v_val"));
-                        break;
-
-                    case 3:
-                        val = parse_arg<decltype(std::get<3>(val))>(obj.at("v_val"));
-                        break;
-
-                    case 4:
+                case 4:
+                    if constexpr (arg_sz > 4)
+                    {
                         val = parse_arg<decltype(std::get<4>(val))>(obj.at("v_val"));
-                        break;
+                        return;
+                    }
+                    [[fallthrough]];
 
-                    default:
-                        RPC_HPP_ASSUME(0);
-                }
-            }
-            else if constexpr (sizeof...(Args) == 6)
-            {
-                switch (v_idx)
-                {
-                    case 0:
-                        val = parse_arg<decltype(std::get<0>(val))>(obj.at("v_val"));
-                        break;
-
-                    case 1:
-                        val = parse_arg<decltype(std::get<1>(val))>(obj.at("v_val"));
-                        break;
-
-                    case 2:
-                        val = parse_arg<decltype(std::get<2>(val))>(obj.at("v_val"));
-                        break;
-
-                    case 3:
-                        val = parse_arg<decltype(std::get<3>(val))>(obj.at("v_val"));
-                        break;
-
-                    case 4:
-                        val = parse_arg<decltype(std::get<4>(val))>(obj.at("v_val"));
-                        break;
-
-                    case 5:
+                case 5:
+                    if constexpr (arg_sz > 5)
+                    {
                         val = parse_arg<decltype(std::get<5>(val))>(obj.at("v_val"));
-                        break;
+                        return;
+                    }
+                    [[fallthrough]];
 
-                    default:
-                        RPC_HPP_ASSUME(0);
-                }
+                case 6:
+                    if constexpr (arg_sz > 6)
+                    {
+                        val = parse_arg<decltype(std::get<6>(val))>(obj.at("v_val"));
+                        return;
+                    }
+                    [[fallthrough]];
+
+                case 7:
+                    if constexpr (arg_sz > 7)
+                    {
+                        val = parse_arg<decltype(std::get<7>(val))>(obj.at("v_val"));
+                        return;
+                    }
+                    [[fallthrough]];
+
+                case 8:
+                    if constexpr (arg_sz > 8)
+                    {
+                        val = parse_arg<decltype(std::get<8>(val))>(obj.at("v_val"));
+                        return;
+                    }
+                    [[fallthrough]];
+
+                case 9:
+                    if constexpr (arg_sz > 9)
+                    {
+                        val = parse_arg<decltype(std::get<9>(val))>(obj.at("v_val"));
+                        return;
+                    }
+                    [[fallthrough]];
+
+                default:
+                    RPC_HPP_ASSUME(0);
             }
         }
 
@@ -538,6 +512,11 @@ namespace detail_njson
         void as_object(const std::string_view key, T& val) const
         {
             val = parse_arg<T>(subobject(key));
+        }
+
+        void as_null(RPC_HPP_UNUSED const std::string_view key) const
+        {
+            RPC_HPP_PRECONDITION(subobject(key).is_null());
         }
 
     private:
@@ -579,7 +558,8 @@ namespace detail_njson
             {
                 return arg.is_array();
             }
-            else if constexpr (std::is_same_v<T, std::monostate>)
+            else if constexpr (std::is_same_v<T, std::nullptr_t>
+                || std::is_same_v<T, std::monostate> || std::is_same_v<T, std::nullopt_t>)
             {
                 return arg.is_null();
             }
