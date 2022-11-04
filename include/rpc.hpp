@@ -93,8 +93,8 @@ enum class exception_type : int
 
 [[nodiscard]] constexpr auto validate_exception_type(exception_type type) noexcept -> bool
 {
-    return static_cast<int>(type) >= static_cast<int>(exception_type::none)
-        && static_cast<int>(type) <= static_cast<int>(exception_type::callback_missing);
+    return (static_cast<int>(type) >= static_cast<int>(exception_type::none))
+        && (static_cast<int>(type) <= static_cast<int>(exception_type::callback_missing));
 }
 
 // invariants:
@@ -120,16 +120,12 @@ private:
     exception_type m_type;
 };
 
-#define RPC_HPP_DECLARE_EXCEPTION(ENAME, ETYPE)                          \
-  class ENAME : public rpc_exception                                     \
-  {                                                                      \
-public:                                                                  \
-    explicit ENAME(const std::string& mesg) : rpc_exception(mesg, ETYPE) \
-    {                                                                    \
-    }                                                                    \
-    explicit ENAME(const char* const mesg) : rpc_exception(mesg, ETYPE)  \
-    {                                                                    \
-    }                                                                    \
+#define RPC_HPP_DECLARE_EXCEPTION(ENAME, ETYPE)                             \
+  class ENAME : public rpc_exception                                        \
+  {                                                                         \
+public:                                                                     \
+    explicit ENAME(const std::string& mesg) : rpc_exception(mesg, ETYPE) {} \
+    explicit ENAME(const char* const mesg) : rpc_exception(mesg, ETYPE) {}  \
   }
 
 RPC_HPP_DECLARE_EXCEPTION(function_missing_error, exception_type::function_missing);
@@ -571,8 +567,8 @@ enum class rpc_type : int
 
 [[nodiscard]] constexpr auto validate_rpc_type(rpc_type type) noexcept -> bool
 {
-    return static_cast<int>(type) >= static_cast<int>(rpc_type::callback_install_request)
-        && static_cast<int>(type) <= static_cast<int>(rpc_type::func_result_w_bind);
+    return (static_cast<int>(type) >= static_cast<int>(rpc_type::callback_install_request))
+        && (static_cast<int>(type) <= static_cast<int>(rpc_type::func_result_w_bind));
 }
 
 // invariants:
@@ -1168,8 +1164,8 @@ namespace adapters
     }
 
     template<typename Adapter, bool Deserialize, typename T,
-        std::enable_if_t<(detail::is_container_v<T>
-                             && (!detail::is_stringlike_v<T>)&&(!detail::is_map_v<T>)),
+        std::enable_if_t<
+            (detail::is_container_v<T> && (!detail::is_stringlike_v<T>)&&(!detail::is_map_v<T>)),
             bool> = true>
     void serialize(serializer_base<Adapter, Deserialize>& ser, T& val)
     {

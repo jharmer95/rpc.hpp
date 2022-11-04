@@ -269,7 +269,7 @@ private:
     void handle_callback_object(object_t& request) final
     {
         if (const auto type = request.get_type();
-            type == rpc_type::callback_request || type == rpc_type::func_request)
+            (type == rpc_type::callback_request) || (type == rpc_type::func_request))
         {
             dispatch_callback(request);
 

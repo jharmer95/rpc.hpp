@@ -558,8 +558,10 @@ namespace detail_njson
             {
                 return arg.is_array();
             }
-            else if constexpr (std::is_same_v<T, std::nullptr_t>
-                || std::is_same_v<T, std::monostate> || std::is_same_v<T, std::nullopt_t>)
+            else if constexpr (
+                std::is_same_v<T,
+                    std::
+                        nullptr_t> || std::is_same_v<T, std::monostate> || std::is_same_v<T, std::nullopt_t>)
             {
                 return arg.is_null();
             }
@@ -624,7 +626,7 @@ namespace detail_njson
 
     inline auto serial_adapter::is_empty(const nlohmann::json& serial_obj) noexcept -> bool
     {
-        return serial_obj.empty() && !serial_obj.is_null();
+        return serial_obj.empty() && (!serial_obj.is_null());
     }
 
     inline auto serial_adapter::from_bytes(std::string&& bytes) -> nlohmann::json
@@ -638,26 +640,26 @@ namespace detail_njson
 
         const auto type_it = obj.find("type");
 
-        if (type_it == obj.end() || (!type_it->is_number_integer()))
+        if ((type_it == obj.end()) || (!type_it->is_number_integer()))
         {
             throw deserialization_error{ R"(nlohmann::json error: field "type" not found)" };
         }
 
         const auto fname_it = obj.find("func_name");
 
-        if (fname_it == obj.end() || (!fname_it->is_string()))
+        if ((fname_it == obj.end()) || (!fname_it->is_string()))
         {
             throw deserialization_error{ R"(nlohmann::json error: field "func_name" not found)" };
         }
 
-        const rpc_type type = static_cast<rpc_type>(type_it->get<int>());
+        const auto type = static_cast<rpc_type>(type_it->get<int>());
 
         if (!validate_rpc_type(type))
         {
             throw deserialization_error{ "nlohmann::json error: invalid RPC type" };
         }
 
-        if (type != rpc_type::callback_error && type != rpc_type::func_error
+        if ((type != rpc_type::callback_error) && (type != rpc_type::func_error)
             && fname_it->get_ref<nlohmann::json::string_t&>().empty())
         {
             throw deserialization_error{

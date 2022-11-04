@@ -498,7 +498,7 @@ namespace detail_bitsery
             throw deserialization_error{ "Bitsery error: invalid RPC type" };
         }
 
-        if (type != rpc_type::func_error && type != rpc_type::callback_error
+        if ((type != rpc_type::func_error) && (type != rpc_type::callback_error)
             && get_func_name(bytes).empty())
         {
             throw deserialization_error{
@@ -790,8 +790,10 @@ namespace detail_bitsery
                         parse_obj(s_ser, fallback, subval);
                     } });
         }
-        else if constexpr (std::is_same_v<T, std::nullptr_t> || std::is_same_v<T, std::monostate>
-            || std::is_same_v<T, std::nullopt_t>)
+        else if constexpr (
+            std::is_same_v<T,
+                std::
+                    nullptr_t> || std::is_same_v<T, std::monostate> || std::is_same_v<T, std::nullopt_t>)
         {
             // nop
         }

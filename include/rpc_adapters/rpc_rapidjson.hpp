@@ -47,6 +47,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <forward_list>
 #include <iterator>
 #include <optional>
 #include <stdexcept>
@@ -719,8 +720,10 @@ namespace detail_rapidjson
             {
                 return arg.IsArray();
             }
-            else if constexpr (std::is_same_v<T, std::nullptr_t>
-                || std::is_same_v<T, std::monostate> || std::is_same_v<T, std::nullopt_t>)
+            else if constexpr (
+                std::is_same_v<T,
+                    std::
+                        nullptr_t> || std::is_same_v<T, std::monostate> || std::is_same_v<T, std::nullopt_t>)
             {
                 return arg.IsNull();
             }
@@ -900,14 +903,14 @@ namespace detail_rapidjson
 
         const auto type_it = doc.FindMember("type");
 
-        if (type_it == doc.MemberEnd() || (!type_it->value.IsInt()))
+        if ((type_it == doc.MemberEnd()) || (!type_it->value.IsInt()))
         {
             throw deserialization_error{ R"(rapidjson error: field "type" not found)" };
         }
 
         const auto fname_it = doc.FindMember("func_name");
 
-        if (fname_it == doc.MemberEnd() || (!fname_it->value.IsString()))
+        if ((fname_it == doc.MemberEnd()) || (!fname_it->value.IsString()))
         {
             throw deserialization_error{ R"(rapidjson error: field "func_name" not found)" };
         }
@@ -919,8 +922,8 @@ namespace detail_rapidjson
             throw deserialization_error{ "rapidjson error: invalid RPC type" };
         }
 
-        if (type != rpc_type::callback_error && type != rpc_type::func_error
-            && fname_it->value.GetStringLength() == 0)
+        if ((type != rpc_type::callback_error) && (type != rpc_type::func_error)
+            && (fname_it->value.GetStringLength() == 0))
         {
             throw deserialization_error{ R"(rapidjson error: field "func_name" can't be empty)" };
         }
