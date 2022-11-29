@@ -120,12 +120,16 @@ private:
     exception_type m_type;
 };
 
-#define RPC_HPP_DECLARE_EXCEPTION(ENAME, ETYPE)                             \
-  class ENAME : public rpc_exception                                        \
-  {                                                                         \
-public:                                                                     \
-    explicit ENAME(const std::string& mesg) : rpc_exception(mesg, ETYPE) {} \
-    explicit ENAME(const char* const mesg) : rpc_exception(mesg, ETYPE) {}  \
+#define RPC_HPP_DECLARE_EXCEPTION(ENAME, ETYPE)                          \
+  class ENAME : public rpc_exception                                     \
+  {                                                                      \
+public:                                                                  \
+    explicit ENAME(const std::string& mesg) : rpc_exception(mesg, ETYPE) \
+    {                                                                    \
+    }                                                                    \
+    explicit ENAME(const char* const mesg) : rpc_exception(mesg, ETYPE)  \
+    {                                                                    \
+    }                                                                    \
   }
 
 RPC_HPP_DECLARE_EXCEPTION(function_missing_error, exception_type::function_missing);
@@ -400,6 +404,10 @@ public:                                                           \
     struct rpc_base
     {
         static constexpr bool is_callback = IsCallback;
+
+        rpc_base() noexcept = default;
+        explicit rpc_base(std::string t_func_name) : func_name(std::move(t_func_name)) {}
+
         std::string func_name{};
     };
 
@@ -412,7 +420,7 @@ public:                                                           \
 
         rpc_request() noexcept = default;
         rpc_request(std::string t_func_name, args_t t_args, bool t_bind_args = false)
-            : rpc_base<IsCallback>{ std::move(t_func_name) },
+            : rpc_base<IsCallback>(std::move(t_func_name)),
               bind_args(t_bind_args),
               args(std::move(t_args))
         {
@@ -420,7 +428,7 @@ public:                                                           \
         }
 
         bool bind_args{ false };
-        args_t args;
+        args_t args{};
     };
 
     template<typename... Args>
@@ -434,12 +442,19 @@ public:                                                           \
     template<bool IsCallback, typename R>
     struct rpc_result : rpc_base<IsCallback>
     {
+        rpc_result() noexcept = default;
+        rpc_result(std::string t_func_name, R t_result)
+            : rpc_base<IsCallback>(std::move(t_func_name)), result(std::move(t_result))
+        {
+        }
+
         R result{};
     };
 
     template<bool IsCallback>
     struct rpc_result<IsCallback, void> : rpc_base<IsCallback>
     {
+        using rpc_base<IsCallback>::rpc_base;
     };
 
     template<typename R>
@@ -457,7 +472,7 @@ public:                                                           \
 
         rpc_result_w_bind() noexcept = default;
         rpc_result_w_bind(std::string t_func_name, R t_result, args_t t_args)
-            : rpc_result<IsCallback, R>{ std::move(t_func_name), std::move(t_result) },
+            : rpc_result<IsCallback, R>(std::move(t_func_name), std::move(t_result)),
               args(std::move(t_args))
         {
             RPC_HPP_POSTCONDITION(!this->func_name.empty());
@@ -486,7 +501,7 @@ public:                                                           \
     {
         rpc_error() noexcept = default;
         rpc_error(std::string t_func_name, const rpc_exception& except)
-            : rpc_base<IsCallback>{ std::move(t_func_name) },
+            : rpc_base<IsCallback>(std::move(t_func_name)),
               except_type(except.get_type()),
               err_mesg(except.what())
         {
@@ -494,7 +509,7 @@ public:                                                           \
         }
 
         rpc_error(std::string t_func_name, const exception_type t_ex_type, std::string t_err_mesg)
-            : rpc_base<IsCallback>{ std::move(t_func_name) },
+            : rpc_base<IsCallback>(std::move(t_func_name)),
               except_type(t_ex_type),
               err_mesg(std::move(t_err_mesg))
         {
@@ -569,7 +584,7 @@ struct callback_install_request : detail::rpc_base<true>
 {
     callback_install_request() noexcept = default;
     explicit callback_install_request(std::string t_func_name)
-        : rpc_base<true>{ std::move(t_func_name) }
+        : rpc_base<true>(std::move(t_func_name))
     {
         RPC_HPP_POSTCONDITION(!this->func_name.empty());
     }
@@ -1190,7 +1205,7 @@ namespace adapters
 
     template<typename Adapter, bool Deserialize, typename T,
         std::enable_if_t<
-            (detail::is_container_v<T> && (!detail::is_stringlike_v<T>)&&(!detail::is_map_v<T>)),
+            (detail::is_container_v<T> && (!detail::is_stringlike_v<T>) && (!detail::is_map_v<T>)),
             bool> = true>
     void serialize(serializer_base<Adapter, Deserialize>& ser, T& val)
     {

@@ -53,6 +53,10 @@
 #include <type_traits>
 #include <utility>
 
+#ifndef RPC_HPP_NO_RTTI
+#  include <typeinfo>
+#endif
+
 namespace rpc_hpp::adapters
 {
 namespace detail_boost_json
@@ -668,7 +672,11 @@ namespace detail_boost_json
 
             if (!validate_arg<no_ref_t>(arg))
             {
+#ifdef RPC_HPP_NO_RTTI
                 throw function_mismatch_error{ mismatch_string(typeid(no_ref_t).name(), arg) };
+#else
+                throw function_mismatch_error{ mismatch_string("{NO_RTTI}", arg) };
+#endif
             }
 
             no_ref_t out_val;
@@ -757,7 +765,7 @@ namespace detail_boost_json
             throw deserialization_error{ R"(Boost.JSON error: field "func_name" not found)" };
         }
 
-        const rpc_type type = static_cast<rpc_type>(type_it->value().get_int64());
+        const auto type = static_cast<rpc_type>(type_it->value().get_int64());
 
         if (!validate_rpc_type(type))
         {

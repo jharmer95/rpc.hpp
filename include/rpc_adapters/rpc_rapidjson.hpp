@@ -57,6 +57,10 @@
 #include <type_traits>
 #include <utility>
 
+#ifndef RPC_HPP_NO_RTTI
+#  include <typeinfo>
+#endif
+
 namespace rpc_hpp::adapters
 {
 namespace detail_rapidjson
@@ -720,10 +724,8 @@ namespace detail_rapidjson
             {
                 return arg.IsArray();
             }
-            else if constexpr (
-                std::is_same_v<T,
-                    std::
-                        nullptr_t> || std::is_same_v<T, std::monostate> || std::is_same_v<T, std::nullopt_t>)
+            else if constexpr (std::is_same_v<T, std::nullptr_t>
+                || std::is_same_v<T, std::monostate> || std::is_same_v<T, std::nullopt_t>)
             {
                 return arg.IsNull();
             }
@@ -736,7 +738,7 @@ namespace detail_rapidjson
         static auto mismatch_message(
             const std::string_view expect_type, const rapidjson::Value& obj) -> std::string
         {
-            const auto get_type_str = [&obj]() noexcept
+            const auto get_type_str = [&obj]()
             {
                 if (obj.IsNull())
                 {
@@ -812,7 +814,11 @@ namespace detail_rapidjson
 
             if (!validate_arg<no_ref_t>(arg))
             {
+#ifdef RPC_HPP_NO_RTTI
                 throw function_mismatch_error{ mismatch_message(typeid(no_ref_t).name(), arg) };
+#else
+                throw function_mismatch_error{ mismatch_message("{NO-RTTI}", arg) };
+#endif
             }
 
             no_ref_t out_val;

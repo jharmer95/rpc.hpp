@@ -41,8 +41,9 @@
 #endif
 
 #include "test_client.hpp"
-#include "test_structs.hpp"
+
 #include "static_funcs.hpp"
+#include "test_structs.hpp"
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include <doctest/doctest.h>
@@ -51,7 +52,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <forward_list>
-#include <numeric>
 #include <map>
 #include <optional>
 #include <string>
@@ -632,8 +632,7 @@ TEST_CASE_TEMPLATE("InvalidObject", TestType, RPC_TEST_TYPES)
 {
     static constexpr size_t test_sz = 8UL;
     typename TestType::bytes_t bytes(test_sz, {});
-
-    //std::iota(bytes.begin(), bytes.end(), typename TestType::bytes_t::value_type{});
+    
     bytes[0] = 6;
 
     auto p_client = GetClient<TestType>();
