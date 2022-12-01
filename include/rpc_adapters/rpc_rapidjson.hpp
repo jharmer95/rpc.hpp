@@ -333,11 +333,10 @@ namespace detail_rapidjson
                 m_json.SetObject();
             }
 
-            const std::string key_str{ key };
-            m_json.AddMember(rapidjson::Value{}.SetString(key_str.c_str(), allocator()),
+            m_json.AddMember(rapidjson::Value{}.SetString(key.data(), allocator()),
                 rapidjson::Value{}, allocator());
 
-            return m_json[key_str.c_str()];
+            return m_json[key.data()];
         }
 
         template<typename K>
@@ -664,7 +663,7 @@ namespace detail_rapidjson
                 return m_json;
             }
 
-            return m_json[std::string{ key }.c_str()];
+            return m_json[key.data()];
         }
 
         template<typename T>
